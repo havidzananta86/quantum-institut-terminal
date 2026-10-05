@@ -1,0 +1,97 @@
+/* Quantum Terminal Pro Dashboard Specific Stylesheet */
+.terminal-panel {
+    background: rgba(10, 17, 40, 0.9);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.terminal-active-tab {
+    background: rgba(0, 229, 255, 0.15);
+    color: #00E5FF;
+    border-color: rgba(0, 229, 255, 0.4);
+}
+
+.pulse-stream {
+    animation: streamPulse 2s infinite ease-in-out;
+}
+
+@keyframes streamPulse {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px #00E5FF); }
+    50% { opacity: 0.4; filter: drop-shadow(0 0 1px #00E5FF); }
+}
+
+/* Vertical Drawing Toolbar Button Styles */
+.tool-btn {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+    border-radius: 10px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+}
+.tool-btn.active {
+    background: rgba(0, 229, 255, 0.15);
+    color: #00E5FF;
+    border-color: rgba(0, 229, 255, 0.4);
+}
+
+/* Universal Dark Scrollbars */
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.2);
+    border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 255, 0.5);
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 229, 255, 0.2) transparent;
+}
+
+/* Scrollbar Classes */
+.no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+.no-scrollbar {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+.thin-scrollbar::-webkit-scrollbar {
+    height: 3px;
+    width: 3px;
+    background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.25);
+    border-radius: 99px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 255, 0.55);
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 229, 255, 0.25) transparent;
+}
+
+

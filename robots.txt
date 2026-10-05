@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /config/
+Disallow: /engine/
+
+Sitemap: https://quantuminstitut.market/sitemap.xml

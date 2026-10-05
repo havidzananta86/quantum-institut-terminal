@@ -1,0 +1,30 @@
+# API keys & config (JANGAN push ke public repo!)
+config/api_keys.php
+config/database.php
+
+# Cache files
+cache/*.json
+cache/*.html
+!cache/.gitkeep
+
+# Uploads
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+package-lock.json
+
+# Logs
+*.log

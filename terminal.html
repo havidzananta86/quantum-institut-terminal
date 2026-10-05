@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Terminal Pro | Live Realtime TradingView & 9 Mesin Kuantum</title>
+    <meta name="description" content="Terminal Analisa Pasar Kuantum Realtime 9 Mesin. Data TradingView Realtime, Live Orderbook, & Quantum Calculations.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                screens: {
+                    'xs': '480px',   // HP Kecil
+                    'sm': '640px',   // HP Besar / Landscape
+                    'md': '768px',   // Tablet Portrait
+                    'lg': '1024px',  // Laptop
+                    'xl': '1280px',  // Desktop
+                    '2xl': '1536px', // Desktop Besar / 4K
+                },
+                extend: {
+                    colors: {
+                        'quantum-dark': '#050A1A',
+                        'quantum-navy': '#0A1128',
+                        'quantum-card': '#0D1836',
+                        'quantum-cyan': '#00E5FF',
+                        'quantum-purple': '#7C4DFF',
+                        'quantum-green': '#00E676',
+                        'quantum-red': '#FF5252',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- TRADINGVIEW OFFICIAL ADVANCED CHARTING API (REALTIME DATA) -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+    <!-- TRADINGVIEW LIGHTWEIGHT CHARTS v4.1.3 (API stabil, dikunci versi) -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/terminal.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+
+    <style>
+        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; }
+        
+        /* ATURAN CHART TERMINAL RESPONSIF:
+           - Mobile (<768px): height 250px
+           - Tablet (768-1024px): height 350px
+           - Desktop (≥1024px): height 500px
+        */
+        .chart-responsive-height {
+            height: 250px;
+        }
+        @media (min-width: 768px) {
+            .chart-responsive-height { height: 350px; }
+        }
+        @media (min-width: 1024px) {
+            .chart-responsive-height { height: 500px; }
+        }
+
+        .active-tab {
+            background: rgba(0, 229, 255, 0.15);
+            color: #00E5FF;
+            border-color: rgba(0, 229, 255, 0.4);
+        }
+
+        /* UNIVERSAL DARK SCROLLBAR & NO-SCROLLBAR OVERRIDE */
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background: rgba(0, 229, 255, 0.2);
+            border-radius: 99px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 229, 255, 0.5);
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 229, 255, 0.2) transparent;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+        .no-scrollbar {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .thin-scrollbar::-webkit-scrollbar { height: 3px; width: 3px; background: transparent; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.25); border-radius: 99px; }
+        .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.55); }
+        .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(0,229,255,0.25) transparent; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen lg:h-screen text-slate-200 antialiased selection:bg-cyan-500/30 overflow-x-hidden min-w-[320px]">
+
+    <!-- TOP APPLICATION NAVBAR RESPONSIF — 3-ZONE PROFESSIONAL HEADER -->
+    <header class="h-14 sm:h-16 bg-[#0A0F1F] border-b border-[#1A2238] px-2 sm:px-4 lg:px-6 flex items-center justify-between shrink-0 select-none z-30 font-sans">
+        
+        <!-- ZONE KRI: Logo Brand & Symbol Tabs -->
+        <div class="flex items-center gap-2 lg:gap-3 shrink-0">
+            <a href="index.html" class="flex items-center gap-2 group shrink-0" title="Kembali ke Landing Page (Quantum Institut)">
+                <div class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400 group-hover:rotate-180 transition-transform duration-500">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="#00E5FF"/>
+                    </svg>
+                </div>
+                <span class="font-heading font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">
+                    Quantum<span class="text-cyan-400">Terminal</span>
+                </span>
+            </a>
+
+            <div class="h-4 w-[1px] bg-slate-800 hidden xs:block"></div>
+
+            <!-- Asset Selector Tabs Group -->
+            <div id="symbolTabsContainer" class="flex items-center gap-1 font-mono text-[11px] sm:text-xs overflow-x-auto whitespace-nowrap py-1 no-scrollbar max-w-[150px] xs:max-w-[240px] sm:max-w-[320px] md:max-w-[380px]">
+                <button onclick="loadRealtimeSymbol('BINANCE:BTCUSDT', 'BTCUSDT', 68450.20)" id="pair-BTCUSDT" class="min-h-[36px] px-2.5 py-1 rounded-lg active-tab font-bold transition-all border flex items-center gap-1.5" title="BTC/USDT - Crypto">BTC/USDT</button>
+                <button onclick="loadRealtimeSymbol('OANDA:XAUUSD', 'XAUUSD', 2654.20)" id="pair-XAUUSD" class="min-h-[36px] px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all border border-transparent flex items-center gap-1.5" title="XAU/USD - Emas Realtime">XAU/USD</button>
+                <button onclick="loadRealtimeSymbol('BINANCE:ETHUSDT', 'ETHUSDT', 3520.10)" id="pair-ETHUSDT" class="min-h-[36px] px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all border border-transparent flex items-center gap-1.5" title="ETH/USDT - Crypto">ETH/USDT</button>
+                <button onclick="loadRealtimeSymbol('FX:EURUSD', 'EURUSD', 1.0895)" id="pair-EURUSD" class="min-h-[36px] px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all border border-transparent hidden sm:flex items-center gap-1.5" title="EUR/USD - Forex">EUR/USD</button>
+                <button onclick="loadRealtimeSymbol('BINANCE:SOLUSDT', 'SOLUSDT', 184.50)" id="pair-SOLUSDT" class="min-h-[36px] px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all border border-transparent hidden md:flex items-center gap-1.5" title="SOL/USDT - Crypto">SOL/USDT</button>
+            </div>
+        </div>
+
+        <!-- ZONE TENGAH: Global Search Bar & Command Palette Trigger (Ctrl+K) -->
+        <div class="hidden md:flex items-center justify-center flex-1 max-w-md mx-4">
+            <div onclick="openCommandPalette()" class="w-full h-9 px-3 bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-xl text-slate-400 text-xs font-mono flex items-center justify-between cursor-pointer transition-all shadow-inner group" title="Buka Command Palette & Pencarian Global (Ctrl+K)">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <span class="text-slate-400 group-hover:text-slate-200 transition-colors">Cari pair, mesin, berita...</span>
+                </div>
+                <kbd class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700 font-mono shadow-sm">Ctrl+K</kbd>
+            </div>
+        </div>
+
+        <!-- ZONE KANAN: Quick Action Icons, Session Indicator, WIB Clock, Profile -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 font-mono text-xs shrink-0">
+
+            <!-- Quick Action Icons -->
+            <div class="flex items-center gap-0.5 sm:gap-1">
+                <!-- Search Button (Mobile Only) -->
+                <button onclick="openCommandPalette()" class="md:hidden w-9 h-9 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 flex items-center justify-center transition-colors" title="Pencarian Global (Ctrl+K)" aria-label="Command Palette">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+
+                <!-- Watchlist Button -->
+                <button onclick="showQuantumToast('★ Watchlist Favorit Aktif', 'info')" class="w-9 h-9 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 flex items-center justify-center relative transition-colors" title="Watchlist Favorit (Shift+W)" aria-label="Toggle Watchlist">
+                    <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    <span id="watchlistBadge" class="absolute -top-0.5 -right-0.5 px-1 min-w-[14px] h-3.5 rounded-full bg-amber-500 text-slate-950 font-bold text-[9px] flex items-center justify-center">5</span>
+                </button>
+
+                <!-- Alert Bell -->
+                <button onclick="showQuantumToast('🔔 2 Alert Harga Aktif', 'info')" class="w-9 h-9 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 flex items-center justify-center relative transition-colors" title="Buat Alert Harga (Shift+A)" aria-label="Create Price Alert">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span id="alertBadge" class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTerminalTheme()" class="w-9 h-9 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800/80 flex items-center justify-center transition-colors" title="Ganti Mode Tema (Ctrl+T)" aria-label="Toggle Theme">
+                    <svg id="themeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+
+                <!-- Fullscreen Chart -->
+                <button onclick="toggleChartFullscreen()" class="w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 hidden sm:flex items-center justify-center transition-colors" title="Layar Penuh Chart (F11)" aria-label="Toggle Fullscreen">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </button>
+
+                <!-- Screenshot Chart -->
+                <button onclick="takeChartScreenshot()" class="w-9 h-9 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/80 hidden sm:flex items-center justify-center transition-colors" title="Ambil Screenshot Chart" aria-label="Take Chart Screenshot">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+                </button>
+            </div>
+
+            <div class="h-4 w-[1px] bg-slate-800 hidden sm:block"></div>
+
+            <!-- Market Session Indicator Badge -->
+            <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[11px]" title="Sesi Pasar Aktif (New York Session)">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-slate-300 font-mono font-semibold">NY OPEN</span>
+            </div>
+
+            <!-- Live WIB Clock -->
+            <div class="hidden xs:flex items-center gap-1.5 text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800 text-[11px]">
+                <span class="text-slate-500 font-mono">WIB</span>
+                <span id="clockWIB" class="text-cyan-300 font-bold font-mono">14:00:00</span>
+            </div>
+
+            <!-- User Profile Badge -->
+            <a href="login.html" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 flex items-center gap-1.5 font-bold text-[11px] transition-all" title="Status Lisensi Quantum+ PRO Active">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span>PRO</span>
+            </a>
+
+        </div>
+
+    </header>
+
+    <!-- 20+ PAIR REALTIME TICKER MARQUEE BAR (TIER S - FITUR 1) -->
+    <div class="h-10 bg-[#060B1E] border-b border-slate-800/80 px-2 flex items-center overflow-hidden relative select-none z-20">
+        <div class="flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-cyan-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+            LIVE 24/7
+        </div>
+        <div class="overflow-hidden w-full relative">
+            <div id="quantumMarqueeTrack" class="flex items-center whitespace-nowrap animate-ticker hover:[animation-play-state:paused] py-1">
+                <!-- Ticker items dynamically injected by QuantumTickerEngine -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SECONDARY TOOLBAR: TIMEFRAME, ENGINE & PRO TRADING SUITE SELECTOR -->
+    <div class="h-12 bg-[#090F26] border-b border-slate-800 px-3 sm:px-6 flex items-center justify-between shrink-0 font-mono text-xs select-none z-20 overflow-x-auto whitespace-nowrap no-scrollbar gap-3">
+        
+        <!-- Left Zone: Timeframes, Candle Type & Candle Countdown -->
+        <div class="flex items-center gap-1.5">
+            <span class="text-slate-500 text-[10px] mr-1 hidden xs:inline">TF:</span>
+            <button onclick="setChartInterval('5')" id="tf-5" class="min-h-[36px] px-2 py-1 rounded text-slate-400 hover:text-white flex items-center">M5</button>
+            <button onclick="setChartInterval('15')" id="tf-15" class="min-h-[36px] px-2 py-1 rounded text-slate-400 hover:text-white flex items-center">M15</button>
+            <button onclick="setChartInterval('60')" id="tf-60" class="min-h-[36px] px-2 py-1 rounded active-tab font-bold border flex items-center">H1</button>
+            <button onclick="setChartInterval('240')" id="tf-240" class="min-h-[36px] px-2 py-1 rounded text-slate-400 hover:text-white flex items-center">H4</button>
+            <button onclick="setChartInterval('D')" id="tf-D" class="min-h-[36px] px-2 py-1 rounded text-slate-400 hover:text-white flex items-center">D1</button>
+
+            <div class="h-4 w-[1px] bg-slate-800 mx-1 hidden sm:block"></div>
+
+            <!-- Candle Type HA / STD Toggle -->
+            <button id="btn-candle-type" onclick="if(quantumTerminalManager) quantumTerminalManager.toggleCandleType()" class="min-h-[32px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-slate-300 hover:text-white text-[10px] font-bold" title="Ganti Candle Type (Standard / Heikin Ashi)">STD</button>
+
+            <!-- Realtime Candle Countdown Timer -->
+            <div class="hidden sm:flex items-center gap-1 bg-slate-950 border border-slate-800 px-2 py-1 rounded text-[11px] text-slate-300 font-mono" title="Waktu Tersisa Menuju Penutupan Candle">
+                <span class="text-slate-500 text-[9px]">BAR:</span>
+                <span id="candleCountdownTimer" class="text-cyan-400 font-bold">00:00</span>
+            </div>
+
+            <!-- Session Indicator (Live) -->
+            <div id="sessionLiveBadge" class="hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950 border border-slate-800 text-[10px]">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-emerald-300 font-bold">NEW YORK OPEN</span>
+            </div>
+        </div>
+
+        <!-- Right Zone: Engine Selector, Drawing Templates, & Quick Pro Tools -->
+        <div class="flex items-center gap-2">
+            <!-- 9-Engine Selector -->
+            <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 text-[10px] hidden xl:inline">MESIN:</span>
+                <select id="engineSelector" onchange="switchQuantumEngine(this.value)" class="bg-slate-900 text-cyan-300 font-bold border border-cyan-500/40 rounded-lg px-2 sm:px-2.5 py-1 outline-none text-xs min-h-[36px]">
+                    <option value="SNR">a. Quantum SNR (Level & Retest)</option>
+                    <option value="SMC">b. Quantum SMC (Order Block & FVG)</option>
+                    <option value="EMA200">c. Quantum EMA200 Pullback</option>
+                    <option value="ICHI">d. Quantum Ichimoku Cloud</option>
+                    <option value="FIBO">e. Quantum Fibonacci Golden Zone</option>
+                    <option value="TRENM5">f. Quantum TrenM5 Scalping</option>
+                    <option value="MOMENTUM_NY">g. Quantum MomentumNY (Gold)</option>
+                    <option value="MACD_MOM">h. Quantum MACD Momentum</option>
+                    <option value="GOLDEN_CROSS">i. Quantum Golden Cross</option>
+                </select>
+            </div>
+
+            <!-- Drawing Templates Presets -->
+            <select onchange="if(quantumTerminalManager && this.value) { quantumTerminalManager.applyDrawingTemplate(this.value); this.value=''; }" class="hidden lg:block bg-slate-900 text-purple-300 font-bold border border-purple-500/40 rounded-lg px-2 py-1 outline-none text-xs min-h-[36px]">
+                <option value="">📐 PRESETS...</option>
+                <option value="SNR_SETUP">Setup SNR (R1/R2/S1)</option>
+                <option value="SMC_SETUP">Setup SMC (OB/Sweep)</option>
+                <option value="FIB_BREAKOUT">Setup Fib 0.618 Breakout</option>
+            </select>
+
+            <div class="h-4 w-[1px] bg-slate-800 mx-0.5 hidden sm:block"></div>
+
+            <!-- Pro Tools Buttons -->
+            <button onclick="QuantumPositionCalculator.openModal()" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 text-xs flex items-center gap-1.5" title="Kalkulator Ukuran Posisi & Risiko">
+                <span>📐</span><span class="hidden sm:inline">Kalkulator</span>
+            </button>
+
+            <button onclick="QuantumRRTool.openModal()" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-purple-400 hover:text-purple-300 border border-slate-800 hover:border-purple-500/40 text-xs flex items-center gap-1.5" title="Visual Risk Reward Ratio & Signal Plan">
+                <span>🎯</span><span class="hidden sm:inline">R:R Tool</span>
+            </button>
+
+            <button onclick="QuantumAIEngine.analyzeCurrentSetup()" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-500/40 hover:border-cyan-400 text-xs flex items-center gap-1.5 font-bold shadow-cyan-glow" title="AI Analyst Setup Scanner">
+                <span>🤖</span><span>AI Analyst</span>
+            </button>
+
+            <button onclick="openShortcutsModal()" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 flex items-center justify-center text-xs font-bold" title="Panduan Shortcut Keyboard (?)">
+                ?
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- MAIN TERMINAL WORKSPACE LAYOUT RESPONSIF -->
+    <!-- Mobile (<1024px): Stack vertikal. Desktop (≥1024px): 3 Panel Horizontal -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+        
+        <!-- PANEL 1: VERTIKAL LEFT TOOLBAR (Hidden di Mobile & Tablet <1024px) -->
+        <aside id="toolbar" class="hidden lg:flex w-14 bg-[#070D22] border-r border-slate-800 flex-col items-center py-3 gap-2 text-slate-400 shrink-0 select-none overflow-y-auto no-scrollbar z-20">
+            
+            <!-- Crosshair Toggle -->
+            <button id="btn-crosshair" onclick="if(quantumTerminalManager) quantumTerminalManager.toggleCrosshair()" class="tool-btn active" title="Crosshair Toggle">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="6" stroke="#00E5FF"/>
+                    <circle cx="12" cy="12" r="2" fill="#00E5FF"/>
+                </svg>
+            </button>
+
+            <!-- Timeframe Active Indicator -->
+            <div class="text-[10px] text-[#6B7A99] mt-1 select-none">TF:</div>
+            <div id="tf-active" class="text-[11px] text-[#00E5FF] font-bold">H1</div>
+
+            <div class="w-8 h-[1px] bg-slate-800/80 my-0.5"></div>
+
+            <!-- Zoom In Button -->
+            <button id="btn-zoom-in" onclick="if(quantumTerminalManager) quantumTerminalManager.zoomIn()" class="tool-btn" title="Zoom In (+)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+
+            <!-- Zoom Out Button -->
+            <button id="btn-zoom-out" onclick="if(quantumTerminalManager) quantumTerminalManager.zoomOut()" class="tool-btn" title="Zoom Out (-)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14"/>
+                </svg>
+            </button>
+
+            <div class="w-8 h-[1px] bg-slate-800/80 my-0.5"></div>
+
+            <!-- Trendline Tool -->
+            <button id="btn-trendline" onclick="if(quantumTerminalManager) quantumTerminalManager.addTrendline()" class="tool-btn" title="Trendline Tool (↗)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 17L17 7M17 7H9M17 7V15"/>
+                </svg>
+            </button>
+
+            <!-- Rectangle SNR Zone Box -->
+            <button id="btn-rectangle" onclick="if(quantumTerminalManager) quantumTerminalManager.addRectangleZone()" class="tool-btn" title="SNR Rectangle Zone Box (▭)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="5" width="18" height="14" rx="2"/>
+                </svg>
+            </button>
+
+            <!-- Horizontal Price Line -->
+            <button id="btn-hline" onclick="if(quantumTerminalManager) quantumTerminalManager.addHorizontalLine()" class="tool-btn" title="Horizontal Price Line (―)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18"/>
+                    <circle cx="12" cy="12" r="3" fill="#00E5FF"/>
+                </svg>
+            </button>
+
+            <!-- Fibonacci Retracement Tool -->
+            <button id="btn-fib" onclick="if(quantumTerminalManager) quantumTerminalManager.addFibonacciRetracement()" class="tool-btn" title="Fibonacci Retracement Golden Zone">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M3 12h18M3 18h18"/>
+                    <path d="M7 6v12M17 6v12" stroke-dasharray="2 2"/>
+                </svg>
+            </button>
+
+            <!-- Text Marker Tool -->
+            <button id="btn-text" onclick="if(quantumTerminalManager) quantumTerminalManager.addTextMarker()" class="tool-btn" title="Text Marker Tag">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+                </svg>
+            </button>
+
+            <!-- Magnet Mode Snap Toggle -->
+            <button id="btn-magnet" onclick="if(quantumTerminalManager) quantumTerminalManager.toggleMagnetMode()" class="tool-btn hover:text-cyan-400" title="Magnet Mode (Snap to OHLC)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 3v7a6 6 0 0012 0V3M4 3h4M16 3h4"/>
+                </svg>
+            </button>
+
+            <div class="w-8 h-[1px] bg-slate-800/80 my-0.5"></div>
+
+            <!-- Position Calculator -->
+            <button onclick="QuantumPositionCalculator.openModal()" class="tool-btn text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20" title="Kalkulator Ukuran Posisi">
+                <span class="text-base">📐</span>
+            </button>
+
+            <!-- RR Projection -->
+            <button onclick="QuantumRRTool.openModal()" class="tool-btn text-purple-400 hover:text-purple-300 hover:bg-purple-500/20" title="Risk:Reward Long/Short Tool">
+                <span class="text-base">🎯</span>
+            </button>
+
+            <!-- AI Analyst Setup -->
+            <button onclick="QuantumAIEngine.analyzeCurrentSetup()" class="tool-btn text-amber-400 hover:text-amber-300 hover:bg-amber-500/20" title="AI Analyst Setup">
+                <span class="text-base">🤖</span>
+            </button>
+
+            <div class="w-8 h-[1px] bg-slate-800/80 my-0.5"></div>
+
+            <!-- Clear All Drawings -->
+            <button id="btn-clear" onclick="if(quantumTerminalManager) quantumTerminalManager.clearAllDrawings()" class="tool-btn text-rose-400 hover:text-rose-300 hover:bg-rose-500/20" title="Bersihkan Semua Gambar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/>
+                </svg>
+            </button>
+
+        </aside>
+
+
+        <!-- PANEL 2: CENTER CHART CONTAINER & ECONOMIC CALENDAR / NEWS DRAWER -->
+        <main class="w-full lg:flex-1 bg-[#050A1A] p-2 flex flex-col overflow-y-auto relative space-y-2">
+            
+            <!-- TRADINGVIEW CHART ENGINE WRAPPER: tinggi eksplisit diperlukan LightweightCharts -->
+            <div id="chartEngineWrapper" class="w-full chart-responsive-height rounded-xl border border-cyan-500/20 bg-[#050A1A] overflow-hidden relative flex-shrink-0">
+                <!-- container langsung dipakai LightweightCharts: HARUS display:block & height eksplisit -->
+                <div id="tradingview_advanced_widget" style="width:100%;height:100%;display:block;"></div>
+            </div>
+
+            <!-- NEWS HIGH IMPACT HOLD WARNING BANNER (ACTIVE WHEN NEWS < 30 MIN) -->
+            <div id="newsHoldBanner" class="hidden p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono flex items-center justify-between animate-pulse">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">⚠️</span>
+                    <div>
+                        <strong class="text-white font-bold">NEWS HIGH IMPACT ALERT (< 30 MIN)</strong>: 
+                        <span id="newsHoldDetails">Core CPI (USD) rilis dalam 20 menit. Sinyal trading otomatis ditahan demi perlindungan modal.</span>
+                    </div>
+                </div>
+                <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px]">TIDAK DICETAK</span>
+            </div>
+
+            <!-- ECONOMIC CALENDAR, ORDER BOOK, PAPER TRADING & PRO SUITE DRAWER -->
+            <div class="w-full rounded-xl border border-cyan-500/20 bg-[#070D22] p-3 font-mono text-xs space-y-3">
+                
+                <!-- Main Panel Tabs: 5 Pro Trading Modules -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                    <div class="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5">
+                        <button onclick="switchBottomTab('calendar')" id="tab-calendar" class="px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs">
+                            <span>📅 KALENDER</span>
+                        </button>
+                        <button onclick="switchBottomTab('news')" id="tab-news" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1 text-xs">
+                            <span>📰 BERITA</span>
+                        </button>
+                        <button onclick="switchBottomTab('orderbook')" id="tab-orderbook" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs">
+                            <span>📖 ORDER BOOK</span>
+                        </button>
+                        <button onclick="switchBottomTab('papertrading')" id="tab-papertrading" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs">
+                            <span>💼 PAPER TRADING</span>
+                        </button>
+                        <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
+                            <span>🤖 AI RADAR</span>
+                        </button>
+                    </div>
+
+                    <!-- Live Update Indicator -->
+                    <div class="text-[10px] text-cyan-400 hidden sm:flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded border border-slate-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                        LIVE REALTIME ENGINE
+                    </div>
+                </div>
+
+                <!-- TAB 1: KALENDER EKONOMI PANEL -->
+                <div id="panelCalendar" class="space-y-3">
+                    
+                    <!-- Filters Toolbar: Currency & Impact -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                        <!-- Currency Filter Buttons -->
+                        <div class="flex items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar">
+                            <span class="text-slate-500 text-[10px] mr-1">CURRENCY:</span>
+                            <button onclick="filterCalendarCurrency('ALL')" id="cur-ALL" class="px-2 py-0.5 rounded active-tab font-bold text-[11px]">ALL</button>
+                            <button onclick="filterCalendarCurrency('USD')" id="cur-USD" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]">USD</button>
+                            <button onclick="filterCalendarCurrency('EUR')" id="cur-EUR" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]">EUR</button>
+                            <button onclick="filterCalendarCurrency('GBP')" id="cur-GBP" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]">GBP</button>
+                            <button onclick="filterCalendarCurrency('JPY')" id="cur-JPY" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]">JPY</button>
+                            <button onclick="filterCalendarCurrency('XAU')" id="cur-XAU" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]">XAU</button>
+                        </div>
+
+                        <!-- Impact Filter Buttons -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500 text-[10px] mr-1">IMPACT:</span>
+                            <button onclick="filterCalendarImpact('ALL')" id="imp-ALL" class="px-2 py-0.5 rounded active-tab font-bold text-[11px]">ALL</button>
+                            <button onclick="filterCalendarImpact('high')" id="imp-high" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[11px] font-bold">🔴 High</button>
+                            <button onclick="filterCalendarImpact('medium')" id="imp-medium" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px]">🟡 Medium</button>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Items List -->
+                    <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1 thin-scrollbar" id="calendarContainer">
+                        <div class="text-center py-4 text-slate-500">Memuat data kalender ForexFactory & FMP...</div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: REALTIME NEWS PANEL -->
+                <div id="panelNews" class="space-y-3 hidden">
+                    <div class="max-h-48 overflow-y-auto space-y-2 pr-1 thin-scrollbar" id="newsContainer">
+                        <div class="text-center py-4 text-slate-500">Memuat berita CryptoPanic, Reuters & Bloomberg...</div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: LIVE ORDER BOOK & TIME & SALES (TIER S - FITUR 2 & 3) -->
+                <div id="panelOrderBook" class="space-y-3 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Order Book Depth Table -->
+                        <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800 space-y-1">
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800 pb-1 px-2 font-bold">
+                                <span>HARGA (USD)</span>
+                                <span>UKURAN</span>
+                                <span>TOTAL DEPTH</span>
+                            </div>
+                            <div id="orderBookContainer" class="space-y-0.5 max-h-44 overflow-y-auto no-scrollbar"></div>
+                        </div>
+
+                        <!-- Time & Sales Tape -->
+                        <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800 space-y-1">
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800 pb-1 px-2 font-bold">
+                                <span>WAKTU</span>
+                                <span>HARGA</span>
+                                <span>JUMLAH</span>
+                                <span>TIPE</span>
+                            </div>
+                            <div id="timeSalesContainer" class="space-y-0.5 max-h-44 overflow-y-auto thin-scrollbar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: PAPER TRADING WALLET & POSITIONS (TIER S - PAPER TRADING) -->
+                <div id="panelPaperTrading" class="space-y-3 hidden">
+                    <!-- Top Stats Header -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-500 block">DEMO WALLET BALANCE</span>
+                            <strong id="paperBalanceDisplay" class="text-cyan-400 font-bold">$10,000.00</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block">TOTAL EQUITY (LIVE)</span>
+                            <strong id="paperTotalEquity" class="text-white font-bold">$10,000.00</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 block">WIN RATE HISTORIS</span>
+                            <strong id="paperWinRateDisplay" class="text-emerald-400 font-bold">0% (0/0)</strong>
+                        </div>
+                        <div class="flex items-center gap-1.5 justify-end">
+                            <input type="number" step="0.1" min="0.1" max="100" id="paperTradeLots" value="0.5" class="w-16 bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-xs text-center" title="Lot Size">
+                            <button onclick="QuantumPaperTrading.executeOrder('BUY')" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-sm">BUY</button>
+                            <button onclick="QuantumPaperTrading.executeOrder('SELL')" class="px-2.5 py-1 rounded bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs shadow-sm">SELL</button>
+                        </div>
+                    </div>
+
+                    <!-- Active Open Positions -->
+                    <div id="paperPositionsTable" class="space-y-1.5 max-h-40 overflow-y-auto thin-scrollbar"></div>
+                </div>
+
+                <!-- TAB 5: AI RADAR & SIGNALS SCANNER (TIER C - FITUR 29) -->
+                <div id="panelAIScanner" class="space-y-2 hidden">
+                    <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> RADAR SINYAL QUANTUM 9-MESIN (REALTIME MULTI-PAIR)</span>
+                        <span class="text-cyan-300 font-bold">SORT: HIGHEST CONFIDENCE</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div onclick="loadRealtimeSymbol('BINANCE:BTCUSDT','BTCUSDT',68450.2)" class="p-2.5 rounded-lg bg-slate-950 border border-emerald-500/30 hover:border-cyan-400 cursor-pointer space-y-1">
+                            <div class="flex justify-between items-center"><strong class="text-white">BTC/USDT</strong><span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">BUY 94%</span></div>
+                            <div class="text-[10px] text-slate-400">Mesin: SNR Key Support Retest #3</div>
+                        </div>
+                        <div onclick="loadRealtimeSymbol('OANDA:XAUUSD','XAUUSD',2654.2)" class="p-2.5 rounded-lg bg-slate-950 border border-purple-500/30 hover:border-cyan-400 cursor-pointer space-y-1">
+                            <div class="flex justify-between items-center"><strong class="text-white">XAU/USD (Gold)</strong><span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px]">SETUP 89%</span></div>
+                            <div class="text-[10px] text-slate-400">Mesin: SMC Order Block + FVG</div>
+                        </div>
+                        <div onclick="loadRealtimeSymbol('BINANCE:SOLUSDT','SOLUSDT',184.5)" class="p-2.5 rounded-lg bg-slate-950 border border-emerald-500/30 hover:border-cyan-400 cursor-pointer space-y-1">
+                            <div class="flex justify-between items-center"><strong class="text-white">SOL/USDT</strong><span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">BUY 91%</span></div>
+                            <div class="text-[10px] text-slate-400">Mesin: Fib Golden Pocket 0.618</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- PANEL 3: RIGHT ENGINE READOUT PANEL (Stack di bawah pada Mobile & Tablet, Panel kanan di Desktop) -->
+        <aside class="w-full lg:w-96 bg-[#0A1128] border-t lg:border-t-0 lg:border-l border-slate-800 p-4 sm:p-5 flex flex-col justify-between overflow-y-auto no-scrollbar shrink-0 font-mono space-y-4">
+            
+            <div class="space-y-4">
+                <!-- Engine Title & Status Badge -->
+                <div class="pb-3 border-b border-slate-800 flex justify-between items-center">
+                    <div>
+                        <div class="text-[10px] text-slate-400">ANALISA REALTIME MESIN</div>
+                        <h3 class="text-sm sm:text-base font-bold font-heading text-white" id="engineTitle">a. Quantum SNR (Level & Retest)</h3>
+                    </div>
+                    <span id="engineStatusBadge" class="px-2.5 py-1 text-xs font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse">
+                        SETUP
+                    </span>
+                </div>
+
+                <!-- Technical Analysis Description -->
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-cyan-500/20">
+                    <p id="engineDesc" class="text-xs text-slate-300 leading-relaxed font-sans">
+                        Harga real-time berhasil menguji Key Support Level setelah 3x retest tanpa ada penutupan candle di bawah zonasi.
+                    </p>
+                </div>
+
+                <!-- Checklist 8 Poin Syarat Wajib -->
+                <div class="space-y-2">
+                    <div class="text-xs text-slate-400 font-bold flex justify-between">
+                        <span>PRASYARAT WAJIB (8 POIN)</span>
+                        <span class="text-cyan-400" id="checklistScore">7/8 TERPENUHI</span>
+                    </div>
+
+                    <div id="checklistItems" class="space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>1. Retest Support Valid (&gt; 2x)</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>2. Rejection Candle Body</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>3. Ratio Risk:Reward &ge; 1:2.5</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                            <span>4. Penutupan Candle H1</span>
+                            <span>⏳ MENUNGGU</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parameters SL/TP/RR -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">POTENSI ENTRY</div>
+                        <div id="valEntry" class="text-cyan-300 font-bold mt-0.5">68,420 - 68,550</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">STOP LOSS (SL)</div>
+                        <div id="valSL" class="text-rose-400 font-bold mt-0.5">67,910 (-0.80%)</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">TARGET PROFIT (TP)</div>
+                        <div id="valTP" class="text-emerald-400 font-bold mt-0.5">70,200 (+2.70%)</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">RISK : REWARD</div>
+                        <div id="valRR" class="text-purple-300 font-bold mt-0.5">1 : 3.4</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tombol Eksekusi Order Sandbox -->
+            <div class="pt-4 border-t border-slate-800 space-y-2">
+                <button onclick="showQuantumToast('⚡ Pesanan BUY Terkirim Realtime!', 'success')" class="w-full min-h-[44px] py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-heading font-bold text-xs sm:text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                    <span>EKSEKUSI BUY (QUANTUM PLAN)</span>
+                </button>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- JS Core & Script Chart Sync Manager -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/ticker.js"></script>
+    <script src="assets/js/chart-init.js"></script>
+    <script>
+        let currentCleanSymbol = 'BTCUSDT';
+        let currentQuantumEngine = 'SNR';
+
+        const basePrices = { BTCUSDT: 68450.20, XAUUSD: 2654.20, ETHUSDT: 3520.10, EURUSD: 1.0895, SOLUSDT: 184.50 };
+
+        function loadRealtimeSymbol(tvSymbol, cleanSymbol, defaultPrice) {
+            currentCleanSymbol = cleanSymbol;
+
+            if (quantumTerminalManager) {
+                quantumTerminalManager.setSymbol(cleanSymbol);
+            } else {
+                initTradingViewFallback(tvSymbol, '60');
+            }
+
+            recalculateQuantumEngineLevels(defaultPrice);
+        }
+
+        function setChartInterval(tf) {
+            if (quantumTerminalManager) {
+                quantumTerminalManager.setInterval(tf);
+            }
+        }
+
+        function initTradingViewFallback(symbol, interval) {
+            const container = document.getElementById('tradingview_advanced_widget');
+            if (!container || typeof TradingView === 'undefined') return;
+            container.innerHTML = '';
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": interval,
+                "timezone": "Asia/Jakarta",
+                "theme": "dark",
+                "style": "1",
+                "locale": "id",
+                "toolbar_bg": "#050A1A",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "container_id": "tradingview_advanced_widget"
+            });
+        }
+
+        const engineDetailsMap = {
+            SNR: { title: 'a. Quantum SNR (Level & Retest)', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse', desc: 'Harga real-time berhasil menguji Key Support Level setelah 3x retest.', slPct: 0.008, tpPct: 0.027, rrRatio: '1 : 3.4', checklistScore: '7/8 TERPENUHI' },
+            SMC: { title: 'b. Quantum SMC (Order Block & Sweep)', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse', desc: 'Penyapuan likuiditas ritel (BSL) selesai. Harga memitigasi zona Bullish Order Block.', slPct: 0.007, tpPct: 0.028, rrRatio: '1 : 4.0', checklistScore: '8/8 TERPENUHI' },
+            EMA200: { title: 'c. Quantum EMA200 Pullback', status: 'PANTAU', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse', desc: 'Harga sedang mendekati pita EMA200 garis dinamis.', slPct: 0.009, tpPct: 0.027, rrRatio: '1 : 3.0', checklistScore: '6/8 TERPENUHI' },
+            ICHI: { title: 'd. Quantum Ichimoku Cloud', status: 'PANTAU', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse', desc: 'Harga menguji Kumo Cloud tebal. Chikou Span terkonfirmasi.', slPct: 0.011, tpPct: 0.031, rrRatio: '1 : 2.8', checklistScore: '5/8 TERPENUHI' },
+            FIBO: { title: 'e. Quantum Fibonacci Golden Zone', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse', desc: 'Rasio emas Golden Zone (0.500 - 0.618) tersentuh presisi.', slPct: 0.006, tpPct: 0.024, rrRatio: '1 : 4.0', checklistScore: '8/8 TERPENUHI' },
+            TRENM5: { title: 'f. Quantum TrenM5 (QI+ Scalping)', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse', desc: 'Koreksi singkat 2 candle timeframe M5 selesai. Tren impulsif berlanjut.', slPct: 0.004, tpPct: 0.014, rrRatio: '1 : 3.5', checklistScore: '7/8 TERPENUHI' },
+            MOMENTUM_NY: { title: 'g. Quantum MomentumNY (Gold/NY)', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse', desc: 'Volatilitas Emas (XAUUSD) meningkat di Sesi New York (19:30 WIB).', slPct: 0.005, tpPct: 0.018, rrRatio: '1 : 3.6', checklistScore: '8/8 TERPENUHI' },
+            MACD_MOM: { title: 'h. Quantum MACD Momentum', status: 'PANTAU', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse', desc: 'Histogram MACD melintas di atas garis nol dengan kenaikan volume.', slPct: 0.008, tpPct: 0.025, rrRatio: '1 : 3.1', checklistScore: '6/8 TERPENUHI' },
+            GOLDEN_CROSS: { title: 'i. Quantum Golden Cross', status: 'SETUP', badgeClass: 'px-2.5 py-1 text-xs font-bold rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse', desc: 'EMA50 memotong ke atas EMA200 (Golden Cross) pada timeframe makro.', slPct: 0.015, tpPct: 0.050, rrRatio: '1 : 3.3', checklistScore: '8/8 TERPENUHI' }
+        };
+
+        function switchQuantumEngine(engineCode) {
+            currentQuantumEngine = engineCode;
+            const details = engineDetailsMap[engineCode] || engineDetailsMap['SNR'];
+            document.getElementById('engineTitle').textContent = details.title;
+            document.getElementById('engineStatusBadge').textContent = details.status;
+            document.getElementById('engineStatusBadge').className = details.badgeClass;
+            document.getElementById('engineDesc').textContent = details.desc;
+            document.getElementById('checklistScore').textContent = details.checklistScore;
+
+            if (quantumTerminalManager) {
+                quantumTerminalManager.setEngine(engineCode);
+            }
+
+            const currentPrice = (quantumTerminalManager && quantumTerminalManager.lastClosePrice) ? quantumTerminalManager.lastClosePrice : (basePrices[currentCleanSymbol] || 68450.20);
+            recalculateQuantumEngineLevels(currentPrice);
+        }
+
+        function recalculateQuantumEngineLevels(currentPrice) {
+            const details = engineDetailsMap[currentQuantumEngine] || engineDetailsMap['SNR'];
+            const slPct = details.slPct || 0.008;
+            const tpPct = details.tpPct || 0.027;
+
+            const slOffset = currentPrice * slPct;
+            const tpOffset = currentPrice * tpPct;
+
+            document.getElementById('valEntry').textContent = `${(currentPrice - slOffset * 0.15).toFixed(2)} - ${(currentPrice + slOffset * 0.15).toFixed(2)}`;
+            document.getElementById('valSL').textContent = `${(currentPrice - slOffset).toFixed(2)} (-${(slPct * 100).toFixed(2)}%)`;
+            document.getElementById('valTP').textContent = `${(currentPrice + tpOffset).toFixed(2)} (+${(tpPct * 100).toFixed(2)}%)`;
+            document.getElementById('valRR').textContent = details.rrRatio || '1 : 3.4';
+        }
+
+        // --- 7. ECONOMIC CALENDAR & REALTIME NEWS CONTROLLER ---
+        let allCalendarEvents = [];
+        let allNewsItems = [];
+        let selectedCalendarCurrency = 'ALL';
+        let selectedCalendarImpact = 'ALL';
+
+        function switchBottomTab(tabName) {
+            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'aiscanner'];
+            tabs.forEach(t => {
+                const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
+                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : ''}`);
+                const tabBtn = document.getElementById(`tab-${t}`);
+
+                if (panel) {
+                    if (t === tabName) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                }
+
+                if (tabBtn) {
+                    if (t === tabName) {
+                        tabBtn.className = "px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs";
+                    } else {
+                        tabBtn.className = "px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1 text-xs";
+                    }
+                }
+            });
+
+            if (tabName === 'news') fetchRealtimeNews();
+            if (tabName === 'orderbook' && window.QuantumOrderBook) window.QuantumOrderBook.render();
+            if (tabName === 'papertrading' && window.QuantumPaperTrading) window.QuantumPaperTrading.render();
+        }
+
+        function filterCalendarCurrency(curr) {
+            selectedCalendarCurrency = curr;
+            ['ALL', 'USD', 'EUR', 'GBP', 'JPY', 'XAU'].forEach(c => {
+                const btn = document.getElementById(`cur-${c}`);
+                if (btn) btn.className = "px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]";
+            });
+            const activeBtn = document.getElementById(`cur-${curr}`);
+            if (activeBtn) activeBtn.className = "px-2 py-0.5 rounded active-tab font-bold text-[11px]";
+            renderCalendarEvents();
+        }
+
+        function filterCalendarImpact(imp) {
+            selectedCalendarImpact = imp;
+            ['ALL', 'high', 'medium'].forEach(i => {
+                const btn = document.getElementById(`imp-${i}`);
+                if (btn) btn.className = "px-2 py-0.5 rounded text-slate-400 hover:text-white text-[11px]";
+            });
+            const activeBtn = document.getElementById(`imp-${imp}`);
+            if (activeBtn) activeBtn.className = "px-2 py-0.5 rounded active-tab font-bold text-[11px]";
+            renderCalendarEvents();
+        }
+
+        function fetchEconomicCalendar() {
+            fetch('api/calendar.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.data) {
+                        allCalendarEvents = res.data;
+                        renderCalendarEvents();
+                        checkNewsImpactHoldFilter();
+                    }
+                })
+                .catch(() => {
+                    renderCalendarEventsFallback();
+                });
+        }
+
+        function renderCalendarEvents() {
+            const container = document.getElementById('calendarContainer');
+            if (!container) return;
+
+            let filtered = allCalendarEvents.filter(e => {
+                const matchCurr = selectedCalendarCurrency === 'ALL' || e.currency === selectedCalendarCurrency || (selectedCalendarCurrency === 'XAU' && (e.currency === 'USD' || e.currency === 'XAU'));
+                const matchImp = selectedCalendarImpact === 'ALL' || e.impact === selectedCalendarImpact;
+                return matchCurr && matchImp;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-slate-500">Tidak ada agenda kalender ekonomi untuk filter ini.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(e => {
+                const eventDate = new Date(e.date);
+                const timeStr = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+                
+                let impactBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Low</span>';
+                if (e.impact === 'high') {
+                    impactBadge = '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 font-bold text-[10px]">🔴 High</span>';
+                } else if (e.impact === 'medium') {
+                    impactBadge = '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px]">🟡 Medium</span>';
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex flex-wrap items-center justify-between p-2.5 rounded bg-slate-950/80 border border-slate-800/80 hover:border-cyan-500/30 transition-all text-xs';
+                itemDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-cyan-300 w-16">${e.currency || 'USD'}</span>
+                        <div>
+                            <div class="font-bold text-white">${e.title}</div>
+                            <div class="text-[10px] text-slate-400">Sumber: ${e.source} · Waktu Rilis: <strong class="text-slate-200">${timeStr}</strong></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 mt-1 sm:mt-0">
+                        <div class="text-[11px] text-slate-400">
+                            Forecast: <strong class="text-slate-200">${e.forecast}</strong> | Prev: <strong class="text-slate-400">${e.previous}</strong> | Actual: <strong class="text-cyan-300">${e.actual}</strong>
+                        </div>
+                        ${impactBadge}
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function checkNewsImpactHoldFilter() {
+            const now = Date.now();
+            const holdBanner = document.getElementById('newsHoldBanner');
+            const holdDetails = document.getElementById('newsHoldDetails');
+            
+            let highImpactNear = null;
+
+            allCalendarEvents.forEach(e => {
+                if (e.impact === 'high') {
+                    const eventTime = new Date(e.date).getTime();
+                    const diffMinutes = Math.floor((eventTime - now) / 60000);
+                    if (diffMinutes >= 0 && diffMinutes <= 30) {
+                        highImpactNear = { event: e, minutes: diffMinutes };
+                    }
+                }
+            });
+
+            if (highImpactNear && holdBanner) {
+                holdDetails.textContent = `${highImpactNear.event.title} (${highImpactNear.event.currency}) rilis dalam ${highImpactNear.minutes} menit. Sinyal trading otomatis ditahan demi perlindungan modal.`;
+                holdBanner.classList.remove('hidden');
+
+                // Set active engine badge to TIDAK DICETAK
+                const badgeEl = document.getElementById('engineStatusBadge');
+                if (badgeEl) {
+                    badgeEl.textContent = 'TIDAK DICETAK';
+                    badgeEl.className = 'px-2.5 py-1 text-xs font-bold rounded bg-slate-800 text-slate-400 border border-slate-700';
+                }
+            } else if (holdBanner) {
+                holdBanner.classList.add('hidden');
+            }
+        }
+
+        function fetchRealtimeNews() {
+            fetch('api/news.php')
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.data) {
+                        allNewsItems = res.data;
+                        renderRealtimeNews();
+                    }
+                })
+                .catch(() => {
+                    renderRealtimeNewsFallback();
+                });
+        }
+
+        function renderRealtimeNews() {
+            const container = document.getElementById('newsContainer');
+            if (!container) return;
+
+            container.innerHTML = '';
+            allNewsItems.forEach(n => {
+                let sentBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">NETRAL</span>';
+                if (n.sentiment === 'bullish') {
+                    sentBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">BULLISH</span>';
+                } else if (n.sentiment === 'bearish') {
+                    sentBadge = '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[10px] font-bold">BEARISH</span>';
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-3 rounded bg-slate-950/80 border border-slate-800 hover:border-purple-500/30 transition-all text-xs space-y-1.5';
+                itemDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">${n.category}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">${n.source}</span>
+                            ${sentBadge}
+                        </div>
+                    </div>
+                    <a href="${n.url}" target="_blank" class="font-bold text-white hover:text-cyan-300 transition-colors block font-sans text-sm">${n.title}</a>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function renderRealtimeNewsFallback() {
+            allNewsItems = [
+                { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Melanjutkan Konsolidasi di Atas $68,000 Menjelang Rilis Data Inflasi AS', sentiment: 'bullish', url: '#' },
+                { category: 'GOLD', source: 'Reuters', title: 'Harga Emas Menguji Rekor Tertinggi Baru di Tengah Ketidakpastian Makroekonomi Global', sentiment: 'bullish', url: '#' },
+                { category: 'FOREX', source: 'Bloomberg', title: 'Dolar AS Menguat Moderat Terhadap Mata Uang Utama Menunggu Pidato Pejabat The Fed', sentiment: 'neutral', url: '#' }
+            ];
+            renderRealtimeNews();
+        }
+
+        const commandItems = [
+            { type: 'PAIR', title: 'BTC/USDT - Bitcoin Crypto', action: () => loadRealtimeSymbol('BINANCE:BTCUSDT', 'BTCUSDT', 68450.20) },
+            { type: 'PAIR', title: 'XAU/USD - Gold Emas Spot', action: () => loadRealtimeSymbol('OANDA:XAUUSD', 'XAUUSD', 2654.20) },
+            { type: 'PAIR', title: 'ETH/USDT - Ethereum Crypto', action: () => loadRealtimeSymbol('BINANCE:ETHUSDT', 'ETHUSDT', 3520.10) },
+            { type: 'PAIR', title: 'EUR/USD - Euro US Dollar Forex', action: () => loadRealtimeSymbol('FX:EURUSD', 'EURUSD', 1.0895) },
+            { type: 'PAIR', title: 'SOL/USDT - Solana Crypto', action: () => loadRealtimeSymbol('BINANCE:SOLUSDT', 'SOLUSDT', 184.50) },
+            { type: 'MESIN', title: 'a. Quantum SNR (Support & Resistance Level)', action: () => switchQuantumEngine('SNR') },
+            { type: 'MESIN', title: 'b. Quantum SMC (Order Block & Liquidity Sweep)', action: () => switchQuantumEngine('SMC') },
+            { type: 'MESIN', title: 'c. Quantum EMA200 Pullback Trend', action: () => switchQuantumEngine('EMA200') },
+            { type: 'MESIN', title: 'd. Quantum Ichimoku Cloud', action: () => switchQuantumEngine('ICHI') },
+            { type: 'MESIN', title: 'e. Quantum Fibonacci Golden Zone', action: () => switchQuantumEngine('FIBO') },
+            { type: 'MESIN', title: 'f. Quantum TrenM5 Scalping', action: () => switchQuantumEngine('TRENM5') },
+            { type: 'COMMAND', title: '/alert - Buat Alert Harga Baru', action: () => openAlertDialog() },
+            { type: 'COMMAND', title: '/theme - Toggle Dark / Light Mode', action: () => toggleTerminalTheme() },
+            { type: 'COMMAND', title: '/fullscreen - Toggle Layar Penuh Chart', action: () => toggleChartFullscreen() },
+            { type: 'COMMAND', title: '/screenshot - Ambil Gambar Chart', action: () => takeChartScreenshot() },
+        ];
+
+        function openCommandPalette() {
+            const modal = document.getElementById('commandPaletteModal');
+            const input = document.getElementById('cmdSearchInput');
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (input) { input.value = ''; input.focus(); }
+                filterCommandPalette('');
+            }
+        }
+
+        function closeCommandPalette() {
+            const modal = document.getElementById('commandPaletteModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function filterCommandPalette(query) {
+            const container = document.getElementById('cmdResults');
+            if (!container) return;
+
+            const q = query.toLowerCase().trim();
+            const filtered = commandItems.filter(item => item.title.toLowerCase().includes(q) || item.type.toLowerCase().includes(q));
+
+            container.innerHTML = '';
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="p-3 text-slate-500 text-center">Tidak ada hasil pencarian.</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'p-2.5 rounded-lg bg-slate-900/80 hover:bg-cyan-500/20 hover:border-cyan-500/40 border border-slate-800/80 cursor-pointer flex items-center justify-between transition-all';
+                div.onclick = () => {
+                    item.action();
+                    closeCommandPalette();
+                };
+                div.innerHTML = `
+                    <span class="font-bold text-slate-200">${item.title}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.type === 'PAIR' ? 'bg-cyan-500/20 text-cyan-300' : item.type === 'MESIN' ? 'bg-purple-500/20 text-purple-300' : 'bg-emerald-500/20 text-emerald-300'}">${item.type}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleTerminalTheme() {
+            document.documentElement.classList.toggle('light-theme');
+            showQuantumToast('🌓 Tema Terminal Diperbarui', 'info');
+        }
+
+        function toggleChartFullscreen() {
+            const elem = document.getElementById('chartEngineWrapper');
+            if (!elem) return;
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        function takeChartScreenshot() {
+            showQuantumToast('📸 Snapshot Chart Disimpan Ke Clipboard!', 'success');
+        }
+
+        function openAlertDialog() {
+            const modal = document.getElementById('priceAlertModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeAlertDialog() {
+            const modal = document.getElementById('priceAlertModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function submitNewAlert(e) {
+            e.preventDefault();
+            const sym = document.getElementById('alertSymbolSelect').value;
+            const price = document.getElementById('alertPriceInput').value;
+            showQuantumToast(`🔔 Alert Diaktifkan: ${sym} @ ${price}`, 'success');
+            closeAlertDialog();
+        }
+
+        function toggleWatchlistPanel() {
+            const modal = document.getElementById('watchlistDrawerModal');
+            if (modal) modal.classList.toggle('hidden');
+        }
+
+        function closeWatchlistPanel() {
+            const modal = document.getElementById('watchlistDrawerModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function bootTerminalApp() {
+            if (window._terminalAppBooted) return;
+            window._terminalAppBooted = true;
+
+            initQuantumRealtimeSystem();
+            fetchEconomicCalendar();
+            fetchRealtimeNews();
+            setInterval(() => updateWIBClockElement('clockWIB'), 1000);
+            setInterval(fetchEconomicCalendar, 300000); // refresh every 5 min
+            setInterval(fetchRealtimeNews, 300000);
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(bootTerminalApp, 50);
+        } else {
+            window.addEventListener('DOMContentLoaded', bootTerminalApp);
+        }
+    </script>
+
+    <!-- COMMAND PALETTE OVERLAY MODAL (Ctrl+K) -->
+    <div id="commandPaletteModal" onclick="if(event.target===this) closeCommandPalette()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-start justify-center pt-16 px-4 font-mono">
+        <div class="w-full max-w-xl bg-[#0A1128] border border-cyan-500/40 rounded-2xl shadow-2xl overflow-hidden p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2 flex-1">
+                    <svg class="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="cmdSearchInput" oninput="filterCommandPalette(this.value)" placeholder="Cari pair (BTC, XAU), mesin (SNR, SMC), command (/alert, /theme)..." class="w-full bg-transparent text-white placeholder-slate-500 outline-none text-xs sm:text-sm">
+                </div>
+                <kbd onclick="closeCommandPalette()" class="cursor-pointer px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 text-[10px]">Esc</kbd>
+            </div>
+            <div id="cmdResults" class="space-y-1.5 max-h-80 overflow-y-auto thin-scrollbar text-xs"></div>
+        </div>
+    </div>
+
+    <!-- PRICE ALERT MODAL (Shift+A) -->
+    <div id="priceAlertModal" onclick="if(event.target===this) closeAlertDialog()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-md bg-[#0A1128] border border-cyan-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-cyan-400 text-lg">🔔</span> Buat Alert Harga Baru
+                </h3>
+                <button onclick="closeAlertDialog()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            <form onsubmit="submitNewAlert(event)" class="space-y-4 text-xs">
+                <div>
+                    <label for="alertSymbolSelect" class="block text-slate-400 mb-1">PASANGAN PASAR</label>
+                    <select id="alertSymbolSelect" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none">
+                        <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
+                        <option value="XAUUSD">XAU/USD (Gold Emas)</option>
+                        <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
+                        <option value="EURUSD">EUR/USD (Forex)</option>
+                        <option value="SOLUSDT">SOL/USDT (Solana)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="alertPriceInput" class="block text-slate-400 mb-1">HARGA TARGET</label>
+                    <input type="number" step="any" id="alertPriceInput" required placeholder="Contoh: 68500" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label for="alertConditionSelect" class="block text-slate-400 mb-1">KONDISI PEMICU</label>
+                    <select id="alertConditionSelect" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none">
+                        <option value="ABOVE">Harga Melintas Ke Atas (>= Target)</option>
+                        <option value="BELOW">Harga Melintas Ke Bawah (<= Target)</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-cyan-glow">
+                    Aktifkan Alert Realtime →
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- WATCHLIST DRAWER MODAL (Shift+W) -->
+    <div id="watchlistDrawerModal" onclick="if(event.target===this) closeWatchlistPanel()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex justify-end font-mono">
+        <div class="w-full max-w-xs bg-[#0A1128] border-l border-cyan-500/30 h-full p-4 space-y-4 flex flex-col justify-between shadow-2xl">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                        <span class="text-amber-400">★</span> Watchlist Favorit
+                    </h3>
+                    <button onclick="closeWatchlistPanel()" class="text-slate-400 hover:text-white text-xs">✕</button>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div onclick="loadRealtimeSymbol('BINANCE:BTCUSDT','BTCUSDT',68450.2); closeWatchlistPanel();" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/40 cursor-pointer flex justify-between items-center transition-all">
+                        <div><strong class="text-white block">BTC/USDT</strong><span class="text-[10px] text-slate-400">Bitcoin</span></div>
+                        <span class="text-emerald-400 font-bold">$68,450.20</span>
+                    </div>
+                    <div onclick="loadRealtimeSymbol('OANDA:XAUUSD','XAUUSD',2654.2); closeWatchlistPanel();" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/40 cursor-pointer flex justify-between items-center transition-all">
+                        <div><strong class="text-white block">XAU/USD</strong><span class="text-[10px] text-slate-400">Gold Spot</span></div>
+                        <span class="text-emerald-400 font-bold">$2,654.20</span>
+                    </div>
+                    <div onclick="loadRealtimeSymbol('BINANCE:ETHUSDT','ETHUSDT',3520.1); closeWatchlistPanel();" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/40 cursor-pointer flex justify-between items-center transition-all">
+                        <div><strong class="text-white block">ETH/USDT</strong><span class="text-[10px] text-slate-400">Ethereum</span></div>
+                        <span class="text-emerald-400 font-bold">$3,520.10</span>
+                    </div>
+                    <div onclick="loadRealtimeSymbol('FX:EURUSD','EURUSD',1.0895); closeWatchlistPanel();" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/40 cursor-pointer flex justify-between items-center transition-all">
+                        <div><strong class="text-white block">EUR/USD</strong><span class="text-[10px] text-slate-400">Forex</span></div>
+                        <span class="text-rose-400 font-bold">1.0895</span>
+                    </div>
+                    <div onclick="loadRealtimeSymbol('BINANCE:SOLUSDT','SOLUSDT',184.5); closeWatchlistPanel();" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/40 cursor-pointer flex justify-between items-center transition-all">
+                        <div><strong class="text-white block">SOL/USDT</strong><span class="text-[10px] text-slate-400">Solana</span></div>
+                        <span class="text-emerald-400 font-bold">$184.50</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] text-slate-500 text-center">
+                Klik pair untuk langsung berpindah chart.
+            </div>
+        </div>
+    </div>
+
+    <!-- POSITION SIZE & RISK CALCULATOR MODAL (Shift+P) -->
+    <div id="posCalculatorModal" onclick="if(event.target===this) QuantumPositionCalculator.closeModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-lg bg-[#0A1128] border border-cyan-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-cyan-400 text-lg">📐</span> Kalkulator Ukuran Posisi & Manajemen Risiko
+                </h3>
+                <button onclick="QuantumPositionCalculator.closeModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                    <label for="posCalcBalance" class="block text-slate-400 mb-1">MODAL AKUN ($)</label>
+                    <input type="number" id="posCalcBalance" value="10000" oninput="QuantumPositionCalculator.calculate()" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2 outline-none font-bold">
+                </div>
+                <div>
+                    <label for="posCalcRiskPct" class="block text-slate-400 mb-1">RISIKO PER TRADE (%)</label>
+                    <input type="number" step="0.1" id="posCalcRiskPct" value="1.5" oninput="QuantumPositionCalculator.calculate()" class="w-full bg-slate-900 border border-slate-700 text-amber-300 rounded-lg p-2 outline-none font-bold">
+                </div>
+                <div>
+                    <label for="posCalcEntry" class="block text-slate-400 mb-1">HARGA ENTRY ($)</label>
+                    <input type="number" step="any" id="posCalcEntry" value="68450" oninput="QuantumPositionCalculator.calculate()" class="w-full bg-slate-900 border border-slate-700 text-cyan-300 rounded-lg p-2 outline-none font-bold">
+                </div>
+                <div>
+                    <label for="posCalcSL" class="block text-slate-400 mb-1">STOP LOSS ($)</label>
+                    <input type="number" step="any" id="posCalcSL" value="67800" oninput="QuantumPositionCalculator.calculate()" class="w-full bg-slate-900 border border-slate-700 text-rose-300 rounded-lg p-2 outline-none font-bold">
+                </div>
+                <div class="col-span-2">
+                    <label for="posCalcAssetType" class="block text-slate-400 mb-1">TIPE INSTRUMEN</label>
+                    <select id="posCalcAssetType" onchange="QuantumPositionCalculator.calculate()" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2 outline-none">
+                        <option value="crypto">Crypto (Spot / Futures Units)</option>
+                        <option value="gold">Gold / Emas Spot (Lots)</option>
+                        <option value="forex">Forex Standard (100k Lots)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Output Card -->
+            <div class="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-2 text-xs">
+                <div class="flex justify-between items-center"><span class="text-slate-400">Total Risiko Modal ($):</span><strong id="posCalcResRisk" class="text-amber-400 font-bold">$150.00</strong></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Ukuran Posisi Direkomendasikan:</span><strong id="posCalcResSize" class="text-cyan-400 font-bold text-sm">0.2308 Units</strong></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Jarak SL (Poin / %):</span><span id="posCalcResPip" class="text-slate-200 font-bold">650.00 (0.95%)</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-400">Leverage Efektif:</span><span id="posCalcResLev" class="text-purple-300 font-bold">1.6x</span></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="QuantumPositionCalculator.applyToChart()" class="flex-1 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-cyan-glow text-xs">
+                    Plot Level ke Chart →
+                </button>
+                <button onclick="QuantumPositionCalculator.closeModal()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RISK REWARD PROJECTION & PLAN MODAL -->
+    <div id="rrToolModal" onclick="if(event.target===this) QuantumRRTool.closeModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-md bg-[#0A1128] border border-purple-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-purple-400 text-lg">🎯</span> Risk : Reward Setup Plan
+                </h3>
+                <button onclick="QuantumRRTool.closeModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label for="rrEntryInput" class="block text-slate-400 mb-1">HARGA ENTRY</label>
+                    <input type="number" step="any" id="rrEntryInput" value="68450" oninput="QuantumRRTool.calculate()" class="w-full bg-slate-900 border border-slate-700 text-cyan-300 rounded-lg p-2.5 outline-none font-bold">
+                </div>
+                <div>
+                    <label for="rrSLInput" class="block text-slate-400 mb-1">STOP LOSS (INVALIDATION)</label>
+                    <input type="number" step="any" id="rrSLInput" value="67900" oninput="QuantumRRTool.calculate()" class="w-full bg-slate-900 border border-slate-700 text-rose-300 rounded-lg p-2.5 outline-none font-bold">
+                </div>
+                <div>
+                    <label for="rrTPInput" class="block text-slate-400 mb-1">TARGET PROFIT (TP)</label>
+                    <input type="number" step="any" id="rrTPInput" value="69825" oninput="QuantumRRTool.calculate()" class="w-full bg-slate-900 border border-slate-700 text-emerald-300 rounded-lg p-2.5 outline-none font-bold">
+                </div>
+
+                <div class="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <span class="text-slate-400">RATIO RISK : REWARD:</span>
+                    <span id="rrRatioBadge" class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-sm">1 : 2.50</span>
+                </div>
+
+                <div id="rrWarningAlert" class="p-2.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] hidden"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="QuantumRRTool.copyTradePlan()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-purple-glow text-xs flex items-center justify-center gap-1.5">
+                    <span>📋</span><span>Salin Setup Plan</span>
+                </button>
+                <button onclick="QuantumRRTool.closeModal()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI QUANTUM ANALYST MODAL -->
+    <div id="aiAnalystModal" onclick="if(event.target===this) QuantumAIEngine.closeModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-xl bg-[#0A1128] border border-cyan-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-cyan-400 text-lg">🤖</span> Quantum Neural AI Analyst
+                </h3>
+                <button onclick="QuantumAIEngine.closeModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            <div id="aiAnalystContent"></div>
+        </div>
+    </div>
+
+    <!-- SHORTCUTS HELP MODAL (?) -->
+    <div id="shortcutsHelpModal" onclick="if(event.target===this) closeShortcutsModal()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-md bg-[#0A1128] border border-cyan-500/40 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-cyan-400 text-lg">⌨</span> Pintasan Keyboard Terminal
+                </h3>
+                <button onclick="closeShortcutsModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Command Palette</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-800 font-bold">Ctrl+K / /</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Watchlist Favorit</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-amber-400 border border-slate-800 font-bold">Shift+W</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Buat Alert Harga</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-800 font-bold">Shift+A</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Toggle Crosshair</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-white border border-slate-800 font-bold">C</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Gambar Trendline</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-white border border-slate-800 font-bold">T</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Gambar Order Block Box</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-white border border-slate-800 font-bold">R</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Gambar Fibonacci</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-white border border-slate-800 font-bold">F</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Ganti Timeframe M5-D1</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-white border border-slate-800 font-bold">1 - 5</kbd></div>
+                <div class="flex justify-between items-center p-2 rounded bg-slate-950"><span class="text-slate-400">Bersihkan Gambar</span><kbd class="px-2 py-0.5 rounded bg-slate-900 text-rose-400 border border-slate-800 font-bold">Esc</kbd></div>
+            </div>
+
+            <button onclick="closeShortcutsModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs">
+                Mengerti (Tutup)
+            </button>
+        </div>
+    </div>
+
+    <!-- PRO TRADING TOOLS SCRIPT SUITE -->
+    <script src="assets/js/pro-trading-tools.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id" class="dark selection:bg-cyan-500/30">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Akun | Quantum Institut Market Terminal</title>
+    <meta name="description" content="Daftar akun Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; min-height: 100vh; }
+        h1, h2, h3, .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(13, 24, 54, 0.85) 0%, rgba(10, 17, 40, 0.95) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            box-shadow: 0 15px 35px -10px rgba(0, 229, 255, 0.15);
+        }
+        .input-quantum {
+            background: rgba(5, 10, 26, 0.8);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            color: #FFFFFF;
+            transition: all 0.25s ease;
+        }
+        .input-quantum:focus {
+            outline: none;
+            border-color: #00E5FF;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen">
+
+    <!-- Header Nav -->
+    <header class="w-full px-6 py-5 flex items-center justify-between border-b border-cyan-500/10">
+        <a href="index.html" class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="#00E5FF"/>
+                </svg>
+            </div>
+            <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
+        </a>
+        <a href="login.html" class="text-xs font-mono text-cyan-400 hover:underline">Sudah punya akun? Masuk →</a>
+    </header>
+
+    <!-- Register Form Container -->
+    <main class="flex-1 flex items-center justify-center p-4 my-8">
+        <div class="w-full max-w-md glass-card rounded-2xl p-6 sm:p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
+                    PENDAFTARAN LISENSI TERMINAL
+                </div>
+                <h1 class="text-2xl font-bold font-heading text-white">Buat Akun Quantum</h1>
+                <p class="text-xs text-slate-400">Akses 9 mesin analisa kuantum real-time.</p>
+            </div>
+
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <div>
+                    <label for="regName" class="block text-xs font-mono text-slate-300 mb-1.5">NAMA LENGKAP</label>
+                    <input type="text" id="regName" required placeholder="Nama Anda" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                </div>
+
+                <div>
+                    <label for="regEmail" class="block text-xs font-mono text-slate-300 mb-1.5">ALAMAT EMAIL</label>
+                    <input type="email" id="regEmail" required placeholder="trader@quantuminstitut.market" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                </div>
+
+                <div>
+                    <label for="regPassword" class="block text-xs font-mono text-slate-300 mb-1.5">KATA SANDI</label>
+                    <input type="password" id="regPassword" required placeholder="••••••••••••" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                </div>
+
+                <div class="flex items-center gap-2 text-xs font-mono text-slate-400 pt-1">
+                    <input type="checkbox" id="regTerms" required class="w-4 h-4 rounded bg-slate-900 border-cyan-500/30 text-cyan-400">
+                    <label for="regTerms" class="cursor-pointer">Saya menyetujui Syarat & Ketentuan Risk Disclaimer.</label>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm shadow-lg transition-all">
+                    Daftar & Aktifkan Lisensi →
+                </button>
+            </form>
+
+            <div class="text-center text-xs font-mono text-slate-400 border-t border-slate-800 pt-4">
+                Sudah memiliki Kunci Lisensi? <a href="login.html" class="text-cyan-400 font-bold hover:underline">Masuk Langsung</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-4 text-center text-xs font-mono text-slate-400 border-t border-slate-900">
+        © 2026 Quantum Institut Market Terminal.
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+    <script>
+        function handleRegister(e) {
+            e.preventDefault();
+            showQuantumToast("✓ Pendaftaran Berhasil! Kunci Lisensi Anda telah dibuat.", "success");
+            setTimeout(() => { window.location.href = "login.html"; }, 1000);
+        }
+    </script>
+</body>
+</html>

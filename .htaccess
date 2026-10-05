@@ -1,0 +1,18 @@
+# Quantum Institut Server Configuration
+RewriteEngine On
+RewriteBase /
+
+# Prevent directory browsing
+Options -Indexes
+
+# Security Headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+
+# Custom 404 Error Document
+ErrorDocument 404 /404.html
+
+# Protect configuration & engine files
+RewriteRule ^config/ - [F,L]
+RewriteRule ^engine/ - [F,L]

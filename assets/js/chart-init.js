@@ -1,0 +1,1458 @@
+/**
+ * Quantum Institut Market Terminal
+ * Chart Engine v4.0 — Normalisasi Universal + Quantum Engine Overlay
+ *
+ * FITUR BARU v4.0:
+ *  ✦ normalizeCandles() — sort, dedup, validasi OHLC, filter gap ATR
+ *  ✦ _calcATR()         — Average True Range untuk filter anomali data
+ *  ✦ QuantumEngineOverlay — gambar SNR, SMC, EMA200, Ichimoku, Fibonacci,
+ *                           TrendM5, MomentumNY, MACD, GoldenCross otomatis di chart
+ *  ✦ WebSocket auto-reconnect dengan exponential backoff
+ *  ✦ Yahoo polling 30 detik dengan validasi candle sebelum update
+ *  ✦ Semua provider lewat pipeline normalisasi yang sama
+ */
+
+/* =============================================================
+   KONSTANTA KONFIGURASI
+   ============================================================= */
+
+const QI_SYMBOL_CONFIG = {
+    BTCUSDT: { provider:'binance', binanceSym:'BTCUSDT', label:'BTC/USDT', priceDp:2 },
+    ETHUSDT: { provider:'binance', binanceSym:'ETHUSDT', label:'ETH/USDT', priceDp:2 },
+    SOLUSDT: { provider:'binance', binanceSym:'SOLUSDT', label:'SOL/USDT', priceDp:3 },
+    BNBUSDT: { provider:'binance', binanceSym:'BNBUSDT', label:'BNB/USDT', priceDp:2 },
+    XAUUSD:  { provider:'yahoo',   yahooSym:'GC%3DF',   yahooSymRaw:'GC=F',     label:'XAU/USD', priceDp:2 },
+    EURUSD:  { provider:'yahoo',   yahooSym:'EURUSD%3DX', yahooSymRaw:'EURUSD=X', label:'EUR/USD', priceDp:5 },
+};
+
+const QI_INTERVAL_MAP = {
+    '1':   { binance:'1m',  yahoo:'1m',  yahooRange:'1d'  },
+    '5':   { binance:'5m',  yahoo:'5m',  yahooRange:'5d'  },
+    '15':  { binance:'15m', yahoo:'15m', yahooRange:'5d'  },
+    '30':  { binance:'30m', yahoo:'30m', yahooRange:'1mo' },
+    '60':  { binance:'1h',  yahoo:'60m', yahooRange:'1mo' },
+    '240': { binance:'4h',  yahoo:'60m', yahooRange:'3mo' },
+    'D':   { binance:'1d',  yahoo:'1d',  yahooRange:'1y'  },
+    'M1':  { binance:'1m',  yahoo:'1m',  yahooRange:'1d'  },
+    'M5':  { binance:'5m',  yahoo:'5m',  yahooRange:'5d'  },
+    'M15': { binance:'15m', yahoo:'15m', yahooRange:'5d'  },
+    'H1':  { binance:'1h',  yahoo:'60m', yahooRange:'1mo' },
+    'H4':  { binance:'4h',  yahoo:'60m', yahooRange:'3mo' },
+    'D1':  { binance:'1d',  yahoo:'1d',  yahooRange:'1y'  },
+};
+
+const QI_CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+];
+
+
+/* =============================================================
+   A1. NORMALISASI DATA UNIVERSAL
+   ============================================================= */
+
+/**
+ * normalizeCandles(raw, provider)
+ *  - Konversi format dari provider ke format standar OHLCV
+ *  - Sort ascending by time
+ *  - Deduplikasi berdasarkan time key
+ *  - Validasi OHLC: high>=low, semua >0, high>=max(open,close), low<=min(open,close)
+ *  - Filter candle dengan gap harga > 5x ATR (anomali / bad tick)
+ */
+function normalizeCandles(raw, provider) {
+    let candles = [];
+
+    if (provider === 'binance') {
+        candles = raw.map(d => ({
+            time:   Math.floor(d[0] / 1000),
+            open:   +d[1], high: +d[2], low: +d[3], close: +d[4],
+            volume: +d[5],
+        }));
+    } else if (provider === 'yahoo') {
+        const { timestamps, ohlcv } = raw;
+        for (let i = 0; i < timestamps.length; i++) {
+            const o = ohlcv.open[i], h = ohlcv.high[i];
+            const l = ohlcv.low[i],  c = ohlcv.close[i];
+            if (!o || !h || !l || !c) continue;
+            candles.push({
+                time:   timestamps[i],
+                open:   +o, high: +h, low: +l, close: +c,
+                volume: +(ohlcv.volume?.[i] || 0),
+            });
+        }
+    }
+
+    // 1. Sort ascending
+    candles.sort((a, b) => a.time - b.time);
+
+    // 2. Deduplikasi — simpan candle terakhir per timestamp
+    const deduped = new Map();
+    candles.forEach(c => deduped.set(c.time, c));
+    candles = [...deduped.values()];
+
+    // 3. Validasi OHLC dasar
+    candles = candles.filter(c => {
+        if (c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0) return false;
+        if (isNaN(c.open) || isNaN(c.high) || isNaN(c.low) || isNaN(c.close)) return false;
+        if (c.high < c.low) return false;
+        if (c.high < Math.max(c.open, c.close)) return false;
+        if (c.low  > Math.min(c.open, c.close)) return false;
+        return true;
+    });
+
+    // 4. Filter gap ekstrem > 5x ATR (bad tick / data anomali)
+    if (candles.length > 20) {
+        const atr = _calcATR(candles, 14);
+        candles = candles.filter((c, i) => {
+            if (i === 0 || atr[i] === null) return true;
+            const gap = Math.abs(c.open - candles[i-1].close);
+            return gap <= atr[i] * 5;
+        });
+    }
+
+    return candles;
+}
+
+/** Hitung ATR(14) untuk array candles, return array nilai ATR per candle */
+function _calcATR(candles, period = 14) {
+    const result = Array(candles.length).fill(null);
+    if (candles.length < period + 1) return result;
+
+    const trList = candles.map((c, i) => {
+        if (i === 0) return c.high - c.low;
+        const prev = candles[i-1].close;
+        return Math.max(c.high - c.low, Math.abs(c.high - prev), Math.abs(c.low - prev));
+    });
+
+    let atrSum = trList.slice(0, period).reduce((a, b) => a + b, 0);
+    result[period - 1] = atrSum / period;
+
+    for (let i = period; i < candles.length; i++) {
+        result[i] = (result[i-1] * (period - 1) + trList[i]) / period;
+    }
+    return result;
+}
+
+
+/* =============================================================
+   A2. INDIKATOR KALKULASI
+   ============================================================= */
+
+function _calcEMA(closes, period) {
+    const k = 2 / (period + 1);
+    const result = Array(closes.length).fill(null);
+    let sum = 0;
+    for (let i = 0; i < closes.length; i++) {
+        if (i < period - 1)       { sum += closes[i]; }
+        else if (i === period - 1) { sum += closes[i]; result[i] = sum / period; }
+        else                       { result[i] = closes[i] * k + result[i-1] * (1 - k); }
+    }
+    return result;
+}
+
+function _calcSMA(closes, period) {
+    return closes.map((_, i) => {
+        if (i < period - 1) return null;
+        return closes.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+    });
+}
+
+function _calcRSI(closes, period = 14) {
+    const result = Array(closes.length).fill(null);
+    let gains = 0, losses = 0;
+    for (let i = 1; i <= period; i++) {
+        const d = closes[i] - closes[i-1];
+        if (d > 0) gains += d; else losses -= d;
+    }
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+    result[period] = 100 - (100 / (1 + avgGain / (avgLoss || 0.0001)));
+
+    for (let i = period + 1; i < closes.length; i++) {
+        const d = closes[i] - closes[i-1];
+        avgGain = (avgGain * (period - 1) + Math.max(d, 0)) / period;
+        avgLoss = (avgLoss * (period - 1) + Math.max(-d, 0)) / period;
+        result[i] = 100 - (100 / (1 + avgGain / (avgLoss || 0.0001)));
+    }
+    return result;
+}
+
+function _calcMACD(closes, fast=12, slow=26, signal=9) {
+    const emaFast   = _calcEMA(closes, fast);
+    const emaSlow   = _calcEMA(closes, slow);
+    const macdLine  = emaFast.map((v, i) => v !== null && emaSlow[i] !== null ? v - emaSlow[i] : null);
+    const validMACD = macdLine.filter(v => v !== null);
+    const sigRaw    = _calcEMA(validMACD, signal);
+
+    // re-align signal ke indeks penuh
+    const sigLine = Array(closes.length).fill(null);
+    let si = 0;
+    macdLine.forEach((v, i) => { if (v !== null) { sigLine[i] = sigRaw[si++] ?? null; } });
+    const hist = macdLine.map((v, i) => v !== null && sigLine[i] !== null ? v - sigLine[i] : null);
+    return { macdLine, sigLine, hist };
+}
+
+/**
+ * Konversi Candle OHLC standar ke Heikin Ashi
+ */
+function _toHeikinAshi(candles) {
+    if (!candles || candles.length === 0) return [];
+    const ha = [];
+    let prevOpen = (candles[0].open + candles[0].close) / 2;
+    let prevClose = (candles[0].open + candles[0].high + candles[0].low + candles[0].close) / 4;
+
+    for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+        const haClose = (c.open + c.high + c.low + c.close) / 4;
+        const haOpen = i === 0 ? prevOpen : (prevOpen + prevClose) / 2;
+        const haHigh = Math.max(c.high, haOpen, haClose);
+        const haLow = Math.min(c.low, haOpen, haClose);
+
+        ha.push({
+            time: c.time,
+            open: haOpen,
+            high: haHigh,
+            low: haLow,
+            close: haClose,
+            volume: c.volume
+        });
+        prevOpen = haOpen;
+        prevClose = haClose;
+    }
+    return ha;
+}
+
+
+
+/* =============================================================
+   B. QUANTUM ENGINE OVERLAY — Gambar Indikator di Chart
+   ============================================================= */
+
+class QuantumEngineOverlay {
+    constructor(chart, candleSeries) {
+        this.chart        = chart;
+        this.candleSeries = candleSeries;
+        this._priceLines  = [];   // semua price lines yang dibuat oleh engine
+        this._extraSeries = [];   // semua line series tambahan
+    }
+
+    /** Bersihkan semua overlay engine sebelum ganti engine */
+    clearAll() {
+        this._priceLines.forEach(l => {
+            try { this.candleSeries.removePriceLine(l); } catch(e) {}
+        });
+        this._priceLines = [];
+
+        this._extraSeries.forEach(s => {
+            try { this.chart.removeSeries(s); } catch(e) {}
+        });
+        this._extraSeries = [];
+    }
+
+    /** Tambahkan price line dan catat untuk cleanup */
+    _addPriceLine(opts) {
+        const line = this.candleSeries.createPriceLine(opts);
+        this._priceLines.push(line);
+        return line;
+    }
+
+    /** Tambahkan line series dan catat untuk cleanup */
+    _addLineSeries(opts, data) {
+        const s = this.chart.addLineSeries({
+            ...opts,
+            priceLineVisible:    false,
+            lastValueVisible:    false,
+            pointMarkersVisible: false,
+            crosshairMarkerVisible: false,
+            crosshairMarkerRadius:  0,
+        });
+        if (data && data.length > 0) s.setData(data);
+        this._extraSeries.push(s);
+        return s;
+    }
+
+    /* ── ENGINE a: QUANTUM SNR (Support & Resistance Levels) ── */
+    drawSNR(candles) {
+        if (!candles || candles.length < 20) return;
+
+        // Algoritma: cari pivot high/low yang diuji minimal 2x
+        const highs = candles.map(c => c.high);
+        const lows  = candles.map(c => c.low);
+        const n     = candles.length;
+        const last  = candles[n - 1].close;
+        const atr   = _calcATR(candles, 14);
+        const atrNow = atr[n-1] || (last * 0.005);
+
+        const pivotHighs = [], pivotLows = [];
+        for (let i = 2; i < n - 2; i++) {
+            if (highs[i] > highs[i-1] && highs[i] > highs[i-2] &&
+                highs[i] > highs[i+1] && highs[i] > highs[i+2]) {
+                pivotHighs.push(highs[i]);
+            }
+            if (lows[i] < lows[i-1] && lows[i] < lows[i-2] &&
+                lows[i] < lows[i+1] && lows[i] < lows[i+2]) {
+                pivotLows.push(lows[i]);
+            }
+        }
+
+        // Cluster pivot yang berdekatan (tolerance: 0.5x ATR)
+        const clusterLevels = (pivots) => {
+            const sorted = [...pivots].sort((a, b) => a - b);
+            const clusters = [];
+            let group = sorted[0] !== undefined ? [sorted[0]] : [];
+            for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i] - group[group.length-1] < atrNow * 0.5) {
+                    group.push(sorted[i]);
+                } else {
+                    clusters.push(group.reduce((a,b)=>a+b,0)/group.length);
+                    group = [sorted[i]];
+                }
+            }
+            if (group.length > 0) clusters.push(group.reduce((a,b)=>a+b,0)/group.length);
+            return clusters;
+        };
+
+        const resLevels = clusterLevels(pivotHighs).slice(-3);  // 3 resistance terdekat
+        const supLevels = clusterLevels(pivotLows).slice(-3);   // 3 support terdekat
+
+        // Gambar Resistance zones (merah)
+        resLevels.forEach((level, i) => {
+            if (level <= 0) return;
+            this._addPriceLine({
+                price: level, color: '#FF4D6D',
+                lineWidth: i === 0 ? 2 : 1,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                title: i === 0 ? `R${i+1} KEY` : `R${i+1}`,
+                axisLabelVisible: true,
+            });
+        });
+
+        // Gambar Support zones (hijau)
+        supLevels.forEach((level, i) => {
+            if (level <= 0) return;
+            this._addPriceLine({
+                price: level, color: '#00FFA3',
+                lineWidth: i === 0 ? 2 : 1,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                title: i === 0 ? `S${i+1} KEY` : `S${i+1}`,
+                axisLabelVisible: true,
+            });
+        });
+    }
+
+    /* ── ENGINE b: QUANTUM SMC (Order Block + BOS/CHoCH) ── */
+    drawSMC(candles) {
+        if (!candles || candles.length < 30) return;
+        const n    = candles.length;
+        const last = candles[n-1];
+
+        // Order Block: candle bearish kuat sebelum bullish breakout (bullish OB)
+        // Cari lilin dengan body terbesar dalam 50 candle terakhir
+        const window = candles.slice(-50);
+        let maxBody = 0, bullishOB = null, bearishOB = null;
+
+        for (let i = 1; i < window.length - 3; i++) {
+            const c = window[i];
+            const body = Math.abs(c.close - c.open);
+            const isBearishCandle = c.close < c.open;
+            const nextBullish     = window[i+1].close > window[i+1].open &&
+                                    window[i+1].close > c.high;
+
+            if (isBearishCandle && nextBullish && body > maxBody) {
+                maxBody = body;
+                bullishOB = c;  // Bullish Order Block (entry zona buy)
+            }
+        }
+
+        maxBody = 0;
+        for (let i = 1; i < window.length - 3; i++) {
+            const c = window[i];
+            const body = Math.abs(c.close - c.open);
+            const isBullishCandle = c.close > c.open;
+            const nextBearish     = window[i+1].close < window[i+1].open &&
+                                    window[i+1].close < c.low;
+
+            if (isBullishCandle && nextBearish && body > maxBody) {
+                maxBody = body;
+                bearishOB = c;
+            }
+        }
+
+        // Gambar Order Block zones sebagai price lines
+        if (bullishOB) {
+            this._addPriceLine({
+                price: bullishOB.high, color:'#00E5FF',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dashed,
+                title:'OB TOP (Bullish)', axisLabelVisible: false,
+            });
+            this._addPriceLine({
+                price: bullishOB.low, color:'#00E5FF',
+                lineWidth:2, lineStyle: LightweightCharts.LineStyle.Solid,
+                title:'OB BUY ZONE', axisLabelVisible: true,
+            });
+        }
+
+        if (bearishOB) {
+            this._addPriceLine({
+                price: bearishOB.high, color:'#FF4D6D',
+                lineWidth:2, lineStyle: LightweightCharts.LineStyle.Solid,
+                title:'OB SELL ZONE', axisLabelVisible: true,
+            });
+            this._addPriceLine({
+                price: bearishOB.low, color:'#FF4D6D',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dashed,
+                title:'OB BOTTOM (Bearish)', axisLabelVisible: false,
+            });
+        }
+
+        // BOS: Break of Structure — cari swing high yang ditembus
+        const swingHighs = candles.slice(-30).filter((c, i, arr) =>
+            i > 1 && i < arr.length-2 &&
+            c.high > arr[i-1].high && c.high > arr[i+1].high
+        );
+        if (swingHighs.length > 0) {
+            const bosLevel = swingHighs[swingHighs.length-1].high;
+            if (last.close > bosLevel) {
+                this._addPriceLine({
+                    price: bosLevel, color:'#7C4DFF',
+                    lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dotted,
+                    title:'BOS', axisLabelVisible: true,
+                });
+            }
+        }
+    }
+
+    /* ── ENGINE c: EMA200 PULLBACK ── */
+    drawEMA200(candles) {
+        if (!candles || candles.length < 50) return;
+
+        const closes = candles.map(c => c.close);
+        const period = Math.min(200, Math.floor(candles.length * 0.7));
+        const ema200 = _calcEMA(closes, period);
+        const ema50  = _calcEMA(closes, Math.min(50, Math.floor(period * 0.25)));
+
+        const ema200Data = candles
+            .map((c, i) => ({ time: c.time, value: ema200[i] }))
+            .filter(d => d.value !== null);
+
+        const ema50Data = candles
+            .map((c, i) => ({ time: c.time, value: ema50[i] }))
+            .filter(d => d.value !== null);
+
+        this._addLineSeries(
+            { color: '#FFAB00', lineWidth: 2 },
+            ema200Data
+        );
+        this._addLineSeries(
+            { color: '#FF6B6B', lineWidth: 1 },
+            ema50Data
+        );
+
+        // Mark pullback zone (EMA200 ± 0.3%)
+        const lastEma = ema200Data[ema200Data.length-1]?.value;
+        if (lastEma) {
+            this._addPriceLine({
+                price: lastEma * 1.003, color:'#FFAB00',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dotted,
+                title:'EMA200+0.3%',
+            });
+            this._addPriceLine({
+                price: lastEma * 0.997, color:'#FFAB00',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dotted,
+                title:'EMA200-0.3%',
+            });
+        }
+    }
+
+    /* ── ENGINE d: ICHIMOKU CLOUD (Kumo Cloud) ── */
+    drawIchimoku(candles) {
+        if (!candles || candles.length < 52) return;
+        const n = candles.length;
+
+        const donchian = (period, idx) => {
+            const sl = candles.slice(Math.max(0, idx - period + 1), idx + 1);
+            return (Math.max(...sl.map(c=>c.high)) + Math.min(...sl.map(c=>c.low))) / 2;
+        };
+
+        const tenkanData = [], kijunData = [], senkouAData = [], senkouBData = [];
+
+        for (let i = 8; i < n; i++) {
+            tenkanData.push({ time: candles[i].time, value: donchian(9, i) });
+        }
+        for (let i = 25; i < n; i++) {
+            kijunData.push({ time: candles[i].time, value: donchian(26, i) });
+        }
+        for (let i = 25; i < n; i++) {
+            const tK = donchian(9, i);
+            const kJ = donchian(26, i);
+            senkouAData.push({ time: candles[i].time, value: (tK + kJ) / 2 });
+        }
+        for (let i = 51; i < n; i++) {
+            senkouBData.push({ time: candles[i].time, value: donchian(52, i) });
+        }
+
+        this._addLineSeries({ color: 'rgba(0,229,255,0.7)',  lineWidth: 1 }, tenkanData);
+        this._addLineSeries({ color: 'rgba(255,107,107,0.7)', lineWidth: 1 }, kijunData);
+        this._addLineSeries({ color: 'rgba(0,255,163,0.4)',  lineWidth: 1 }, senkouAData);
+        this._addLineSeries({ color: 'rgba(255,77,109,0.4)', lineWidth: 1 }, senkouBData);
+
+        // Garis Kumo Cloud saat ini
+        const lastSA = senkouAData[senkouAData.length-1]?.value;
+        const lastSB = senkouBData[senkouBData.length-1]?.value;
+        if (lastSA && lastSB) {
+            this._addPriceLine({
+                price: lastSA, color:'rgba(0,255,163,0.6)',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dashed, title:'Senkou A',
+            });
+            this._addPriceLine({
+                price: lastSB, color:'rgba(255,77,109,0.6)',
+                lineWidth:1, lineStyle: LightweightCharts.LineStyle.Dashed, title:'Senkou B',
+            });
+        }
+    }
+
+    /* ── ENGINE e: FIBONACCI GOLDEN ZONE (0.382–0.618) ── */
+    drawFibonacci(candles) {
+        if (!candles || candles.length < 20) return;
+
+        // Cari swing high & low dalam 50 candle terakhir
+        const window = candles.slice(-50);
+        const swingHigh = Math.max(...window.map(c => c.high));
+        const swingLow  = Math.min(...window.map(c => c.low));
+        const range     = swingHigh - swingLow;
+        if (range <= 0) return;
+
+        const fibLevels = [
+            { ratio: 0.000, label: 'FIB 0.0%',   color:'#94A3B8' },
+            { ratio: 0.236, label: 'FIB 23.6%',  color:'#94A3B8' },
+            { ratio: 0.382, label: 'FIB 38.2% ●', color:'#FFAB00' },
+            { ratio: 0.500, label: 'FIB 50.0% ●', color:'#FFAB00' },
+            { ratio: 0.618, label: 'FIB 61.8% ●', color:'#FF6B6B' },
+            { ratio: 0.786, label: 'FIB 78.6%',  color:'#94A3B8' },
+            { ratio: 1.000, label: 'FIB 100%',   color:'#94A3B8' },
+        ];
+
+        fibLevels.forEach(({ ratio, label, color }) => {
+            const isGolden = [0.382, 0.5, 0.618].includes(ratio);
+            this._addPriceLine({
+                price: swingHigh - range * ratio,
+                color,
+                lineWidth: isGolden ? 2 : 1,
+                lineStyle: isGolden
+                    ? LightweightCharts.LineStyle.Solid
+                    : LightweightCharts.LineStyle.Dotted,
+                title: label,
+                axisLabelVisible: isGolden,
+            });
+        });
+    }
+
+    /* ── ENGINE f: TREN M5 SCALPING ── */
+    drawTrenM5(candles) {
+        if (!candles || candles.length < 20) return;
+        const closes = candles.map(c => c.close);
+        const ema8   = _calcEMA(closes, 8);
+        const ema21  = _calcEMA(closes, 21);
+
+        this._addLineSeries(
+            { color:'#00E5FF', lineWidth:1 },
+            candles.map((c,i) => ({ time:c.time, value:ema8[i] })).filter(d=>d.value!==null)
+        );
+        this._addLineSeries(
+            { color:'#7C4DFF', lineWidth:1 },
+            candles.map((c,i) => ({ time:c.time, value:ema21[i] })).filter(d=>d.value!==null)
+        );
+    }
+
+    /* ── ENGINE g: MOMENTUM NY ── */
+    drawMomentumNY(candles) {
+        if (!candles || candles.length < 14) return;
+
+        const closes = candles.map(c => c.close);
+        const atr    = _calcATR(candles, 14);
+        const n      = candles.length;
+        const last   = candles[n-1];
+        const atrNow = atr[n-1] || last.close * 0.005;
+
+        // Momentum zone: harga ± 1x ATR dari close saat ini
+        this._addPriceLine({
+            price: last.close + atrNow * 1.0,
+            color: '#00FFA3', lineWidth:1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            title: 'MOM +1 ATR',
+        });
+        this._addPriceLine({
+            price: last.close - atrNow * 1.0,
+            color: '#FF4D6D', lineWidth:1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            title: 'MOM -1 ATR',
+        });
+
+        // Vwap proxy (SMA20 sebagai pengganti VWAP)
+        const sma20 = _calcSMA(closes, 20);
+        this._addLineSeries(
+            { color:'rgba(255,171,0,0.7)', lineWidth:1 },
+            candles.map((c,i) => ({ time:c.time, value:sma20[i] })).filter(d=>d.value!==null)
+        );
+    }
+
+    /* ── ENGINE h: MACD MOMENTUM ── */
+    drawMACD(candles) {
+        if (!candles || candles.length < 30) return;
+        const closes = candles.map(c => c.close);
+        const { macdLine, sigLine } = _calcMACD(closes, 12, 26, 9);
+
+        // Tampilkan MACD sebagai price lines di chart utama (referensi visual)
+        const lastMACD = macdLine.filter(v=>v!==null).slice(-1)[0];
+        const lastSig  = sigLine.filter(v=>v!==null).slice(-1)[0];
+        if (lastMACD === undefined || lastSig === undefined) return;
+
+        const lastClose = candles[candles.length-1].close;
+        const macdPct   = (lastMACD / lastClose) * 100;
+
+        this._addPriceLine({
+            price: lastClose * (1 + macdPct * 0.5 / 100),
+            color: lastMACD > lastSig ? '#00FFA3' : '#FF4D6D',
+            lineWidth:2, lineStyle: LightweightCharts.LineStyle.Solid,
+            title: lastMACD > lastSig ? 'MACD BULLISH ▲' : 'MACD BEARISH ▼',
+            axisLabelVisible: true,
+        });
+    }
+
+    /* ── ENGINE i: GOLDEN CROSS (EMA50 x EMA200) ── */
+    drawGoldenCross(candles) {
+        if (!candles || candles.length < 50) return;
+        const closes = candles.map(c => c.close);
+        const period50  = Math.min(50,  Math.floor(candles.length * 0.5));
+        const period200 = Math.min(200, candles.length - 1);
+        const ema50  = _calcEMA(closes, period50);
+        const ema200 = _calcEMA(closes, period200);
+
+        const ema50Data = candles
+            .map((c,i) => ({ time:c.time, value:ema50[i]  })).filter(d=>d.value!==null);
+        const ema200Data = candles
+            .map((c,i) => ({ time:c.time, value:ema200[i] })).filter(d=>d.value!==null);
+
+        this._addLineSeries({ color:'#FFD700', lineWidth:2 }, ema50Data);
+        this._addLineSeries({ color:'#C0C0C0', lineWidth:1 }, ema200Data);
+
+        // Deteksi Golden Cross atau Death Cross
+        const n = closes.length;
+        if (ema50[n-1] && ema200[n-1] && ema50[n-2] && ema200[n-2]) {
+            const crossedUp   = ema50[n-2] <= ema200[n-2] && ema50[n-1] > ema200[n-1];
+            const crossedDown = ema50[n-2] >= ema200[n-2] && ema50[n-1] < ema200[n-1];
+            if (crossedUp) {
+                this._addPriceLine({
+                    price: closes[n-1], color:'#FFD700',
+                    lineWidth:2, lineStyle: LightweightCharts.LineStyle.Solid,
+                    title:'🟡 GOLDEN CROSS', axisLabelVisible: true,
+                });
+            } else if (crossedDown) {
+                this._addPriceLine({
+                    price: closes[n-1], color:'#C0C0C0',
+                    lineWidth:2, lineStyle: LightweightCharts.LineStyle.Solid,
+                    title:'⚫ DEATH CROSS', axisLabelVisible: true,
+                });
+            }
+        }
+    }
+
+    /* ── DISPATCH ke engine yang aktif ── */
+    drawEngine(engineCode, candles) {
+        this.clearAll();
+        if (!candles || candles.length < 10) return;
+
+        switch (engineCode) {
+            case 'SNR':          this.drawSNR(candles);          break;
+            case 'SMC':          this.drawSMC(candles);          break;
+            case 'EMA200':       this.drawEMA200(candles);       break;
+            case 'ICHI':         this.drawIchimoku(candles);     break;
+            case 'FIBO':         this.drawFibonacci(candles);    break;
+            case 'TRENM5':       this.drawTrenM5(candles);       break;
+            case 'MOMENTUM_NY':  this.drawMomentumNY(candles);   break;
+            case 'MACD_MOM':     this.drawMACD(candles);         break;
+            case 'GOLDEN_CROSS': this.drawGoldenCross(candles);  break;
+            default:             this.drawSNR(candles);
+        }
+    }
+}
+
+
+/* =============================================================
+   KELAS UTAMA — Chart Manager
+   ============================================================= */
+class QuantumRealtimeTerminalManager {
+    constructor(options = {}) {
+        this.containerId     = options.containerId  || 'tradingview_advanced_widget';
+        this.currentSymbol   = options.symbol       || 'BTCUSDT';
+        this.currentInterval = options.interval     || '60';
+        this.currentEngine   = options.engine       || 'SNR';
+
+        this.chart        = null;
+        this.candleSeries = null;
+        this.volumeSeries = null;
+        this.emaSeries    = null;
+        this.overlay      = null;   // QuantumEngineOverlay instance
+
+        this.wsKline       = null;
+        this.wsTicker      = null;
+        this.wsRetryTimer  = null;
+        this.wsRetryDelay  = 3000;  // exponential backoff initial
+        this._abortCtrl    = null;
+        this._yahooPoller  = null;
+
+        this.lastClosePrice = 0;
+        this._cachedCandles = [];         // candles tersimpan untuk redraw engine
+        this.createdPriceLines = [];
+        this.isCrosshairActive = true;
+        this.isMagnetActive = false;
+        this.candleType = 'standard';     // 'standard' | 'heikinashi'
+        this.currentBarSpacing = 6;
+    }
+
+    /* =========================================================
+       INIT CHART
+       ========================================================= */
+    initChart() {
+        const container = document.getElementById(this.containerId);
+        if (!container) { console.error('[QI] Container tidak ditemukan:', this.containerId); return; }
+
+        // PERBAIKAN CRITICAL: Handle CDN loading delay & multi-CDN fallback
+        if (typeof LightweightCharts === 'undefined') {
+            console.warn('[QI] LightweightCharts belum siap. Memulai CDN retry & fallback loader...');
+            this._showStatus('⟳ Memuat library TradingView Lightweight Charts...');
+
+            // Coba suntikkan backup CDN jika CDN utama terhambat
+            if (!document.getElementById('qi-backup-cdn')) {
+                const backupScript = document.createElement('script');
+                backupScript.id = 'qi-backup-cdn';
+                backupScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js';
+                document.head.appendChild(backupScript);
+            }
+
+            let attempts = 0;
+            const checkTimer = setInterval(() => {
+                attempts++;
+                if (typeof LightweightCharts !== 'undefined') {
+                    clearInterval(checkTimer);
+                    console.log('[QI] LightweightCharts siap setelah', attempts * 200, 'ms');
+                    this.initChart();
+                } else if (attempts >= 25) { // 5 detik timeout
+                    clearInterval(checkTimer);
+                    this._showError('Gagal memuat library chart. Silakan cek jaringan & refresh.');
+                }
+            }, 200);
+            return;
+        }
+
+        // Pastikan container punya tinggi eksplisit minimal 300px
+        if (container.offsetHeight < 50) {
+            container.style.height = '500px';
+            container.style.minHeight = '300px';
+        }
+
+        if (this.chart) { try { this.chart.remove(); } catch(e) {} this.chart = null; }
+        container.innerHTML = '';
+
+        // Hitung lebar dan tinggi eksplisit agar canvas tidak pernah 0px
+        const parentW = container.clientWidth || container.offsetWidth || (container.parentElement ? container.parentElement.clientWidth : 0) || 800;
+        const parentH = container.offsetHeight || container.clientHeight || 500;
+
+        this.chart = LightweightCharts.createChart(container, {
+            width:  parentW > 50 ? parentW : 800,
+            height: parentH > 50 ? parentH : 500,
+            layout: {
+                background: { type:'solid', color:'#050A1A' },
+                textColor:  '#94A3B8',
+                fontFamily: 'JetBrains Mono, monospace',
+            },
+            grid: {
+                vertLines: { color:'rgba(255,255,255,0.03)' },
+                horzLines: { color:'rgba(255,255,255,0.03)' },
+            },
+            crosshair:       { mode: LightweightCharts.CrosshairMode.Normal },
+            rightPriceScale: { borderColor:'rgba(0,229,255,0.2)' },
+            timeScale: {
+                borderColor:'rgba(0,229,255,0.2)',
+                timeVisible: true, secondsVisible: false,
+                barSpacing: this.currentBarSpacing, rightOffset: 5,
+            },
+            handleScroll: true,
+            handleScale:  true,
+        });
+
+        this.candleSeries = this.chart.addCandlestickSeries({
+            upColor:'#00FFA3', downColor:'#FF4D6D',
+            borderUpColor:'#00FFA3', borderDownColor:'#FF4D6D',
+            wickUpColor:'#00FFA3', wickDownColor:'#FF4D6D',
+        });
+
+        this.volumeSeries = this.chart.addHistogramSeries({
+            color:'rgba(0,229,255,0.3)', priceFormat:{ type:'volume' },
+            priceScaleId:'volume', scaleMargins:{ top:0.82, bottom:0 },
+        });
+
+        this.emaSeries = this.chart.addLineSeries({
+            color:'#7C4DFF', lineWidth:1,
+            priceLineVisible: false, lastValueVisible: false,
+            pointMarkersVisible: false, crosshairMarkerVisible: false,
+            crosshairMarkerRadius: 0,
+        });
+
+        // Inisialisasi engine overlay
+        this.overlay = new QuantumEngineOverlay(this.chart, this.candleSeries);
+
+        // Polling resize & force canvas dimensions
+        const forceResize = () => {
+            if (this.chart && container.clientWidth > 50) {
+                this.chart.applyOptions({
+                    width:  container.clientWidth,
+                    height: container.offsetHeight || 500,
+                });
+            }
+        };
+        setTimeout(forceResize, 100);
+        setTimeout(forceResize, 500);
+
+        new ResizeObserver(forceResize).observe(container);
+
+        this._loadDataAndStream();
+    }
+
+    /* =========================================================
+       ROUTER UTAMA
+       ========================================================= */
+    async _loadDataAndStream() {
+        if (this._abortCtrl) this._abortCtrl.abort();
+        this._abortCtrl = new AbortController();
+        this._closeWebSockets();
+        this._stopYahooPoller();
+
+        const cfg = QI_SYMBOL_CONFIG[this.currentSymbol];
+        if (!cfg) { this._showError(`Simbol "${this.currentSymbol}" tidak didukung`); return; }
+        this._showStatus(`⟳ Memuat ${cfg.label}...`);
+
+        if (cfg.provider === 'binance') {
+            await this._loadBinance(cfg);
+        } else if (cfg.provider === 'yahoo') {
+            await this._loadYahoo(cfg);
+        }
+    }
+
+    /* =========================================================
+       FALLBACK LOCAL BACKEND API (CORS & NETWORK PROOF)
+       ========================================================= */
+    async _loadLocalBackendFallback(cfg) {
+        try {
+            console.log(`[QI Fallback] Mencoba memuat ${cfg.label} dari backend lokal (api/get-chart-data.php)...`);
+            const url = `api/get-chart-data.php?symbol=${this.currentSymbol}&interval=${this.currentInterval}`;
+            const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+
+            if (json.status === 'success' && Array.isArray(json.candles) && json.candles.length > 0) {
+                this._renderCandles(json.candles, cfg);
+                return true;
+            }
+        } catch(e) {
+            console.warn(`[QI Fallback Local API] gagal: ${e.message}`);
+        }
+        return false;
+    }
+
+    /* =========================================================
+       PROVIDER 1: BINANCE
+       ========================================================= */
+    async _loadBinance(cfg) {
+        const sym   = cfg.binanceSym;
+        const intvl = QI_INTERVAL_MAP[this.currentInterval]?.binance || '1h';
+        const url   = `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`;
+
+        let rawData = null;
+
+        // Coba 1: Binance langsung
+        try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            rawData = await res.json();
+            if (!Array.isArray(rawData) || rawData.length === 0) throw new Error('kosong');
+        } catch(e) {
+            console.warn(`[QI Binance] langsung gagal: ${e.message}`);
+        }
+
+        // Coba 2: CORS proxy
+        if (!rawData) {
+            for (const proxy of QI_CORS_PROXIES) {
+                try {
+                    const res = await fetch(`${proxy}${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
+                    rawData = await res.json();
+                    if (Array.isArray(rawData) && rawData.length > 0) break;
+                    rawData = null;
+                } catch(e) { rawData = null; }
+            }
+        }
+
+        // Coba 3: Local Backend API (api/get-chart-data.php)
+        if (!rawData) {
+            const localSuccess = await this._loadLocalBackendFallback(cfg);
+            if (localSuccess) {
+                this._connectBinanceWS(sym, intvl);
+                return;
+            }
+        }
+
+        if (!rawData) {
+            this._showError(`Gagal memuat ${cfg.label}. Silakan periksa jaringan.`);
+            return;
+        }
+
+        // Normalisasi universal
+        const candles = normalizeCandles(rawData, 'binance');
+        if (candles.length === 0) { this._showError('Data tidak valid setelah normalisasi'); return; }
+
+        this._renderCandles(candles, cfg);
+        this._connectBinanceWS(sym, intvl);
+    }
+
+    /* =========================================================
+       PROVIDER 2: YAHOO FINANCE
+       ========================================================= */
+    async _loadYahoo(cfg) {
+        const intvlCfg = QI_INTERVAL_MAP[this.currentInterval] || QI_INTERVAL_MAP['60'];
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${cfg.yahooSym}?interval=${intvlCfg.yahoo}&range=${intvlCfg.yahooRange}&includePrePost=false`;
+
+        const attempts = [
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
+            yahooUrl,
+        ];
+
+        let candles = null;
+
+        for (let i = 0; i < attempts.length; i++) {
+            try {
+                const res  = await fetch(attempts[i], { signal: AbortSignal.timeout(10000) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                const result = json?.chart?.result?.[0];
+                if (!result?.timestamp || !result?.indicators?.quote?.[0]) throw new Error('struktur invalid');
+
+                const raw = { timestamps: result.timestamp, ohlcv: result.indicators.quote[0] };
+                candles = normalizeCandles(raw, 'yahoo');
+                if (candles.length > 0) break;
+                candles = null;
+            } catch(e) {
+                console.warn(`[QI Yahoo percobaan ${i+1}] gagal: ${e.message}`);
+            }
+        }
+
+        // Jika Yahoo proxy gagal, coba local backend API
+        if (!candles || candles.length === 0) {
+            const localSuccess = await this._loadLocalBackendFallback(cfg);
+            if (localSuccess) {
+                this._startYahooPoller(cfg, intvlCfg.yahoo);
+                return;
+            }
+        }
+
+        if (!candles || candles.length === 0) {
+            // Fallback: Binance XAUTUSDT untuk XAU/USD
+            if (this.currentSymbol === 'XAUUSD') {
+                this._showStatus('⟳ Yahoo gagal — beralih ke Tether Gold (XAUT/USDT)...');
+                await this._loadBinance({ ...cfg, binanceSym:'XAUTUSDT', provider:'binance' });
+                return;
+            }
+            this._showError(`Gagal memuat ${cfg.label}. Semua sumber tidak tersedia.`);
+            return;
+        }
+
+        this._renderCandles(candles, cfg);
+        this._startYahooPoller(cfg, intvlCfg.yahoo);
+    }
+
+
+    /* =========================================================
+       RENDER CANDLES — satu fungsi untuk semua provider
+       ========================================================= */
+    _renderCandles(candles, cfg) {
+        const closes  = candles.map(c => c.close);
+        const volumes = candles.map(c => ({
+            time:  c.time,
+            value: c.volume || 0,
+            color: c.close >= c.open ? 'rgba(0,255,163,0.35)' : 'rgba(255,77,109,0.35)',
+        }));
+
+        const ema20 = _calcEMA(closes, Math.min(20, Math.floor(candles.length * 0.1)));
+        const emaData = candles
+            .map((c, i) => ({ time:c.time, value:ema20[i] }))
+            .filter(d => d.value !== null);
+
+        const displayCandles = this.candleType === 'heikinashi' ? _toHeikinAshi(candles) : candles;
+        if (this.candleSeries) this.candleSeries.setData(displayCandles);
+        if (this.volumeSeries) this.volumeSeries.setData(volumes);
+        if (this.emaSeries)    this.emaSeries.setData(emaData);
+        this.chart.timeScale().fitContent();
+        this._clearOverlay();
+
+        const last = candles[candles.length - 1];
+        this.lastClosePrice = last.close;
+        this._cachedCandles = candles;   // simpan untuk engine redraw
+
+        this._updateHeaderUI(last.close, null, cfg);
+
+        // Gambar engine overlay otomatis
+        if (this.overlay) this.overlay.drawEngine(this.currentEngine, candles);
+    }
+
+    /* =========================================================
+       YAHOO POLLING — update setiap 30 detik
+       ========================================================= */
+    _startYahooPoller(cfg, interval) {
+        this._stopYahooPoller();
+        this._yahooPoller = setInterval(async () => {
+            const quickUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${cfg.yahooSym}?interval=${interval}&range=1d&includePrePost=false`;
+            const proxied  = `https://api.allorigins.win/raw?url=${encodeURIComponent(quickUrl)}`;
+            try {
+                const res    = await fetch(proxied, { signal: AbortSignal.timeout(8000) });
+                const json   = await res.json();
+                const result = json?.chart?.result?.[0];
+                if (!result) return;
+                const ohlcv  = result.indicators?.quote?.[0];
+                const stamps = result.timestamp;
+                if (!ohlcv || !stamps || stamps.length === 0) return;
+                const idx   = stamps.length - 1;
+                const c     = ohlcv.close[idx], o = ohlcv.open[idx];
+                const h     = ohlcv.high[idx],  l = ohlcv.low[idx];
+                if (!c || isNaN(c)) return;
+                const candle = {
+                    time: stamps[idx],
+                    open: o||c, high: Math.max(h||c, o||c, c),
+                    low:  Math.min(l||c, o||c, c), close: c,
+                };
+                // Validasi candle sebelum update
+                if (candle.high >= candle.low && candle.close > 0) {
+                    if (this.candleSeries) this.candleSeries.update(candle);
+                    this.lastClosePrice = c;
+                    this._updateHeaderUI(c, o>0 ? ((c-o)/o)*100 : null, cfg);
+                }
+            } catch(e) { /* silent */ }
+        }, 30000);
+    }
+
+    _stopYahooPoller() {
+        if (this._yahooPoller) { clearInterval(this._yahooPoller); this._yahooPoller = null; }
+    }
+
+    /* =========================================================
+       BINANCE WEBSOCKET dengan exponential backoff
+       ========================================================= */
+    _connectBinanceWS(bSym, bIntvl) {
+        const sym = bSym.toLowerCase();
+
+        try {
+            this.wsKline = new WebSocket(`wss://stream.binance.com:9443/ws/${sym}@kline_${bIntvl}`);
+            this.wsKline.onopen    = () => { this.wsRetryDelay = 3000; }; // reset backoff
+            this.wsKline.onmessage = (evt) => {
+                const msg = JSON.parse(evt.data);
+                if (!msg?.k) return;
+                const k = msg.k;
+                const candle = {
+                    time: Math.floor(k.t/1000),
+                    open: +k.o, high: +k.h, low: +k.l, close: +k.c,
+                };
+                // Validasi sebelum update
+                if (candle.high >= candle.low && candle.close > 0) {
+                    if (this.candleSeries) this.candleSeries.update(candle);
+                    if (this.volumeSeries) this.volumeSeries.update({
+                        time: candle.time, value: +k.v,
+                        color: candle.close>=candle.open ? 'rgba(0,255,163,0.45)' : 'rgba(255,77,109,0.45)',
+                    });
+                    this.lastClosePrice = candle.close;
+                }
+            };
+            this.wsKline.onerror = () => {};
+            this.wsKline.onclose = () => {
+                // Exponential backoff: 3s → 6s → 12s → max 30s
+                clearTimeout(this.wsRetryTimer);
+                this.wsRetryTimer = setTimeout(() => {
+                    this.wsRetryDelay = Math.min(this.wsRetryDelay * 2, 30000);
+                    const cfg = QI_SYMBOL_CONFIG[this.currentSymbol];
+                    if (cfg?.provider === 'binance') this._connectBinanceWS(bSym, bIntvl);
+                }, this.wsRetryDelay);
+            };
+        } catch(e) {}
+
+        try {
+            this.wsTicker = new WebSocket(`wss://stream.binance.com:9443/ws/${sym}@miniTicker`);
+            this.wsTicker.onmessage = (evt) => {
+                const d   = JSON.parse(evt.data);
+                const cfg = QI_SYMBOL_CONFIG[this.currentSymbol];
+                if (!d?.c) return;
+                const price = +d.c, open24 = +d.o;
+                const pct   = open24 > 0 ? ((price-open24)/open24)*100 : 0;
+                this._updateHeaderUI(price, pct, cfg);
+            };
+            this.wsTicker.onerror = () => {};
+            this.wsTicker.onclose = () => {};
+        } catch(e) {}
+    }
+
+    _closeWebSockets() {
+        clearTimeout(this.wsRetryTimer);
+        const safe = (ws) => { if (!ws) return; ws.onclose=null; try{ws.close();}catch(e){} };
+        safe(this.wsKline); safe(this.wsTicker);
+        this.wsKline = null; this.wsTicker = null;
+    }
+
+    /* =========================================================
+       UPDATE HEADER
+       ========================================================= */
+    _updateHeaderUI(price, changePct, cfg) {
+        if (!price || isNaN(price)) return;
+        const dp  = cfg?.priceDp ?? 2;
+        const str = price.toLocaleString('en-US', { minimumFractionDigits:dp, maximumFractionDigits:dp });
+
+        const el = id => document.getElementById(id);
+        if (el('topLivePrice')) {
+            el('topLivePrice').textContent = str;
+            el('topLivePrice').className   = (!changePct||changePct>=0)
+                ? 'font-bold text-emerald-400 text-sm' : 'font-bold text-rose-400 text-sm';
+        }
+        if (el('chartLabelPrice'))  el('chartLabelPrice').textContent  = str;
+        if (el('chartLabelSymbol') && cfg) el('chartLabelSymbol').textContent = cfg.label;
+        if (el('topPriceChange') && changePct !== null && changePct !== undefined) {
+            const s = changePct>=0?'+':'';
+            el('topPriceChange').textContent = `${s}${changePct.toFixed(2)}%`;
+            el('topPriceChange').className   = changePct>=0
+                ? 'text-[11px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold'
+                : 'text-[11px] text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded font-bold';
+        }
+        if (typeof recalculateQuantumEngineLevels === 'function') {
+            recalculateQuantumEngineLevels(price);
+        }
+    }
+
+    /* =========================================================
+       OVERLAY HELPER
+       ========================================================= */
+    _showStatus(msg) { this._setOverlay(msg, '#94A3B8'); }
+    _showError(msg)  { console.error('[QI]', msg); this._setOverlay(`⚠ ${msg}`, '#FF4D6D'); }
+    _setOverlay(msg, color) {
+        const c = document.getElementById(this.containerId);
+        if (!c) return;
+        let el = c.querySelector('.qi-overlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.className  = 'qi-overlay';
+            el.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono,monospace;font-size:12px;pointer-events:none;z-index:5;padding:16px;text-align:center;';
+            c.style.position = 'relative';
+            c.appendChild(el);
+        }
+        el.style.color  = color;
+        el.textContent  = msg;
+        if (color === '#94A3B8') setTimeout(() => el.remove(), 8000);
+    }
+    _clearOverlay() {
+        document.getElementById(this.containerId)?.querySelector('.qi-overlay')?.remove();
+    }
+
+    /* =========================================================
+       PUBLIC API — Ganti Simbol
+       ========================================================= */
+    setSymbol(symbol) {
+        this.currentSymbol = symbol;
+        Object.keys(QI_SYMBOL_CONFIG).forEach(s => {
+            const btn = document.getElementById(`pair-${s}`);
+            if (btn) btn.className = 'min-h-[44px] px-2.5 sm:px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all border border-transparent flex items-center';
+        });
+        const ab = document.getElementById(`pair-${symbol}`);
+        if (ab) ab.className = 'min-h-[44px] px-2.5 sm:px-3 py-1.5 rounded-lg active-tab font-bold transition-all border flex items-center';
+        this._loadDataAndStream();
+    }
+
+    /* =========================================================
+       PUBLIC API — Ganti Timeframe
+       ========================================================= */
+    setInterval(tf) {
+        this.currentInterval = tf;
+        ['1','5','15','30','60','240','D','M1','M5','M15','M30','H1','H4','D1'].forEach(t => {
+            const btn = document.getElementById(`tf-${t}`);
+            if (btn) btn.className = 'min-h-[44px] px-2 py-1 rounded text-slate-400 hover:text-white flex items-center';
+        });
+        const ab = document.getElementById(`tf-${tf}`);
+        if (ab) ab.className = 'min-h-[44px] px-2 py-1 rounded active-tab font-bold border flex items-center';
+        const tfNames = {'1':'M1','5':'M5','15':'M15','30':'M30','60':'H1','240':'H4','D':'D1'};
+        const tfL = document.getElementById('tf-active');
+        if (tfL) tfL.textContent = tfNames[tf] || tf;
+        this._loadDataAndStream();
+    }
+
+    /* =========================================================
+       PUBLIC API — Ganti Engine (dipanggil dari switchQuantumEngine)
+       ========================================================= */
+    setEngine(engineCode) {
+        this.currentEngine = engineCode;
+        if (this.overlay && this._cachedCandles.length > 0) {
+            this.overlay.drawEngine(engineCode, this._cachedCandles);
+        }
+    }
+
+    /* =========================================================
+       TOOLBAR DRAWING TOOLS (manual)
+       ========================================================= */
+    toggleCrosshair() {
+        if (!this.chart) return;
+        this.isCrosshairActive = !this.isCrosshairActive;
+        this.chart.applyOptions({
+            crosshair: { mode: this.isCrosshairActive
+                ? LightweightCharts.CrosshairMode.Normal
+                : LightweightCharts.CrosshairMode.Magnet }
+        });
+        document.getElementById('btn-crosshair')?.classList.toggle('active', this.isCrosshairActive);
+    }
+
+    zoomIn()  { if(!this.chart)return; this.currentBarSpacing=Math.min(this.currentBarSpacing+2,40); this.chart.timeScale().applyOptions({barSpacing:this.currentBarSpacing}); }
+    zoomOut() { if(!this.chart)return; this.currentBarSpacing=Math.max(this.currentBarSpacing-2,2);  this.chart.timeScale().applyOptions({barSpacing:this.currentBarSpacing}); }
+
+    addTrendline() {
+        if (!this.candleSeries||!this.lastClosePrice) return;
+        this.createdPriceLines.push(this.candleSeries.createPriceLine({
+            price:this.lastClosePrice*1.005, color:'#00E5FF', lineWidth:2,
+            lineStyle:LightweightCharts.LineStyle.Solid, title:'TRENDLINE',
+        }));
+    }
+
+    addRectangleZone() {
+        if (!this.candleSeries||!this.lastClosePrice) return;
+        const p = this.lastClosePrice;
+        [{price:p*1.01,title:'ORDER BLOCK TOP'},{price:p*0.99,title:'ORDER BLOCK BOTTOM'}].forEach(({price,title})=>{
+            this.createdPriceLines.push(this.candleSeries.createPriceLine({
+                price, color:'#7C4DFF', lineWidth:2, lineStyle:LightweightCharts.LineStyle.Dashed, title,
+            }));
+        });
+    }
+
+    addHorizontalLine() {
+        if (!this.candleSeries||!this.lastClosePrice) return;
+        this.createdPriceLines.push(this.candleSeries.createPriceLine({
+            price:this.lastClosePrice, color:'#00FFA3', lineWidth:2,
+            lineStyle:LightweightCharts.LineStyle.Dotted, title:'SNR LEVEL',
+        }));
+    }
+
+    addFibonacciRetracement() {
+        if (!this.candleSeries||!this.lastClosePrice) return;
+        const p = this.lastClosePrice;
+        [{ratio:0.618,label:'FIB 0.618'},{ratio:0.500,label:'FIB 0.500'},{ratio:0.382,label:'FIB 0.382'}].forEach(({ratio,label})=>{
+            this.createdPriceLines.push(this.candleSeries.createPriceLine({
+                price:p*(1-ratio*0.015), color:'#FFAB00', lineWidth:1,
+                lineStyle:LightweightCharts.LineStyle.Dashed, title:label,
+            }));
+        });
+    }
+
+    addTextMarker() {
+        if (!this.candleSeries||!this.lastClosePrice) return;
+        this.createdPriceLines.push(this.candleSeries.createPriceLine({
+            price:this.lastClosePrice, color:'#FF6B6B', lineWidth:1,
+            lineStyle:LightweightCharts.LineStyle.Solid, title:'CATATAN',
+        }));
+    }
+
+    toggleCandleType() {
+        this.candleType = this.candleType === 'heikinashi' ? 'standard' : 'heikinashi';
+        const isHA = this.candleType === 'heikinashi';
+        const btn = document.getElementById('btn-candle-type');
+        if (btn) {
+            btn.textContent = isHA ? 'HA' : 'STD';
+            btn.title = isHA ? 'Mode Heikin Ashi Aktif' : 'Mode Standard Candles Aktif';
+            btn.classList.toggle('active-tab', isHA);
+        }
+        if (this._cachedCandles && this._cachedCandles.length > 0) {
+            const displayCandles = isHA ? _toHeikinAshi(this._cachedCandles) : this._cachedCandles;
+            if (this.candleSeries) this.candleSeries.setData(displayCandles);
+        }
+        if (window.showQuantumToast) {
+            window.showQuantumToast(isHA ? '🕯️ Heikin Ashi Mode: AKTIF' : '🕯️ Standard Candles: AKTIF', 'info', 1500);
+        }
+        if (window.QuantumAudio) window.QuantumAudio.playChime('success');
+    }
+
+    toggleMagnetMode() {
+        if (!this.chart) return;
+        this.isMagnetActive = !this.isMagnetActive;
+        this.chart.applyOptions({
+            crosshair: {
+                mode: this.isMagnetActive
+                    ? LightweightCharts.CrosshairMode.Magnet
+                    : LightweightCharts.CrosshairMode.Normal
+            }
+        });
+        const btn = document.getElementById('btn-magnet');
+        if (btn) btn.classList.toggle('active', this.isMagnetActive);
+        if (window.showQuantumToast) {
+            window.showQuantumToast(this.isMagnetActive ? '🧲 Magnet Mode: AKTIF' : '🧲 Magnet Mode: NONAKTIF', 'info', 1500);
+        }
+    }
+
+    applyDrawingTemplate(type) {
+        if (!this.candleSeries || !this.lastClosePrice) return;
+        const p = this.lastClosePrice;
+        this.clearAllDrawings();
+
+        if (type === 'SNR_SETUP') {
+            this.createdPriceLines.push(
+                this.candleSeries.createPriceLine({ price: p * 1.015, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'MAJOR RESISTANCE R1' }),
+                this.candleSeries.createPriceLine({ price: p * 1.006, color: '#FF4D6D', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'MINOR RESISTANCE R2' }),
+                this.candleSeries.createPriceLine({ price: p * 0.985, color: '#00FFA3', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'KEY DEMAND SUPPORT S1' })
+            );
+            if (window.showQuantumToast) window.showQuantumToast('📐 Template Setup SNR Diterapkan!', 'success');
+        } else if (type === 'SMC_SETUP') {
+            this.createdPriceLines.push(
+                this.candleSeries.createPriceLine({ price: p * 1.012, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'LIQUIDITY SWEEP POOL' }),
+                this.candleSeries.createPriceLine({ price: p * 0.995, color: '#7C4DFF', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BULLISH ORDER BLOCK (FVG)' }),
+                this.candleSeries.createPriceLine({ price: p * 0.988, color: '#FF5252', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'CHoCH INVARIANCE SL' })
+            );
+            if (window.showQuantumToast) window.showQuantumToast('📐 Template Setup SMC Order Block Diterapkan!', 'success');
+        } else if (type === 'FIB_BREAKOUT') {
+            this.createdPriceLines.push(
+                this.candleSeries.createPriceLine({ price: p * 1.025, color: '#00FFA3', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'FIB TARGET 1.618' }),
+                this.candleSeries.createPriceLine({ price: p * 0.992, color: '#FFAB00', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'GOLDEN POCKET 0.618' }),
+                this.candleSeries.createPriceLine({ price: p * 0.985, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'INVALIDATION 0.786' })
+            );
+            if (window.showQuantumToast) window.showQuantumToast('📐 Template Fibonacci Golden Breakout Diterapkan!', 'success');
+        }
+        if (window.QuantumAudio) window.QuantumAudio.playChime('success');
+    }
+
+    clearAllDrawings() {
+        if (!this.candleSeries) return;
+        // Hapus manual drawings
+        this.createdPriceLines.forEach(l=>{ try{this.candleSeries.removePriceLine(l);}catch(e){} });
+        this.createdPriceLines = [];
+        // Hapus engine overlay juga
+        if (this.overlay) this.overlay.clearAll();
+    }
+
+    // Backward compat
+    updateHeaderPriceUI(price, pct) {
+        this._updateHeaderUI(price, pct, QI_SYMBOL_CONFIG[this.currentSymbol]);
+    }
+}
+
+/* =============================================================
+   GLOBAL INSTANCE
+   ============================================================= */
+let quantumTerminalManager = null;
+
+function initQuantumRealtimeSystem() {
+    quantumTerminalManager = new QuantumRealtimeTerminalManager({
+        containerId: 'tradingview_advanced_widget',
+        symbol:      'BTCUSDT',
+        interval:    '60',
+        engine:      'SNR',
+    });
+    quantumTerminalManager.initChart();
+
+    // FITUR 1.4 & COMMAND PALETTE SHORTCUTS ENGINE
+    window.addEventListener('keydown', (e) => {
+        // Handle Ctrl+K global (bisa dipanggil kapanpun)
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (typeof openCommandPalette === 'function') openCommandPalette();
+            return;
+        }
+
+        // Jangan aktifkan shortcut tunggal jika user sedang mengetik di input / textarea
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (['input', 'textarea', 'select'].includes(activeTag)) return;
+
+        if (!quantumTerminalManager) return;
+
+        const key = e.key.toLowerCase();
+
+        if (e.shiftKey) {
+            if (key === 'w') {
+                e.preventDefault();
+                showQuantumToast('★ Watchlist Favorit (Shift+W)', 'info');
+                return;
+            }
+            if (key === 'a') {
+                e.preventDefault();
+                showQuantumToast('🔔 Buat Alert Harga (Shift+A)', 'info');
+                return;
+            }
+        }
+
+        switch (key) {
+            case '/':
+                e.preventDefault();
+                if (typeof openCommandPalette === 'function') openCommandPalette();
+                break;
+            case 'c':
+                e.preventDefault();
+                quantumTerminalManager.toggleCrosshair();
+                showQuantumToast('🎯 Crosshair Mode Toggled', 'info', 1500);
+                break;
+            case '+': case '=':
+                e.preventDefault();
+                quantumTerminalManager.zoomIn();
+                break;
+            case '-': case '_':
+                e.preventDefault();
+                quantumTerminalManager.zoomOut();
+                break;
+            case 't':
+                e.preventDefault();
+                quantumTerminalManager.addTrendline();
+                showQuantumToast('↗ Trendline Digambar', 'success', 2000);
+                break;
+            case 'r':
+                e.preventDefault();
+                quantumTerminalManager.addRectangleZone();
+                showQuantumToast('▭ Order Block Zone Digambar', 'success', 2000);
+                break;
+            case 'h':
+                e.preventDefault();
+                quantumTerminalManager.addHorizontalLine();
+                showQuantumToast('― Horizontal SNR Line Digambar', 'success', 2000);
+                break;
+            case 'f':
+                e.preventDefault();
+                quantumTerminalManager.addFibonacciRetracement();
+                showQuantumToast('📐 Fibonacci Golden Zone Digambar', 'success', 2000);
+                break;
+            case '1':
+                e.preventDefault();
+                quantumTerminalManager.setInterval('5');
+                showQuantumToast('TF Diubah ke M5', 'info', 1500);
+                break;
+            case '2':
+                e.preventDefault();
+                quantumTerminalManager.setInterval('15');
+                showQuantumToast('TF Diubah ke M15', 'info', 1500);
+                break;
+            case '3':
+                e.preventDefault();
+                quantumTerminalManager.setInterval('60');
+                showQuantumToast('TF Diubah ke H1', 'info', 1500);
+                break;
+            case '4':
+                e.preventDefault();
+                quantumTerminalManager.setInterval('240');
+                showQuantumToast('TF Diubah ke H4', 'info', 1500);
+                break;
+            case '5':
+                e.preventDefault();
+                quantumTerminalManager.setInterval('D');
+                showQuantumToast('TF Diubah ke D1', 'info', 1500);
+                break;
+            case 'escape':
+                e.preventDefault();
+                if (typeof closeCommandPalette === 'function') closeCommandPalette();
+                quantumTerminalManager.clearAllDrawings();
+                showQuantumToast('🗑 Gambar & Overlay Dibersihkan', 'warning', 2000);
+                break;
+        }
+    });
+}
