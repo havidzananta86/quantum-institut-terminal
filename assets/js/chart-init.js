@@ -717,17 +717,22 @@ class QuantumRealtimeTerminalManager {
         const container = document.getElementById(this.containerId);
         if (!container) { console.error('[QI] Container tidak ditemukan:', this.containerId); return; }
 
-        // PERBAIKAN CRITICAL: Handle CDN loading delay & multi-CDN fallback
+        // iOS Standalone PWA CDN loader fallback
         if (typeof LightweightCharts === 'undefined') {
-            console.warn('[QI] LightweightCharts belum siap. Memulai CDN retry & fallback loader...');
+            console.warn('[QI iOS PWA] LightweightCharts belum siap. Memulai CDN retry & fallback loader...');
             this._showStatus('⟳ Memuat library TradingView Lightweight Charts...');
 
-            // Coba suntikkan backup CDN jika CDN utama terhambat
-            if (!document.getElementById('qi-backup-cdn')) {
-                const backupScript = document.createElement('script');
-                backupScript.id = 'qi-backup-cdn';
-                backupScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js';
-                document.head.appendChild(backupScript);
+            if (!document.getElementById('qi-backup-cdn-jsdelivr')) {
+                const s1 = document.createElement('script');
+                s1.id = 'qi-backup-cdn-jsdelivr';
+                s1.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+                document.head.appendChild(s1);
+            }
+            if (!document.getElementById('qi-backup-cdn-cdnjs')) {
+                const s2 = document.createElement('script');
+                s2.id = 'qi-backup-cdn-cdnjs';
+                s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js';
+                document.head.appendChild(s2);
             }
 
             let attempts = 0;
@@ -737,15 +742,15 @@ class QuantumRealtimeTerminalManager {
                     clearInterval(checkTimer);
                     console.log('[QI] LightweightCharts siap setelah', attempts * 200, 'ms');
                     this.initChart();
-                } else if (attempts >= 25) { // 5 detik timeout
+                } else if (attempts >= 40) { // 8 detik timeout
                     clearInterval(checkTimer);
-                    this._showError('Gagal memuat library chart. Silakan cek jaringan & refresh.');
+                    this._showError('Gagal memuat library chart. Silakan cek koneksi internet.');
                 }
             }, 200);
             return;
         }
 
-        // Pastikan container punya tinggi eksplisit minimal 300px
+        // Ensure container has minimum height
         if (container.offsetHeight < 50) {
             container.style.height = '500px';
             container.style.minHeight = '300px';
@@ -754,7 +759,6 @@ class QuantumRealtimeTerminalManager {
         if (this.chart) { try { this.chart.remove(); } catch(e) {} this.chart = null; }
         container.innerHTML = '';
 
-        // Hitung lebar dan tinggi eksplisit agar canvas tidak pernah 0px
         const parentW = container.clientWidth || container.offsetWidth || (container.parentElement ? container.parentElement.clientWidth : 0) || 800;
         const parentH = container.offsetHeight || container.clientHeight || 500;
 
@@ -799,22 +803,40 @@ class QuantumRealtimeTerminalManager {
             crosshairMarkerRadius: 0,
         });
 
-        // Inisialisasi engine overlay
         this.overlay = new QuantumEngineOverlay(this.chart, this.candleSeries);
 
-        // Polling resize & force canvas dimensions
+        // Multi-stage forceResize for iOS Safari Standalone WebApp flex layout recalculations
         const forceResize = () => {
-            if (this.chart && container.clientWidth > 50) {
-                this.chart.applyOptions({
-                    width:  container.clientWidth,
-                    height: container.offsetHeight || 500,
-                });
+            if (this.chart && container) {
+                const w = container.clientWidth || container.offsetWidth || 800;
+                const h = container.offsetHeight || container.clientHeight || 500;
+                if (w > 50 && h > 50) {
+                    this.chart.applyOptions({ width: w, height: h });
+                }
             }
         };
         setTimeout(forceResize, 100);
-        setTimeout(forceResize, 500);
+        setTimeout(forceResize, 300);
+        setTimeout(forceResize, 700);
+        setTimeout(forceResize, 1200);
 
-        new ResizeObserver(forceResize).observe(container);
+        try {
+            new ResizeObserver(forceResize).observe(container);
+        } catch(e) {
+            window.addEventListener('resize', forceResize);
+        }
+
+        // iOS Standalone app visibility resume listener
+        if (!this._visibilityAttached) {
+            this._visibilityAttached = true;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && this.chart && this.currentSymbol) {
+                    console.log('[QI iOS PWA] App resumed — reloading chart data...');
+                    forceResize();
+                    this._loadDataAndStream();
+                }
+            });
+        }
 
         this._loadDataAndStream();
     }
