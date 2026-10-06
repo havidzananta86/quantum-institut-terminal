@@ -317,6 +317,11 @@
                 ?
             </button>
 
+            <!-- PWA INSTALL BUTTON — muncul otomatis jika browser support install -->
+            <button id="pwaInstallBtn" onclick="triggerPwaInstall()" class="hidden min-h-[36px] px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 hover:from-emerald-500/30 hover:to-cyan-500/30 text-xs flex items-center gap-1.5 font-bold animate-pulse-slow" title="Install Quantum Terminal sebagai Native App">
+                <span>📲</span><span class="hidden sm:inline">Install App</span>
+            </button>
+
             <button id="bgmToggleBtn" onclick="toggleBgmMusic()" class="min-h-[36px] px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-rose-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/40 text-xs flex items-center gap-1 font-mono" title="Toggle TikTok Audio Vibes">
                 <span id="bgmIcon">🎵</span><span id="bgmLabel" class="hidden sm:inline">Vibes</span>
             </button>
@@ -1519,6 +1524,208 @@
             }
         }
     </script>
+
+
+    <!-- ============================================================ -->
+    <!-- PWA INSTALL MODAL — Instruksi iOS Add to Home Screen        -->
+    <!-- ============================================================ -->
+    <div id="pwaInstallModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[9998] hidden items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-slate-900 to-[#050A1A] border border-emerald-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl shadow-emerald-500/10">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <div class="text-5xl mb-3">📱</div>
+                <h2 class="text-xl font-black text-emerald-300 mb-1">Install Quantum Terminal</h2>
+                <p class="text-slate-400 text-xs">Tambahkan ke layar utama iPhone kamu</p>
+            </div>
+
+            <!-- iOS Steps -->
+            <div class="space-y-3 mb-6" id="pwaIosSteps">
+                <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                    <span class="text-2xl mt-0.5">1️⃣</span>
+                    <div>
+                        <p class="text-white text-sm font-bold">Tekan tombol Share</p>
+                        <p class="text-slate-400 text-xs">Tombol <strong class="text-emerald-400">⬆️ Share</strong> di bagian bawah Safari — terlihat seperti kotak dengan panah ke atas</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                    <span class="text-2xl mt-0.5">2️⃣</span>
+                    <div>
+                        <p class="text-white text-sm font-bold">Pilih "Add to Home Screen"</p>
+                        <p class="text-slate-400 text-xs">Scroll ke bawah di menu Share, cari <strong class="text-emerald-400">"Add to Home Screen"</strong> lalu tap</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                    <span class="text-2xl mt-0.5">3️⃣</span>
+                    <div>
+                        <p class="text-white text-sm font-bold">Tap "Add" — Selesai!</p>
+                        <p class="text-slate-400 text-xs">Quantum Terminal akan muncul di Home Screen kamu seperti app native <strong class="text-cyan-400">tanpa address bar</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Android/Desktop Steps (hidden by default, shown for non-iOS) -->
+            <div class="hidden space-y-3 mb-6" id="pwaAndroidSteps">
+                <div class="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
+                    <span class="text-2xl mt-0.5">📲</span>
+                    <div>
+                        <p class="text-white text-sm font-bold">Install Langsung</p>
+                        <p class="text-slate-400 text-xs">Browser kamu mendukung instalasi langsung. Klik tombol di bawah untuk menginstall Quantum Terminal sebagai app native.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3">
+                <button id="pwaInstallConfirmBtn" onclick="confirmPwaInstall()" class="hidden flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-black text-sm hover:from-emerald-400 hover:to-cyan-400 transition-all">
+                    📲 Install Sekarang
+                </button>
+                <button onclick="closePwaInstallModal()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition-all">
+                    Nanti Saja
+                </button>
+            </div>
+
+            <!-- Footer note -->
+            <p class="text-center text-slate-600 text-xs mt-4">✅ Gratis • Tidak perlu App Store • Bekerja offline</p>
+        </div>
+    </div>
+
+
+    <!-- ============================================================ -->
+    <!-- PWA INSTALL — JavaScript Logic                               -->
+    <!-- ============================================================ -->
+    <script>
+        // ── PWA Install State ─────────────────────────────────────
+        let _pwaInstallPrompt = null;      // Holds the deferred beforeinstallprompt event
+        let _pwaIsIos = false;
+        let _pwaIsInStandalone = false;
+
+        (function initPWAInstall() {
+            // Detect iOS (iPhone / iPad)
+            _pwaIsIos = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            // Detect if already running as installed PWA (standalone mode)
+            _pwaIsInStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                 window.navigator.standalone === true;
+
+            const installBtn = document.getElementById('pwaInstallBtn');
+
+            if (_pwaIsInStandalone) {
+                // Already installed — hide button completely
+                if (installBtn) installBtn.remove();
+                return;
+            }
+
+            if (_pwaIsIos) {
+                // iOS Safari: no beforeinstallprompt, show button manually
+                // Show after 3 seconds so it doesn't distract from audio modal
+                setTimeout(() => {
+                    if (installBtn) installBtn.classList.remove('hidden');
+                }, 3000);
+            } else {
+                // Chrome / Edge / Android: listen for beforeinstallprompt
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    _pwaInstallPrompt = e;
+                    if (installBtn) installBtn.classList.remove('hidden');
+                    console.log('[PWA] Install prompt captured ✅');
+                });
+
+                // Also listen for successful install
+                window.addEventListener('appinstalled', () => {
+                    _pwaInstallPrompt = null;
+                    if (installBtn) installBtn.remove();
+                    if (window.showQuantumToast) {
+                        window.showQuantumToast('📲 Quantum Terminal berhasil diinstall!', 'success');
+                    }
+                    console.log('[PWA] App installed successfully ✅');
+                });
+            }
+        })();
+
+        // ── Open Install Modal / Trigger Install ──────────────────
+        function triggerPwaInstall() {
+            const modal = document.getElementById('pwaInstallModal');
+            const iosSteps = document.getElementById('pwaIosSteps');
+            const androidSteps = document.getElementById('pwaAndroidSteps');
+            const confirmBtn = document.getElementById('pwaInstallConfirmBtn');
+
+            if (_pwaIsIos) {
+                // iOS: show manual instruction steps
+                if (iosSteps) iosSteps.classList.remove('hidden');
+                if (androidSteps) androidSteps.classList.add('hidden');
+                if (confirmBtn) confirmBtn.classList.add('hidden');
+            } else if (_pwaInstallPrompt) {
+                // Chrome/Edge/Android: show one-click install
+                if (iosSteps) iosSteps.classList.add('hidden');
+                if (androidSteps) androidSteps.classList.remove('hidden');
+                if (confirmBtn) confirmBtn.classList.remove('hidden');
+            } else {
+                // Fallback: show iOS-style instructions
+                if (iosSteps) iosSteps.classList.remove('hidden');
+                if (androidSteps) androidSteps.classList.add('hidden');
+                if (confirmBtn) confirmBtn.classList.add('hidden');
+            }
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        // ── Confirm Install (Chrome/Android) ──────────────────────
+        async function confirmPwaInstall() {
+            if (!_pwaInstallPrompt) return;
+
+            try {
+                const result = await _pwaInstallPrompt.prompt();
+                console.log('[PWA] User choice:', result.outcome);
+
+                if (result.outcome === 'accepted') {
+                    _pwaInstallPrompt = null;
+                    closePwaInstallModal();
+                    const installBtn = document.getElementById('pwaInstallBtn');
+                    if (installBtn) installBtn.remove();
+                    if (window.showQuantumToast) {
+                        window.showQuantumToast('📲 Menginstall Quantum Terminal...', 'success');
+                    }
+                } else {
+                    if (window.showQuantumToast) {
+                        window.showQuantumToast('💡 Kamu bisa install kapan saja via tombol Install App', 'info');
+                    }
+                    closePwaInstallModal();
+                }
+            } catch (err) {
+                console.error('[PWA] Install error:', err);
+                closePwaInstallModal();
+            }
+        }
+
+        // ── Close Modal ───────────────────────────────────────────
+        function closePwaInstallModal() {
+            const modal = document.getElementById('pwaInstallModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('pwaInstallModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closePwaInstallModal();
+        });
+
+        // ── Service Worker Registration ───────────────────────────
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[SW] Registered:', reg.scope))
+                    .catch(err => console.log('[SW] Registration failed (optional):', err));
+            });
+        }
+    </script>
+
 </body>
 </html>
+
 

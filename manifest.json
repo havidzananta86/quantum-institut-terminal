@@ -8,12 +8,21 @@
   "orientation": "any",
   "background_color": "#050A1A",
   "theme_color": "#050A1A",
+  "categories": ["finance", "utilities"],
   "icons": [
     {
-      "src": "assets/img/logo.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "lang": "id-ID"
 }
