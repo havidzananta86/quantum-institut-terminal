@@ -1458,8 +1458,8 @@
         </div>
     </div>
 
-    <!-- TIKTOK AUDIO BGM ELEMENT -->
-    <audio id="bgmAudioElement" src="assets/audio/bgm.mp3" preload="auto" loop></audio>
+    <!-- TIKTOK AUDIO BGM PLAYLIST ELEMENT -->
+    <audio id="bgmAudioElement" src="assets/audio/bgm.mp3" preload="auto"></audio>
 
     <!-- AUDIO VIBES WARNING OVERLAY MODAL -->
     <div id="audioVibesModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 font-mono">
@@ -1477,7 +1477,7 @@
                 </div>
                 <h2 class="text-lg font-bold text-white tracking-tight">Nyalakan Volume HP / Laptop</h2>
                 <p class="text-xs text-slate-300 leading-relaxed font-sans">
-                    Nyalakan volume untuk mendengarkan vibes dari webapp ini... Nikmati musik latar eksklusif saat menganalisa pasar Kuantum!
+                    Nyalakan volume untuk mendengarkan vibes dari webapp ini... Nikmati playlist musik TikTok eksklusif (2 Track) saat menganalisa pasar Kuantum!
                 </p>
             </div>
 
@@ -1495,16 +1495,41 @@
     <!-- PRO TRADING TOOLS SCRIPT SUITE -->
     <script src="assets/js/pro-trading-tools.js"></script>
     <script>
+        // ── TikTok Audio Playlist State ──────────────────────────────
+        const _bgmPlaylist = [
+            { src: 'assets/audio/bgm.mp3', title: 'TikTok Vibes #1 (02h.bia)' },
+            { src: 'assets/audio/bgm2.mp3', title: 'TikTok Vibes #2 (Future Millionaire Club)' }
+        ];
+        let _currentBgmIndex = 0;
+
+        // Auto Next Track on Song Ended
+        document.getElementById('bgmAudioElement')?.addEventListener('ended', function() {
+            playNextBgmTrack();
+        });
+
+        function playNextBgmTrack() {
+            const audio = document.getElementById('bgmAudioElement');
+            if (!audio) return;
+            _currentBgmIndex = (_currentBgmIndex + 1) % _bgmPlaylist.length;
+            const nextTrack = _bgmPlaylist[_currentBgmIndex];
+            audio.src = nextTrack.src;
+            audio.play().then(() => {
+                updateBgmUI(true);
+                if (window.showQuantumToast) {
+                    window.showQuantumToast(`🎵 Memutar Lagu Selanjutnya: ${nextTrack.title}`, 'success', 3000);
+                }
+            }).catch(e => console.warn('Next BGM error:', e));
+        }
+
         function startQuantumVibesBGM() {
             const audio = document.getElementById('bgmAudioElement');
             const modal = document.getElementById('audioVibesModal');
             if (modal) modal.classList.add('hidden');
             if (audio) {
-                audio.volume = 0.6;
-                audio.loop = true;
+                audio.volume = 0.65;
                 audio.play().then(() => {
                     updateBgmUI(true);
-                    if (window.showQuantumToast) window.showQuantumToast('🎵 Musik Vibes Aktif (TikTok Audio)', 'success', 2000);
+                    if (window.showQuantumToast) window.showQuantumToast(`🎵 Musik Vibes Aktif (${_bgmPlaylist[_currentBgmIndex].title})`, 'success', 2500);
                 }).catch(e => {
                     console.warn('BGM Autoplay blocked:', e);
                 });
@@ -1524,7 +1549,7 @@
             if (audio.paused) {
                 audio.play().then(() => {
                     updateBgmUI(true);
-                    if (window.showQuantumToast) window.showQuantumToast('🎵 Musik Vibes Diaktifkan', 'success');
+                    if (window.showQuantumToast) window.showQuantumToast(`🎵 Musik Vibes Diaktifkan (${_bgmPlaylist[_currentBgmIndex].title})`, 'success');
                 }).catch(() => {});
             } else {
                 audio.pause();
@@ -1540,7 +1565,7 @@
             if (!btn) return;
             if (isPlaying) {
                 if (icon) icon.textContent = '🔊';
-                if (label) label.textContent = 'Vibes ON';
+                if (label) label.textContent = `Vibes #${_currentBgmIndex + 1}`;
                 btn.className = "min-h-[36px] px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs flex items-center gap-1 font-mono font-bold animate-pulse";
             } else {
                 if (icon) icon.textContent = '🔇';
