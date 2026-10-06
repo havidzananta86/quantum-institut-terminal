@@ -479,6 +479,9 @@
                         <button onclick="switchBottomTab('papertrading')" id="tab-papertrading" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs">
                             <span>💼 PAPER TRADING</span>
                         </button>
+                        <button onclick="switchBottomTab('confluence')" id="tab-confluence" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 transition-all flex items-center gap-1 text-xs" title="Multi-Timeframe Confluence Matrix & Liquidity Heatmap">
+                            <span>📊 MATRIX</span>
+                        </button>
                         <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
                             <span>🤖 AI RADAR</span>
                         </button>
@@ -626,6 +629,9 @@
                     </div>
                 </div>
 
+                <!-- TAB 5: MULTI-TIMEFRAME CONFLUENCE MATRIX & LIQUIDITY HEATMAP -->
+                <div id="panelConfluenceMatrix" class="space-y-3 hidden"></div>
+
                 <!-- TAB 5: AI RADAR & SIGNALS SCANNER (TIER C - FITUR 29) -->
                 <div id="panelAIScanner" class="space-y-2 hidden">
                     <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
@@ -753,6 +759,7 @@
             }
 
             recalculateQuantumEngineLevels(defaultPrice);
+            if (window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
         }
 
         function setChartInterval(tf) {
@@ -831,10 +838,10 @@
         let selectedCalendarImpact = 'ALL';
 
         function switchBottomTab(tabName) {
-            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'aiscanner'];
+            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'aiscanner'];
             tabs.forEach(t => {
                 const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
-                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : ''}`);
+                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : ''}`);
                 const tabBtn = document.getElementById(`tab-${t}`);
 
                 if (panel) {
@@ -857,6 +864,7 @@
             if (tabName === 'news') fetchRealtimeNews();
             if (tabName === 'orderbook' && window.QuantumOrderBook) window.QuantumOrderBook.render();
             if (tabName === 'papertrading' && window.QuantumPaperTrading) window.QuantumPaperTrading.render();
+            if (tabName === 'confluence' && window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
         }
 
         function filterCalendarCurrency(curr) {

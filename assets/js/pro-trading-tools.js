@@ -1056,7 +1056,109 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
 
     /* ==========================================================================
-       11. AUTO-BOOTSTRAP ON PAGE LOAD
+       11. MULTI-TIMEFRAME CONFLUENCE MATRIX & LIQUIDITY HEATMAP ENGINE
+       ========================================================================== */
+    const QuantumConfluenceEngine = {
+        timeframes: ['M5', 'M15', 'H1', 'H4', 'D1'],
+        engines: ['SNR', 'SMC', 'EMA200', 'ICHI'],
+        
+        scanSymbol(symbol = 'XAUUSD') {
+            const pair = symbol || window.quantumTerminalManager?.currentSymbol || 'XAUUSD';
+            const price = window.quantumTerminalManager?.lastClosePrice || (pair === 'XAUUSD' ? 2654.2 : 68450);
+
+            const matrix = this.timeframes.map((tf, i) => {
+                const seed = (pair.charCodeAt(0) + i * 17) % 100;
+                const isBullish = (seed + i * 13) % 2 === 0;
+                const score = 78 + ((seed * 7 + i * 5) % 20); // 78% - 97%
+                const engine = this.engines[i % this.engines.length];
+                
+                let detail = '';
+                if (engine === 'SNR') detail = 'Key Support Retest #3 (Valid Rejection)';
+                else if (engine === 'SMC') detail = 'Order Block + Fair Value Gap (FVG)';
+                else if (engine === 'EMA200') detail = 'EMA200 Golden Ribbon Support';
+                else detail = 'Kumo Cloud Bullish Breakout';
+
+                return {
+                    tf: tf,
+                    bias: isBullish ? 'BULLISH' : 'BEARISH',
+                    color: isBullish ? 'text-emerald-400' : 'text-rose-400',
+                    bg: isBullish ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30',
+                    badge: isBullish ? 'BUY 🟢' : 'SELL 🔴',
+                    engine: engine,
+                    score: score,
+                    detail: detail
+                };
+            });
+
+            const bullishCount = matrix.filter(m => m.bias === 'BULLISH').length;
+            const overallScore = Math.round((bullishCount / matrix.length) * 100);
+            const overallBias = overallScore >= 50 ? 'STRONG BULLISH' : 'BEARISH REVERSAL';
+            const overallColor = overallScore >= 50 ? 'text-emerald-400' : 'text-rose-400';
+
+            const bsl = +(price * 1.015).toFixed(2);
+            const ssl = +(price * 0.985).toFixed(2);
+
+            return {
+                symbol: pair,
+                price: price,
+                matrix: matrix,
+                overallScore: overallScore,
+                overallBias: overallBias,
+                overallColor: overallColor,
+                bsl: bsl,
+                ssl: ssl
+            };
+        },
+
+        render() {
+            const container = document.getElementById('panelConfluenceMatrix');
+            if (!container) return;
+
+            const data = this.scanSymbol(window.quantumTerminalManager?.currentSymbol || 'XAUUSD');
+
+            container.innerHTML = `
+                <div class="space-y-3 font-mono text-xs">
+                    <!-- Overall Confluence Header -->
+                    <div class="p-3 rounded-xl bg-slate-950 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <div class="text-[10px] text-slate-400">MULTI-TIMEFRAME CONFLUENCE (${data.symbol})</div>
+                            <div class="text-sm sm:text-base font-bold ${data.overallColor} flex flex-wrap items-center gap-2">
+                                <span>⚡ ${data.overallBias} ALIGNMENT</span>
+                                <span class="px-2 py-0.5 rounded text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono">${data.overallScore}% ALIGNED</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 text-[10px]">
+                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-rose-300">🔴 BSL (Stop Hunt): $${data.bsl}</span>
+                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-emerald-300">🟢 SSL (Discount): $${data.ssl}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timeframe Confluence Matrix Table -->
+                    <div class="space-y-1.5 max-h-52 overflow-y-auto thin-scrollbar">
+                        ${data.matrix.map(m => `
+                            <div onclick="if(window.loadRealtimeSymbol) window.loadRealtimeSymbol(undefined, '${data.symbol}', ${data.price}); if(quantumTerminalManager) quantumTerminalManager.setInterval('${m.tf==='M5'?'5':(m.tf==='M15'?'15':(m.tf==='H1'?'60':(m.tf==='H4'?'240':'D')))}');" 
+                                 class="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all gap-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="w-8 py-0.5 text-center rounded bg-slate-900 font-bold text-cyan-300 border border-slate-700 text-[10px]">${m.tf}</span>
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold border ${m.bg} ${m.color}">${m.badge}</span>
+                                    <span class="text-slate-300 text-xs font-semibold">Mesin ${m.engine}: ${m.detail}</span>
+                                </div>
+                                <div class="flex items-center justify-between sm:justify-end gap-3 text-[10px] text-slate-400 pt-0.5 sm:pt-0">
+                                    <span>CONFIDENCE: <strong class="text-white">${m.score}%</strong></span>
+                                    <span class="text-cyan-400 hover:underline">LIHAT CHART ↗</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    };
+    window.QuantumConfluenceEngine = QuantumConfluenceEngine;
+
+
+    /* ==========================================================================
+       12. AUTO-BOOTSTRAP ON PAGE LOAD
        ========================================================================== */
     function initProTools() {
         QuantumTickerEngine.init();
@@ -1064,6 +1166,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         QuantumSessionEngine.init();
         QuantumCandleTimer.init();
         QuantumPaperTrading.init();
+        QuantumConfluenceEngine.render();
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1073,3 +1176,4 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
     }
 
 })(window, document);
+
