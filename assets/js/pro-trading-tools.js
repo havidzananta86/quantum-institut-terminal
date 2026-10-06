@@ -747,21 +747,21 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 const pnl = p.floatingPnL || 0;
                 const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
                 return `
-                    <div class="flex items-center justify-between p-2 rounded bg-slate-950/80 border border-slate-800 text-xs font-mono">
-                        <div class="space-y-0.5">
-                            <div class="flex items-center gap-1.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded bg-slate-950/80 border border-slate-800 text-xs font-mono gap-1.5">
+                        <div class="space-y-0.5 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${isBuy ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${p.side}</span>
                                 <strong class="text-white">${p.symbol}</strong>
                                 <span class="text-slate-400 text-[10px]">${p.lots} Lot</span>
                             </div>
                             <div class="text-[10px] text-slate-400">Entry: $${p.entryPrice.toLocaleString()} | SL: $${p.sl} | TP: $${p.tp}</div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <div class="text-right">
+                        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+                            <div class="text-left sm:text-right">
                                 <div class="${pnlColor} font-bold">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</div>
                                 <div class="text-[9px] text-slate-500">${p.openTime}</div>
                             </div>
-                            <button onclick="QuantumPaperTrading.closePosition('${p.id}')" class="px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 text-[10px] font-bold">TUTUP</button>
+                            <button onclick="QuantumPaperTrading.closePosition('${p.id}')" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 text-[10px] font-bold">TUTUP</button>
                         </div>
                     </div>
                 `;
@@ -897,13 +897,13 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
                     <div class="max-h-36 overflow-y-auto space-y-1 pr-1 thin-scrollbar">
                         ${res.results.map(r => `
-                            <div class="flex items-center justify-between p-1.5 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] font-mono">
-                                <div class="flex items-center gap-2">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-1.5 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] font-mono gap-1">
+                                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
                                     <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${r.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${r.side}</span>
                                     <strong class="text-white">${r.symbol}</strong>
                                     <span class="text-slate-400 text-[10px]">Entry $${r.entry} → Exit $${r.exit}</span>
                                 </div>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                                     <span class="text-slate-400 text-[10px]">SL $${r.sl} | TP $${r.tp}</span>
                                     <span class="${r.isWin?'text-emerald-400':'text-rose-400'} font-bold">${r.isWin?'+':''}$${r.pnl.toFixed(2)}</span>
                                 </div>
