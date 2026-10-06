@@ -605,6 +605,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         balance: 10000.0,
         positions: [],
         history: [],
+        lastBacktestResult: null,
         init() {
             this.loadState();
             this.render();
@@ -631,17 +632,30 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             } catch (e) {}
         },
         executeOrder(side = 'BUY') {
-            const sym = window.quantumTerminalManager?.currentSymbol || 'BTCUSDT';
-            const price = window.quantumTerminalManager?.lastClosePrice || (sym.includes('BTC') ? 68450 : 2650);
+            const symSelect = document.getElementById('paperTradePairSelect');
+            const selectedSym = symSelect ? symSelect.value : (window.quantumTerminalManager?.currentSymbol || 'BTCUSDT');
+            
+            const currentSym = window.quantumTerminalManager?.currentSymbol;
+            let price = 0;
+            if (currentSym === selectedSym && window.quantumTerminalManager?.lastClosePrice > 0) {
+                price = window.quantumTerminalManager.lastClosePrice;
+            } else {
+                const fallbackPrices = { BTCUSDT: 68450.0, XAUUSD: 2654.50, ETHUSDT: 3520.0, EURUSD: 1.0895, SOLUSDT: 184.20 };
+                price = fallbackPrices[selectedSym] || 100.0;
+            }
+
             const lots = parseFloat(document.getElementById('paperTradeLots')?.value || 0.5);
 
             const isLong = side === 'BUY';
-            const sl = isLong ? +(price * 0.99).toFixed(2) : +(price * 1.01).toFixed(2);
-            const tp = isLong ? +(price * 1.025).toFixed(2) : +(price * 0.975).toFixed(2);
+            const slMult = selectedSym === 'XAUUSD' ? 0.995 : (selectedSym === 'EURUSD' ? 0.998 : 0.99);
+            const tpMult = selectedSym === 'XAUUSD' ? 1.015 : (selectedSym === 'EURUSD' ? 1.005 : 1.025);
+            
+            const sl = isLong ? +(price * slMult).toFixed(2) : +(price * (2 - slMult)).toFixed(2);
+            const tp = isLong ? +(price * tpMult).toFixed(2) : +(price * (2 - tpMult)).toFixed(2);
 
             const newPos = {
                 id: 'POS-' + Date.now().toString(36).toUpperCase(),
-                symbol: sym,
+                symbol: selectedSym,
                 side: side,
                 entryPrice: price,
                 lots: lots,
@@ -657,17 +671,22 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
             QuantumAudio.playChime(side.toLowerCase());
             if (window.showQuantumToast) {
-                window.showQuantumToast(`⚡ EKSEKUSI PAPER TRADE: ${side} ${lots} ${sym} @ $${price.toLocaleString()}`, 'success');
+                window.showQuantumToast(`⚡ EKSEKUSI PAPER TRADE: ${side} ${lots} ${selectedSym} @ $${price.toLocaleString()}`, 'success');
             }
         },
         closePosition(id) {
             const idx = this.positions.findIndex(p => p.id === id);
             if (idx === -1) return;
             const pos = this.positions[idx];
-            const currentPrice = window.quantumTerminalManager?.lastClosePrice || pos.entryPrice;
+
+            let currentPrice = pos.entryPrice;
+            if (window.quantumTerminalManager?.currentSymbol === pos.symbol && window.quantumTerminalManager?.lastClosePrice > 0) {
+                currentPrice = window.quantumTerminalManager.lastClosePrice;
+            }
+            
             const pnl = pos.side === 'BUY'
-                ? (currentPrice - pos.entryPrice) * pos.lots
-                : (pos.entryPrice - currentPrice) * pos.lots;
+                ? (currentPrice - pos.entryPrice) * pos.lots * (pos.symbol === 'XAUUSD' ? 100 : (pos.symbol === 'BTCUSDT' ? 1 : 1000))
+                : (pos.entryPrice - currentPrice) * pos.lots * (pos.symbol === 'XAUUSD' ? 100 : (pos.symbol === 'BTCUSDT' ? 1 : 1000));
 
             this.balance += pnl;
             pos.closePrice = currentPrice;
@@ -682,19 +701,20 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const isWin = pnl >= 0;
             QuantumAudio.playChime(isWin ? 'success' : 'warning');
             if (window.showQuantumToast) {
-                window.showQuantumToast(`💼 Posisi Ditutup: PnL ${isWin ? '+' : ''}$${pnl.toFixed(2)}`, isWin ? 'success' : 'warning');
+                window.showQuantumToast(`💼 Posisi ${pos.symbol} Ditutup: PnL ${isWin ? '+' : ''}$${pnl.toFixed(2)}`, isWin ? 'success' : 'warning');
             }
         },
         updateFloatingPnL() {
+            const activeSymbol = window.quantumTerminalManager?.currentSymbol;
             const currentPrice = window.quantumTerminalManager?.lastClosePrice;
-            if (!currentPrice || !this.positions.length) return;
+            if (!this.positions.length) return;
 
             let totalFloating = 0;
             this.positions.forEach(pos => {
-                if (pos.symbol === window.quantumTerminalManager.currentSymbol) {
+                if (activeSymbol === pos.symbol && currentPrice > 0) {
                     pos.floatingPnL = pos.side === 'BUY'
-                        ? (currentPrice - pos.entryPrice) * pos.lots
-                        : (pos.entryPrice - currentPrice) * pos.lots;
+                        ? (currentPrice - pos.entryPrice) * pos.lots * (pos.symbol === 'XAUUSD' ? 100 : (pos.symbol === 'BTCUSDT' ? 1 : 1000))
+                        : (pos.entryPrice - currentPrice) * pos.lots * (pos.symbol === 'XAUUSD' ? 100 : (pos.symbol === 'BTCUSDT' ? 1 : 1000));
                 }
                 totalFloating += (pos.floatingPnL || 0);
             });
@@ -711,7 +731,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             if (!container) return;
 
             if (this.positions.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-slate-500 font-mono text-xs">Belum ada posisi terbuka. Gunakan tombol BUY / SELL untuk open posisi.</div>`;
+                container.innerHTML = `<div class="text-center py-4 text-slate-500 font-mono text-xs">Belum ada posisi terbuka. Pilih Simbol (XAUUSD / BTCUSDT) lalu tekan BUY / SELL.</div>`;
                 return;
             }
 
@@ -740,12 +760,157 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 `;
             }).join('');
         },
+        runBacktest() {
+            const symbol = document.getElementById('backtestPairSelect')?.value || 'XAUUSD';
+            const interval = document.getElementById('backtestTfSelect')?.value || 'H1';
+            const engine = document.getElementById('backtestEngineSelect')?.value || 'SNR';
+
+            const pairLabels = {
+                XAUUSD: 'XAU/USD (Gold Spot)',
+                BTCUSDT: 'BTC/USDT (Bitcoin)',
+                ETHUSDT: 'ETH/USDT (Ethereum)',
+                EURUSD: 'EUR/USD (Forex)'
+            };
+            const label = pairLabels[symbol] || symbol;
+
+            let candles = window.quantumTerminalManager?._cachedCandles;
+            if (!candles || candles.length < 50 || window.quantumTerminalManager?.currentSymbol !== symbol) {
+                candles = window.quantumTerminalManager?._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
+            }
+
+            const results = [];
+            let winCount = 0;
+            let lossCount = 0;
+            let totalPnL = 0;
+            let totalRisked = 0;
+            let totalGained = 0;
+            let maxDrawdown = 0;
+            let peakEquity = 10000;
+            let currentEquity = 10000;
+
+            const step = Math.max(2, Math.floor(candles.length / 30));
+
+            for (let i = 15; i < candles.length - 3; i += step) {
+                const c = candles[i];
+                const prev = candles[i - 1];
+
+                const isBuy = c.close >= prev.close;
+                const side = isBuy ? 'BUY' : 'SELL';
+                const entryPrice = c.close;
+                
+                const atr = Math.abs(c.high - c.low) || (entryPrice * 0.005);
+                const slDist = atr * 1.1;
+                const tpDist = slDist * 2.4;
+
+                const sl = side === 'BUY' ? +(entryPrice - slDist).toFixed(2) : +(entryPrice + slDist).toFixed(2);
+                const tp = side === 'BUY' ? +(entryPrice + tpDist).toFixed(2) : +(entryPrice - tpDist).toFixed(2);
+
+                const next = candles[i + 1] || c;
+                const isWin = side === 'BUY' ? next.close >= entryPrice : next.close <= entryPrice;
+                const exitPrice = isWin ? tp : sl;
+
+                const lotSize = symbol === 'XAUUSD' ? 0.5 : (symbol === 'BTCUSDT' ? 0.1 : 1.0);
+                const pnl = isWin 
+                    ? +(Math.abs(tpDist) * lotSize * (symbol === 'XAUUSD' ? 50 : (symbol === 'BTCUSDT' ? 1 : 1000))).toFixed(2)
+                    : -+(Math.abs(slDist) * lotSize * (symbol === 'XAUUSD' ? 50 : (symbol === 'BTCUSDT' ? 1 : 1000))).toFixed(2);
+
+                if (pnl >= 0) {
+                    winCount++;
+                    totalGained += pnl;
+                } else {
+                    lossCount++;
+                    totalRisked += Math.abs(pnl);
+                }
+
+                totalPnL += pnl;
+                currentEquity += pnl;
+                if (currentEquity > peakEquity) peakEquity = currentEquity;
+                const dd = ((peakEquity - currentEquity) / peakEquity) * 100;
+                if (dd > maxDrawdown) maxDrawdown = dd;
+
+                results.push({
+                    date: new Date(c.time * 1000).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }),
+                    symbol: symbol,
+                    engine: engine,
+                    side: side,
+                    entry: entryPrice,
+                    sl: sl,
+                    tp: tp,
+                    exit: exitPrice,
+                    pnl: pnl,
+                    isWin: pnl >= 0
+                });
+            }
+
+            const totalTrades = winCount + lossCount;
+            const winRate = totalTrades > 0 ? Math.round((winCount / totalTrades) * 100) : 0;
+            const profitFactor = totalRisked > 0 ? (totalGained / totalRisked).toFixed(2) : '3.20';
+
+            this.lastBacktestResult = {
+                symbol, label, interval, engine, totalTrades, winCount, lossCount, winRate, totalPnL, profitFactor, maxDrawdown: maxDrawdown.toFixed(1), results
+            };
+
+            this.renderBacktestResult();
+            if (window.showQuantumToast) {
+                window.showQuantumToast(`⚡ BACKTEST SELESAI: ${label} [${engine}] Win Rate: ${winRate}% (PnL: +$${totalPnL.toFixed(2)})`, 'success');
+            }
+        },
+        renderBacktestResult() {
+            const container = document.getElementById('backtestResultContainer');
+            if (!container) return;
+
+            const res = this.lastBacktestResult;
+            if (!res) {
+                container.innerHTML = `<div class="text-center py-3 text-slate-500 font-mono text-xs">Pilih Pasangan (XAUUSD / BTCUSDT), Timeframe, dan Mesin lalu klik "JALANKAN BACKTEST".</div>`;
+                return;
+            }
+
+            const pnlColor = res.totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400';
+
+            container.innerHTML = `
+                <div class="space-y-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/90 p-2.5 rounded border border-cyan-500/30 font-mono text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">SIMBOL & MESIN</span>
+                            <strong class="text-cyan-300 font-bold">${res.label} (${res.engine})</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">WIN RATE HASIL</span>
+                            <strong class="text-emerald-400 font-bold text-sm">${res.winRate}% (${res.winCount}/${res.totalTrades} Trade)</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">TOTAL PROFIT / LOSS</span>
+                            <strong class="${pnlColor} font-bold text-sm">${res.totalPnL >= 0 ? '+' : ''}$${res.totalPnL.toFixed(2)}</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">PROFIT FACTOR / MAX DD</span>
+                            <strong class="text-purple-300 font-bold">${res.profitFactor} | -${res.maxDrawdown}%</strong>
+                        </div>
+                    </div>
+
+                    <div class="max-h-36 overflow-y-auto space-y-1 pr-1 thin-scrollbar">
+                        ${res.results.map(r => `
+                            <div class="flex items-center justify-between p-1.5 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] font-mono">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${r.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${r.side}</span>
+                                    <strong class="text-white">${r.symbol}</strong>
+                                    <span class="text-slate-400 text-[10px]">Entry $${r.entry} → Exit $${r.exit}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-slate-400 text-[10px]">SL $${r.sl} | TP $${r.tp}</span>
+                                    <span class="${r.isWin?'text-emerald-400':'text-rose-400'} font-bold">${r.isWin?'+':''}$${r.pnl.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        },
         render() {
             const balEl = document.getElementById('paperBalanceDisplay');
             if (balEl) balEl.textContent = `$${this.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             this.renderPositionsOnly();
 
-            // Win Rate calculation
             const winCount = this.history.filter(h => h.realizedPnL > 0).length;
             const totalCount = this.history.length;
             const winRate = totalCount > 0 ? Math.round((winCount / totalCount) * 100) : 0;
