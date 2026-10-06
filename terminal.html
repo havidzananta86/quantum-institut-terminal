@@ -820,9 +820,9 @@
         }
 
         function fetchEconomicCalendar() {
-            fetch('api/calendar.php')
+            fetch('cache/calendar.json')
                 .then(r => {
-                    if (!r.ok) throw new Error('PHP endpoint unavailable');
+                    if (!r.ok) throw new Error('Static cache unavailable');
                     return r.json();
                 })
                 .then(res => {
@@ -831,11 +831,11 @@
                         renderCalendarEvents();
                         checkNewsImpactHoldFilter();
                     } else {
-                        throw new Error('Empty data');
+                        throw new Error('Empty cache');
                     }
                 })
                 .catch(() => {
-                    fetch('cache/calendar.json')
+                    fetch('api/calendar.php')
                         .then(r => r.json())
                         .then(res => {
                             if (res && res.data) {
@@ -945,9 +945,9 @@
         }
 
         function fetchRealtimeNews() {
-            fetch('api/news.php')
+            fetch('cache/news.json')
                 .then(r => {
-                    if (!r.ok) throw new Error('PHP endpoint unavailable');
+                    if (!r.ok) throw new Error('Static news cache unavailable');
                     return r.json();
                 })
                 .then(res => {
@@ -955,11 +955,11 @@
                         allNewsItems = res.data;
                         renderRealtimeNews();
                     } else {
-                        throw new Error('Empty data');
+                        throw new Error('Empty news data');
                     }
                 })
                 .catch(() => {
-                    fetch('cache/news.json')
+                    fetch('api/news.php')
                         .then(r => r.json())
                         .then(res => {
                             if (res && res.data) {

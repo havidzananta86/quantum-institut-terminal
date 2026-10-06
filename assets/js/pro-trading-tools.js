@@ -148,34 +148,43 @@
         connectLiveWS() {
             // Stream top Binance symbols for live marquee micro-updates
             const cryptoStreams = ['btcusdt@miniTicker', 'ethusdt@miniTicker', 'solusdt@miniTicker', 'bnbusdt@miniTicker', 'xrpusdt@miniTicker', 'dogeusdt@miniTicker'];
-            const streamUrl = `wss://stream.binance.com:9443/ws/${cryptoStreams.join('/')}`;
+            const streamUrls = [
+                `wss://stream.binance.vision/ws/${cryptoStreams.join('/')}`,
+                `wss://stream.binance.com:9443/ws/${cryptoStreams.join('/')}`
+            ];
 
-            try {
-                this.ws = new WebSocket(streamUrl);
-                this.ws.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
-                    if (!data.s || !data.c) return;
-                    const sym = data.s.toUpperCase();
-                    const closePrice = parseFloat(data.c);
-                    const openPrice = parseFloat(data.o);
-                    const chg = ((closePrice - openPrice) / openPrice) * 100;
+            let index = 0;
+            const tryStream = () => {
+                if (index >= streamUrls.length) return;
+                try {
+                    this.ws = new WebSocket(streamUrls[index]);
+                    this.ws.onmessage = (e) => {
+                        const data = JSON.parse(e.data);
+                        if (!data.s || !data.c) return;
+                        const sym = data.s.toUpperCase();
+                        const closePrice = parseFloat(data.c);
+                        const openPrice = parseFloat(data.o);
+                        const chg = ((closePrice - openPrice) / openPrice) * 100;
 
-                    // Update internal data & UI elements
-                    const target = this.data.find(d => d.sym === sym);
-                    if (target) {
-                        target.price = closePrice;
-                        target.chg = chg;
-                    }
-                    const formatted = closePrice >= 100 ? closePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : closePrice.toFixed(4);
-                    
-                    document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
-                        el.textContent = formatted;
-                    });
-                };
-                this.ws.onerror = () => { /* fallback gracefully */ };
-            } catch (err) {
-                // Ignore if offline
-            }
+                        // Update internal data & UI elements
+                        const target = this.data.find(d => d.sym === sym);
+                        if (target) {
+                            target.price = closePrice;
+                            target.chg = chg;
+                        }
+                        const formatted = closePrice >= 100 ? closePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : closePrice.toFixed(4);
+                        
+                        document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
+                            el.textContent = formatted;
+                        });
+                    };
+                    this.ws.onerror = () => {
+                        index++;
+                        tryStream();
+                    };
+                } catch (err) {}
+            };
+            tryStream();
         }
     };
     window.QuantumTickerEngine = QuantumTickerEngine;
