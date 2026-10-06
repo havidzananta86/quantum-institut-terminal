@@ -631,20 +631,27 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 }));
             } catch (e) {}
         },
-        executeOrder(side = 'BUY') {
+        executeOrder(side = 'BUY', customSymbol = null) {
+            const activeChartSym = window.quantumTerminalManager?.currentSymbol || window.currentCleanSymbol;
             const symSelect = document.getElementById('paperTradePairSelect');
-            const selectedSym = symSelect ? symSelect.value : (window.quantumTerminalManager?.currentSymbol || 'BTCUSDT');
             
-            const currentSym = window.quantumTerminalManager?.currentSymbol;
+            // Prioritize: customSymbol -> active chart symbol -> dropdown selection
+            const selectedSym = customSymbol || activeChartSym || (symSelect ? symSelect.value : 'XAUUSD');
+
+            // Sync dropdown UI
+            if (symSelect && symSelect.value !== selectedSym) {
+                symSelect.value = selectedSym;
+            }
+
             let price = 0;
-            if (currentSym === selectedSym && window.quantumTerminalManager?.lastClosePrice > 0) {
+            if (window.quantumTerminalManager?.currentSymbol === selectedSym && window.quantumTerminalManager?.lastClosePrice > 0) {
                 price = window.quantumTerminalManager.lastClosePrice;
             } else {
                 const fallbackPrices = { BTCUSDT: 68450.0, XAUUSD: 2654.50, ETHUSDT: 3520.0, EURUSD: 1.0895, SOLUSDT: 184.20 };
-                price = fallbackPrices[selectedSym] || 100.0;
+                price = fallbackPrices[selectedSym] || (window.quantumTerminalManager?.lastClosePrice || 2654.50);
             }
 
-            const lots = parseFloat(document.getElementById('paperTradeLots')?.value || 0.5);
+            const lots = parseFloat(document.getElementById('paperTradeLots')?.value || (selectedSym === 'XAUUSD' ? 0.5 : (selectedSym === 'BTCUSDT' ? 0.1 : 1.0)));
 
             const isLong = side === 'BUY';
             const slMult = selectedSym === 'XAUUSD' ? 0.995 : (selectedSym === 'EURUSD' ? 0.998 : 0.99);
