@@ -597,31 +597,48 @@
                         <div id="paperPositionsTable" class="space-y-1.5 max-h-32 overflow-y-auto thin-scrollbar"></div>
                     </div>
 
-                    <!-- BACKTEST MESIN KUANTUM (XAU/USD & BTC) — RESPONSIF HP -->
-                    <div class="border-t border-slate-800 pt-2 space-y-2">
-                        <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                            <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                                <span class="text-xs font-bold text-cyan-400 flex items-center gap-1 w-full sm:w-auto">⚡ BACKTEST:</span>
-                                <select id="backtestPairSelect" class="flex-1 sm:flex-none bg-slate-950 border border-slate-700 text-cyan-300 rounded px-2 py-1 text-xs font-bold">
-                                    <option value="XAUUSD" selected>XAU/USD (Gold Spot)</option>
-                                    <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
-                                    <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
-                                    <option value="EURUSD">EUR/USD (Forex)</option>
-                                </select>
-                                <select id="backtestTfSelect" class="bg-slate-950 border border-slate-700 text-slate-300 rounded px-2 py-1 text-xs font-mono">
-                                    <option value="H1" selected>H1</option>
-                                    <option value="M15">M15</option>
-                                    <option value="M5">M5</option>
-                                    <option value="H4">H4</option>
-                                </select>
-                                <select id="backtestEngineSelect" class="flex-1 sm:flex-none bg-slate-950 border border-slate-700 text-purple-300 rounded px-2 py-1 text-xs font-bold">
-                                    <option value="SNR" selected>a. Quantum SNR</option>
-                                    <option value="SMC">b. Quantum SMC</option>
-                                    <option value="EMA200">c. Quantum EMA200</option>
-                                    <option value="ICHI">d. Quantum Ichimoku</option>
-                                </select>
+                    <!-- BACKTEST MESIN KUANTUM (XAU/USD & BTC) — RESPONSIF HP & DESKTOP PERFECT GRID -->
+                    <div class="border-t border-slate-800 pt-3 space-y-2">
+                        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2.5 text-xs">
+                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                                <span class="font-bold text-cyan-400 text-xs flex items-center gap-1">⚡ MESIN BACKTEST KUANTUM</span>
+                                <span class="text-[10px] text-slate-500 font-mono">SIMULASI HISTORIS</span>
                             </div>
-                            <button onclick="QuantumPaperTrading.runBacktest()" class="w-full sm:w-auto px-3 py-1.5 rounded bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs shadow-md transition-all text-center">⚡ JALANKAN BACKTEST</button>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-slate-400 block mb-1">PASANGAN</label>
+                                    <select id="backtestPairSelect" class="w-full bg-slate-950 border border-slate-700 text-cyan-300 rounded-lg px-2 py-1.5 text-xs font-bold truncate">
+                                        <option value="XAUUSD" selected>XAU/USD (Gold)</option>
+                                        <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
+                                        <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
+                                        <option value="EURUSD">EUR/USD (Forex)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-slate-400 block mb-1">TIMEFRAME</label>
+                                    <select id="backtestTfSelect" class="w-full bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-xs font-mono">
+                                        <option value="H1" selected>H1 (1 Jam)</option>
+                                        <option value="M15">M15 (15m)</option>
+                                        <option value="M5">M5 (5m)</option>
+                                        <option value="H4">H4 (4 Jam)</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 sm:col-span-1">
+                                    <label class="text-[10px] text-slate-400 block mb-1">MESIN STRATEGI</label>
+                                    <select id="backtestEngineSelect" class="w-full bg-slate-950 border border-slate-700 text-purple-300 rounded-lg px-2 py-1.5 text-xs font-bold truncate">
+                                        <option value="SNR" selected>a. Quantum SNR</option>
+                                        <option value="SMC">b. Quantum SMC</option>
+                                        <option value="EMA200">c. Quantum EMA200</option>
+                                        <option value="ICHI">d. Quantum Ichimoku</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2 sm:col-span-1 flex items-end">
+                                    <button onclick="QuantumPaperTrading.runBacktest()" class="w-full h-[32px] rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1">
+                                        <span>⚡ JALANKAN BACKTEST</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Container Hasil Backtest -->
