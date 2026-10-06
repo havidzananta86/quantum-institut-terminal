@@ -316,6 +316,10 @@
             <button onclick="openShortcutsModal()" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 flex items-center justify-center text-xs font-bold" title="Panduan Shortcut Keyboard (?)">
                 ?
             </button>
+
+            <button id="bgmToggleBtn" onclick="toggleBgmMusic()" class="min-h-[36px] px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-rose-400 hover:text-rose-300 border border-slate-800 hover:border-rose-500/40 text-xs flex items-center gap-1 font-mono" title="Toggle TikTok Audio Vibes">
+                <span id="bgmIcon">🎵</span><span id="bgmLabel" class="hidden sm:inline">Vibes</span>
+            </button>
         </div>
 
     </div>
@@ -1424,8 +1428,97 @@
         </div>
     </div>
 
+    <!-- TIKTOK AUDIO BGM ELEMENT -->
+    <audio id="bgmAudioElement" src="assets/audio/bgm.mp3" preload="auto" loop></audio>
+
+    <!-- AUDIO VIBES WARNING OVERLAY MODAL -->
+    <div id="audioVibesModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-md bg-[#0A1128] border-2 border-cyan-500/60 rounded-3xl p-6 text-center space-y-5 shadow-2xl shadow-cyan-500/20 relative overflow-hidden">
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl border border-cyan-500/40 flex items-center justify-center mx-auto shadow-inner text-cyan-400">
+                <svg class="w-9 h-9 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.707 12 4.414 12 5.586v12.828c0 1.172-1.077 1.879-1.707 1.25L5.586 15z"/></svg>
+            </div>
+
+            <div class="space-y-2">
+                <div class="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 text-xs font-bold inline-block uppercase tracking-wider animate-pulse">
+                    ⚠️ PERINGATAN !!!
+                </div>
+                <h2 class="text-lg font-bold text-white tracking-tight">Nyalakan Volume HP / Laptop</h2>
+                <p class="text-xs text-slate-300 leading-relaxed font-sans">
+                    Nyalakan volume untuk mendengarkan vibes dari webapp ini... Nikmati musik latar eksklusif saat menganalisa pasar Kuantum!
+                </p>
+            </div>
+
+            <div class="pt-2 space-y-2">
+                <button onclick="startQuantumVibesBGM()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-slate-950 font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/30 flex items-center justify-center gap-2 transition-all transform active:scale-95">
+                    <span>🔊 MASUK TERMINAL & AKTIFKAN VIBES</span>
+                </button>
+                <button onclick="dismissAudioVibesModal(false)" class="w-full py-2 text-slate-400 hover:text-white text-xs transition-colors">
+                    Masuk Tanpa Musik (Mute)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- PRO TRADING TOOLS SCRIPT SUITE -->
     <script src="assets/js/pro-trading-tools.js"></script>
+    <script>
+        function startQuantumVibesBGM() {
+            const audio = document.getElementById('bgmAudioElement');
+            const modal = document.getElementById('audioVibesModal');
+            if (modal) modal.classList.add('hidden');
+            if (audio) {
+                audio.volume = 0.6;
+                audio.loop = true;
+                audio.play().then(() => {
+                    updateBgmUI(true);
+                    if (window.showQuantumToast) window.showQuantumToast('🎵 Musik Vibes Aktif (TikTok Audio)', 'success', 2000);
+                }).catch(e => {
+                    console.warn('BGM Autoplay blocked:', e);
+                });
+            }
+        }
+
+        function dismissAudioVibesModal(play = false) {
+            const modal = document.getElementById('audioVibesModal');
+            if (modal) modal.classList.add('hidden');
+            if (play) startQuantumVibesBGM();
+            else updateBgmUI(false);
+        }
+
+        function toggleBgmMusic() {
+            const audio = document.getElementById('bgmAudioElement');
+            if (!audio) return;
+            if (audio.paused) {
+                audio.play().then(() => {
+                    updateBgmUI(true);
+                    if (window.showQuantumToast) window.showQuantumToast('🎵 Musik Vibes Diaktifkan', 'success');
+                }).catch(() => {});
+            } else {
+                audio.pause();
+                updateBgmUI(false);
+                if (window.showQuantumToast) window.showQuantumToast('🔇 Musik Vibes Dimatikan', 'info');
+            }
+        }
+
+        function updateBgmUI(isPlaying) {
+            const btn = document.getElementById('bgmToggleBtn');
+            const icon = document.getElementById('bgmIcon');
+            const label = document.getElementById('bgmLabel');
+            if (!btn) return;
+            if (isPlaying) {
+                if (icon) icon.textContent = '🔊';
+                if (label) label.textContent = 'Vibes ON';
+                btn.className = "min-h-[36px] px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs flex items-center gap-1 font-mono font-bold animate-pulse";
+            } else {
+                if (icon) icon.textContent = '🔇';
+                if (label) label.textContent = 'Muted';
+                btn.className = "min-h-[36px] px-2 py-1 rounded-lg bg-slate-900 text-slate-500 border border-slate-800 text-xs flex items-center gap-1 font-mono";
+            }
+        }
+    </script>
 </body>
 </html>
 
