@@ -1,0 +1,52 @@
+{
+    "status": "success",
+    "timestamp": "2026-10-06 01:44:10",
+    "count": 5,
+    "data": [
+        {
+            "id": "news_1",
+            "source": "CryptoPanic \/ CoinDesk",
+            "title": "Bitcoin Surges Above $68,500 as Institutional Inflows Hit 3-Month High",
+            "url": "https:\/\/www.coindesk.com",
+            "category": "CRYPTO",
+            "published_at": "2026-10-06T01:39:10+02:00",
+            "sentiment": "bullish"
+        },
+        {
+            "id": "news_2",
+            "source": "Reuters Finance",
+            "title": "US Dollar Index Holds Firm Ahead of Critical Inflation CPI Report",
+            "url": "https:\/\/www.reuters.com",
+            "category": "FOREX\/MACRO",
+            "published_at": "2026-10-06T01:24:10+02:00",
+            "sentiment": "neutral"
+        },
+        {
+            "id": "news_3",
+            "source": "Bloomberg Gold",
+            "title": "Gold (XAU\/USD) Rebounds Near $2,655 On Safe-Haven Demand & Rate Cut Expectations",
+            "url": "https:\/\/www.bloomberg.com",
+            "category": "GOLD",
+            "published_at": "2026-10-06T01:04:10+02:00",
+            "sentiment": "bullish"
+        },
+        {
+            "id": "news_4",
+            "source": "CNBC Markets",
+            "title": "Federal Reserve Officials Signal Gradual Rate Cuts as Labor Market Stabilizes",
+            "url": "https:\/\/www.cnbc.com",
+            "category": "MACRO",
+            "published_at": "2026-10-06T00:44:10+02:00",
+            "sentiment": "neutral"
+        },
+        {
+            "id": "news_5",
+            "source": "CoinTelegraph",
+            "title": "Ethereum Open Interest Reaches Record Level as Dencun Upgrade Benefits Take Effect",
+            "url": "https:\/\/cointelegraph.com",
+            "category": "CRYPTO",
+            "published_at": "2026-10-06T00:24:10+02:00",
+            "sentiment": "bullish"
+        }
+    ]
+}

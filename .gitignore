@@ -4,6 +4,8 @@ config/database.php
 
 # Cache files
 cache/*.json
+!cache/calendar.json
+!cache/news.json
 cache/*.html
 !cache/.gitkeep
 
@@ -28,3 +30,5 @@ package-lock.json
 
 # Logs
 *.log
+
+.vercel
