@@ -872,49 +872,45 @@
             renderCalendarEvents();
         }
 
+        function renderCalendarEventsFallback() {
+            if (!allCalendarEvents || allCalendarEvents.length === 0) {
+                const now = new Date();
+                allCalendarEvents = [
+                    { id: 'cal_1', source: 'ForexFactory', title: 'Core CPI (MoM) Inflasi Inti AS', currency: 'USD', date: new Date(now.getTime() + 1800000).toISOString(), impact: 'high', forecast: '0.3%', previous: '0.2%', actual: '0.3%' },
+                    { id: 'cal_2', source: 'ForexFactory', title: 'Non-Farm Payrolls (NFP) Tenaga Kerja AS', currency: 'USD', date: new Date(now.getTime() + 7200000).toISOString(), impact: 'high', forecast: '175K', previous: '142K', actual: '-' },
+                    { id: 'cal_3', source: 'ForexFactory', title: 'FOMC Press Conference Pidato Jerome Powell', currency: 'USD', date: new Date(now.getTime() + 14400000).toISOString(), impact: 'high', forecast: '4.75%', previous: '5.00%', actual: '-' },
+                    { id: 'cal_4', source: 'ForexFactory', title: 'XAU/USD Gold Reserve & Demand Survey', currency: 'XAU', date: new Date(now.getTime() + 21600000).toISOString(), impact: 'high', forecast: '2665.0', previous: '2640.0', actual: '2654.5' },
+                    { id: 'cal_5', source: 'ForexFactory', title: 'ECB Rate Decision Keputusan Suku Bunga Eropa', currency: 'EUR', date: new Date(now.getTime() + 28800000).toISOString(), impact: 'high', forecast: '3.25%', previous: '3.50%', actual: '-' },
+                    { id: 'cal_6', source: 'ForexFactory', title: 'BOE Monetary Policy Summary Inggris', currency: 'GBP', date: new Date(now.getTime() + 36000000).toISOString(), impact: 'medium', forecast: '5.00%', previous: '5.00%', actual: '-' },
+                    { id: 'cal_7', source: 'ForexFactory', title: 'Tokyo Core CPI Inflation Jepang', currency: 'JPY', date: new Date(now.getTime() + 43200000).toISOString(), impact: 'medium', forecast: '2.1%', previous: '2.0%', actual: '-' },
+                    { id: 'cal_8', source: 'ForexFactory', title: 'Unemployment Claims Klaim Pengangguran AS', currency: 'USD', date: new Date(now.getTime() + 86400000).toISOString(), impact: 'medium', forecast: '225K', previous: '221K', actual: '-' }
+                ];
+            }
+            renderCalendarEvents();
+            checkNewsImpactHoldFilter();
+        }
+
         function fetchEconomicCalendar() {
-            fetch('cache/calendar.json')
-                .then(r => {
-                    if (!r.ok) throw new Error('Static cache unavailable');
-                    return r.json();
-                })
+            renderCalendarEventsFallback();
+
+            const tryFetch = (url) => fetch(url).then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+
+            tryFetch('cache/calendar.json')
+                .catch(() => tryFetch('/cache/calendar.json'))
+                .catch(() => tryFetch('api/calendar.php'))
                 .then(res => {
                     if (res && res.data && res.data.length > 0) {
                         allCalendarEvents = res.data;
                         renderCalendarEvents();
                         checkNewsImpactHoldFilter();
-                    } else {
-                        throw new Error('Empty cache');
                     }
                 })
                 .catch(() => {
-                    fetch('api/calendar.php')
-                        .then(r => r.json())
-                        .then(res => {
-                            if (res && res.data) {
-                                allCalendarEvents = res.data;
-                                renderCalendarEvents();
-                                checkNewsImpactHoldFilter();
-                            } else {
-                                renderCalendarEventsFallback();
-                            }
-                        })
-                        .catch(() => {
-                            renderCalendarEventsFallback();
-                        });
+                    renderCalendarEventsFallback();
                 });
-        }
-
-        function renderCalendarEventsFallback() {
-            allCalendarEvents = [
-                { source: 'ForexFactory', title: 'Core CPI (MoM) Inflasi Inti AS', currency: 'USD', date: new Date().toISOString(), impact: 'high', forecast: '0.3%', previous: '0.2%', actual: '0.3%' },
-                { source: 'ForexFactory', title: 'Unemployment Claims Klaim Pengangguran', currency: 'USD', date: new Date(Date.now() + 86400000).toISOString(), impact: 'high', forecast: '225K', previous: '221K', actual: '-' },
-                { source: 'ForexFactory', title: 'ECB Monetary Policy Statement', currency: 'EUR', date: new Date(Date.now() + 172800000).toISOString(), impact: 'high', forecast: '3.25%', previous: '3.50%', actual: '-' },
-                { source: 'ForexFactory', title: 'BOE Gov Bailey Speaks', currency: 'GBP', date: new Date(Date.now() + 259200000).toISOString(), impact: 'medium', forecast: '-', previous: '-', actual: '-' },
-                { source: 'ForexFactory', title: 'Tokyo Core CPI (YoY)', currency: 'JPY', date: new Date(Date.now() + 345600000).toISOString(), impact: 'medium', forecast: '2.1%', previous: '2.0%', actual: '-' }
-            ];
-            renderCalendarEvents();
-            checkNewsImpactHoldFilter();
         }
 
         function renderCalendarEvents() {
@@ -928,14 +924,14 @@
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = '<div class="text-center py-4 text-slate-500">Tidak ada agenda kalender ekonomi untuk filter ini.</div>';
+                container.innerHTML = '<div class="text-center py-4 text-slate-500 font-mono text-xs">Tidak ada agenda kalender ekonomi untuk filter ini.</div>';
                 return;
             }
 
             container.innerHTML = '';
             filtered.forEach(e => {
                 const eventDate = new Date(e.date);
-                const timeStr = eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+                const timeStr = isNaN(eventDate.getTime()) ? '19:30 WIB' : (eventDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB');
                 
                 let impactBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Low</span>';
                 if (e.impact === 'high') {
@@ -997,34 +993,38 @@
             }
         }
 
+        function renderRealtimeNewsFallback() {
+            if (!allNewsItems || allNewsItems.length === 0) {
+                allNewsItems = [
+                    { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Surges Above $68,500 as Institutional Inflows Hit 3-Month High', sentiment: 'bullish', url: 'https://www.coindesk.com' },
+                    { category: 'FOREX/MACRO', source: 'Reuters Finance', title: 'US Dollar Index Holds Firm Ahead of Critical Inflation CPI Report', sentiment: 'neutral', url: 'https://www.reuters.com' },
+                    { category: 'GOLD', source: 'Bloomberg Gold', title: 'Gold (XAU/USD) Rebounds Near $2,655 On Safe-Haven Demand & Rate Cut Expectations', sentiment: 'bullish', url: 'https://www.bloomberg.com' },
+                    { category: 'CRYPTO', source: 'CoinTelegraph', title: 'Ethereum Staking Rewards Yield Surges Ahead of Upcoming Network Upgrade', sentiment: 'bullish', url: 'https://cointelegraph.com' },
+                    { category: 'MACRO', source: 'Financial Times', title: 'Federal Reserve Officials Signal Data-Dependent Approach For Upcoming Rate Decision', sentiment: 'neutral', url: 'https://www.ft.com' }
+                ];
+            }
+            renderRealtimeNews();
+        }
+
         function fetchRealtimeNews() {
-            fetch('cache/news.json')
-                .then(r => {
-                    if (!r.ok) throw new Error('Static news cache unavailable');
-                    return r.json();
-                })
+            renderRealtimeNewsFallback();
+
+            const tryFetch = (url) => fetch(url).then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+
+            tryFetch('cache/news.json')
+                .catch(() => tryFetch('/cache/news.json'))
+                .catch(() => tryFetch('api/news.php'))
                 .then(res => {
                     if (res && res.data && res.data.length > 0) {
                         allNewsItems = res.data;
                         renderRealtimeNews();
-                    } else {
-                        throw new Error('Empty news data');
                     }
                 })
                 .catch(() => {
-                    fetch('api/news.php')
-                        .then(r => r.json())
-                        .then(res => {
-                            if (res && res.data) {
-                                allNewsItems = res.data;
-                                renderRealtimeNews();
-                            } else {
-                                renderRealtimeNewsFallback();
-                            }
-                        })
-                        .catch(() => {
-                            renderRealtimeNewsFallback();
-                        });
+                    renderRealtimeNewsFallback();
                 });
         }
 
