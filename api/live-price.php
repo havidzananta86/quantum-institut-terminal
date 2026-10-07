@@ -72,24 +72,29 @@ if (!empty($cryptoSyms)) {
 if (in_array('XAUUSD', $symbols)) {
     $got = false;
 
-    // Primary: Stooq.com XAUUSD spot — format CSV, no API key
-    $raw = qi_http_get('https://stooq.com/q/l/?s=xauusd&f=sd2t2ohlcv&h&e=json', 4);
-    if ($raw) {
-        $d = json_decode($raw, true);
-        $row = $d['symbols'][0] ?? null;
-        $price = (float)($row['close'] ?? $row['last'] ?? 0);
-        $open  = (float)($row['open'] ?? $price);
-        if ($price > 100) {
-            $result['XAUUSD'] = [
-                'price'  => $price,
-                'open'   => $open,
-                'high'   => (float)($row['high'] ?? $price),
-                'low'    => (float)($row['low']  ?? $price),
-                'chgPct' => $open > 0 ? round(($price - $open) / $open * 100, 3) : 0,
-                'vol'    => 0,
-                'source' => 'stooq_spot',
-            ];
-            $got = true;
+    // Primary: ambil dari chart-candle cache (sumber sama dengan TradingView candle engine)
+    $chartCacheDir = __DIR__ . '/../cache/chart';
+    $xauCacheFile  = $chartCacheDir . '/' . md5('XAUUSD_60') . '.json';
+    if (file_exists($xauCacheFile) && (time() - filemtime($xauCacheFile)) < 300) {
+        $cd = json_decode(file_get_contents($xauCacheFile), true);
+        $candles = $cd['candles'] ?? [];
+        if (!empty($candles) && !($cd['simulated'] ?? true)) {
+            $last  = end($candles);
+            $first = reset($candles);
+            $price = (float)$last['close'];
+            $open  = (float)($first['open'] ?? $price);
+            if ($price > 100) {
+                $result['XAUUSD'] = [
+                    'price'  => $price,
+                    'open'   => $open,
+                    'high'   => (float)$last['high'],
+                    'low'    => (float)$last['low'],
+                    'chgPct' => $open > 0 ? round(($price - $open) / $open * 100, 3) : 0,
+                    'vol'    => 0,
+                    'source' => 'candle_cache',
+                ];
+                $got = true;
+            }
         }
     }
 
