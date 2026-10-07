@@ -812,10 +812,7 @@ class QuantumRealtimeTerminalManager {
             wickUpColor:'#00FFA3', wickDownColor:'#FF4D6D',
         });
 
-        this.volumeSeries = this.chart.addHistogramSeries({
-            color:'rgba(0,229,255,0.3)', priceFormat:{ type:'volume' },
-            priceScaleId:'volume', scaleMargins:{ top:0.82, bottom:0 },
-        });
+        // Volume histogram dihapus — mengganggu pandangan candle
 
         this.emaSeries = this.chart.addLineSeries({
             color:'#7C4DFF', lineWidth:1,
