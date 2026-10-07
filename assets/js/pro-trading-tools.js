@@ -2047,20 +2047,26 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             return { days, closesBySym };
         },
 
+        // Cold cache = live provider calls behind PHP; abort rather than hang the panel.
+        timeoutMs: 20000,
         async _fetchSeries(sym) {
+            const ctl = new AbortController();
+            const timer = setTimeout(() => ctl.abort(), this.timeoutMs);
             try {
-                const res = await fetch(`api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&interval=D`);
-                if (!res.ok) return { series: [], simulated: true };
+                const res = await fetch(`api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&interval=D`, { signal: ctl.signal });
+                if (!res.ok) return { series: [], simulated: true, failed: true };
                 const d = await res.json();
-                if (d.status !== 'success' || !Array.isArray(d.candles)) return { series: [], simulated: true };
+                if (d.status !== 'success' || !Array.isArray(d.candles)) return { series: [], simulated: true, failed: true };
                 const byDay = new Map();
                 d.candles.forEach(c => {
                     const close = +c.close, t = +c.time;
                     if (close > 0 && t > 0) byDay.set(this.dayKey(t), close);
                 });
                 const series = [...byDay.entries()].map(([d, c]) => ({ d, c })).sort((a, b) => a.d - b.d);
-                return { series, simulated: d.simulated === true };
-            } catch (e) { return { series: [], simulated: true }; }
+                return { series, simulated: d.simulated === true, failed: false };
+            } catch (e) {
+                return { series: [], simulated: true, failed: true, aborted: e.name === 'AbortError' };
+            } finally { clearTimeout(timer); }
         },
 
         _shell(inner) {
@@ -2118,25 +2124,56 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 Provider gratis belum menyediakan candle asli untuk instrumen ini — korelasinya tidak bermakna. Aktifkan provider berbayar untuk matriks penuh.</div>`;
         },
 
+        // Fetch error / timeout is a transient condition, not a data limitation — say so
+        // separately from DEMO so the user knows a retry is worth it.
+        _failedHtml(failed) {
+            if (!failed || !failed.length) return '';
+            const labels = failed.map(s => this._label(s)).join(', ');
+            return `<div class="mt-2 p-2 rounded-lg bg-rose-500/5 border border-rose-500/30 text-[10px] text-slate-400">
+                <span class="px-1 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[9px] mr-1">GAGAL</span>
+                Gagal diambil (timeout/jaringan): <span class="text-slate-300">${labels}</span>.
+                <button onclick="QuantumCorrelation.render()" class="ml-1 px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button></div>`;
+        },
+
         async render() {
             const panel = document.getElementById('panelCorrelation');
             if (!panel) return;
             this._busy = true;
-            panel.innerHTML = this._shell('<div class="text-center py-6 text-slate-500 font-mono text-xs"><span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin align-middle mr-2"></span>Mengambil candle & menghitung korelasi…</div>');
-            this._bindControls();
+            const total = this.PAIRS.length;
+            const paintProgress = (done) => {
+                const bar = Math.round((done / total) * 100);
+                panel.innerHTML = this._shell(
+                    `<div class="text-center py-6 text-slate-500 font-mono text-xs">
+                        <span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin align-middle mr-2"></span>
+                        Mengambil candle &amp; menghitung korelasi… <span class="text-cyan-300">${done}/${total}</span>
+                        <div class="mx-auto mt-2 h-1 w-40 rounded bg-slate-800 overflow-hidden">
+                            <div class="h-full bg-cyan-400 transition-all" style="width:${bar}%"></div>
+                        </div>
+                        <div class="text-[10px] text-slate-600 mt-1">Panggilan pertama memakai data live provider, bisa sampai ~20s.</div>
+                    </div>`);
+                this._bindControls();
+            };
+            paintProgress(0);
             try {
                 const need = this.window + 1;
-                const results = await Promise.all(this.PAIRS.map(p => this._fetchSeries(p.sym)));
+                let done = 0;
+                const results = await Promise.all(this.PAIRS.map(p =>
+                    this._fetchSeries(p.sym).then(r => { paintProgress(++done); return r; })));
                 const seriesBySym = {};
                 const demo = [];
+                const failed = [];
                 this.PAIRS.forEach((p, i) => {
                     seriesBySym[p.sym] = results[i].series;
-                    if (results[i].simulated) demo.push(p.sym);
+                    if (results[i].failed) failed.push(p.sym);
+                    else if (results[i].simulated) demo.push(p.sym);
                 });
+                // Exclude both demo and failed from the matrix, but report them differently:
+                // `failed` is worth retrying, `demo` is a provider limitation.
+                const excluded = demo.concat(failed);
                 // Only REAL instruments (not simulated) with enough history enter the matrix.
                 // Correlating random-walk demo series would be meaningless noise.
                 const syms = this.PAIRS
-                    .filter(p => !demo.includes(p.sym) && (seriesBySym[p.sym] || []).length >= 10)
+                    .filter(p => !excluded.includes(p.sym) && (seriesBySym[p.sym] || []).length >= 10)
                     .map(p => p.sym);
                 if (syms.length < 2) throw new Error('Butuh ≥2 instrumen dengan data nyata (provider gratis hanya menyediakan sebagian)');
                 const { days, closesBySym } = this.alignByDay(seriesBySym, syms, need);
@@ -2145,7 +2182,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 const returnsBySym = {};
                 syms.forEach(s => { returnsBySym[s] = this.logReturns(closesBySym[s]); });
                 const matrix = this.buildMatrix(returnsBySym, syms);
-                panel.innerHTML = this._shell(this._tableHtml(syms, matrix) + this._warningHtml(syms, matrix) + this._demoHtml(demo));
+                panel.innerHTML = this._shell(this._tableHtml(syms, matrix) + this._warningHtml(syms, matrix) + this._demoHtml(demo) + this._failedHtml(failed));
             } catch (e) {
                 panel.innerHTML = this._shell(
                     `<div class="text-center py-6 text-rose-400 font-mono text-xs">⚠ Gagal menghitung korelasi: ${e.message}
