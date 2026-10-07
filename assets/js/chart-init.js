@@ -21,7 +21,7 @@ const QI_SYMBOL_CONFIG = {
     ETHUSDT: { provider:'binance', binanceSym:'ETHUSDT', label:'ETH/USDT', priceDp:2 },
     SOLUSDT: { provider:'binance', binanceSym:'SOLUSDT', label:'SOL/USDT', priceDp:3 },
     BNBUSDT: { provider:'binance', binanceSym:'BNBUSDT', label:'BNB/USDT', priceDp:2 },
-    XAUUSD:  { provider:'yahoo',   yahooSym:'GC%3DF',   yahooSymRaw:'GC=F',     label:'XAU/USD', priceDp:2 },
+    XAUUSD:  { provider:'binancePaxg', binanceSym:'PAXGUSDT', label:'XAU/USD', priceDp:2 },
     EURUSD:  { provider:'yahoo',   yahooSym:'EURUSD%3DX', yahooSymRaw:'EURUSD=X', label:'EUR/USD', priceDp:5 },
 };
 
@@ -856,6 +856,8 @@ class QuantumRealtimeTerminalManager {
 
         if (cfg.provider === 'binance') {
             await this._loadBinance(cfg);
+        } else if (cfg.provider === 'binancePaxg') {
+            await this._loadXauusd(cfg);
         } else if (cfg.provider === 'yahoo') {
             await this._loadYahoo(cfg);
         }
@@ -983,6 +985,108 @@ class QuantumRealtimeTerminalManager {
 
         this._renderCandles(candles, cfg);
         this._connectBinanceWS(sym, intvl);
+    }
+
+    /* =========================================================
+       PROVIDER: XAUUSD (Binance PAXGUSDT Candles + xaus.com Spot Pulse)
+       ========================================================= */
+    async _loadXauusd(cfg) {
+        const sym   = 'PAXGUSDT';
+        const intvl = QI_INTERVAL_MAP[this.currentInterval]?.binance || '1h';
+        const endpoints = [
+            `https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`,
+            `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`,
+        ];
+
+        let rawData = null;
+        for (const url of endpoints) {
+            try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (Array.isArray(json) && json.length > 0) { rawData = json; break; }
+                }
+            } catch(e) {}
+        }
+
+        if (!rawData) {
+            const candles = this._generateSyntheticCandles('XAUUSD', cfg.priceDp);
+            this._renderCandles(candles, cfg);
+        } else {
+            const candles = normalizeCandles(rawData, 'binance');
+            this._renderCandles(candles, cfg);
+        }
+
+        // Realtime updates: PAXG Binance WebSocket + xaus.com Spot Pulse every 5 seconds
+        this._connectBinanceWS(sym, intvl);
+        this._startXausPoller(cfg);
+    }
+
+    /* =========================================================
+       XAUS.COM SPOT POLLER — fetch /api/v1/spot setiap 5 detik
+       ========================================================= */
+    _startXausPoller(cfg) {
+        if (this._xausPoller) clearInterval(this._xausPoller);
+
+        const fetchXausSpot = async () => {
+            try {
+                // Direct fetch with fallback through CORS proxy if blocked
+                let data = null;
+                try {
+                    const res = await fetch('https://xaus.com/api/v1/spot', { signal: AbortSignal.timeout(4000), cache: 'no-store' });
+                    if (res.ok) data = await res.json();
+                } catch(e) {}
+
+                if (!data || !data.spot_usd_oz) {
+                    for (const proxy of QI_CORS_PROXIES) {
+                        try {
+                            const res = await fetch(`${proxy}${encodeURIComponent('https://xaus.com/api/v1/spot')}`, { signal: AbortSignal.timeout(4000) });
+                            if (res.ok) {
+                                data = await res.json();
+                                if (data?.spot_usd_oz) break;
+                            }
+                        } catch(e) {}
+                    }
+                }
+
+                if (data && data.spot_usd_oz) {
+                    const spotPrice = +data.spot_usd_oz;
+                    if (spotPrice > 0 && this.candleSeries && this._cachedCandles && this._cachedCandles.length > 0) {
+                        const last = this._cachedCandles[this._cachedCandles.length - 1];
+                        const updatedCandle = {
+                            time: last.time,
+                            open: last.open,
+                            high: Math.max(last.high, spotPrice),
+                            low:  Math.min(last.low, spotPrice),
+                            close: spotPrice,
+                        };
+                        this.candleSeries.update(updatedCandle);
+                        this.lastClosePrice = spotPrice;
+
+                        // Calculate percentage change from first candle or previous close
+                        const firstCandle = this._cachedCandles[0];
+                        const basePrice = firstCandle ? firstCandle.open : spotPrice;
+                        const pct = basePrice > 0 ? ((spotPrice - basePrice) / basePrice) * 100 : 0;
+                        this._updateHeaderUI(spotPrice, pct, cfg);
+
+                        // Update status badge if element exists
+                        const badge = document.getElementById('xaus-live-badge');
+                        if (badge) {
+                            badge.textContent = data.data_state?.status === 'fresh' ? 'LIVE' : 'STALE';
+                            badge.className = data.data_state?.status === 'fresh' 
+                                ? 'text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold' 
+                                : 'text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold';
+                        }
+                    }
+                }
+            } catch(e) {
+                console.warn('[QI xaus.com Spot Pulse]', e.message);
+            }
+        };
+
+        // Run immediately then poll every 5 seconds
+        fetchXausSpot();
+        this._xausPoller = setInterval(fetchXausSpot, 5000);
     }
 
     /* =========================================================
@@ -1119,6 +1223,7 @@ class QuantumRealtimeTerminalManager {
 
     _stopYahooPoller() {
         if (this._yahooPoller) { clearInterval(this._yahooPoller); this._yahooPoller = null; }
+        if (this._xausPoller)  { clearInterval(this._xausPoller);  this._xausPoller = null;  }
     }
 
     /* =========================================================
