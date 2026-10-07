@@ -207,12 +207,6 @@
 
             <div class="h-4 w-[1px] bg-slate-800 hidden sm:block"></div>
 
-            <!-- Market Session Indicator Badge -->
-            <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-[11px]" title="Sesi Pasar Aktif (New York Session)">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-slate-300 font-mono font-semibold">NY OPEN</span>
-            </div>
-
             <!-- Live WIB Clock -->
             <div class="hidden xs:flex items-center gap-1.5 text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-800 text-[11px]">
                 <span class="text-slate-500 font-mono">WIB</span>
@@ -231,9 +225,10 @@
 
     <!-- 20+ PAIR REALTIME TICKER MARQUEE BAR (TIER S - FITUR 1) -->
     <div class="h-10 bg-[#060B1E] border-b border-slate-800/80 px-2 flex items-center overflow-hidden relative select-none z-20">
-        <div class="flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-cyan-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]">
-            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
-            LIVE 24/7
+        <div id="tickerFeedStatus" class="flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-emerald-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]" title="Feed Status Live Realtime">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span id="tickerFeedText">LIVE</span>
+            <span id="tickerLastTime" class="text-slate-500 font-normal hidden sm:inline text-[9px]">14:00:00</span>
         </div>
         <div class="overflow-hidden w-full relative">
             <div id="quantumMarqueeTrack" class="flex items-center whitespace-nowrap animate-ticker hover:[animation-play-state:paused] py-1">
@@ -450,15 +445,15 @@
             </div>
 
             <!-- NEWS HIGH IMPACT HOLD WARNING BANNER (ACTIVE WHEN NEWS < 30 MIN) -->
-            <div id="newsHoldBanner" class="hidden p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono flex items-center justify-between animate-pulse">
+            <div id="newsHoldBanner" class="hidden p-3 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-pulse">
                 <div class="flex items-center gap-2">
                     <span class="text-base">⚠️</span>
                     <div>
                         <strong class="text-white font-bold">NEWS HIGH IMPACT ALERT (< 30 MIN)</strong>: 
-                        <span id="newsHoldDetails">Core CPI (USD) rilis dalam 20 menit. Sinyal trading otomatis ditahan demi perlindungan modal.</span>
+                        <span id="newsHoldDetails">Memuat data kalender ekonomi...</span>
                     </div>
                 </div>
-                <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px]">TIDAK DICETAK</span>
+                <span id="newsHoldBadge" class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px] shrink-0 self-start sm:self-auto">PAUSE EKSEKUSI OTOMATIS</span>
             </div>
 
             <!-- ECONOMIC CALENDAR, ORDER BOOK, PAPER TRADING & PRO SUITE DRAWER -->
