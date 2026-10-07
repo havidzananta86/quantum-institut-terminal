@@ -1352,6 +1352,7 @@ class QuantumRealtimeTerminalManager {
         const last = candles[candles.length - 1];
         this.lastClosePrice = last.close;
         this._cachedCandles = candles;   // simpan untuk engine redraw
+        window._signalNeedsRecalc = true; // trigger sekali saat data pertama dimuat
         this._toggleSimulatedBadge(!!candles.simulated);
 
         this._updateHeaderUI(last.close, null, cfg);
@@ -1498,7 +1499,9 @@ class QuantumRealtimeTerminalManager {
                 ? 'text-[11px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold'
                 : 'text-[11px] text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded font-bold';
         }
-        if (typeof recalculateQuantumEngineLevels === 'function') {
+        // SL/TP locked — only recalc when engine/symbol changes, not on every tick
+        if (typeof recalculateQuantumEngineLevels === 'function' && window._signalNeedsRecalc) {
+            window._signalNeedsRecalc = false;
             recalculateQuantumEngineLevels(price);
         }
     }
