@@ -64,6 +64,10 @@
         /* ── Strength bar ── */
         .strength-bar { transition: width .6s ease; }
 
+        /* ── Skeleton shimmer ── */
+        @keyframes shimmer { 0%,100%{opacity:.25} 50%{opacity:.55} }
+        .skel { animation: shimmer 1.4s ease-in-out infinite; background:#1E293B; border-radius:4px; display:block; }
+
         /* ── Scrollbar thin ── */
         ::-webkit-scrollbar { width:4px; height:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
@@ -111,7 +115,7 @@
             <a href="terminal.html#analysis" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
                 <span class="text-base">🔬</span> Technical Outlook
             </a>
-            <a href="terminal.html#calendar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            <a href="economic-calendar.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
                 <span class="text-base">🗓</span> Economic Heatmap
             </a>
         </div>
@@ -128,7 +132,7 @@
             <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
                 <span class="text-base">📰</span> News Feed
             </a>
-            <a href="terminal.html#calendar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            <a href="economic-calendar.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
                 <span class="text-base">📅</span> Economic Calendar
             </a>
             <a href="#market-overview" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer">
@@ -251,10 +255,17 @@
             </div>
 
             <div class="bg-qi-card border border-qi-border rounded-xl p-4 relative overflow-hidden">
-                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">High Impact Events</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-gold"></span> High Impact Events
+                </div>
                 <div class="text-3xl font-heading font-bold text-qi-gold" id="statEvents">—</div>
                 <div class="text-[10px] text-slate-500 mt-1" id="statEventsSub">memuat…</div>
+                <div class="mt-2 text-[10px] font-mono text-qi-red hidden" id="statNextEvent">
+                    ⏱ <span id="statNextEventCd">--:--:--</span>
+                    <span id="statNextEventTitle" class="text-slate-500 ml-1 truncate block"></span>
+                </div>
                 <div class="absolute right-3 top-3 text-2xl opacity-10">⚠️</div>
+                <a href="economic-calendar.html" class="absolute bottom-2 right-3 text-[9px] text-slate-600 hover:text-qi-cyan transition-colors">Lihat semua →</a>
             </div>
         </div>
 
@@ -356,7 +367,7 @@
                 <span class="text-xl">💼</span>
                 <span class="text-[10px] text-slate-400">Paper Trading</span>
             </a>
-            <a href="terminal.html#calendar" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-gold/40 hover:bg-qi-gold/5 transition-all cursor-pointer">
+            <a href="economic-calendar.html" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-gold/40 hover:bg-qi-gold/5 transition-all cursor-pointer">
                 <span class="text-xl">📅</span>
                 <span class="text-[10px] text-slate-400">Calendar</span>
             </a>
@@ -690,9 +701,12 @@ function renderStrengthFallback(prices) {
 }
 
 // ─── Calendar High Impact ──────────────────────────────────────────────────
+let _dashNextHighEvent = null;
+let _dashCdInterval   = null;
+
 async function fetchCalendarCount() {
     try {
-        const res = await fetch('api/calendar.php');
+        const res  = await fetch('api/calendar.php');
         if (!res.ok) return;
         const data = await res.json();
         const events = data.events || data.data || [];
@@ -701,14 +715,43 @@ async function fetchCalendarCount() {
             (e.impact||'').toLowerCase() === 'tinggi' ||
             (e.importance||0) >= 3
         ).length;
-        const el = document.getElementById('statEvents');
+        const el  = document.getElementById('statEvents');
         const sub = document.getElementById('statEventsSub');
-        if (el) el.textContent = high;
-        if (sub) sub.textContent = `dari ${events.length} event hari ini`;
+        if (el)  el.textContent  = high;
+        if (sub) sub.textContent = `dari ${events.length} event minggu ini`;
+
+        // Find next upcoming high-impact event
+        const now = Date.now();
+        const upcoming = events
+            .filter(e => (e.impact||'').toLowerCase() === 'high' && new Date(e.date).getTime() > now)
+            .sort((a,b) => new Date(a.date) - new Date(b.date));
+        _dashNextHighEvent = upcoming[0] || null;
+
+        if (_dashNextHighEvent) {
+            document.getElementById('statNextEvent').classList.remove('hidden');
+            document.getElementById('statNextEventTitle').textContent = _dashNextHighEvent.title || '';
+            clearInterval(_dashCdInterval);
+            _dashCdInterval = setInterval(updateDashCountdown, 1000);
+            updateDashCountdown();
+        }
     } catch(e) {
         const el = document.getElementById('statEvents');
         if (el) el.textContent = '—';
     }
+}
+
+function updateDashCountdown() {
+    if (!_dashNextHighEvent) return;
+    const diff = new Date(_dashNextHighEvent.date).getTime() - Date.now();
+    if (diff <= 0) { clearInterval(_dashCdInterval); fetchCalendarCount(); return; }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const pad = n => String(n).padStart(2,'0');
+    const el = document.getElementById('statNextEventCd');
+    if (el) el.textContent = h >= 24
+        ? `${Math.floor(h/24)}d ${pad(h%24)}:${pad(m)}:${pad(s)}`
+        : `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 // ─── User display ─────────────────────────────────────────────────────────

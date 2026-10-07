@@ -1716,7 +1716,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
         function openAlertDialog() {
             const modal = document.getElementById('priceAlertModal');
-            if (modal) modal.classList.remove('hidden');
+            if (modal) { modal.classList.remove('hidden'); renderAlertsList(); }
         }
 
         function closeAlertDialog() {
@@ -1726,10 +1726,101 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
         function submitNewAlert(e) {
             e.preventDefault();
-            const sym = document.getElementById('alertSymbolSelect').value;
-            const price = document.getElementById('alertPriceInput').value;
-            showQuantumToast(`🔔 Alert Diaktifkan: ${sym} @ ${price}`, 'success');
-            closeAlertDialog();
+            const sym   = document.getElementById('alertSymbolSelect').value;
+            const price = parseFloat(document.getElementById('alertPriceInput').value);
+            const cond  = document.getElementById('alertConditionSelect').value;
+            if (!price || price <= 0) return;
+
+            // Request browser notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+
+            // Persist to localStorage
+            const alerts = JSON.parse(localStorage.getItem('qi_alerts') || '[]');
+            alerts.push({ id: Date.now().toString(), sym, price, condition: cond, created: new Date().toISOString() });
+            localStorage.setItem('qi_alerts', JSON.stringify(alerts));
+
+            const sign = cond === 'ABOVE' ? '≥' : '≤';
+            showQuantumToast(`🔔 Alert: ${sym} ${sign} ${price}`, 'success');
+            document.getElementById('alertPriceInput').value = '';
+            updateAlertBadge();
+            renderAlertsList();
+        }
+
+        // ── Alert helpers ──────────────────────────────────────────────────
+        function updateAlertBadge() {
+            try {
+                const count = JSON.parse(localStorage.getItem('qi_alerts') || '[]').length;
+                const badge = document.getElementById('alertBadge');
+                if (badge) { badge.style.display = count ? '' : 'none'; }
+            } catch(e) {}
+        }
+
+        function deleteAlert(id) {
+            try {
+                const alerts = JSON.parse(localStorage.getItem('qi_alerts') || '[]');
+                localStorage.setItem('qi_alerts', JSON.stringify(alerts.filter(a => a.id !== id)));
+                updateAlertBadge();
+                renderAlertsList();
+                showQuantumToast('🗑️ Alert dihapus', 'info');
+            } catch(e) {}
+        }
+
+        function renderAlertsList() {
+            const list = document.getElementById('activeAlertsList');
+            if (!list) return;
+            try {
+                const alerts = JSON.parse(localStorage.getItem('qi_alerts') || '[]');
+                if (!alerts.length) {
+                    list.innerHTML = '<div class="text-[10px] text-slate-600 text-center py-2">Belum ada alert aktif</div>';
+                    return;
+                }
+                list.innerHTML = alerts.map(a => {
+                    const sign = a.condition === 'ABOVE' ? '≥' : '≤';
+                    const dp   = { BTCUSDT:2, XAUUSD:2, ETHUSDT:2, EURUSD:5, SOLUSDT:3 }[a.sym] ?? 2;
+                    const pStr = parseFloat(a.price).toFixed(dp);
+                    return `<div class="flex items-center justify-between py-1.5 border-b border-slate-800 last:border-0 gap-2">
+                        <span class="text-white font-mono text-[11px] font-semibold">${a.sym}</span>
+                        <span class="text-slate-400 text-[11px]">${sign} <span class="text-white">${pStr}</span></span>
+                        <span class="text-[10px] text-slate-600">${a.condition === 'ABOVE' ? '↑ Ke atas' : '↓ Ke bawah'}</span>
+                        <button onclick="deleteAlert('${a.id}')" class="text-slate-600 hover:text-qi-red transition-colors text-xs px-1">✕</button>
+                    </div>`;
+                }).join('');
+            } catch(e) {}
+        }
+
+        async function checkPriceAlerts() {
+            try {
+                const alerts = JSON.parse(localStorage.getItem('qi_alerts') || '[]');
+                if (!alerts.length) return;
+                const syms = [...new Set(alerts.map(a => a.sym))].join(',');
+                const res  = await fetch(`api/live-price.php?symbols=${syms}`);
+                const data = await res.json();
+                if (data.status !== 'success') return;
+                const prices = data.prices || {};
+                const toKeep = [];
+                alerts.forEach(alert => {
+                    const pd = prices[alert.sym];
+                    if (!pd) { toKeep.push(alert); return; }
+                    const cur     = parseFloat(pd.price);
+                    const hit     = alert.condition === 'ABOVE' ? cur >= alert.price : cur <= alert.price;
+                    if (hit) {
+                        const sign = alert.condition === 'ABOVE' ? '≥' : '≤';
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(`🔔 Quantum Alert: ${alert.sym}`, {
+                                body: `Harga ${cur} telah ${sign} target ${alert.price}`,
+                                tag:  alert.id,
+                            });
+                        }
+                        showQuantumToast(`🔔 ALERT TERPICU! ${alert.sym} @ ${cur}`, 'success');
+                    } else {
+                        toKeep.push(alert);
+                    }
+                });
+                localStorage.setItem('qi_alerts', JSON.stringify(toKeep));
+                updateAlertBadge();
+            } catch(e) {}
         }
 
         function toggleWatchlistPanel() {
@@ -1768,6 +1859,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
             setInterval(() => updateWIBClockElement('clockWIB'), 1000);
             setInterval(fetchEconomicCalendar, 300000);
             setInterval(fetchRealtimeNews, 300000);
+            updateAlertBadge();
+            setInterval(checkPriceAlerts, 15000);
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1826,6 +1919,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                     Aktifkan Alert Realtime →
                 </button>
             </form>
+            <!-- Active alerts list -->
+            <div class="border-t border-slate-800 pt-3">
+                <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Alert Aktif</div>
+                <div id="activeAlertsList">
+                    <div class="text-[10px] text-slate-600 text-center py-2">Belum ada alert aktif</div>
+                </div>
+            </div>
         </div>
     </div>
 
