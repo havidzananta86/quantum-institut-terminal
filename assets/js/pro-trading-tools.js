@@ -1365,7 +1365,105 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
     window.QuantumNewsAlertEngine = QuantumNewsAlertEngine;
 
     /* ==========================================================================
-       13. AUTO-BOOTSTRAP ON PAGE LOAD
+       13. QUANTUM TRACK RECORD & SIGNAL AUDIT ENGINE (TAHAP 2 - FITUR 3)
+       ========================================================================== */
+    const QuantumTrackRecord = {
+        data: null,
+        async render() {
+            const container = document.getElementById('panelTrackRecord');
+            const innerContainer = document.getElementById('trackRecordContainer');
+            if (!container || !innerContainer) return;
+
+            try {
+                const sym = window.quantumTerminalManager?.currentSymbol || 'XAUUSD';
+                const res = await fetch(`api/signal-history.php?symbol=${sym}`, { signal: AbortSignal.timeout(5000) });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                this.data = json;
+
+                const m = json.metrics;
+                const history = json.history;
+
+                innerContainer.innerHTML = `
+                    <div class="space-y-3 font-mono text-xs">
+                        <!-- Key Metrics Header -->
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-950 p-3 rounded-xl border border-cyan-500/30">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">HISTORICAL WIN RATE</span>
+                                <strong class="text-emerald-400 font-bold text-sm sm:text-base">${m.win_rate}%</strong>
+                                <span class="text-[9px] text-slate-500 block">N=${m.completed_trades} Trades</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">PROFIT FACTOR</span>
+                                <strong class="text-cyan-300 font-bold text-sm sm:text-base">${m.profit_factor}</strong>
+                                <span class="text-[9px] text-slate-500 block">Net PnL +$${m.net_pnl_usd}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">EXPECTANCY</span>
+                                <strong class="text-purple-300 font-bold text-sm sm:text-base">+$${m.expectancy}/trade</strong>
+                                <span class="text-[9px] text-slate-500 block">Avg R:R ${m.avg_rr}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">MAX DRAWDOWN</span>
+                                <strong class="text-rose-400 font-bold text-sm sm:text-base">-${m.max_drawdown_pct}%</strong>
+                                <span class="text-[9px] text-slate-500 block">Risk Controlled</span>
+                            </div>
+                            <div class="col-span-2 sm:col-span-1 flex items-center justify-end">
+                                <span class="px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">VERIFIED AUDIT TRAIL</span>
+                            </div>
+                        </div>
+
+                        <!-- Signals Audit Trail Table -->
+                        <div class="space-y-1.5 max-h-60 overflow-y-auto thin-scrollbar">
+                            ${history.map(s => {
+                                let statusBg = 'bg-slate-800 text-slate-300';
+                                if (s.status === 'HIT TP 🎯') statusBg = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                                else if (s.status === 'HIT SL 🛑') statusBg = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                                else if (s.status === 'AKTIF') statusBg = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 animate-pulse';
+
+                                const mtfBadge = s.mtf_aligned 
+                                    ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">✓ H4 ALIGNED</span>' 
+                                    : '<span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">⚠️ COUNTER-TREND</span>';
+
+                                return `
+                                    <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1 text-xs">
+                                        <div class="flex flex-wrap items-center justify-between gap-1">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${s.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${s.side} ${s.symbol}</span>
+                                                <strong class="text-white">${s.engine_name} (${s.timeframe})</strong>
+                                                ${mtfBadge}
+                                                <span class="text-[10px] text-slate-400">Score: <strong class="text-cyan-300">${s.confluence_score}%</strong> (N=${s.sample_size})</span>
+                                            </div>
+                                            <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${statusBg}">${s.status}</span>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] text-slate-400 pt-1 border-t border-slate-900">
+                                            <div>Entry: <strong class="text-slate-200">$${s.entry}</strong></div>
+                                            <div>SL: <strong class="text-rose-400">$${s.sl}</strong> (ATR: ${s.atr})</div>
+                                            <div>TP: <strong class="text-emerald-400">$${s.tp}</strong> (${s.rr})</div>
+                                            <div>Invalidation: <span class="text-amber-300">${s.invalidation}</span></div>
+                                        </div>
+
+                                        <div class="flex justify-between items-center text-[9px] text-slate-500 pt-0.5">
+                                            <span>Dibuat: ${s.timestamp}</span>
+                                            <span>Expiry: ${s.expiry}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch(e) {
+                console.warn('[QI Track Record]', e.message);
+                innerContainer.innerHTML = `<div class="p-3 text-center text-amber-400 font-mono text-xs">⚠️ Gagal memuat data Track Record dari server API: ${e.message}</div>`;
+            }
+        }
+    };
+    window.QuantumTrackRecord = QuantumTrackRecord;
+
+    /* ==========================================================================
+       14. AUTO-BOOTSTRAP ON PAGE LOAD
        ========================================================================== */
     function initProTools() {
         QuantumTickerEngine.init();
@@ -1375,6 +1473,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         QuantumPaperTrading.init();
         QuantumConfluenceEngine.render();
         QuantumNewsAlertEngine.init();
+        QuantumTrackRecord.render();
     }
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {

@@ -477,6 +477,9 @@
                         <button onclick="switchBottomTab('confluence')" id="tab-confluence" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 transition-all flex items-center gap-1 text-xs" title="Multi-Timeframe Confluence Matrix & Liquidity Heatmap">
                             <span>📊 MATRIX</span>
                         </button>
+                        <button onclick="switchBottomTab('trackrecord')" id="tab-trackrecord" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs" title="Riwayat Audit Sinyal Realtime & Kredibilitas Performance">
+                            <span>📈 TRACK RECORD</span>
+                        </button>
                         <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
                             <span>🤖 AI RADAR</span>
                         </button>
@@ -664,6 +667,11 @@
                             <div class="text-[10px] text-slate-400">Mesin: Fib Golden Pocket 0.618</div>
                         </div>
                     </div>
+                <!-- TAB 6: TRACK RECORD & SIGNAL AUDIT TRAIL (TAHAP 2 - FITUR 3) -->
+                <div id="panelTrackRecord" class="space-y-3 hidden">
+                    <div id="trackRecordContainer" class="space-y-2">
+                        <div class="text-center py-4 text-slate-500 font-mono text-xs">Memuat Track Record & Riwayat Audit Sinyal...</div>
+                    </div>
                 </div>
 
             </div>
@@ -699,21 +707,37 @@
                         <span class="text-cyan-400" id="checklistScore">7/8 TERPENUHI</span>
                     </div>
 
-                    <div id="checklistItems" class="space-y-1.5 text-xs">
-                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                    <div id="checklistItems" class="space-y-1.5 text-xs font-mono">
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                             <span>1. Retest Support Valid (&gt; 2x)</span>
                             <span>✓ PASSED</span>
                         </div>
-                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
                             <span>2. Rejection Candle Body</span>
                             <span>✓ PASSED</span>
                         </div>
-                        <div class="flex items-center justify-between p-2 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                            <span>3. Ratio Risk:Reward &ge; 1:2.5</span>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>3. Order Block & FVG Liquidity</span>
                             <span>✓ PASSED</span>
                         </div>
-                        <div class="flex items-center justify-between p-2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
-                            <span>4. Penutupan Candle H1</span>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>4. EMA200 Trend Ribbon</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>5. Fib 0.618 Golden Pocket</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>6. Multi-Timeframe Alignment</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span>7. Order Book Depth Imbalance</span>
+                            <span>✓ PASSED</span>
+                        </div>
+                        <div class="flex items-center justify-between p-1.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                            <span>8. Penutupan Candle & News Buffer</span>
                             <span>⏳ MENUNGGU</span>
                         </div>
                     </div>
@@ -850,10 +874,10 @@
         let selectedCalendarImpact = 'ALL';
 
         function switchBottomTab(tabName) {
-            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'aiscanner'];
+            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner'];
             tabs.forEach(t => {
                 const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
-                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : ''}`);
+                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : t === 'trackrecord' ? 'TrackRecord' : ''}`);
                 const tabBtn = document.getElementById(`tab-${t}`);
 
                 if (panel) {
@@ -877,6 +901,7 @@
             if (tabName === 'orderbook' && window.QuantumOrderBook) window.QuantumOrderBook.render();
             if (tabName === 'papertrading' && window.QuantumPaperTrading) window.QuantumPaperTrading.render();
             if (tabName === 'confluence' && window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
+            if (tabName === 'trackrecord' && window.QuantumTrackRecord) window.QuantumTrackRecord.render();
         }
 
         function filterCalendarCurrency(curr) {
