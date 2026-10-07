@@ -1466,13 +1466,18 @@
                 return r.json();
             });
 
-            tryFetch('cache/news.json')
-                .catch(() => tryFetch('/cache/news.json'))
+            // api/news.php = feed RSS real (cache server 5 menit). Folder cache/
+            // diblok .htaccess, jadi langsung ke endpoint.
+            tryFetch('/webapp/api/news.php')
                 .catch(() => tryFetch('api/news.php'))
                 .then(res => {
                     if (res && res.data && res.data.length > 0) {
                         allNewsItems = res.data;
+                        window._newsItems = res.data; // dipakai marker chart
                         renderRealtimeNews();
+                        if (window.quantumTerminalManager?.applyNewsMarkers) {
+                            window.quantumTerminalManager.applyNewsMarkers(res.data);
+                        }
                     }
                 })
                 .catch(() => {

@@ -1863,6 +1863,39 @@ class QuantumRealtimeTerminalManager {
     updateHeaderPriceUI(price, pct) {
         this._updateHeaderUI(price, pct, QI_SYMBOL_CONFIG[this.currentSymbol]);
     }
+
+    // Apply news/calendar event markers to chart
+    // news = [{published_at: 'ISO-8601', title, category, sentiment, symbols: []}, ...]
+    applyNewsMarkers(newsItems) {
+        if (!this.candleSeries || !newsItems || newsItems.length === 0) return;
+
+        const markers = [];
+        newsItems.forEach(n => {
+            try {
+                const ts = new Date(n.published_at).getTime() / 1000; // unix seconds
+                if (!ts || ts < 0) return;
+
+                // Map sentiment/category ke warna marker
+                let color = '#94A3B8'; // neutral gray
+                let shape = 'circle';
+                if (n.sentiment === 'bullish') { color = '#10B981'; shape = 'arrowUp'; }
+                else if (n.sentiment === 'bearish') { color = '#EF4444'; shape = 'arrowDown'; }
+
+                markers.push({
+                    time: ts,
+                    position: 'belowBar',
+                    color: color,
+                    shape: shape,
+                    text: (n.category || 'NEWS') + (n.symbols?.length ? ' (' + n.symbols.join(',') + ')' : ''),
+                    title: n.title,
+                });
+            } catch (e) {}
+        });
+
+        if (markers.length > 0) {
+            try { this.candleSeries.setMarkers(markers); } catch (e) {}
+        }
+    }
 }
 
 /* =============================================================
@@ -1878,6 +1911,7 @@ function initQuantumRealtimeSystem() {
         engine:      'SNR',
     });
     quantumTerminalManager.initChart();
+    window.quantumTerminalManager = quantumTerminalManager; // expose globally
 
     // FITUR 1.4 & COMMAND PALETTE SHORTCUTS ENGINE
     window.addEventListener('keydown', (e) => {
