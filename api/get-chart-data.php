@@ -208,6 +208,50 @@ if (empty($candles) && $symbol === 'EURUSD') {
     }
 }
 
+// 1d. Forex majors lain (GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF, NZD/USD)
+//     Twelve Data (free tier mendukung semua pair mayor) → biquote.io MT5 fallback.
+$forexMajors = ['GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
+if (empty($candles) && in_array($symbol, $forexMajors, true)) {
+    // Primary: Twelve Data — simbol diformat "XXX/YYY"
+    $tdSymbol = substr($symbol, 0, 3) . '/' . substr($symbol, 3, 3);
+    $tdUrl = 'https://api.twelvedata.com/time_series?symbol=' . urlencode($tdSymbol)
+           . '&interval=' . $tdInterval . '&outputsize=300&apikey=' . TWELVE_DATA_KEY;
+    $raw = qi_http_get($tdUrl, 6);
+    if ($raw) {
+        $d = json_decode($raw, true);
+        $values = $d['values'] ?? [];
+        if (is_array($values) && count($values) > 5 && !isset($d['code'])) {
+            $candles = qi_parse_td_candles($values);
+        }
+    }
+
+    // Fallback: biquote.io MT5 broker feed
+    if (empty($candles)) {
+        $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
+        $raw = qi_http_get("https://biquote.io/api/{$symbol}/ohlc?interval={$biquoteTf}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+            if (is_array($bars) && count($bars) > 0) {
+                foreach ($bars as $b) {
+                    $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
+                    if ($t > 0) {
+                        $candles[] = [
+                            'time'   => $t,
+                            'open'   => (float)$b['open'],
+                            'high'   => (float)$b['high'],
+                            'low'    => (float)$b['low'],
+                            'close'  => (float)$b['close'],
+                            'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                        ];
+                    }
+                }
+                usort($candles, fn($a, $b) => $a['time'] - $b['time']);
+            }
+        }
+    }
+}
+
 // 2. Fail-safe: candle acak (ditandai simulated agar UI tampil badge)
 $simulated = empty($candles);
 if ($simulated) {
