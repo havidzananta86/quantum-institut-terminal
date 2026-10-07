@@ -888,6 +888,7 @@ class QuantumRealtimeTerminalManager {
             const json = await res.json();
 
             if (json.status === 'success' && Array.isArray(json.candles) && json.candles.length > 0) {
+                if (json.simulated) json.candles.simulated = true;
                 this._renderCandles(json.candles, cfg);
                 return true;
             }
@@ -923,6 +924,7 @@ class QuantumRealtimeTerminalManager {
             candles.push({ time, open, high, low, close, volume });
             currentPrice = close;
         }
+        candles.simulated = true; // ditandai agar UI menampilkan badge DATA SIMULASI
         return candles;
     }
 
@@ -1322,6 +1324,23 @@ class QuantumRealtimeTerminalManager {
     /* =========================================================
        RENDER CANDLES — satu fungsi untuk semua provider
        ========================================================= */
+    _toggleSimulatedBadge(show) {
+        const wrap = document.getElementById('chartEngineWrapper');
+        if (!wrap) return;
+        let badge = document.getElementById('qiSimulatedBadge');
+        if (show && !badge) {
+            badge = document.createElement('div');
+            badge.id = 'qiSimulatedBadge';
+            badge.setAttribute('role', 'status');
+            badge.title = 'Semua feed data gagal dimuat. Candle ini acak, jangan dipakai untuk keputusan trading.';
+            badge.textContent = '⚠ DATA SIMULASI — bukan harga pasar';
+            badge.style.cssText = 'position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;padding:4px 10px;border-radius:6px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.6);color:#FBBF24;font:600 11px/1.4 monospace;pointer-events:none;';
+            wrap.appendChild(badge);
+        } else if (!show && badge) {
+            badge.remove();
+        }
+    }
+
     _renderCandles(candles, cfg) {
         const closes  = candles.map(c => c.close);
         const volumes = candles.map(c => ({
@@ -1345,6 +1364,7 @@ class QuantumRealtimeTerminalManager {
         const last = candles[candles.length - 1];
         this.lastClosePrice = last.close;
         this._cachedCandles = candles;   // simpan untuk engine redraw
+        this._toggleSimulatedBadge(!!candles.simulated);
 
         this._updateHeaderUI(last.close, null, cfg);
 

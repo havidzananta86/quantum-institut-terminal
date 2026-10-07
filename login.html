@@ -265,6 +265,8 @@
 
 
     <!-- JAVASCRIPT AUTH LOGIC -->
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/auth.js"></script>
     <script>
         // --- 1. PARTICLES BACKGROUND ---
         const canvas = document.getElementById('particleCanvas');
@@ -369,24 +371,61 @@
             }
         }
 
-        // --- 5. LOGIN FORM SUBMISSION SIMULATION ---
-        function handleLoginSubmit(event, type) {
+        // --- 5. LOGIN FORM SUBMISSION (api/auth.php) ---
+        async function handleLoginSubmit(event, type) {
             event.preventDefault();
             const btn = type === 'license' ? document.getElementById('btnSubmitLicense') : document.getElementById('btnSubmitEmail');
             const originalContent = btn.innerHTML;
 
+            const body = type === 'license'
+                ? { type: 'license', license_key: document.getElementById('licenseKey').value.trim() }
+                : { type: 'email', email: document.getElementById('emailInput').value.trim(), password: document.getElementById('passwordInput').value };
+            const rememberEl = document.getElementById('rememberMeLicense');
+            const remember = type === 'license' && rememberEl ? rememberEl.checked : true;
+
             btn.disabled = true;
             btn.innerHTML = `<svg class="w-5 h-5 animate-spin text-slate-950" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Memverifikasi Enkripsi...</span>`;
+            const restore = () => { btn.disabled = false; btn.innerHTML = originalContent; };
 
-            setTimeout(() => {
-                showQuantumToast("⚡ Otentikasi Berhasil! Mengalihkan ke Quantum Terminal Live Dashboard...", "success");
-                setTimeout(() => { window.location.href = "terminal.html"; }, 800);
-            }, 1000);
+            let res, data;
+            try {
+                res = await fetch('api/auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    signal: AbortSignal.timeout(10000)
+                });
+                data = await res.json();
+            } catch (e) {
+                restore();
+                showQuantumToast('Server autentikasi tidak dapat dihubungi. Periksa koneksi lalu coba lagi.', 'error');
+                return;
+            }
+
+            if (res.ok && data?.status === 'success' && data.data?.token) {
+                const { token, ...user } = data.data;
+                QuantumAuth.saveSession(token, user, remember);
+                showQuantumToast('⚡ Otentikasi Berhasil! Mengalihkan ke Quantum Terminal Live Dashboard...', 'success');
+                let target = 'terminal.html';
+                try {
+                    const saved = sessionStorage.getItem('qi_redirect_after_login');
+                    sessionStorage.removeItem('qi_redirect_after_login');
+                    // Hanya redirect ke origin sendiri (cegah open redirect)
+                    if (saved && new URL(saved, location.href).origin === location.origin) target = saved;
+                } catch (e) {}
+                setTimeout(() => { window.location.href = target; }, 800);
+                return;
+            }
+
+            restore();
+            const msg = res.status === 429
+                ? `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((data?.retry_after || 60) / 60)} menit.`
+                : (data?.message || 'Login gagal. Silakan coba lagi.');
+            showQuantumToast(msg, 'error');
         }
 
         function simulateGoogleConnect() {
-            showQuantumToast("🔑 Otentikasi Google Account Berhasil!", "success");
-            setTimeout(() => { window.location.href = "terminal.html"; }, 800);
+            showQuantumToast('Login dengan Google belum tersedia. Gunakan kunci lisensi atau email.', 'info');
         }
     </script>
 </body>

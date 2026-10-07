@@ -51,8 +51,8 @@ const QuantumAuth = {
                 return data?.status === 'success';
             }
         } catch (e) {
-            // Jika network offline atau mode demo lokal, fallback verifikasi format token
-            return token.length >= 16;
+            // Server tidak terjangkau: jangan anggap sesi valid (sebelumnya token >= 16 char lolos)
+            return false;
         }
         return false;
     },

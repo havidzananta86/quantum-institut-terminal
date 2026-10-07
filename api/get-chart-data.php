@@ -79,7 +79,8 @@ if (empty($candles) && in_array($symbol, ['XAUUSD', 'EURUSD'])) {
 }
 
 // 2. Jika server fetch gagal atau simbol non-crypto (XAUUSD, EURUSD), hasilkan fail-safe realistic candles
-if (empty($candles)) {
+$simulated = empty($candles);
+if ($simulated) {
     $basePrices = [
         'BTCUSDT' => 68450.20,
         'XAUUSD'  => 2654.20,
@@ -126,5 +127,6 @@ echo json_encode([
     'symbol'   => $symbol,
     'interval' => $interval,
     'count'    => count($candles),
+    'simulated' => $simulated, // true = candle acak fail-safe, BUKAN data pasar
     'candles'  => $candles
 ]);
