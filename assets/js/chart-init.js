@@ -21,8 +21,8 @@ const QI_SYMBOL_CONFIG = {
     ETHUSDT: { provider:'binance', binanceSym:'ETHUSDT', label:'ETH/USDT', priceDp:2, type:'crypto' },
     SOLUSDT: { provider:'binance', binanceSym:'SOLUSDT', label:'SOL/USDT', priceDp:3, type:'crypto' },
     BNBUSDT: { provider:'binance', binanceSym:'BNBUSDT', label:'BNB/USDT', priceDp:2, type:'crypto' },
-    XAUUSD:  { provider:'biquote', biquoteSym:'XAUUSD', binanceSym:'PAXGUSDT', label:'XAU/USD', priceDp:2, type:'gold' },
-    EURUSD:  { provider:'biquote', biquoteSym:'EURUSD', label:'EUR/USD', priceDp:5, type:'forex' },
+    XAUUSD:  { provider:'local',   label:'XAU/USD', priceDp:2, type:'gold' },
+    EURUSD:  { provider:'local',   label:'EUR/USD', priceDp:5, type:'forex' },
 };
 
 const QI_INTERVAL_MAP = {
@@ -285,69 +285,71 @@ class QuantumEngineOverlay {
     drawSNR(candles) {
         if (!candles || candles.length < 20) return;
 
-        // Algoritma: cari pivot high/low yang diuji minimal 2x
-        const highs = candles.map(c => c.high);
-        const lows  = candles.map(c => c.low);
-        const n     = candles.length;
-        const last  = candles[n - 1].close;
-        const atr   = _calcATR(candles, 14);
-        const atrNow = atr[n-1] || (last * 0.005);
+        const n    = candles.length;
+        const last = candles[n - 1].close;
+        const atr  = _calcATR(candles, 14);
+        const atrNow = atr[n-1] || (last * 0.004);
+        const tol    = atrNow * 0.6; // cluster tolerance
 
-        const pivotHighs = [], pivotLows = [];
-        for (let i = 2; i < n - 2; i++) {
-            if (highs[i] > highs[i-1] && highs[i] > highs[i-2] &&
-                highs[i] > highs[i+1] && highs[i] > highs[i+2]) {
-                pivotHighs.push(highs[i]);
-            }
-            if (lows[i] < lows[i-1] && lows[i] < lows[i-2] &&
-                lows[i] < lows[i+1] && lows[i] < lows[i+2]) {
-                pivotLows.push(lows[i]);
+        // 1. Kumpulkan semua swing high/low sebagai kandidat level
+        const candidates = [];
+        for (let i = 3; i < n - 3; i++) {
+            const h = candles[i].high, l = candles[i].low;
+            const isSwingHigh = h > candles[i-1].high && h > candles[i-2].high && h > candles[i-3].high &&
+                                h > candles[i+1].high && h > candles[i+2].high && h > candles[i+3].high;
+            const isSwingLow  = l < candles[i-1].low  && l < candles[i-2].low  && l < candles[i-3].low &&
+                                l < candles[i+1].low  && l < candles[i+2].low  && l < candles[i+3].low;
+            if (isSwingHigh) candidates.push(h);
+            if (isSwingLow)  candidates.push(l);
+        }
+
+        // 2. Cluster level berdekatan, hitung berapa kali disentuh
+        const sorted = [...candidates].sort((a, b) => a - b);
+        const clusters = []; // {price, touches}
+        for (const p of sorted) {
+            const existing = clusters.find(c => Math.abs(c.price - p) <= tol);
+            if (existing) {
+                existing.price = (existing.price * existing.touches + p) / (existing.touches + 1); // moving avg
+                existing.touches++;
+            } else {
+                clusters.push({ price: p, touches: 1 });
             }
         }
 
-        // Cluster pivot yang berdekatan (tolerance: 0.5x ATR)
-        const clusterLevels = (pivots) => {
-            const sorted = [...pivots].sort((a, b) => a - b);
-            const clusters = [];
-            let group = sorted[0] !== undefined ? [sorted[0]] : [];
-            for (let i = 1; i < sorted.length; i++) {
-                if (sorted[i] - group[group.length-1] < atrNow * 0.5) {
-                    group.push(sorted[i]);
-                } else {
-                    clusters.push(group.reduce((a,b)=>a+b,0)/group.length);
-                    group = [sorted[i]];
+        // 3. Hitung berapa kali setiap candle menyentuh level (close/open dalam range tol)
+        for (const cl of clusters) {
+            for (const c of candles) {
+                const bodyHigh = Math.max(c.open, c.close);
+                const bodyLow  = Math.min(c.open, c.close);
+                if (Math.abs(bodyHigh - cl.price) <= tol || Math.abs(bodyLow - cl.price) <= tol ||
+                    (bodyLow <= cl.price && cl.price <= bodyHigh)) {
+                    cl.touches++;
                 }
             }
-            if (group.length > 0) clusters.push(group.reduce((a,b)=>a+b,0)/group.length);
-            return clusters;
-        };
+        }
 
-        const resLevels = clusterLevels(pivotHighs).slice(-3);  // 3 resistance terdekat
-        const supLevels = clusterLevels(pivotLows).slice(-3);   // 3 support terdekat
+        // 4. Filter: minimal 2 sentuhan, buang yang terlalu dekat current price (< 0.5 ATR)
+        const valid = clusters
+            .filter(cl => cl.touches >= 2 && Math.abs(cl.price - last) > atrNow * 0.3)
+            .sort((a, b) => b.touches - a.touches)
+            .slice(0, 14); // max 14 level
 
-        // Gambar Resistance zones (merah)
-        resLevels.forEach((level, i) => {
-            if (level <= 0) return;
+        // 5. Gambar level — merah di atas harga, hijau di bawah
+        for (const cl of valid) {
+            const isRes = cl.price > last;
+            const alpha = Math.min(1, 0.4 + cl.touches * 0.08);
+            const color = isRes
+                ? `rgba(255,77,109,${alpha.toFixed(2)})`
+                : `rgba(0,255,163,${alpha.toFixed(2)})`;
             this._addPriceLine({
-                price: level, color: '#FF4D6D',
-                lineWidth: i === 0 ? 2 : 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                title: i === 0 ? `R${i+1} KEY` : `R${i+1}`,
+                price:            cl.price,
+                color:            color,
+                lineWidth:        cl.touches >= 6 ? 2 : 1,
+                lineStyle:        LightweightCharts.LineStyle.Dashed,
+                title:            `${isRes ? 'R' : 'S'} ${cl.touches}x`,
                 axisLabelVisible: true,
             });
-        });
-
-        // Gambar Support zones (hijau)
-        supLevels.forEach((level, i) => {
-            if (level <= 0) return;
-            this._addPriceLine({
-                price: level, color: '#00FFA3',
-                lineWidth: i === 0 ? 2 : 1,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
-                title: i === 0 ? `S${i+1} KEY` : `S${i+1}`,
-                axisLabelVisible: true,
-            });
-        });
+        }
     }
 
     /* ── ENGINE b: QUANTUM SMC (Order Block + BOS/CHoCH) ── */
@@ -693,7 +695,7 @@ class QuantumEngineOverlay {
    ============================================================= */
 class QuantumRealtimeTerminalManager {
     constructor(options = {}) {
-        this.containerId     = options.containerId  || 'tradingview_advanced_widget';
+        this.containerId     = options.containerId  || 'tv_advanced_main';
         this.currentSymbol   = options.symbol       || 'BTCUSDT';
         this.currentInterval = options.interval     || '60';
         this.currentEngine   = options.engine       || 'SNR';
@@ -865,6 +867,7 @@ class QuantumRealtimeTerminalManager {
         this._closeWebSockets();
         this._stopYahooPoller();
         this._stopBiquoteSignalR();
+        if (this._localPoller) { clearInterval(this._localPoller); this._localPoller = null; }
 
         const cfg = QI_SYMBOL_CONFIG[this.currentSymbol];
         if (!cfg) { this._showError(`Simbol "${this.currentSymbol}" tidak didukung`); return; }
@@ -872,6 +875,8 @@ class QuantumRealtimeTerminalManager {
 
         if (cfg.provider === 'binance') {
             await this._loadBinance(cfg);
+        } else if (cfg.provider === 'local') {
+            await this._loadLocal(cfg);
         } else if (cfg.provider === 'biquote') {
             await this._loadBiquote(cfg);
         } else if (cfg.provider === 'binancePaxg') {
@@ -879,6 +884,58 @@ class QuantumRealtimeTerminalManager {
         } else if (cfg.provider === 'yahoo') {
             await this._loadYahoo(cfg);
         }
+    }
+
+    /* =========================================================
+       LOCAL BACKEND API — primary untuk XAUUSD & EURUSD
+       Pakai PHP proxy (Twelve Data cache 60s) — zero WS, zero spam
+       ========================================================= */
+    async _loadLocal(cfg) {
+        const sym      = this.currentSymbol;
+        const interval = this.currentInterval;
+        try {
+            const url  = `/webapp/api/get-chart-data.php?symbol=${sym}&interval=${interval}`;
+            const res  = await fetch(url, { signal: AbortSignal.timeout(8000), cache: 'no-store' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            if (json.status === 'success' && Array.isArray(json.candles) && json.candles.length > 5) {
+                this._renderCandles(json.candles, cfg);
+                this._startLocalPoller(cfg);
+                return;
+            }
+        } catch(e) {
+            console.warn(`[QI Local] Fetch gagal untuk ${sym}:`, e.message);
+        }
+        // Fallback: synthetic
+        const candles = this._generateSyntheticCandles(sym, cfg.priceDp);
+        this._renderCandles(candles, cfg);
+        this._startLocalPoller(cfg);
+    }
+
+    /* Poller ringan: update candle terakhir dari window._livePrices setiap 5 detik */
+    _startLocalPoller(cfg) {
+        if (this._localPoller) { clearInterval(this._localPoller); this._localPoller = null; }
+        const sym = this.currentSymbol;
+        this._localPoller = setInterval(() => {
+            if (this.currentSymbol !== sym) { clearInterval(this._localPoller); return; }
+            const price = window._livePrices?.[sym];
+            if (!price || price <= 0) return;
+            if (!this._cachedCandles || this._cachedCandles.length === 0) return;
+            const last = this._cachedCandles[this._cachedCandles.length - 1];
+            const updated = {
+                time:  last.time,
+                open:  last.open,
+                high:  Math.max(last.high, price),
+                low:   Math.min(last.low, price),
+                close: price,
+            };
+            if (this.candleSeries) this.candleSeries.update(updated);
+            this.lastClosePrice = price;
+            const first = this._cachedCandles[0];
+            const base  = first ? first.open : price;
+            const pct   = base > 0 ? ((price - base) / base) * 100 : 0;
+            this._updateHeaderUI(price, pct, cfg);
+        }, 5000);
     }
 
     /* =========================================================
@@ -1726,7 +1783,7 @@ let quantumTerminalManager = null;
 
 function initQuantumRealtimeSystem() {
     quantumTerminalManager = new QuantumRealtimeTerminalManager({
-        containerId: 'tradingview_advanced_widget',
+        containerId: 'tv_advanced_main',
         symbol:      'BTCUSDT',
         interval:    '60',
         engine:      'SNR',

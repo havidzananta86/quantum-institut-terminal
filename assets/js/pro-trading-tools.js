@@ -1641,7 +1641,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         }
         try {
             // Find canvas element inside widget container
-            const container = document.getElementById('tradingview_advanced_widget');
+            const container = document.getElementById('tv_advanced_main');
             const canvases = container ? container.querySelectorAll('canvas') : [];
             if (canvases.length > 0) {
                 // Merge or take the primary canvas
