@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="id" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Command Center | Quantum Institut Market Terminal</title>
+    <meta name="description" content="Dashboard intelijen pasar real-time: harga live, kekuatan mata uang, kalender ekonomi, dan sembilan mesin analisa Quantum Institut.">
+    <meta name="theme-color" content="#050A1A">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'qi-bg':     '#070C1A',
+                        'qi-panel':  '#0C1220',
+                        'qi-card':   '#111827',
+                        'qi-border': '#1E293B',
+                        'qi-cyan':   '#00E5FF',
+                        'qi-purple': '#7C4DFF',
+                        'qi-green':  '#10B981',
+                        'qi-red':    '#EF4444',
+                        'qi-gold':   '#F59E0B',
+                    },
+                    fontFamily: {
+                        heading: ['Space Grotesk', 'sans-serif'],
+                        body:    ['Inter', 'sans-serif'],
+                        mono:    ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background:#070C1A; font-family:'Inter',sans-serif; }
+
+        /* ── Scrolling ticker ── */
+        @keyframes ticker-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-track { animation: ticker-scroll 40s linear infinite; }
+        .ticker-track:hover { animation-play-state: paused; }
+
+        /* ── Sidebar active item ── */
+        .nav-item { transition: background .15s, color .15s; }
+        .nav-item:hover { background: rgba(0,229,255,.07); color:#fff; }
+        .nav-item.active { background: rgba(0,229,255,.12); color:#00E5FF; border-left:2px solid #00E5FF; }
+
+        /* ── Session dot pulse ── */
+        @keyframes pulse-dot {
+            0%, 100% { opacity:1; }
+            50%       { opacity:.3; }
+        }
+        .session-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+        /* ── Strength bar ── */
+        .strength-bar { transition: width .6s ease; }
+
+        /* ── Scrollbar thin ── */
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#1E293B; border-radius:2px; }
+
+        /* ── Sidebar collapse on mobile ── */
+        @media (max-width:1023px) {
+            #sidebar { transform: translateX(-100%); transition: transform .25s; }
+            #sidebar.open { transform: translateX(0); }
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden text-slate-300 font-body">
+
+<!-- ═══════════════════════════════════════════════════════════
+     LEFT SIDEBAR
+═══════════════════════════════════════════════════════════ -->
+<aside id="sidebar"
+       class="w-56 flex-shrink-0 bg-qi-panel border-r border-qi-border flex flex-col
+              fixed lg:relative z-40 h-full overflow-y-auto">
+
+    <!-- Logo -->
+    <div class="px-4 pt-5 pb-4 border-b border-qi-border flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-qi-cyan to-qi-purple flex items-center justify-center font-heading font-bold text-xs text-white">Q</div>
+        <div>
+            <div class="font-heading font-bold text-white text-sm leading-none">QUANTUM</div>
+            <div class="text-[10px] text-slate-500 leading-none mt-0.5">INSTITUT TERMINAL</div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-2 py-3 space-y-4 text-xs">
+
+        <!-- MARKET INTELLIGENCE -->
+        <div>
+            <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market Intelligence</div>
+            <a href="terminal.html#radar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">⚡</span> Quantum AI Radar
+                <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">PRO</span>
+            </a>
+            <a href="terminal.html#signals" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">📡</span> Signal Matrix
+            </a>
+            <a href="terminal.html#analysis" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">🔬</span> Technical Outlook
+            </a>
+            <a href="terminal.html#calendar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">🗓</span> Economic Heatmap
+            </a>
+        </div>
+
+        <!-- MARKET -->
+        <div>
+            <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
+            <a href="terminal.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">📈</span> Charts
+            </a>
+            <a href="terminal.html#orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">📊</span> Order Book
+            </a>
+            <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">📰</span> News Feed
+            </a>
+            <a href="terminal.html#calendar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">📅</span> Economic Calendar
+            </a>
+            <a href="#market-overview" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer">
+                <span class="text-base">🌐</span> Market Overview
+            </a>
+            <a href="#strength" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">💪</span> Currency Strength
+            </a>
+        </div>
+
+        <!-- TOOLS -->
+        <div>
+            <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
+            <a href="terminal.html#trading" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">💼</span> Paper Trading
+            </a>
+            <a href="terminal.html#backtest" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">⏪</span> Backtester
+            </a>
+            <a href="terminal.html#track" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">🏆</span> Track Record
+            </a>
+            <a href="terminal.html#matrix" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+                <span class="text-base">🔮</span> Correlation Matrix
+            </a>
+        </div>
+    </nav>
+
+    <!-- Bottom: user / version -->
+    <div class="px-4 py-3 border-t border-qi-border text-[10px] text-slate-600 flex items-center justify-between">
+        <span id="sidebarUser">—</span>
+        <span>v2.0</span>
+    </div>
+</aside>
+
+<!-- Sidebar overlay (mobile) -->
+<div id="sidebarOverlay" onclick="toggleSidebar()"
+     class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════ -->
+<div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- ── TOP TICKER BAR ── -->
+    <div class="h-8 bg-qi-panel border-b border-qi-border flex items-center overflow-hidden relative">
+        <div class="flex-shrink-0 px-3 flex items-center gap-1.5 border-r border-qi-border h-full bg-qi-panel z-10">
+            <span class="w-1.5 h-1.5 rounded-full bg-qi-green session-dot"></span>
+            <span class="text-[10px] font-semibold text-qi-green tracking-wider">LIVE</span>
+        </div>
+        <div class="flex-1 overflow-hidden">
+            <div id="tickerTrack" class="ticker-track flex items-center gap-0 whitespace-nowrap h-8">
+                <!-- filled by JS -->
+                <span class="text-[11px] text-slate-500 px-4">Loading market data…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── HEADER ROW ── -->
+    <div class="px-5 py-3 border-b border-qi-border flex items-start justify-between gap-4 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <!-- Mobile hamburger -->
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white mr-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div>
+                <h1 class="font-heading font-bold text-white text-lg leading-none">Quantum Command Center</h1>
+                <p class="text-[11px] text-slate-500 mt-0.5">Live intelligence — harga, sesi, sinyal, dan kalender risiko pasar.</p>
+            </div>
+        </div>
+        <!-- World clocks -->
+        <div class="hidden md:flex items-center gap-5 flex-shrink-0 text-right">
+            <div class="clock-zone">
+                <div class="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">London</div>
+                <div class="font-mono text-sm font-semibold text-white" id="clockLDN">--:--:--</div>
+            </div>
+            <div class="clock-zone">
+                <div class="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">New York</div>
+                <div class="font-mono text-sm font-semibold text-white" id="clockNYC">--:--:--</div>
+            </div>
+            <div class="clock-zone">
+                <div class="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Tokyo</div>
+                <div class="font-mono text-sm font-semibold text-white" id="clockTYO">--:--:--</div>
+            </div>
+            <div class="clock-zone">
+                <div class="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">Sydney</div>
+                <div class="font-mono text-sm font-semibold text-white" id="clockSYD">--:--:--</div>
+            </div>
+            <div class="text-[10px] text-slate-600 font-mono" id="headerDateStr"></div>
+        </div>
+    </div>
+
+    <!-- ── SCROLLABLE BODY ── -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <!-- ── STAT CARDS ── -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 relative overflow-hidden">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span> Live Instruments
+                </div>
+                <div class="text-3xl font-heading font-bold text-qi-cyan" id="statInstruments">—</div>
+                <div class="text-[10px] text-slate-500 mt-1" id="statInstrumentsSub">memuat…</div>
+                <div class="absolute right-3 top-3 text-2xl opacity-10">📡</div>
+            </div>
+
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 relative overflow-hidden">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Top Mover 24h</div>
+                <div class="text-2xl font-heading font-bold" id="statMoverPct">—</div>
+                <div class="text-[11px] text-slate-400 mt-0.5 font-mono" id="statMoverSymbol">—</div>
+                <div class="absolute right-3 top-3 text-2xl opacity-10">🏆</div>
+            </div>
+
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 relative overflow-hidden">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Sesi Aktif</div>
+                <div class="text-xl font-heading font-bold text-white" id="statSession">—</div>
+                <div class="text-[10px] text-slate-500 mt-1" id="statSessionSub">—</div>
+                <div class="absolute right-3 top-3 text-2xl opacity-10">🌍</div>
+            </div>
+
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 relative overflow-hidden">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">High Impact Events</div>
+                <div class="text-3xl font-heading font-bold text-qi-gold" id="statEvents">—</div>
+                <div class="text-[10px] text-slate-500 mt-1" id="statEventsSub">memuat…</div>
+                <div class="absolute right-3 top-3 text-2xl opacity-10">⚠️</div>
+            </div>
+        </div>
+
+        <!-- ── WORLD CLOCK + STRENGTH STACK ── -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+
+            <!-- World Clock detail -->
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-cyan text-sm">🕐</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">World Clock</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div id="wcLDN" class="clock-card rounded-lg p-3 bg-qi-panel border border-qi-border text-center">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1">London</div>
+                        <div class="font-mono text-base font-bold text-white wc-time">--:--</div>
+                        <div class="text-[9px] text-slate-600 wc-date mt-0.5">—</div>
+                        <div class="mt-1.5 text-[9px] font-semibold wc-session rounded px-1 py-0.5 inline-block">—</div>
+                    </div>
+                    <div id="wcNYC" class="clock-card rounded-lg p-3 bg-qi-panel border border-qi-border text-center">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1">New York</div>
+                        <div class="font-mono text-base font-bold text-white wc-time">--:--</div>
+                        <div class="text-[9px] text-slate-600 wc-date mt-0.5">—</div>
+                        <div class="mt-1.5 text-[9px] font-semibold wc-session rounded px-1 py-0.5 inline-block">—</div>
+                    </div>
+                    <div id="wcTYO" class="clock-card rounded-lg p-3 bg-qi-panel border border-qi-border text-center">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Tokyo</div>
+                        <div class="font-mono text-base font-bold text-white wc-time">--:--</div>
+                        <div class="text-[9px] text-slate-600 wc-date mt-0.5">—</div>
+                        <div class="mt-1.5 text-[9px] font-semibold wc-session rounded px-1 py-0.5 inline-block">—</div>
+                    </div>
+                    <div id="wcSYD" class="clock-card rounded-lg p-3 bg-qi-panel border border-qi-border text-center">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1">Sydney</div>
+                        <div class="font-mono text-base font-bold text-white wc-time">--:--</div>
+                        <div class="text-[9px] text-slate-600 wc-date mt-0.5">—</div>
+                        <div class="mt-1.5 text-[9px] font-semibold wc-session rounded px-1 py-0.5 inline-block">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strength Stack -->
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-qi-purple text-sm">💪</span>
+                        <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Strength Stack</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500" id="strengthUpdated">—</span>
+                </div>
+                <div id="strengthStack" class="space-y-2">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat data kekuatan…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── LIVE MARKET TAPE ── -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-green session-dot"></span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Live Market Tape</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-mono" id="tapeUpdated">—</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs font-mono">
+                    <thead>
+                        <tr class="border-b border-qi-border text-[10px] text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left font-semibold tracking-wider">Instrument</th>
+                            <th class="px-3 py-2 text-right font-semibold tracking-wider">Mid</th>
+                            <th class="px-3 py-2 text-right font-semibold tracking-wider hidden sm:table-cell">High</th>
+                            <th class="px-3 py-2 text-right font-semibold tracking-wider hidden sm:table-cell">Low</th>
+                            <th class="px-3 py-2 text-right font-semibold tracking-wider">Change</th>
+                            <th class="px-3 py-2 text-center font-semibold tracking-wider hidden md:table-cell">Chart</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marketTapeBody">
+                        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-600">Memuat data pasar…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── QUICK LINKS ── -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <a href="terminal.html" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-cyan/40 hover:bg-qi-cyan/5 transition-all cursor-pointer">
+                <span class="text-xl">📈</span>
+                <span class="text-[10px] text-slate-400">Charts</span>
+            </a>
+            <a href="terminal.html#news" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-cyan/40 hover:bg-qi-cyan/5 transition-all cursor-pointer">
+                <span class="text-xl">📰</span>
+                <span class="text-[10px] text-slate-400">News Feed</span>
+            </a>
+            <a href="terminal.html#radar" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-purple/40 hover:bg-qi-purple/5 transition-all cursor-pointer">
+                <span class="text-xl">⚡</span>
+                <span class="text-[10px] text-slate-400">AI Radar</span>
+            </a>
+            <a href="terminal.html#trading" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-green/40 hover:bg-qi-green/5 transition-all cursor-pointer">
+                <span class="text-xl">💼</span>
+                <span class="text-[10px] text-slate-400">Paper Trading</span>
+            </a>
+            <a href="terminal.html#calendar" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-gold/40 hover:bg-qi-gold/5 transition-all cursor-pointer">
+                <span class="text-xl">📅</span>
+                <span class="text-[10px] text-slate-400">Calendar</span>
+            </a>
+            <a href="terminal.html#matrix" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-cyan/40 hover:bg-qi-cyan/5 transition-all cursor-pointer">
+                <span class="text-xl">🔮</span>
+                <span class="text-[10px] text-slate-400">Matrix</span>
+            </a>
+        </div>
+
+        <!-- footer -->
+        <div class="text-center text-[10px] text-slate-700 pb-2">
+            Quantum Institut Market Terminal — Data real-time dari Binance, Twelve Data, Biquote
+        </div>
+
+    </div><!-- /scrollable body -->
+</div><!-- /main -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+// ─── Config ────────────────────────────────────────────────────────────────
+const SYMBOLS = ['XAUUSD','EURUSD','BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT'];
+const SYMBOL_LABELS = {
+    XAUUSD:'XAU/USD', EURUSD:'EUR/USD', GBPUSD:'GBP/USD',
+    BTCUSDT:'BTC/USDT', ETHUSDT:'ETH/USDT', SOLUSDT:'SOL/USDT',
+    BNBUSDT:'BNB/USDT', XRPUSDT:'XRP/USDT', DOGEUSDT:'DOGE/USDT',
+};
+const SYMBOL_DESC = {
+    XAUUSD:'Spot Gold', EURUSD:'Euro / Dollar',
+    BTCUSDT:'Bitcoin', ETHUSDT:'Ethereum', SOLUSDT:'Solana',
+    BNBUSDT:'BNB Chain', XRPUSDT:'Ripple', DOGEUSDT:'Dogecoin',
+};
+const DP = { XAUUSD:2, EURUSD:5, GBPUSD:5, BTCUSDT:2, ETHUSDT:2, SOLUSDT:3, BNBUSDT:2, XRPUSDT:4, DOGEUSDT:5 };
+
+// ─── World Clock ───────────────────────────────────────────────────────────
+const TZ_SESSIONS = {
+    LDN: { tz:'Europe/London',     name:'London',   session:'London Sesi',   openH:8,  closeH:17 },
+    NYC: { tz:'America/New_York',  name:'New York',  session:'New York Sesi', openH:8,  closeH:17 },
+    TYO: { tz:'Asia/Tokyo',        name:'Tokyo',     session:'Tokyo Sesi',    openH:9,  closeH:18 },
+    SYD: { tz:'Australia/Sydney',  name:'Sydney',    session:'Sydney Sesi',   openH:7,  closeH:16 },
+};
+const DAYS_ID = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+function getZoneTime(tz) {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+}
+function zeroPad(n) { return String(n).padStart(2,'0'); }
+
+function updateClocks() {
+    const now = new Date();
+    for (const [key, cfg] of Object.entries(TZ_SESSIONS)) {
+        const t = getZoneTime(cfg.tz);
+        const hh = zeroPad(t.getHours()), mm = zeroPad(t.getMinutes()), ss = zeroPad(t.getSeconds());
+        const timeStr = `${hh}:${mm}:${ss}`;
+        const dateStr = `${DAYS_ID[t.getDay()]} ${t.getDate()} ${MONTHS_ID[t.getMonth()]}`;
+        const isOpen  = t.getHours() >= cfg.openH && t.getHours() < cfg.closeH && t.getDay() >= 1 && t.getDay() <= 5;
+
+        // Header clocks
+        const hdr = document.getElementById(`clock${key}`);
+        if (hdr) hdr.textContent = timeStr;
+
+        // World clock cards
+        const card = document.getElementById(`wc${key}`);
+        if (card) {
+            card.querySelector('.wc-time').textContent = `${hh}:${mm}`;
+            card.querySelector('.wc-date').textContent = dateStr;
+            const badge = card.querySelector('.wc-session');
+            badge.textContent = isOpen ? '● OPEN' : '○ CLOSED';
+            badge.className = `wc-session mt-1.5 text-[9px] font-semibold rounded px-1 py-0.5 inline-block ${isOpen ? 'text-qi-green bg-qi-green/10' : 'text-slate-600 bg-slate-800/50'}`;
+            card.classList.toggle('border-qi-green/30', isOpen);
+        }
+    }
+
+    // Header date
+    const ldnT = getZoneTime('Europe/London');
+    const d = document.getElementById('headerDateStr');
+    if (d) d.textContent = `${DAYS_ID[ldnT.getDay()]} ${ldnT.getDate()} ${MONTHS_ID[ldnT.getMonth()]} ${ldnT.getFullYear()}`;
+
+    // Active session for stat card
+    updateSessionCard();
+}
+
+function updateSessionCard() {
+    const sessions = [
+        { name:'Sydney',  tz:'Australia/Sydney',   openH:7,  closeH:16, color:'text-sky-400' },
+        { name:'Tokyo',   tz:'Asia/Tokyo',          openH:9,  closeH:18, color:'text-red-400' },
+        { name:'London',  tz:'Europe/London',       openH:8,  closeH:17, color:'text-blue-400' },
+        { name:'New York',tz:'America/New_York',    openH:8,  closeH:17, color:'text-green-400' },
+    ];
+    const active = sessions.filter(s => {
+        const t = getZoneTime(s.tz);
+        return t.getHours() >= s.openH && t.getHours() < s.closeH && t.getDay() >= 1 && t.getDay() <= 5;
+    });
+    const el = document.getElementById('statSession');
+    const sub = document.getElementById('statSessionSub');
+    if (!active.length) {
+        if (el) { el.textContent = 'Pasar Tutup'; el.className = 'text-xl font-heading font-bold text-slate-500'; }
+        if (sub) sub.textContent = 'Weekend / di luar jam sesi';
+    } else {
+        const names = active.map(s => s.name).join(' + ');
+        if (el) { el.textContent = names; el.className = `text-xl font-heading font-bold ${active[active.length-1].color}`; }
+        if (sub) sub.textContent = active.length > 1 ? 'Overlap — volatilitas tinggi' : 'Sesi aktif';
+    }
+}
+
+// ─── Market Data ───────────────────────────────────────────────────────────
+let _lastPrices = {};
+
+async function fetchMarketData() {
+    try {
+        const res = await fetch(`api/live-price.php?symbols=${SYMBOLS.join(',')}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status !== 'success') return;
+        _lastPrices = data.prices || {};
+        renderTicker(_lastPrices);
+        renderMarketTape(_lastPrices);
+        renderStatCards(_lastPrices);
+        renderStrengthStack(_lastPrices);
+        document.getElementById('tapeUpdated').textContent = new Date().toLocaleTimeString('id-ID');
+    } catch(e) {}
+}
+
+function fmt(sym, price) {
+    const dp = DP[sym] ?? 2;
+    return parseFloat(price).toFixed(dp);
+}
+
+function pctColor(pct) {
+    if (pct > 0) return 'text-qi-green';
+    if (pct < 0) return 'text-qi-red';
+    return 'text-slate-400';
+}
+function pctArrow(pct) { return pct > 0 ? '▲' : pct < 0 ? '▼' : '─'; }
+
+// ─── Ticker ────────────────────────────────────────────────────────────────
+function renderTicker(prices) {
+    const items = Object.entries(prices).map(([sym, d]) => {
+        const pct = parseFloat(d.chgPct ?? 0);
+        const cls = pct >= 0 ? 'text-qi-green' : 'text-qi-red';
+        const price = fmt(sym, d.price);
+        const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        return `<span class="inline-flex items-center gap-2 px-4 border-r border-qi-border/40 h-8 text-[11px]">
+            <span class="text-slate-400 font-semibold">${SYMBOL_LABELS[sym] || sym}</span>
+            <span class="font-mono text-white">${price}</span>
+            <span class="font-mono ${cls} font-semibold">${pctStr}</span>
+        </span>`;
+    }).join('');
+    // Duplicate for seamless loop
+    const track = document.getElementById('tickerTrack');
+    if (track) track.innerHTML = items + items;
+}
+
+// ─── Market Tape ───────────────────────────────────────────────────────────
+function renderMarketTape(prices) {
+    const tbody = document.getElementById('marketTapeBody');
+    if (!tbody) return;
+    const rows = Object.entries(prices).map(([sym, d]) => {
+        const pct = parseFloat(d.chgPct ?? 0);
+        const cls = pctColor(pct);
+        const arrow = pctArrow(pct);
+        const price = fmt(sym, d.price);
+        const high  = d.high  ? fmt(sym, d.high)  : '—';
+        const low   = d.low   ? fmt(sym, d.low)   : '—';
+        const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        const label = SYMBOL_LABELS[sym] || sym;
+        const desc  = SYMBOL_DESC[sym]  || '';
+        return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors cursor-pointer"
+                    onclick="window.location.href='terminal.html'">
+            <td class="px-4 py-2.5">
+                <div class="font-semibold text-white">${label}</div>
+                <div class="text-[10px] text-slate-600">${desc}</div>
+            </td>
+            <td class="px-3 py-2.5 text-right font-mono text-white tabular-nums">${price}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-slate-400 tabular-nums hidden sm:table-cell">${high}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-slate-400 tabular-nums hidden sm:table-cell">${low}</td>
+            <td class="px-3 py-2.5 text-right font-mono tabular-nums">
+                <span class="${cls} font-semibold">${arrow} ${pctStr}</span>
+            </td>
+            <td class="px-3 py-2.5 text-center hidden md:table-cell">
+                <span class="text-[10px] text-slate-600 hover:text-qi-cyan transition-colors">→ Chart</span>
+            </td>
+        </tr>`;
+    }).join('');
+    tbody.innerHTML = rows || `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-600">Tidak ada data</td></tr>`;
+}
+
+// ─── Stat Cards ────────────────────────────────────────────────────────────
+function renderStatCards(prices) {
+    const entries = Object.entries(prices);
+    // Instruments count
+    const instrEl = document.getElementById('statInstruments');
+    const instrSub = document.getElementById('statInstrumentsSub');
+    if (instrEl) instrEl.textContent = entries.length;
+    if (instrSub) instrSub.textContent = `${entries.length} instrumen terpantau`;
+
+    // Top mover
+    if (!entries.length) return;
+    const topMover = entries.reduce((best, [sym, d]) => {
+        const abs = Math.abs(parseFloat(d.chgPct ?? 0));
+        return abs > best.abs ? { sym, d, abs } : best;
+    }, { sym:'', d:{}, abs:0 });
+
+    const pct = parseFloat(topMover.d.chgPct ?? 0);
+    const cls = pct >= 0 ? 'text-qi-green' : 'text-qi-red';
+    const moverEl = document.getElementById('statMoverPct');
+    const moverSym = document.getElementById('statMoverSymbol');
+    if (moverEl) {
+        moverEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        moverEl.className = `text-2xl font-heading font-bold ${cls}`;
+    }
+    if (moverSym) moverSym.textContent = SYMBOL_LABELS[topMover.sym] || topMover.sym;
+}
+
+// ─── Strength Stack ────────────────────────────────────────────────────────
+// Sederhana: hitung dari % change pair yang tersedia
+// Pair yang ada: EURUSD, XAUUSD → derive USD & EUR strength
+function renderStrengthStack(prices) {
+    const btc = parseFloat(prices.BTCUSDT?.chgPct ?? 0);
+    const eth = parseFloat(prices.ETHUSDT?.chgPct ?? 0);
+    const sol = parseFloat(prices.SOLUSDT?.chgPct ?? 0);
+    const xau = parseFloat(prices.XAUUSD?.chgPct ?? 0);
+    const eur = parseFloat(prices.EURUSD?.chgPct ?? 0);
+
+    // Simplified strength scores (0–100)
+    // USD: inverse of XAU and EUR movements
+    const normalize = (v, min=-5, max=5) => Math.round(Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100)));
+    const usdStrength = normalize(-(xau + eur) / 2);
+    const eurStrength = normalize(eur * 2);
+    const xauStrength = normalize(xau * 2);
+
+    const assets = [
+        { label:'BTC',  score: normalize(btc * 2), color:'#F59E0B' },
+        { label:'ETH',  score: normalize(eth * 2), color:'#6366F1' },
+        { label:'SOL',  score: normalize(sol * 2), color:'#8B5CF6' },
+        { label:'GOLD', score: xauStrength,        color:'#F59E0B' },
+        { label:'EUR',  score: eurStrength,         color:'#3B82F6' },
+        { label:'USD',  score: usdStrength,         color:'#10B981' },
+    ].sort((a,b) => b.score - a.score);
+
+    const container = document.getElementById('strengthStack');
+    if (!container) return;
+    container.innerHTML = assets.map((a, i) => `
+        <div class="flex items-center gap-2">
+            <div class="w-8 text-right text-[10px] font-mono font-semibold text-slate-400">${a.label}</div>
+            <div class="flex-1 bg-qi-panel rounded-full h-2 overflow-hidden">
+                <div class="strength-bar h-full rounded-full" style="width:${a.score}%;background:${a.color};opacity:${0.5 + a.score/200}"></div>
+            </div>
+            <div class="w-8 text-[10px] font-mono text-slate-400">${a.score}</div>
+            <div class="text-[9px] text-slate-600 w-3">#${i+1}</div>
+        </div>
+    `).join('');
+
+    const upd = document.getElementById('strengthUpdated');
+    if (upd) upd.textContent = new Date().toLocaleTimeString('id-ID');
+}
+
+// ─── Calendar High Impact ──────────────────────────────────────────────────
+async function fetchCalendarCount() {
+    try {
+        const res = await fetch('api/calendar.php');
+        if (!res.ok) return;
+        const data = await res.json();
+        const events = data.events || data.data || [];
+        const high = events.filter(e =>
+            (e.impact||'').toLowerCase() === 'high' ||
+            (e.impact||'').toLowerCase() === 'tinggi' ||
+            (e.importance||0) >= 3
+        ).length;
+        const el = document.getElementById('statEvents');
+        const sub = document.getElementById('statEventsSub');
+        if (el) el.textContent = high;
+        if (sub) sub.textContent = `dari ${events.length} event hari ini`;
+    } catch(e) {
+        const el = document.getElementById('statEvents');
+        if (el) el.textContent = '—';
+    }
+}
+
+// ─── User display ─────────────────────────────────────────────────────────
+function loadUserInfo() {
+    try {
+        const token = localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token');
+        const name  = localStorage.getItem('qi_user_name') || sessionStorage.getItem('qi_user_name');
+        const el = document.getElementById('sidebarUser');
+        if (el) el.textContent = name || (token ? 'Member' : 'Guest');
+    } catch(e) {}
+}
+
+// ─── Sidebar toggle (mobile) ──────────────────────────────────────────────
+function toggleSidebar() {
+    const sb  = document.getElementById('sidebar');
+    const ovl = document.getElementById('sidebarOverlay');
+    const open = sb.classList.toggle('open');
+    ovl.classList.toggle('hidden', !open);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+updateClocks();
+setInterval(updateClocks, 1000);
+
+loadUserInfo();
+fetchMarketData();
+fetchCalendarCount();
+setInterval(fetchMarketData, 15000); // refresh setiap 15 detik
+</script>
+
+</body>
+</html>
