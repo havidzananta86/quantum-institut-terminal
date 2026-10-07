@@ -760,8 +760,13 @@ class QuantumRealtimeTerminalManager {
             return;
         }
 
-        // Ensure container has minimum height
-        if (container.offsetHeight < 50) {
+        // Background engine mode: container is hidden (left:-9999px) — force fixed size
+        const isBackgroundEngine = container.offsetLeft < -100 || container.style.left === '-9999px';
+        if (isBackgroundEngine) {
+            container.style.position = 'absolute';
+            container.style.width  = '800px';
+            container.style.height = '500px';
+        } else if (container.offsetHeight < 50) {
             container.style.height = '500px';
             container.style.minHeight = '300px';
         }
@@ -769,8 +774,8 @@ class QuantumRealtimeTerminalManager {
         if (this.chart) { try { this.chart.remove(); } catch(e) {} this.chart = null; }
         container.innerHTML = '';
 
-        const parentW = container.clientWidth || container.offsetWidth || (container.parentElement ? container.parentElement.clientWidth : 0) || 800;
-        const parentH = container.offsetHeight || container.clientHeight || 500;
+        const parentW = isBackgroundEngine ? 800 : (container.clientWidth || container.offsetWidth || (container.parentElement ? container.parentElement.clientWidth : 0) || 800);
+        const parentH = isBackgroundEngine ? 500 : (container.offsetHeight || container.clientHeight || 500);
 
         this.chart = LightweightCharts.createChart(container, {
             width:  parentW > 50 ? parentW : 800,
