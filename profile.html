@@ -184,8 +184,8 @@ function loadProfile() {
         headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + getToken() },
         body: JSON.stringify({ type: 'verify_token' })
     }).then(r => r.json()).then(d => {
-        if (d.status === 'success' && d.user) {
-            const exp = d.user.expires_at || d.expires_at;
+        if (d.status === 'success' && d.data) {
+            const exp = d.data.expires_at;
             if (exp) {
                 document.getElementById('profileTokenExp').textContent =
                     new Date(exp).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
