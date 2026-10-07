@@ -935,6 +935,7 @@
         })();
 
         let currentCleanSymbol = 'BTCUSDT';
+        window.currentCleanSymbol = 'BTCUSDT'; // export for cross-file access (let is not on window)
         let currentQuantumEngine = 'SNR';
 
         const basePrices = { BTCUSDT: 68450.20, XAUUSD: 2654.20, ETHUSDT: 3520.10, EURUSD: 1.0895, SOLUSDT: 184.50 };
@@ -955,7 +956,22 @@
 
         function loadRealtimeSymbol(tvSymbol, cleanSymbol, defaultPrice) {
             currentCleanSymbol = cleanSymbol;
+            window.currentCleanSymbol = cleanSymbol; // keep window in sync for cross-file access
+
             window._signalNeedsRecalc = true;
+
+            // Update active tab styling
+            document.querySelectorAll('#symbolTabsContainer button').forEach(b => {
+                b.classList.remove('active-tab', 'font-bold');
+                b.classList.add('text-slate-400');
+                b.style.borderColor = 'transparent';
+            });
+            const activeBtn = document.getElementById('pair-' + cleanSymbol);
+            if (activeBtn) {
+                activeBtn.classList.add('active-tab', 'font-bold');
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.style.borderColor = '';
+            }
 
             // Sync TradingView main chart
             const currentTf = quantumTerminalManager?.currentInterval || '60';
@@ -964,14 +980,17 @@
             // Fetch fresh candles for engine analysis via PHP proxy
             fetchCandlesForEngine(cleanSymbol, currentTf);
 
+            // Use live price if available, else fallback to defaultPrice
+            const livePrice = window._livePrices?.[cleanSymbol] || defaultPrice;
+
             // Lightweight Charts engine (hidden fallback)
             if (quantumTerminalManager) {
                 quantumTerminalManager.setSymbol(cleanSymbol);
             } else {
-                recalculateQuantumEngineLevels(defaultPrice);
+                recalculateQuantumEngineLevels(livePrice);
             }
 
-            if (window.QuantumOrderBook) window.QuantumOrderBook.setSymbol(cleanSymbol, defaultPrice);
+            if (window.QuantumOrderBook) window.QuantumOrderBook.setSymbol(cleanSymbol, livePrice);
         }
 
         function setChartInterval(tf) {

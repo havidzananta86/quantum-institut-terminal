@@ -67,28 +67,54 @@ if (!empty($cryptoSyms)) {
     }
 }
 
-// ─── XAUUSD via biquote + Binance PAXG fallback ─────────────────────────────
+// ─── XAUUSD: Yahoo Finance GC=F → biquote.io → PAXG fallback ────────────────
 if (in_array('XAUUSD', $symbols)) {
-    $raw = qi_http_get('https://biquote.io/api/XAUUSD/quote', 3);
     $got = false;
+
+    // Primary: Yahoo Finance gold futures (GC=F) — no API key needed
+    $raw = qi_http_get('https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1m&range=1d', 4);
     if ($raw) {
         $d = json_decode($raw, true);
-        $price = (float)($d['bid'] ?? $d['close'] ?? $d['price'] ?? 0);
+        $meta = $d['chart']['result'][0]['meta'] ?? null;
+        $price = (float)($meta['regularMarketPrice'] ?? $meta['previousClose'] ?? 0);
+        $open  = (float)($meta['chartPreviousClose'] ?? $meta['previousClose'] ?? $price);
         if ($price > 100) {
             $result['XAUUSD'] = [
                 'price'  => $price,
-                'open'   => (float)($d['open'] ?? $price),
-                'high'   => (float)($d['high'] ?? $price),
-                'low'    => (float)($d['low'] ?? $price),
-                'chgPct' => isset($d['open']) && $d['open'] > 0 ? round(($price - $d['open']) / $d['open'] * 100, 3) : 0,
+                'open'   => $open,
+                'high'   => (float)($meta['regularMarketDayHigh'] ?? $price),
+                'low'    => (float)($meta['regularMarketDayLow']  ?? $price),
+                'chgPct' => $open > 0 ? round(($price - $open) / $open * 100, 3) : 0,
                 'vol'    => 0,
-                'source' => 'biquote',
+                'source' => 'yahoo_gcf',
             ];
             $got = true;
         }
     }
+
+    // Secondary: biquote.io spot gold
     if (!$got) {
-        // Fallback PAXGUSDT sebagai gold proxy
+        $raw = qi_http_get('https://biquote.io/api/XAUUSD/quote', 3);
+        if ($raw) {
+            $d = json_decode($raw, true);
+            $price = (float)($d['bid'] ?? $d['close'] ?? $d['price'] ?? 0);
+            if ($price > 100) {
+                $result['XAUUSD'] = [
+                    'price'  => $price,
+                    'open'   => (float)($d['open'] ?? $price),
+                    'high'   => (float)($d['high'] ?? $price),
+                    'low'    => (float)($d['low'] ?? $price),
+                    'chgPct' => isset($d['open']) && $d['open'] > 0 ? round(($price - $d['open']) / $d['open'] * 100, 3) : 0,
+                    'vol'    => 0,
+                    'source' => 'biquote',
+                ];
+                $got = true;
+            }
+        }
+    }
+
+    // Tertiary fallback: PAXGUSDT dari Binance (1:1 gold proxy)
+    if (!$got) {
         foreach (['https://data-api.binance.vision', 'https://api.binance.com'] as $host) {
             $raw2 = qi_http_get("{$host}/api/v3/ticker/24hr?symbol=PAXGUSDT", 3);
             if ($raw2) {
