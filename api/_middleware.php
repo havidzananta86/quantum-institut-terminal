@@ -183,10 +183,20 @@ function qi_db($fatal = true) {
 function qi_validate_token() {
     $token = null;
 
-    // Coba ambil dari header Authorization: Bearer xxx
-    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    // Coba ambil dari header Authorization: Bearer xxx.
+    // Apache kadang menaruhnya di REDIRECT_HTTP_AUTHORIZATION (via RewriteRule),
+    // atau hanya terlihat lewat apache_request_headers() — cek ketiganya.
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION']
+               ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+               ?? '';
+    if (!$authHeader && function_exists('apache_request_headers')) {
+        $hdrs = apache_request_headers();
+        foreach ($hdrs as $k => $v) {
+            if (strcasecmp($k, 'Authorization') === 0) { $authHeader = $v; break; }
+        }
+    }
     if (preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
-        $token = $matches[1];
+        $token = trim($matches[1]);
     }
 
     // Fallback: header custom X-QI-Token

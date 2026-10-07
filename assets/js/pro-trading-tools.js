@@ -842,14 +842,56 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         history: [],
         lastBacktestResult: null,
         init() {
-            this.loadState();
+            this.loadState();            // localStorage dulu → render instan
             this.render();
             this._startPriceTracker();
             setInterval(() => this.updateFloatingPnL(), 1000);
+            // Kalau user login, tarik snapshot dari server (override localStorage)
+            if (this._authToken()) this._loadFromServer();
         },
         _startPriceTracker() {
             // _livePrices diupdate oleh QuantumPricePoller (PHP polling)
             // Tidak perlu WS Binance langsung — poller lebih reliable di semua region
+        },
+        _authToken() {
+            try {
+                return localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token') || null;
+            } catch (e) { return null; }
+        },
+        async _loadFromServer() {
+            const token = this._authToken();
+            if (!token) return;
+            try {
+                const res = await fetch('/webapp/api/paper-trading.php', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
+                });
+                if (!res.ok) return; // 401/503 → tetap pakai localStorage
+                const json = await res.json();
+                if (json.status === 'success' && json.data) {
+                    this.balance   = json.data.balance   ?? this.balance;
+                    this.positions = json.data.positions ?? this.positions;
+                    this.history   = json.data.history   ?? this.history;
+                    this.saveLocal();   // sinkronkan cache lokal
+                    this.render();
+                }
+            } catch (e) { /* server tak terjangkau → localStorage saja */ }
+        },
+        _syncToServer() {
+            const token = this._authToken();
+            if (!token) return;
+            clearTimeout(this._syncTimer);
+            this._syncTimer = setTimeout(() => {
+                fetch('/webapp/api/paper-trading.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        balance: this.balance,
+                        positions: this.positions,
+                        history: this.history
+                    })
+                }).catch(() => {});
+            }, 800); // debounce — hindari spam saat auto-close SL/TP beruntun
         },
         loadState() {
             try {
@@ -862,7 +904,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 }
             } catch (e) {}
         },
-        saveState() {
+        saveLocal() {
             try {
                 localStorage.setItem('QI_PAPER_TRADING', JSON.stringify({
                     balance: this.balance,
@@ -870,6 +912,10 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                     history: this.history
                 }));
             } catch (e) {}
+        },
+        saveState() {
+            this.saveLocal();      // cache cepat
+            this._syncToServer();  // persist ke MySQL kalau login
         },
         executeOrder(side = 'BUY', customSymbol = null) {
             const activeChartSym = window.quantumTerminalManager?.currentSymbol || window.currentCleanSymbol;

@@ -2,6 +2,11 @@
 RewriteEngine On
 RewriteBase /
 
+# Teruskan header Authorization ke PHP (Apache mod_php sering stripping ini).
+# Tanpa ini, token Bearer tidak sampai ke $_SERVER dan auth gagal.
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # =============================================
 # PROTEKSI AKSES FOLDER & FILE SENSITIF
 # Blokir akses langsung ke folder internal
