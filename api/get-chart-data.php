@@ -83,10 +83,84 @@ if (in_array($symbol, ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'D
     }
 }
 
-// 1b. XAUUSD / EURUSD via Biquote MT5
-if (empty($candles) && in_array($symbol, ['XAUUSD', 'EURUSD'])) {
+// 1b. XAUUSD via Stooq spot → biquote.io MT5 → PAXG fallback
+if (empty($candles) && $symbol === 'XAUUSD') {
+    // Stooq interval map: i=d daily, i=h hourly, i=w weekly
+    $stooqIntervalMap = ['1'=>'h','5'=>'h','15'=>'h','30'=>'h','60'=>'h','240'=>'h','D'=>'d'];
+    $stooqI = $stooqIntervalMap[$interval] ?? 'h';
+    $raw = qi_http_get("https://stooq.com/q/d/l/?s=xauusd&i={$stooqI}&e=json", 5);
+    if ($raw) {
+        $d = json_decode($raw, true);
+        $bars = $d['data'] ?? [];
+        if (is_array($bars) && count($bars) > 50) {
+            foreach ($bars as $b) {
+                // Format: {"Date":"2025-01-02","Open":"2635.6",...}
+                $t = strtotime($b['Date'] ?? '');
+                if ($t > 0) {
+                    $candles[] = [
+                        'time'   => $t,
+                        'open'   => (float)($b['Open']  ?? $b['open']  ?? 0),
+                        'high'   => (float)($b['High']  ?? $b['high']  ?? 0),
+                        'low'    => (float)($b['Low']   ?? $b['low']   ?? 0),
+                        'close'  => (float)($b['Close'] ?? $b['close'] ?? 0),
+                        'volume' => (float)($b['Volume']?? $b['volume']?? 0),
+                    ];
+                }
+            }
+            // Stooq returns oldest-first; take last 300
+            $candles = array_slice($candles, -300);
+        }
+    }
+
+    // Secondary: biquote.io MT5 broker feed
+    if (empty($candles)) {
+        $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
+        $raw = qi_http_get("https://biquote.io/api/XAUUSD/ohlc?interval={$biquoteTf}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+            if (is_array($bars) && count($bars) > 0) {
+                foreach ($bars as $b) {
+                    $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
+                    if ($t > 0) {
+                        $candles[] = [
+                            'time'   => $t,
+                            'open'   => (float)$b['open'],
+                            'high'   => (float)$b['high'],
+                            'low'    => (float)$b['low'],
+                            'close'  => (float)$b['close'],
+                            'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                        ];
+                    }
+                }
+                usort($candles, fn($a, $b) => $a['time'] - $b['time']);
+            }
+        }
+    }
+
+    // Tertiary: Binance PAXGUSDT (gold proxy, deviasi <0.5%)
+    if (empty($candles)) {
+        $raw = qi_http_get("https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval={$binanceInterval}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            if (is_array($data) && count($data) > 0) {
+                foreach ($data as $d) {
+                    $candles[] = [
+                        'time'   => (int)($d[0] / 1000),
+                        'open'   => (float)$d[1], 'high' => (float)$d[2],
+                        'low'    => (float)$d[3], 'close'=> (float)$d[4],
+                        'volume' => (float)$d[5],
+                    ];
+                }
+            }
+        }
+    }
+}
+
+// 1c. EURUSD via biquote.io MT5
+if (empty($candles) && $symbol === 'EURUSD') {
     $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
-    $raw = qi_http_get("https://biquote.io/api/{$symbol}/ohlc?interval={$biquoteTf}&limit=300", 4);
+    $raw = qi_http_get("https://biquote.io/api/EURUSD/ohlc?interval={$biquoteTf}&limit=300", 4);
     if ($raw) {
         $data = json_decode($raw, true);
         $bars = $data['bars'] ?? (is_array($data) ? $data : []);
@@ -105,22 +179,6 @@ if (empty($candles) && in_array($symbol, ['XAUUSD', 'EURUSD'])) {
                 }
             }
             usort($candles, fn($a, $b) => $a['time'] - $b['time']);
-        }
-    }
-
-    // Fallback: Binance PAXGUSDT (gold proxy) untuk XAUUSD
-    if (empty($candles) && $symbol === 'XAUUSD') {
-        $raw = qi_http_get("https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval={$binanceInterval}&limit=300", 4);
-        if ($raw) {
-            $data = json_decode($raw, true);
-            if (is_array($data) && count($data) > 0) {
-                foreach ($data as $d) {
-                    $candles[] = [
-                        'time' => (int)($d[0] / 1000), 'open' => (float)$d[1], 'high' => (float)$d[2],
-                        'low' => (float)$d[3], 'close' => (float)$d[4], 'volume' => (float)$d[5],
-                    ];
-                }
-            }
         }
     }
 }
