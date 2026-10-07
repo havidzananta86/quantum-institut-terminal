@@ -572,29 +572,76 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const utcMins = now.getUTCMinutes();
             const utcTimeDecimal = utcHours + (utcMins / 60);
 
-            // Sessions definition (in UTC):
-            // Tokyo / Asian: 00:00 - 09:00 UTC (07:00 - 16:00 WIB)
-            // London: 07:00 - 16:00 UTC (14:00 - 23:00 WIB)
-            // New York: 12:00 - 21:00 UTC (19:00 - 04:00 WIB)
-            // Sydney: 21:00 - 06:00 UTC
+            // Helper untuk deteksi Daylight Saving Time (DST)
+            // US DST: Minggu kedua Maret s.d. Minggu pertama November
+            // UK/EU DST: Minggu terakhir Maret s.d. Minggu terakhir Oktober
+            const year = now.getUTCFullYear();
+            const month = now.getUTCMonth(); // 0-11
+            const date = now.getUTCDate();
+            const day = now.getUTCDay(); // 0 = Sun
+
+            // Hitung US DST (EDT = UTC-4 vs EST = UTC-5)
+            // US NY Open: 09:30 lokal = 13:30 UTC saat DST (EDT) atau 14:30 UTC saat Non-DST (EST)
+            const isUsDst = (function() {
+                if (month < 2 || month > 10) return false; // Jan, Feb, Dec = EST
+                if (month > 2 && month < 10) return true;  // Apr - Oct = EDT
+                // Maret: Mulai Minggu ke-2
+                if (month === 2) {
+                    const secondSun = 14 - (new Date(Date.UTC(year, 2, 1)).getUTCDay() || 7) + 1;
+                    return date >= secondSun;
+                }
+                // November: Selesai Minggu ke-1
+                if (month === 10) {
+                    const firstSun = 7 - (new Date(Date.UTC(year, 10, 1)).getUTCDay() || 7) + 1;
+                    return date < firstSun;
+                }
+                return false;
+            })();
+
+            // Hitung London DST (BST = UTC+1 vs GMT = UTC+0)
+            const isUkDst = (function() {
+                if (month < 2 || month > 9) return false; // Jan, Feb, Nov, Dec = GMT
+                if (month > 2 && month < 9) return true;  // Apr - Sep = BST
+                // Maret: Minggu terakhir
+                if (month === 2) {
+                    const lastSun = 31 - new Date(Date.UTC(year, 2, 31)).getUTCDay();
+                    return date >= lastSun;
+                }
+                // Oktober: Minggu terakhir
+                if (month === 9) {
+                    const lastSun = 31 - new Date(Date.UTC(year, 9, 31)).getUTCDay();
+                    return date < lastSun;
+                }
+                return false;
+            })();
+
+            // Sesi UTC dengan kalkulasi DST:
+            // Tokyo / Asian: 00:00 - 09:00 UTC (Tetap tanpa DST)
+            // London: 07:00 - 15:30 UTC saat BST, atau 08:00 - 16:30 UTC saat GMT
+            const lonOpen = isUkDst ? 7.0 : 8.0;
+            const lonClose = lonOpen + 8.5;
+
+            // New York: 13:30 - 20:00 UTC saat EDT, atau 14:30 - 21:00 UTC saat EST
+            const nyOpen = isUsDst ? 13.5 : 14.5;
+            const nyClose = nyOpen + 6.5;
 
             const isAsia = utcTimeDecimal >= 0 && utcTimeDecimal < 9;
-            const isLondon = utcTimeDecimal >= 7 && utcTimeDecimal < 16;
-            const isNY = utcTimeDecimal >= 12 && utcTimeDecimal < 21;
+            const isLondon = utcTimeDecimal >= lonOpen && utcTimeDecimal < lonClose;
+            const isNY = utcTimeDecimal >= nyOpen && utcTimeDecimal < nyClose;
             const isLondonNYOverlap = isLondon && isNY;
 
             const badgeEl = document.getElementById('sessionLiveBadge');
             if (badgeEl) {
                 if (isLondonNYOverlap) {
-                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span><span class="text-cyan-300 font-bold">LONDON-NY OVERLAP (PEAK VOL)</span>`;
+                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span><span class="text-cyan-300 font-bold">LONDON-NY OVERLAP (VOL TINGGI)</span>`;
                 } else if (isNY) {
-                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span class="text-emerald-300 font-bold">NEW YORK OPEN</span>`;
+                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span class="text-emerald-300 font-bold">NEW YORK OPEN (${isUsDst ? 'EDT' : 'EST'})</span>`;
                 } else if (isLondon) {
-                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span class="text-amber-300 font-bold">LONDON OPEN</span>`;
+                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span class="text-amber-300 font-bold">LONDON OPEN (${isUkDst ? 'BST' : 'GMT'})</span>`;
                 } else if (isAsia) {
                     badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span><span class="text-blue-300 font-bold">TOKYO / ASIA OPEN</span>`;
                 } else {
-                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">MARKET QUIET</span>`;
+                    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="text-slate-400">MARKET QUIET (OFF-PEAK)</span>`;
                 }
             }
         }
