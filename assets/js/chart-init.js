@@ -714,8 +714,12 @@ class QuantumRealtimeTerminalManager {
         this._yahooPoller  = null;
 
         this.lastClosePrice = 0;
-        this._cachedCandles = [];         // candles tersimpan untuk redraw engine
+        this._cachedCandles = [];
         this.createdPriceLines = [];
+        this._drawingSeries = [];
+        this._drawingMarkers = [];
+        this._drawingTool = null;
+        this._drawClicks = [];
         this.isCrosshairActive = true;
         this.isMagnetActive = false;
         this.candleType = 'standard';     // 'standard' | 'heikinashi'
@@ -855,6 +859,7 @@ class QuantumRealtimeTerminalManager {
             });
         }
 
+        this._initDrawingSystem();
         this._loadDataAndStream();
     }
 
@@ -1634,10 +1639,163 @@ class QuantumRealtimeTerminalManager {
     }
 
     /* =========================================================
-       TOOLBAR DRAWING TOOLS (manual)
+       INTERACTIVE DRAWING TOOLS
+       State machine: _drawingTool = null | 'hline' | 'trendline' |
+       'rectangle' | 'fibonacci' | 'text'
        ========================================================= */
+    _initDrawingSystem() {
+        this._drawingTool = null;
+        this._drawClicks = [];
+        this._drawingSeries = [];
+        this._drawingMarkers = [];
+        this._chartClickBound = this._handleChartClick.bind(this);
+        if (this.chart) this.chart.subscribeClick(this._chartClickBound);
+    }
+
+    _setActiveTool(tool) {
+        if (this._drawingTool === tool) {
+            this._cancelDrawing();
+            return;
+        }
+        this._drawingTool = tool;
+        this._drawClicks = [];
+        document.querySelectorAll('#toolbar .tool-btn').forEach(b => b.classList.remove('drawing-active'));
+        const btnMap = { hline:'btn-hline', trendline:'btn-trendline', rectangle:'btn-rectangle', fibonacci:'btn-fib', text:'btn-text' };
+        const btn = document.getElementById(btnMap[tool]);
+        if (btn) btn.classList.add('drawing-active');
+        const names = { hline:'Horizontal Line', trendline:'Trendline', rectangle:'Rectangle Zone', fibonacci:'Fibonacci', text:'Text Note' };
+        const hints = { hline:'Klik chart untuk menempatkan garis', trendline:'Klik 2 titik pada chart', rectangle:'Klik 2 titik (sudut atas-kiri & bawah-kanan)', fibonacci:'Klik titik HIGH lalu LOW', text:'Klik posisi pada chart' };
+        if (window.showQuantumToast) window.showQuantumToast(`✏️ ${names[tool]}: ${hints[tool]}`, 'info', 3000);
+    }
+
+    _cancelDrawing() {
+        this._drawingTool = null;
+        this._drawClicks = [];
+        document.querySelectorAll('#toolbar .tool-btn').forEach(b => b.classList.remove('drawing-active'));
+    }
+
+    _handleChartClick(param) {
+        if (!this._drawingTool) return;
+        let clickPrice = null;
+        let clickTime = param.time;
+        const seriesPrice = param.seriesData?.get(this.candleSeries);
+        if (seriesPrice) {
+            clickPrice = seriesPrice.close ?? seriesPrice.value ?? null;
+        }
+        if (clickPrice === null && param.point) {
+            clickPrice = this.candleSeries.coordinateToPrice(param.point.y);
+        }
+        if (clickPrice === null || clickPrice <= 0) clickPrice = this.lastClosePrice;
+        if (!clickTime && param.point) {
+            clickTime = this.chart.timeScale().coordinateToTime(param.point.x);
+        }
+        if (!clickTime) clickTime = Math.floor(Date.now() / 1000);
+
+        switch (this._drawingTool) {
+            case 'hline':
+                this._placeHorizontalLine(clickPrice);
+                this._cancelDrawing();
+                break;
+            case 'trendline':
+                this._drawClicks.push({ time: clickTime, price: clickPrice });
+                if (this._drawClicks.length === 2) {
+                    this._placeTrendline(this._drawClicks[0], this._drawClicks[1]);
+                    this._cancelDrawing();
+                }
+                break;
+            case 'rectangle':
+                this._drawClicks.push({ time: clickTime, price: clickPrice });
+                if (this._drawClicks.length === 2) {
+                    this._placeRectangle(this._drawClicks[0].price, this._drawClicks[1].price);
+                    this._cancelDrawing();
+                }
+                break;
+            case 'fibonacci':
+                this._drawClicks.push({ time: clickTime, price: clickPrice });
+                if (this._drawClicks.length === 2) {
+                    this._placeFibonacci(this._drawClicks[0].price, this._drawClicks[1].price);
+                    this._cancelDrawing();
+                }
+                break;
+            case 'text':
+                this._placeTextMarker(clickTime, clickPrice);
+                this._cancelDrawing();
+                break;
+        }
+    }
+
+    _placeHorizontalLine(price) {
+        const dp = QI_SYMBOL_CONFIG[this.currentSymbol]?.priceDp ?? 2;
+        this.createdPriceLines.push(this.candleSeries.createPriceLine({
+            price, color:'#00E5FF', lineWidth:2,
+            lineStyle:LightweightCharts.LineStyle.Solid,
+            title:`H-LINE ${price.toFixed(dp)}`, axisLabelVisible:true,
+        }));
+    }
+
+    _placeTrendline(p1, p2) {
+        const s = this.chart.addLineSeries({
+            color:'#00E5FF', lineWidth:2, lineStyle:LightweightCharts.LineStyle.Solid,
+            priceLineVisible:false, lastValueVisible:false,
+            crosshairMarkerVisible:false, pointMarkersVisible:false,
+        });
+        s.setData([
+            { time: p1.time, value: p1.price },
+            { time: p2.time, value: p2.price },
+        ]);
+        this._drawingSeries.push(s);
+    }
+
+    _placeRectangle(price1, price2) {
+        const top = Math.max(price1, price2);
+        const bot = Math.min(price1, price2);
+        const dp = QI_SYMBOL_CONFIG[this.currentSymbol]?.priceDp ?? 2;
+        this.createdPriceLines.push(
+            this.candleSeries.createPriceLine({ price:top, color:'#7C4DFF', lineWidth:2, lineStyle:LightweightCharts.LineStyle.Dashed, title:`ZONE TOP ${top.toFixed(dp)}`, axisLabelVisible:true }),
+            this.candleSeries.createPriceLine({ price:bot, color:'#7C4DFF', lineWidth:2, lineStyle:LightweightCharts.LineStyle.Dashed, title:`ZONE BOT ${bot.toFixed(dp)}`, axisLabelVisible:true }),
+        );
+    }
+
+    _placeFibonacci(highPrice, lowPrice) {
+        const top = Math.max(highPrice, lowPrice);
+        const bot = Math.min(highPrice, lowPrice);
+        const diff = top - bot;
+        const dp = QI_SYMBOL_CONFIG[this.currentSymbol]?.priceDp ?? 2;
+        const levels = [
+            { ratio:0,     label:'FIB 0%',    color:'#FF4D6D' },
+            { ratio:0.236, label:'FIB 23.6%', color:'#FF6B6B' },
+            { ratio:0.382, label:'FIB 38.2%', color:'#FFAB00' },
+            { ratio:0.5,   label:'FIB 50%',   color:'#FFD600' },
+            { ratio:0.618, label:'FIB 61.8%', color:'#00FFA3' },
+            { ratio:0.786, label:'FIB 78.6%', color:'#00E5FF' },
+            { ratio:1,     label:'FIB 100%',  color:'#7C4DFF' },
+        ];
+        for (const lv of levels) {
+            const p = top - diff * lv.ratio;
+            this.createdPriceLines.push(this.candleSeries.createPriceLine({
+                price:p, color:lv.color, lineWidth:lv.ratio===0.618?2:1,
+                lineStyle:LightweightCharts.LineStyle.Dashed,
+                title:`${lv.label} (${p.toFixed(dp)})`, axisLabelVisible:true,
+            }));
+        }
+    }
+
+    _placeTextMarker(time, price) {
+        const text = prompt('Tulis catatan:');
+        if (!text || !text.trim()) return;
+        const markers = this.candleSeries.markers() || [];
+        markers.push({
+            time, position:'aboveBar', color:'#FFD600',
+            shape:'arrowDown', text: text.trim(),
+        });
+        markers.sort((a,b) => a.time - b.time);
+        this.candleSeries.setMarkers(markers);
+        this._drawingMarkers = markers;
+    }
+
     toggleCrosshair() {
         if (!this.chart) return;
+        this._cancelDrawing();
         this.isCrosshairActive = !this.isCrosshairActive;
         this.chart.applyOptions({
             crosshair: { mode: this.isCrosshairActive
@@ -1650,50 +1808,11 @@ class QuantumRealtimeTerminalManager {
     zoomIn()  { if(!this.chart)return; this.currentBarSpacing=Math.min(this.currentBarSpacing+2,40); this.chart.timeScale().applyOptions({barSpacing:this.currentBarSpacing}); }
     zoomOut() { if(!this.chart)return; this.currentBarSpacing=Math.max(this.currentBarSpacing-2,2);  this.chart.timeScale().applyOptions({barSpacing:this.currentBarSpacing}); }
 
-    addTrendline() {
-        if (!this.candleSeries||!this.lastClosePrice) return;
-        this.createdPriceLines.push(this.candleSeries.createPriceLine({
-            price:this.lastClosePrice*1.005, color:'#00E5FF', lineWidth:2,
-            lineStyle:LightweightCharts.LineStyle.Solid, title:'TRENDLINE',
-        }));
-    }
-
-    addRectangleZone() {
-        if (!this.candleSeries||!this.lastClosePrice) return;
-        const p = this.lastClosePrice;
-        [{price:p*1.01,title:'ORDER BLOCK TOP'},{price:p*0.99,title:'ORDER BLOCK BOTTOM'}].forEach(({price,title})=>{
-            this.createdPriceLines.push(this.candleSeries.createPriceLine({
-                price, color:'#7C4DFF', lineWidth:2, lineStyle:LightweightCharts.LineStyle.Dashed, title,
-            }));
-        });
-    }
-
-    addHorizontalLine() {
-        if (!this.candleSeries||!this.lastClosePrice) return;
-        this.createdPriceLines.push(this.candleSeries.createPriceLine({
-            price:this.lastClosePrice, color:'#00FFA3', lineWidth:2,
-            lineStyle:LightweightCharts.LineStyle.Dotted, title:'SNR LEVEL',
-        }));
-    }
-
-    addFibonacciRetracement() {
-        if (!this.candleSeries||!this.lastClosePrice) return;
-        const p = this.lastClosePrice;
-        [{ratio:0.618,label:'FIB 0.618'},{ratio:0.500,label:'FIB 0.500'},{ratio:0.382,label:'FIB 0.382'}].forEach(({ratio,label})=>{
-            this.createdPriceLines.push(this.candleSeries.createPriceLine({
-                price:p*(1-ratio*0.015), color:'#FFAB00', lineWidth:1,
-                lineStyle:LightweightCharts.LineStyle.Dashed, title:label,
-            }));
-        });
-    }
-
-    addTextMarker() {
-        if (!this.candleSeries||!this.lastClosePrice) return;
-        this.createdPriceLines.push(this.candleSeries.createPriceLine({
-            price:this.lastClosePrice, color:'#FF6B6B', lineWidth:1,
-            lineStyle:LightweightCharts.LineStyle.Solid, title:'CATATAN',
-        }));
-    }
+    addTrendline()           { this._setActiveTool('trendline'); }
+    addRectangleZone()       { this._setActiveTool('rectangle'); }
+    addHorizontalLine()      { this._setActiveTool('hline'); }
+    addFibonacciRetracement(){ this._setActiveTool('fibonacci'); }
+    addTextMarker()          { this._setActiveTool('text'); }
 
     toggleCandleType() {
         this.candleType = this.candleType === 'heikinashi' ? 'standard' : 'heikinashi';
@@ -1711,7 +1830,6 @@ class QuantumRealtimeTerminalManager {
         if (window.showQuantumToast) {
             window.showQuantumToast(isHA ? '🕯️ Heikin Ashi Mode: AKTIF' : '🕯️ Standard Candles: AKTIF', 'info', 1500);
         }
-        if (window.QuantumAudio) window.QuantumAudio.playChime('success');
     }
 
     toggleMagnetMode() {
@@ -1731,43 +1849,17 @@ class QuantumRealtimeTerminalManager {
         }
     }
 
-    applyDrawingTemplate(type) {
-        if (!this.candleSeries || !this.lastClosePrice) return;
-        const p = this.lastClosePrice;
-        this.clearAllDrawings();
-
-        if (type === 'SNR_SETUP') {
-            this.createdPriceLines.push(
-                this.candleSeries.createPriceLine({ price: p * 1.015, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'MAJOR RESISTANCE R1' }),
-                this.candleSeries.createPriceLine({ price: p * 1.006, color: '#FF4D6D', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'MINOR RESISTANCE R2' }),
-                this.candleSeries.createPriceLine({ price: p * 0.985, color: '#00FFA3', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'KEY DEMAND SUPPORT S1' })
-            );
-            if (window.showQuantumToast) window.showQuantumToast('📐 Template Setup SNR Diterapkan!', 'success');
-        } else if (type === 'SMC_SETUP') {
-            this.createdPriceLines.push(
-                this.candleSeries.createPriceLine({ price: p * 1.012, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'LIQUIDITY SWEEP POOL' }),
-                this.candleSeries.createPriceLine({ price: p * 0.995, color: '#7C4DFF', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BULLISH ORDER BLOCK (FVG)' }),
-                this.candleSeries.createPriceLine({ price: p * 0.988, color: '#FF5252', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'CHoCH INVARIANCE SL' })
-            );
-            if (window.showQuantumToast) window.showQuantumToast('📐 Template Setup SMC Order Block Diterapkan!', 'success');
-        } else if (type === 'FIB_BREAKOUT') {
-            this.createdPriceLines.push(
-                this.candleSeries.createPriceLine({ price: p * 1.025, color: '#00FFA3', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'FIB TARGET 1.618' }),
-                this.candleSeries.createPriceLine({ price: p * 0.992, color: '#FFAB00', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'GOLDEN POCKET 0.618' }),
-                this.candleSeries.createPriceLine({ price: p * 0.985, color: '#FF4D6D', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'INVALIDATION 0.786' })
-            );
-            if (window.showQuantumToast) window.showQuantumToast('📐 Template Fibonacci Golden Breakout Diterapkan!', 'success');
-        }
-        if (window.QuantumAudio) window.QuantumAudio.playChime('success');
-    }
-
     clearAllDrawings() {
         if (!this.candleSeries) return;
-        // Hapus manual drawings
+        this._cancelDrawing();
         this.createdPriceLines.forEach(l=>{ try{this.candleSeries.removePriceLine(l);}catch(e){} });
         this.createdPriceLines = [];
-        // Hapus engine overlay juga
+        this._drawingSeries.forEach(s=>{ try{this.chart.removeSeries(s);}catch(e){} });
+        this._drawingSeries = [];
+        this._drawingMarkers = [];
+        try { this.candleSeries.setMarkers([]); } catch(e) {}
         if (this.overlay) this.overlay.clearAll();
+        if (window.showQuantumToast) window.showQuantumToast('🗑️ Semua gambar dihapus', 'info', 1500);
     }
 
     // Backward compat
@@ -1841,22 +1933,18 @@ function initQuantumRealtimeSystem() {
             case 't':
                 e.preventDefault();
                 quantumTerminalManager.addTrendline();
-                showQuantumToast('↗ Trendline Digambar', 'success', 2000);
                 break;
             case 'r':
                 e.preventDefault();
                 quantumTerminalManager.addRectangleZone();
-                showQuantumToast('▭ Order Block Zone Digambar', 'success', 2000);
                 break;
             case 'h':
                 e.preventDefault();
                 quantumTerminalManager.addHorizontalLine();
-                showQuantumToast('― Horizontal SNR Line Digambar', 'success', 2000);
                 break;
             case 'f':
                 e.preventDefault();
                 quantumTerminalManager.addFibonacciRetracement();
-                showQuantumToast('📐 Fibonacci Golden Zone Digambar', 'success', 2000);
                 break;
             case '1':
                 e.preventDefault();
@@ -1885,9 +1973,14 @@ function initQuantumRealtimeSystem() {
                 break;
             case 'escape':
                 e.preventDefault();
-                if (typeof closeCommandPalette === 'function') closeCommandPalette();
-                quantumTerminalManager.clearAllDrawings();
-                showQuantumToast('🗑 Gambar & Overlay Dibersihkan', 'warning', 2000);
+                if (quantumTerminalManager._drawingTool) {
+                    quantumTerminalManager._cancelDrawing();
+                    showQuantumToast('Drawing dibatalkan', 'info', 1500);
+                } else {
+                    if (typeof closeCommandPalette === 'function') closeCommandPalette();
+                    quantumTerminalManager.clearAllDrawings();
+                    showQuantumToast('🗑 Gambar & Overlay Dibersihkan', 'warning', 2000);
+                }
                 break;
         }
     });
