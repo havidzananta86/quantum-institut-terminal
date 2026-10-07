@@ -17,3 +17,11 @@ define('TWELVE_DATA_KEY', 'ISI_API_KEY_TWELVE_DATA_ANDA');
 // Biarkan string kosong untuk menonaktifkan tombol Google
 // (login.html otomatis menampilkan "Segera Hadir").
 define('GOOGLE_CLIENT_ID', '');
+
+// Telegram Bot Token — untuk fitur kirim alert ke Telegram.
+// Cara membuat:
+//   1. Buka Telegram, cari @BotFather
+//   2. Kirim /newbot, ikuti instruksi, salin token yang diberikan
+//   3. User harus start chat dengan bot lebih dahulu untuk mendapat chat_id
+// Biarkan kosong untuk menonaktifkan fitur Telegram alert.
+define('TELEGRAM_BOT_TOKEN', '');

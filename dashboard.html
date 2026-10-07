@@ -137,7 +137,7 @@
 
             <!-- CTAs -->
             <div class="space-y-2.5">
-                <a href="terminal.html" onclick="window.open('https://wa.me/6281234567890?text=Halo+saya+mau+upgrade+ke+Quantum+PRO','_blank')"
+                <a href="pricing.html"
                    class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm transition-all"
                    style="background: linear-gradient(135deg,#00E5FF,#7C4DFF);">
                     ⚡ Upgrade ke Quantum+ PRO
@@ -286,8 +286,18 @@
         </div>
     </nav>
 
-    <!-- Bottom: user / version -->
-    <div class="px-4 py-3 border-t border-qi-border text-[10px] text-slate-600 flex items-center justify-between">
+    <!-- Bottom: profile / admin / version -->
+    <div class="px-3 py-2 border-t border-qi-border space-y-0.5">
+        <a href="profile.html" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-800/60 transition-colors group">
+            <span class="text-sm">👤</span>
+            <span class="text-[11px] text-slate-400 group-hover:text-white transition-colors">Profil Saya</span>
+        </a>
+        <a href="admin.html" id="sidebarAdminLink" class="hidden flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-800/60 transition-colors group">
+            <span class="text-sm">🛠</span>
+            <span class="text-[11px] text-slate-400 group-hover:text-white transition-colors">Admin Panel</span>
+        </a>
+    </div>
+    <div class="px-4 py-2 border-t border-qi-border text-[10px] text-slate-600 flex items-center justify-between">
         <span id="sidebarUser">—</span>
         <span>v2.0</span>
     </div>
@@ -443,6 +453,30 @@
                 <div id="strengthStack" class="space-y-2">
                     <div class="text-[11px] text-slate-600 text-center py-4">Memuat data kekuatan…</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ── MULTI-TIMEFRAME BIAS PANEL ── -->
+        <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-qi-cyan text-sm">📊</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">MTF Bias Panel</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="mtfPairSelect" class="text-[10px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1 outline-none">
+                        <option value="XAUUSD">XAU/USD</option>
+                        <option value="EURUSD">EUR/USD</option>
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="GBPUSD">GBP/USD</option>
+                    </select>
+                    <span class="text-[10px] text-slate-500" id="mtfUpdated">—</span>
+                </div>
+            </div>
+            <div id="mtfGrid" class="grid grid-cols-3 gap-3">
+                <div class="skel h-16 rounded-lg"></div>
+                <div class="skel h-16 rounded-lg"></div>
+                <div class="skel h-16 rounded-lg"></div>
             </div>
         </div>
 
@@ -884,8 +918,12 @@ function loadUserInfo() {
     try {
         const token = localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token');
         const name  = localStorage.getItem('qi_user_name') || sessionStorage.getItem('qi_user_name');
-        const el = document.getElementById('sidebarUser');
+        const el    = document.getElementById('sidebarUser');
         if (el) el.textContent = name || (token ? 'Member' : 'Guest');
+        const raw  = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        const userData = raw ? JSON.parse(raw) : null;
+        const adminLink = document.getElementById('sidebarAdminLink');
+        if (adminLink && userData?.role === 'admin') adminLink.classList.remove('hidden');
     } catch(e) {}
 }
 
@@ -1017,14 +1055,60 @@ function selectCalDay(key) {
     }).join('');
 }
 
+// ─── MTF Bias Panel ────────────────────────────────────────────────────────
+const MTF_TFS = [
+    { label: 'H1',  interval: '60'  },
+    { label: 'H4',  interval: '240' },
+    { label: 'D1',  interval: 'D'   },
+];
+async function fetchMtfBias(sym) {
+    const grid = document.getElementById('mtfGrid');
+    if (!grid) return;
+    grid.innerHTML = MTF_TFS.map(() => '<div class="skel h-16 rounded-lg"></div>').join('');
+    const results = await Promise.allSettled(
+        MTF_TFS.map(tf => fetch(`api/get-chart-data.php?symbol=${sym}&interval=${tf.interval}`).then(r => r.json()))
+    );
+    grid.innerHTML = '';
+    results.forEach((res, i) => {
+        const tf = MTF_TFS[i];
+        let bias = 'NEUTRAL', score = 0, chgPct = 0;
+        if (res.status === 'fulfilled' && res.value.candles && res.value.candles.length >= 5) {
+            const candles = res.value.candles.slice(-10);
+            const bullish = candles.filter(c => c.close > c.open).length;
+            const last = candles[candles.length - 1];
+            const first = candles[0];
+            chgPct = first.open > 0 ? ((last.close - first.open) / first.open * 100) : 0;
+            score = Math.round((bullish / candles.length) * 100);
+            if (bullish >= 7) bias = 'BULLISH';
+            else if (bullish <= 3) bias = 'BEARISH';
+        }
+        const color = bias === 'BULLISH' ? '#10B981' : bias === 'BEARISH' ? '#EF4444' : '#94A3B8';
+        const icon  = bias === 'BULLISH' ? '▲' : bias === 'BEARISH' ? '▼' : '◆';
+        const chgStr = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+        grid.innerHTML += `
+            <div class="rounded-lg p-3 text-center" style="background:${color}18;border:1px solid ${color}30">
+                <div class="text-[10px] font-semibold text-slate-400 mb-1">${tf.label}</div>
+                <div class="text-sm font-bold" style="color:${color}">${icon} ${bias}</div>
+                <div class="text-[10px] mt-1" style="color:${color}99">${chgStr}</div>
+            </div>`;
+    });
+    const upd = document.getElementById('mtfUpdated');
+    if (upd) upd.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+}
+document.getElementById('mtfPairSelect')?.addEventListener('change', function() {
+    fetchMtfBias(this.value);
+});
+
 loadUserInfo();
 fetchMarketData();
 fetchCalendarCount();
 fetchStrengthStack();
 fetchCalendarHeatmap();
+fetchMtfBias('XAUUSD');
 setInterval(fetchMarketData,      15000); // harga 15 detik
 setInterval(fetchStrengthStack,   30000); // strength 30 detik
 setInterval(fetchCalendarHeatmap, 300000);// kalender 5 menit
+setInterval(() => fetchMtfBias(document.getElementById('mtfPairSelect')?.value || 'XAUUSD'), 120000);
 </script>
 
 </body>

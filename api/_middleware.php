@@ -270,6 +270,23 @@ function qi_require_pro() {
 }
 
 /**
+ * Wajibkan role ADMIN — tolak request jika user bukan admin
+ */
+function qi_require_admin() {
+    $user = qi_require_auth();
+    if ($user['role'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Halaman ini khusus administrator.',
+            'code' => 'ADMIN_REQUIRED'
+        ]);
+        exit();
+    }
+    return $user;
+}
+
+/**
  * Helper: buat session token dan simpan ke database (dipakai auth.php & login.php)
  */
 function createSession($pdo, $userId) {

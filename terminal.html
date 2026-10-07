@@ -1716,7 +1716,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
         function openAlertDialog() {
             const modal = document.getElementById('priceAlertModal');
-            if (modal) { modal.classList.remove('hidden'); renderAlertsList(); }
+            if (modal) {
+                modal.classList.remove('hidden');
+                renderAlertsList();
+                const tgInput = document.getElementById('tgChatIdInput');
+                if (tgInput) tgInput.value = localStorage.getItem('qi_telegram_chat_id') || '';
+            }
         }
 
         function closeAlertDialog() {
@@ -1814,6 +1819,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                             });
                         }
                         showQuantumToast(`🔔 ALERT TERPICU! ${alert.sym} @ ${cur}`, 'success');
+                        const tgId = (localStorage.getItem('qi_telegram_chat_id') || '').trim();
+                        if (tgId) {
+                            fetch('api/telegram-alert.php', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    chat_id: tgId,
+                                    message: `🔔 <b>Quantum Alert</b>\n<b>${alert.sym}</b> menyentuh <b>${cur}</b>\nKondisi: ${sign} ${alert.price}\n⏰ ${new Date().toLocaleString('id-ID')}`
+                                })
+                            }).catch(() => {});
+                        }
                     } else {
                         toKeep.push(alert);
                     }
@@ -1914,6 +1930,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                         <option value="ABOVE">Harga Melintas Ke Atas (>= Target)</option>
                         <option value="BELOW">Harga Melintas Ke Bawah (<= Target)</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">TELEGRAM CHAT ID <span class="text-slate-600">(opsional)</span></label>
+                    <input type="text" id="tgChatIdInput" placeholder="Kosongkan jika tidak pakai Telegram"
+                           class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none"
+                           oninput="localStorage.setItem('qi_telegram_chat_id', this.value.trim())">
+                    <div class="text-[9px] text-slate-600 mt-1">Ketik /start ke @QuantumInstitutBot lalu salin chat ID</div>
                 </div>
                 <button type="submit" class="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-cyan-glow">
                     Aktifkan Alert Realtime →
