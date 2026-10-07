@@ -1092,9 +1092,28 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             };
             const label = pairLabels[symbol] || symbol;
 
+            // Prioritize real chart data; warn if using synthetic
             let candles = window.quantumTerminalManager?._cachedCandles;
-            if (!candles || candles.length < 50 || window.quantumTerminalManager?.currentSymbol !== symbol) {
-                candles = window.quantumTerminalManager?._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
+            let dataSource = 'live';
+
+            if (!candles || candles.length < 50) {
+                // Fallback jika cache kosong
+                if (window.quantumTerminalManager?._generateSyntheticCandles) {
+                    candles = window.quantumTerminalManager._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
+                    dataSource = 'synthetic';
+                } else {
+                    // Last resort: mock data
+                    candles = Array.from({length:100}, (_, i) => ({
+                        time: Math.floor(Date.now() / 1000) - (100 - i) * 3600,
+                        open: 4050 + Math.random() * 50, high: 4100 + Math.random() * 50,
+                        low: 4000 + Math.random() * 50, close: 4050 + Math.random() * 50, volume: 1000
+                    }));
+                    dataSource = 'mock';
+                }
+            }
+            if (dataSource !== 'live') {
+                if (window.showQuantumToast)
+                    window.showQuantumToast(`⚠️ Chart belum load data real untuk ${symbol}. Menggunakan ${dataSource} data.`, 'warning', 2500);
             }
 
             // --- Walk-forward / Out-of-Sample Split ---
@@ -1733,40 +1752,88 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const closes = candles.map(c => c.close);
             const highs = candles.map(c => c.high);
             const lows = candles.map(c => c.low);
+            const volumes = candles.map(c => c.volume || 1);
             const last = closes[closes.length - 1];
             const n = closes.length;
 
-            // EMA20 vs EMA50 trend
-            const ema20 = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
-            const ema50 = closes.slice(-Math.min(50, n)).reduce((a, b) => a + b, 0) / Math.min(50, n);
-            const emaUp = ema20 > ema50;
+            // === SIGNAL 1: EMA TREND (exponential, not simple average!) ===
+            const calcEMA = (data, period) => {
+                if (data.length < period) return data[data.length - 1];
+                const mult = 2 / (period + 1);
+                let ema = data.slice(0, period).reduce((a, b) => a + b) / period;
+                for (let i = period; i < data.length; i++) {
+                    ema = data[i] * mult + ema * (1 - mult);
+                }
+                return ema;
+            };
+            const ema20 = calcEMA(closes, 20);
+            const ema50 = calcEMA(closes, 50);
+            const emaUp = last > ema20 && ema20 > ema50;
+            const emaDyn = last > ema20 ? 'Price above EMA20' : 'Price below EMA20';
 
-            // RSI momentum
-            const gains = [], losses = [];
-            for (let i = Math.max(1, n - 15); i < n; i++) {
-                const d = closes[i] - closes[i-1];
-                if (d > 0) gains.push(d); else losses.push(-d);
-            }
-            const avgGain = gains.length ? gains.reduce((a,b)=>a+b,0)/gains.length : 0;
-            const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0.001;
-            const rsi = 100 - (100 / (1 + avgGain / avgLoss));
+            // === SIGNAL 2: RSI (14) momentum ===
+            const rsi = (() => {
+                const gains = [], losses = [];
+                for (let i = Math.max(1, n - 14); i < n; i++) {
+                    const d = closes[i] - closes[i-1];
+                    if (d > 0) gains.push(d); else losses.push(-d);
+                }
+                const ag = gains.length ? gains.reduce((a,b)=>a+b)/gains.length : 0;
+                const al = losses.length ? losses.reduce((a,b)=>a+b)/losses.length : 0.001;
+                return 100 - (100 / (1 + ag / al));
+            })();
+            const rsiOversold = rsi < 30;
+            const rsiOverbought = rsi > 70;
 
-            // Higher lows (uptrend structure)
-            const recentLows = lows.slice(-10);
-            const higherLows = recentLows.every((v, i) => i === 0 || v >= recentLows[i-1] * 0.998);
+            // === SIGNAL 3: Higher Lows/Highs (structure) ===
+            const higherLows = lows.slice(-8).every((v, i) => i === 0 || v >= lows[lows.length - 8 + i - 1] * 0.9985);
+            const higherHighs = highs.slice(-8).every((v, i) => i === 0 || v >= highs[highs.length - 8 + i - 1] * 0.9985);
+            const uptrend = higherLows && higherHighs;
 
-            // SNR support bounce
-            const lowestRecent = Math.min(...lows.slice(-20));
-            const nearSupport = Math.abs(last - lowestRecent) / last < 0.015;
+            // === SIGNAL 4: Support/Resistance Bounce ===
+            const lowestLast20 = Math.min(...lows.slice(-20));
+            const highestLast20 = Math.max(...highs.slice(-20));
+            const atSupport = (last - lowestLast20) / lowestLast20 < 0.008;
+            const atResistance = (highestLast20 - last) / last < 0.008;
 
-            const bullishSignals = [emaUp, rsi > 50, higherLows, nearSupport && emaUp].filter(Boolean).length;
-            const isBullish = bullishSignals >= 2;
-            const score = Math.min(97, 55 + bullishSignals * 10 + (rsi > 60 ? 5 : 0) + (emaUp ? 5 : 0));
+            // === SIGNAL 5: Volume Trend ===
+            const recentVol = volumes.slice(-5).reduce((a,b)=>a+b) / 5;
+            const priorVol = volumes.slice(-20, -5).reduce((a,b)=>a+b) / 15;
+            const volumeUp = recentVol > priorVol * 1.2;
 
-            let detail = '';
-            if (nearSupport && isBullish) detail = 'Harga dekat zona support utama, potensi bounce';
-            else if (emaUp) detail = `EMA20 > EMA50, trend bullish terkonfirmasi (RSI ${rsi.toFixed(0)})`;
-            else detail = `Tekanan jual dominan, RSI ${rsi.toFixed(0)} — waspadai reversal`;
+            // === SIGNAL 6: Momentum (MACD-like: 12-26 EMA) ===
+            const ema12 = calcEMA(closes, 12);
+            const ema26 = calcEMA(closes, 26);
+            const macd = ema12 - ema26;
+            const macdSignal = calcEMA([...closes].map((_, i) => {
+                const e12 = calcEMA(closes.slice(0, i+1), 12);
+                const e26 = calcEMA(closes.slice(0, i+1), 26);
+                return e12 - e26;
+            }), 9);
+            const macdUptrend = macd > macdSignal;
+
+            // === SCORE CALCULATION ===
+            const bullishSignals = [
+                emaUp,                    // Price > EMA20 > EMA50
+                rsi > 50 && !rsiOverbought, // Momentum above 50 (not overbought)
+                uptrend,                   // Higher lows & highs
+                atSupport && emaUp,        // Support + EMA bullish
+                volumeUp,                  // Volume confirms trend
+                macdUptrend,                // MACD bullish
+            ].filter(Boolean).length;
+
+            const isBullish = bullishSignals >= 3;
+            const score = Math.min(97, Math.max(35, 50 + bullishSignals * 7 +
+                (rsi > 60 ? 3 : 0) + (rsiOversold && emaUp ? 5 : 0) - (rsiOverbought ? 3 : 0)));
+
+            const signals = [];
+            if (emaUp) signals.push('EMA Bullish');
+            if (rsiOversold) signals.push('Oversold');
+            if (rsiOverbought) signals.push('Overbought');
+            if (atSupport) signals.push('At Support');
+            if (atResistance) signals.push('At Resistance');
+            if (volumeUp) signals.push('Vol ↑');
+            const detail = signals.length > 0 ? signals.join(' • ') : 'Mixed signals';
 
             return { isBullish, score: +score.toFixed(0), detail };
         },
