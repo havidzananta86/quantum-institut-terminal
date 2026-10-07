@@ -1963,6 +1963,204 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
 
     /* ==========================================================================
+       11B. CORRELATION MATRIX — Pearson antar instrumen (return harian nyata)
+       Data: api/get-chart-data.php (interval D). Window 20/50/100 bisa dipilih.
+       Fungsi matematika murni (logReturns/pearson/buildMatrix) bisa di-unit-test.
+       ========================================================================== */
+    const QuantumCorrelation = {
+        PAIRS: [
+            { sym: 'EURUSD',  label: 'EUR/USD'  },
+            { sym: 'GBPUSD',  label: 'GBP/USD'  },
+            { sym: 'USDJPY',  label: 'USD/JPY'  },
+            { sym: 'AUDUSD',  label: 'AUD/USD'  },
+            { sym: 'USDCAD',  label: 'USD/CAD'  },
+            { sym: 'USDCHF',  label: 'USD/CHF'  },
+            { sym: 'NZDUSD',  label: 'NZD/USD'  },
+            { sym: 'XAUUSD',  label: 'XAU/USD'  },
+            { sym: 'BTCUSDT', label: 'BTC/USDT' },
+            { sym: 'ETHUSDT', label: 'ETH/USDT' },
+        ],
+        window: 50,
+        _busy: false,
+
+        // ---- PURE MATH (unit-testable) ----
+        logReturns(closes) {
+            const r = [];
+            for (let i = 1; i < closes.length; i++) {
+                const p0 = closes[i - 1], p1 = closes[i];
+                if (p0 > 0 && p1 > 0) r.push(Math.log(p1 / p0));
+            }
+            return r;
+        },
+        pearson(a, b) {
+            const n = Math.min(a.length, b.length);
+            if (n < 2) return NaN;
+            let sa = 0, sb = 0;
+            for (let i = 0; i < n; i++) { sa += a[i]; sb += b[i]; }
+            const ma = sa / n, mb = sb / n;
+            let cov = 0, va = 0, vb = 0;
+            for (let i = 0; i < n; i++) {
+                const da = a[i] - ma, db = b[i] - mb;
+                cov += da * db; va += da * da; vb += db * db;
+            }
+            if (va === 0 || vb === 0) return NaN;
+            return cov / Math.sqrt(va * vb);
+        },
+        buildMatrix(returnsBySym, syms) {
+            return syms.map(s1 => syms.map(s2 =>
+                s1 === s2 ? 1 : this.pearson(returnsBySym[s1] || [], returnsBySym[s2] || [])
+            ));
+        },
+        cellColor(v) {
+            if (v == null || Number.isNaN(v)) return 'background:#1e293b;color:#64748b';
+            const a = Math.min(1, Math.abs(v));
+            return v >= 0
+                ? `background:rgba(239,68,68,${(0.12 + a * 0.62).toFixed(3)});color:#fff`
+                : `background:rgba(59,130,246,${(0.12 + a * 0.62).toFixed(3)});color:#fff`;
+        },
+
+        _label(sym) { return (this.PAIRS.find(p => p.sym === sym) || {}).label || sym; },
+
+        // ---- DATE ALIGNMENT (unit-testable) ----
+        // Different providers return daily bars with different epoch offsets, so
+        // array-position pairing compares mismatched dates. Bucket by UTC day and
+        // correlate only on days present in EVERY instrument.
+        dayKey(epochSec) { return Math.floor(epochSec / 86400); },
+
+        // seriesBySym: { sym: [{d:dayKey, c:close}, ...] (sorted asc, 1 per day) }
+        // -> { days:[...last `need` shared days], closesBySym:{ sym:[closes @ days] } }
+        alignByDay(seriesBySym, syms, need) {
+            const maps = {};
+            syms.forEach(s => {
+                const m = new Map();
+                (seriesBySym[s] || []).forEach(pt => m.set(pt.d, pt.c)); // last close of a day wins
+                maps[s] = m;
+            });
+            let common = null;
+            syms.forEach(s => {
+                const keys = new Set(maps[s].keys());
+                common = common === null ? keys : new Set([...common].filter(k => keys.has(k)));
+            });
+            const days = [...(common || [])].sort((a, b) => a - b).slice(-need);
+            const closesBySym = {};
+            syms.forEach(s => { closesBySym[s] = days.map(d => maps[s].get(d)); });
+            return { days, closesBySym };
+        },
+
+        async _fetchSeries(sym) {
+            try {
+                const res = await fetch(`api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&interval=D`);
+                if (!res.ok) return { series: [], simulated: true };
+                const d = await res.json();
+                if (d.status !== 'success' || !Array.isArray(d.candles)) return { series: [], simulated: true };
+                const byDay = new Map();
+                d.candles.forEach(c => {
+                    const close = +c.close, t = +c.time;
+                    if (close > 0 && t > 0) byDay.set(this.dayKey(t), close);
+                });
+                const series = [...byDay.entries()].map(([d, c]) => ({ d, c })).sort((a, b) => a.d - b.d);
+                return { series, simulated: d.simulated === true };
+            } catch (e) { return { series: [], simulated: true }; }
+        },
+
+        _shell(inner) {
+            const btns = [20, 50, 100].map(w =>
+                `<button data-corrwin="${w}" class="px-2 py-0.5 rounded ${this.window === w
+                    ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-500/50'
+                    : 'text-slate-400 border border-slate-700 hover:text-cyan-300'}">${w}</button>`).join('');
+            return `
+                <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between flex-wrap gap-2">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> MATRIKS KORELASI · Pearson (return harian)</span>
+                    <span class="flex items-center gap-1">
+                        <span class="text-[9px] text-slate-500 mr-1">WINDOW:</span>${btns}
+                        <button onclick="QuantumCorrelation.render()" class="ml-1 text-cyan-300 font-bold hover:text-cyan-200" title="Refresh">↻</button>
+                    </span>
+                </div>
+                <div class="mt-2">${inner}</div>`;
+        },
+        _bindControls() {
+            document.querySelectorAll('#panelCorrelation [data-corrwin]').forEach(b => {
+                b.onclick = () => { if (this._busy) return; this.window = +b.getAttribute('data-corrwin'); this.render(); };
+            });
+        },
+        _tableHtml(syms, matrix) {
+            const head = `<th class="p-1"></th>` + syms.map(s =>
+                `<th class="p-1 text-[9px] font-mono text-slate-400 whitespace-nowrap">${this._label(s).replace('/', '')}</th>`).join('');
+            const rows = syms.map((s1, i) => {
+                const cells = syms.map((s2, j) => {
+                    const v = matrix[i][j];
+                    const txt = (v == null || Number.isNaN(v)) ? '–' : v.toFixed(2);
+                    return `<td class="p-1 text-center text-[10px] font-mono tabular-nums" style="${this.cellColor(v)}" title="${this._label(s1)} vs ${this._label(s2)}: ${txt}">${txt}</td>`;
+                }).join('');
+                return `<tr><td class="p-1 text-[9px] font-mono text-slate-300 text-right whitespace-nowrap pr-1.5">${this._label(s1)}</td>${cells}</tr>`;
+            }).join('');
+            return `<div class="overflow-x-auto"><table class="border-collapse mx-auto"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+                <div class="text-[9px] text-slate-600 text-center mt-1.5">🔴 positif · 🔵 negatif · window ${this.window}h · ${this._lastN || 0} titik return (hari beririsan) · ${new Date().toLocaleTimeString('id-ID')}</div>`;
+        },
+        _warningHtml(syms, matrix) {
+            const hi = [];
+            for (let i = 0; i < syms.length; i++)
+                for (let j = i + 1; j < syms.length; j++) {
+                    const v = matrix[i][j];
+                    if (v != null && !Number.isNaN(v) && Math.abs(v) >= 0.8)
+                        hi.push(`${this._label(syms[i])}↔${this._label(syms[j])} (${v.toFixed(2)})`);
+                }
+            if (!hi.length) return '';
+            return `<div class="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300">
+                <strong>⚠ Risiko konsentrasi</strong> — pasangan dengan |korelasi| ≥ 0.80, hindari posisi searah ganda: ${hi.join(' · ')}</div>`;
+        },
+        _demoHtml(demo) {
+            if (!demo || !demo.length) return '';
+            const labels = demo.map(s => this._label(s)).join(', ');
+            return `<div class="mt-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700 text-[10px] text-slate-400">
+                <span class="px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[9px] mr-1">DEMO</span>
+                Dikecualikan (data simulasi, bukan harga nyata): <span class="text-slate-300">${labels}</span>.
+                Provider gratis belum menyediakan candle asli untuk instrumen ini — korelasinya tidak bermakna. Aktifkan provider berbayar untuk matriks penuh.</div>`;
+        },
+
+        async render() {
+            const panel = document.getElementById('panelCorrelation');
+            if (!panel) return;
+            this._busy = true;
+            panel.innerHTML = this._shell('<div class="text-center py-6 text-slate-500 font-mono text-xs"><span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin align-middle mr-2"></span>Mengambil candle & menghitung korelasi…</div>');
+            this._bindControls();
+            try {
+                const need = this.window + 1;
+                const results = await Promise.all(this.PAIRS.map(p => this._fetchSeries(p.sym)));
+                const seriesBySym = {};
+                const demo = [];
+                this.PAIRS.forEach((p, i) => {
+                    seriesBySym[p.sym] = results[i].series;
+                    if (results[i].simulated) demo.push(p.sym);
+                });
+                // Only REAL instruments (not simulated) with enough history enter the matrix.
+                // Correlating random-walk demo series would be meaningless noise.
+                const syms = this.PAIRS
+                    .filter(p => !demo.includes(p.sym) && (seriesBySym[p.sym] || []).length >= 10)
+                    .map(p => p.sym);
+                if (syms.length < 2) throw new Error('Butuh ≥2 instrumen dengan data nyata (provider gratis hanya menyediakan sebagian)');
+                const { days, closesBySym } = this.alignByDay(seriesBySym, syms, need);
+                if (days.length < 10) throw new Error('Tanggal beririsan antar instrumen terlalu sedikit (' + days.length + ')');
+                this._lastN = days.length - 1;
+                const returnsBySym = {};
+                syms.forEach(s => { returnsBySym[s] = this.logReturns(closesBySym[s]); });
+                const matrix = this.buildMatrix(returnsBySym, syms);
+                panel.innerHTML = this._shell(this._tableHtml(syms, matrix) + this._warningHtml(syms, matrix) + this._demoHtml(demo));
+            } catch (e) {
+                panel.innerHTML = this._shell(
+                    `<div class="text-center py-6 text-rose-400 font-mono text-xs">⚠ Gagal menghitung korelasi: ${e.message}
+                        <br><button onclick="QuantumCorrelation.render()" class="mt-2 px-3 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button>
+                        <div class="text-[10px] text-slate-600 mt-1">${new Date().toLocaleTimeString('id-ID')}</div></div>`);
+            } finally {
+                this._busy = false;
+                this._bindControls();
+            }
+        }
+    };
+    window.QuantumCorrelation = QuantumCorrelation;
+
+
+    /* ==========================================================================
        12. DYNAMIC NEWS ALERT & CALENDAR ENGINE (REAL DATA & ACCURATE COUNTDOWN)
        ========================================================================== */
     const QuantumNewsAlertEngine = {

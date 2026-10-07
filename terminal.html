@@ -195,7 +195,7 @@
             <a href="#trading"  onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>💼</span> Paper Trading</a>
             <a href="#backtest" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>⏪</span> Backtester</a>
             <a href="#track"    onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🏆</span> Track Record</a>
-            <a href="#matrix"   onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🔮</span> Correlation Matrix</a>
+            <a href="#" onclick="switchBottomTab('correlation'); document.getElementById('panelCorrelation')?.scrollIntoView({behavior:'smooth',block:'center'}); qiCloseSidebar(); return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🔮</span> Correlation Matrix</a>
         </div>
     </nav>
     <div class="px-4 py-3 border-t border-slate-800 text-[10px] text-slate-600">Quantum Institut v2.0</div>
@@ -610,6 +610,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                         <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
                             <span>🤖 AI RADAR</span>
                         </button>
+                        <button onclick="switchBottomTab('correlation')" id="tab-correlation" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs" title="Matriks Korelasi Pearson antar instrumen">
+                            <span>🔮 KORELASI</span>
+                        </button>
                     </div>
 
                     <!-- Live Update Indicator -->
@@ -805,6 +808,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
                 <!-- TAB 5: MULTI-TIMEFRAME CONFLUENCE MATRIX & LIQUIDITY HEATMAP -->
                 <div id="panelConfluenceMatrix" class="space-y-3 hidden"></div>
+
+                <!-- CORRELATION MATRIX (Pearson antar instrumen) -->
+                <div id="panelCorrelation" class="space-y-2 hidden">
+                    <div class="text-center py-4 text-slate-500 font-mono text-xs">Memuat matriks korelasi…</div>
+                </div>
 
                 <!-- TAB 5: AI RADAR & SIGNALS SCANNER (TIER C - FITUR 29) -->
                 <div id="panelAIScanner" class="space-y-2 hidden">
@@ -1315,7 +1323,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         let selectedCalendarImpact = 'ALL';
 
         function switchBottomTab(tabName) {
-            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner'];
+            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner', 'correlation'];
             tabs.forEach(t => {
                 const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
                               document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : t === 'trackrecord' ? 'TrackRecord' : ''}`);
@@ -1344,6 +1352,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
             if (tabName === 'confluence' && window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
             if (tabName === 'trackrecord' && window.QuantumTrackRecord) window.QuantumTrackRecord.render();
             if (tabName === 'aiscanner' && window.QuantumAIRadar) window.QuantumAIRadar.render();
+            if (tabName === 'correlation' && window.QuantumCorrelation) window.QuantumCorrelation.render();
         }
 
         function filterCalendarCurrency(curr) {
