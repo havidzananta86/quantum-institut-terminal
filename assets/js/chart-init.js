@@ -17,28 +17,28 @@
    ============================================================= */
 
 const QI_SYMBOL_CONFIG = {
-    BTCUSDT: { provider:'binance', binanceSym:'BTCUSDT', label:'BTC/USDT', priceDp:2 },
-    ETHUSDT: { provider:'binance', binanceSym:'ETHUSDT', label:'ETH/USDT', priceDp:2 },
-    SOLUSDT: { provider:'binance', binanceSym:'SOLUSDT', label:'SOL/USDT', priceDp:3 },
-    BNBUSDT: { provider:'binance', binanceSym:'BNBUSDT', label:'BNB/USDT', priceDp:2 },
-    XAUUSD:  { provider:'binancePaxg', binanceSym:'PAXGUSDT', label:'XAU/USD', priceDp:2 },
-    EURUSD:  { provider:'yahoo',   yahooSym:'EURUSD%3DX', yahooSymRaw:'EURUSD=X', label:'EUR/USD', priceDp:5 },
+    BTCUSDT: { provider:'binance', binanceSym:'BTCUSDT', label:'BTC/USDT', priceDp:2, type:'crypto' },
+    ETHUSDT: { provider:'binance', binanceSym:'ETHUSDT', label:'ETH/USDT', priceDp:2, type:'crypto' },
+    SOLUSDT: { provider:'binance', binanceSym:'SOLUSDT', label:'SOL/USDT', priceDp:3, type:'crypto' },
+    BNBUSDT: { provider:'binance', binanceSym:'BNBUSDT', label:'BNB/USDT', priceDp:2, type:'crypto' },
+    XAUUSD:  { provider:'biquote', biquoteSym:'XAUUSD', binanceSym:'PAXGUSDT', label:'XAU/USD', priceDp:2, type:'gold' },
+    EURUSD:  { provider:'biquote', biquoteSym:'EURUSD', label:'EUR/USD', priceDp:5, type:'forex' },
 };
 
 const QI_INTERVAL_MAP = {
-    '1':   { binance:'1m',  yahoo:'1m',  yahooRange:'1d'  },
-    '5':   { binance:'5m',  yahoo:'5m',  yahooRange:'5d'  },
-    '15':  { binance:'15m', yahoo:'15m', yahooRange:'5d'  },
-    '30':  { binance:'30m', yahoo:'30m', yahooRange:'1mo' },
-    '60':  { binance:'1h',  yahoo:'60m', yahooRange:'1mo' },
-    '240': { binance:'4h',  yahoo:'60m', yahooRange:'3mo' },
-    'D':   { binance:'1d',  yahoo:'1d',  yahooRange:'1y'  },
-    'M1':  { binance:'1m',  yahoo:'1m',  yahooRange:'1d'  },
-    'M5':  { binance:'5m',  yahoo:'5m',  yahooRange:'5d'  },
-    'M15': { binance:'15m', yahoo:'15m', yahooRange:'5d'  },
-    'H1':  { binance:'1h',  yahoo:'60m', yahooRange:'1mo' },
-    'H4':  { binance:'4h',  yahoo:'60m', yahooRange:'3mo' },
-    'D1':  { binance:'1d',  yahoo:'1d',  yahooRange:'1y'  },
+    '1':   { binance:'1m',  biquote:'1m',  yahoo:'1m',  yahooRange:'1d'  },
+    '5':   { binance:'5m',  biquote:'5m',  yahoo:'5m',  yahooRange:'5d'  },
+    '15':  { binance:'15m', biquote:'15m', yahoo:'15m', yahooRange:'5d'  },
+    '30':  { binance:'30m', biquote:'30m', yahoo:'30m', yahooRange:'1mo' },
+    '60':  { binance:'1h',  biquote:'1h',  yahoo:'60m', yahooRange:'1mo' },
+    '240': { binance:'4h',  biquote:'4h',  yahoo:'60m', yahooRange:'3mo' },
+    'D':   { binance:'1d',  biquote:'1d',  yahoo:'1d',  yahooRange:'1y'  },
+    'M1':  { binance:'1m',  biquote:'1m',  yahoo:'1m',  yahooRange:'1d'  },
+    'M5':  { binance:'5m',  biquote:'5m',  yahoo:'5m',  yahooRange:'5d'  },
+    'M15': { binance:'15m', biquote:'15m', yahoo:'15m', yahooRange:'5d'  },
+    'H1':  { binance:'1h',  biquote:'1h',  yahoo:'60m', yahooRange:'1mo' },
+    'H4':  { binance:'4h',  biquote:'4h',  yahoo:'60m', yahooRange:'3mo' },
+    'D1':  { binance:'1d',  biquote:'1d',  yahoo:'1d',  yahooRange:'1y'  },
 };
 
 const QI_CORS_PROXIES = [
@@ -68,6 +68,16 @@ function normalizeCandles(raw, provider) {
             open:   +d[1], high: +d[2], low: +d[3], close: +d[4],
             volume: +d[5],
         }));
+    } else if (provider === 'biquote') {
+        const bars = Array.isArray(raw?.bars) ? raw.bars : (Array.isArray(raw) ? raw : []);
+        candles = bars.map(b => ({
+            time:   Math.floor(new Date(b.openTime || b.time).getTime() / 1000),
+            open:   +b.open,
+            high:   +b.high,
+            low:    +b.low,
+            close:  +b.close,
+            volume: +(b.tickVolume || b.volume || 0),
+        })).filter(c => !isNaN(c.time) && c.time > 0);
     } else if (provider === 'yahoo') {
         const { timestamps, ohlcv } = raw;
         for (let i = 0; i < timestamps.length; i++) {
@@ -849,6 +859,7 @@ class QuantumRealtimeTerminalManager {
         this._abortCtrl = new AbortController();
         this._closeWebSockets();
         this._stopYahooPoller();
+        this._stopBiquoteSignalR();
 
         const cfg = QI_SYMBOL_CONFIG[this.currentSymbol];
         if (!cfg) { this._showError(`Simbol "${this.currentSymbol}" tidak didukung`); return; }
@@ -856,6 +867,8 @@ class QuantumRealtimeTerminalManager {
 
         if (cfg.provider === 'binance') {
             await this._loadBinance(cfg);
+        } else if (cfg.provider === 'biquote') {
+            await this._loadBiquote(cfg);
         } else if (cfg.provider === 'binancePaxg') {
             await this._loadXauusd(cfg);
         } else if (cfg.provider === 'yahoo') {
@@ -1151,6 +1164,158 @@ class QuantumRealtimeTerminalManager {
 
         this._renderCandles(candles, cfg);
         this._startYahooPoller(cfg, intvlCfg.yahoo);
+    }
+
+    /* =========================================================
+       PROVIDER 3: BIQUOTE MT5 FEED (XAUUSD, EURUSD, FOREX, INDEX)
+       ========================================================= */
+    async _loadBiquote(cfg) {
+        const intvlCfg = QI_INTERVAL_MAP[this.currentInterval] || QI_INTERVAL_MAP['60'];
+        const biquoteInterval = intvlCfg.biquote || '1h';
+        const sym = cfg.biquoteSym || this.currentSymbol;
+
+        let candles = null;
+
+        // 1. Ambil data historis OHLC dari REST API Biquote
+        try {
+            const url = `https://biquote.io/api/${sym}/ohlc?interval=${biquoteInterval}&limit=250`;
+            const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+            if (res.ok) {
+                const json = await res.json();
+                if (json && (json.bars || Array.isArray(json))) {
+                    candles = normalizeCandles(json, 'biquote');
+                }
+            }
+        } catch (e) {
+            console.warn(`[QI Biquote] Fetch OHLC gagal untuk ${sym}:`, e.message);
+        }
+
+        // 2. Fallback: Binance PAXGUSDT untuk Emas jika Biquote lambat/gagal
+        if ((!candles || candles.length === 0) && this.currentSymbol === 'XAUUSD') {
+            try {
+                console.log('[QI Fallback] Menggunakan Binance PAXGUSDT sebagai fallback untuk XAUUSD...');
+                const bRes = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=${intvlCfg.binance || '1h'}&limit=250`, { signal: AbortSignal.timeout(5000) });
+                if (bRes.ok) {
+                    const json = await bRes.json();
+                    if (Array.isArray(json) && json.length > 0) {
+                        candles = normalizeCandles(json, 'binance');
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // 3. Fallback: Local Backend PHP Proxy
+        if (!candles || candles.length === 0) {
+            const localSuccess = await this._loadLocalBackendFallback(cfg);
+            if (localSuccess) {
+                this._connectBiquoteSignalR(sym, cfg);
+                return;
+            }
+        }
+
+        // 4. Fallback Terakhir: Synthetic fail-safe
+        if (!candles || candles.length === 0) {
+            console.warn(`[QI Biquote] Seluruh endpoint gagal — beralih ke synthetic candles untuk ${this.currentSymbol}`);
+            candles = this._generateSyntheticCandles(this.currentSymbol, cfg.priceDp);
+        }
+
+        this._renderCandles(candles, cfg);
+
+        // Koneksikan Realtime SignalR Hub Biquote atau polling pulse
+        this._connectBiquoteSignalR(sym, cfg);
+    }
+
+    /* =========================================================
+       BIQUOTE SIGNALR HUB REALTIME CONNECTION
+       Hub URL: https://biquote.io/hubs/tick
+       ========================================================= */
+    async _connectBiquoteSignalR(sym, cfg) {
+        this._stopBiquoteSignalR();
+
+        // Cek ketersediaan SignalR di window (browser)
+        if (typeof signalR !== 'undefined' && signalR.HubConnectionBuilder) {
+            try {
+                this._biquoteHub = new signalR.HubConnectionBuilder()
+                    .withUrl('https://biquote.io/hubs/tick')
+                    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Exponential backoff max 30s
+                    .configureLogging(signalR.LogLevel.None)
+                    .build();
+
+                this._biquoteHub.on('ReceiveTick', (tick) => {
+                    if (!tick || tick.symbol !== sym) return;
+                    
+                    const price = tick.mid || tick.bid || tick.ask;
+                    if (!price || price <= 0) return;
+
+                    // Update candle aktif di chart
+                    if (this.candleSeries && this._cachedCandles && this._cachedCandles.length > 0) {
+                        const last = this._cachedCandles[this._cachedCandles.length - 1];
+                        const updated = {
+                            time:  last.time,
+                            open:  last.open,
+                            high:  Math.max(last.high, price),
+                            low:   Math.min(last.low, price),
+                            close: price,
+                        };
+                        this.candleSeries.update(updated);
+                        this.lastClosePrice = price;
+
+                        const basePrice = this._cachedCandles[0]?.open || price;
+                        const pct = ((price - basePrice) / basePrice) * 100;
+                        this._updateHeaderUI(price, pct, cfg);
+                    }
+                });
+
+                await this._biquoteHub.start();
+                await this._biquoteHub.invoke('Subscribe', sym);
+                console.log(`[QI Biquote SignalR] Terhubung & Subscribe ke ${sym}`);
+                return;
+            } catch (err) {
+                console.warn('[QI Biquote SignalR] Koneksi SignalR gagal, beralih ke REST pulse:', err.message);
+            }
+        }
+
+        // Fallback jika SignalR tidak aktif: Polling REST Biquote setiap 3 detik
+        this._startBiquoteRestPoller(sym, cfg);
+    }
+
+    _startBiquoteRestPoller(sym, cfg) {
+        this._biquotePoller = setInterval(async () => {
+            try {
+                const res = await fetch(`https://biquote.io/api/${sym}`, { signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    const tick = await res.json();
+                    const price = tick.mid || tick.bid || tick.ask;
+                    if (price > 0 && this.candleSeries && this._cachedCandles && this._cachedCandles.length > 0) {
+                        const last = this._cachedCandles[this._cachedCandles.length - 1];
+                        const updated = {
+                            time:  last.time,
+                            open:  last.open,
+                            high:  Math.max(last.high, price),
+                            low:   Math.min(last.low, price),
+                            close: price,
+                        };
+                        this.candleSeries.update(updated);
+                        this.lastClosePrice = price;
+
+                        const basePrice = this._cachedCandles[0]?.open || price;
+                        const pct = ((price - basePrice) / basePrice) * 100;
+                        this._updateHeaderUI(price, pct, cfg);
+                    }
+                }
+            } catch (e) {}
+        }, 3000);
+    }
+
+    _stopBiquoteSignalR() {
+        if (this._biquoteHub) {
+            try { this._biquoteHub.stop(); } catch (e) {}
+            this._biquoteHub = null;
+        }
+        if (this._biquotePoller) {
+            clearInterval(this._biquotePoller);
+            this._biquotePoller = null;
+        }
     }
 
 

@@ -42,6 +42,42 @@ if (in_array($symbol, ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XAUTUSDT']))
     }
 }
 
+// 1b. Coba ambil data Biquote MT5 untuk XAUUSD / EURUSD
+if (empty($candles) && in_array($symbol, ['XAUUSD', 'EURUSD'])) {
+    $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
+    $biquoteUrl = "https://biquote.io/api/{$symbol}/ohlc?interval={$biquoteTf}&limit=200";
+    $opts = [
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 5,
+            'header' => "User-Agent: Mozilla/5.0\r\n"
+        ]
+    ];
+    $context = stream_context_create($opts);
+    $raw = @file_get_contents($biquoteUrl, false, $context);
+    if ($raw) {
+        $data = json_decode($raw, true);
+        $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+        if (is_array($bars) && count($bars) > 0) {
+            foreach ($bars as $b) {
+                $t = strtotime($b['openTime'] ?? $b['time']);
+                if ($t > 0) {
+                    $candles[] = [
+                        'time'   => $t,
+                        'open'   => (float)$b['open'],
+                        'high'   => (float)$b['high'],
+                        'low'    => (float)$b['low'],
+                        'close'  => (float)$b['close'],
+                        'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                    ];
+                }
+            }
+            // Sort ascending by time
+            usort($candles, fn($a, $b) => $a['time'] - $b['time']);
+        }
+    }
+}
+
 // 2. Jika server fetch gagal atau simbol non-crypto (XAUUSD, EURUSD), hasilkan fail-safe realistic candles
 if (empty($candles)) {
     $basePrices = [
