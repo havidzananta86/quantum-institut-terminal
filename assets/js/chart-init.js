@@ -1864,37 +1864,67 @@ class QuantumRealtimeTerminalManager {
         this._updateHeaderUI(price, pct, QI_SYMBOL_CONFIG[this.currentSymbol]);
     }
 
-    // Apply news/calendar event markers to chart
-    // news = [{published_at: 'ISO-8601', title, category, sentiment, symbols: []}, ...]
+    // Apply news/calendar event markers to chart.
+    // Groups multiple news items that fall on the same candle into ONE marker
+    // so labels never stack. Color = worst sentiment; text = "CATEGORY ×N".
     applyNewsMarkers(newsItems) {
         if (!this.candleSeries || !newsItems || newsItems.length === 0) return;
 
-        const markers = [];
+        // Candle-size in seconds based on current interval
+        const INTERVAL_SECS = { '5':300, '15':900, '60':3600, '240':14400, 'D':86400 };
+        const candleSecs = INTERVAL_SECS[this.currentInterval] || 3600;
+
+        // Sentiment priority for merging (higher wins)
+        const SENT_PRIO = { bearish: 2, bullish: 1, neutral: 0 };
+
+        // Group news items by candle-bucket (floor to nearest candle start)
+        const buckets = {}; // key = bucket-ts → [newsItem, ...]
         newsItems.forEach(n => {
             try {
-                const ts = new Date(n.published_at).getTime() / 1000; // unix seconds
+                const ts = Math.floor(new Date(n.published_at).getTime() / 1000);
                 if (!ts || ts < 0) return;
-
-                // Map sentiment/category ke warna marker
-                let color = '#94A3B8'; // neutral gray
-                let shape = 'circle';
-                if (n.sentiment === 'bullish') { color = '#10B981'; shape = 'arrowUp'; }
-                else if (n.sentiment === 'bearish') { color = '#EF4444'; shape = 'arrowDown'; }
-
-                markers.push({
-                    time: ts,
-                    position: 'belowBar',
-                    color: color,
-                    shape: shape,
-                    text: (n.category || 'NEWS') + (n.symbols?.length ? ' (' + n.symbols.join(',') + ')' : ''),
-                    title: n.title,
-                });
-            } catch (e) {}
+                const bucket = Math.floor(ts / candleSecs) * candleSecs;
+                if (!buckets[bucket]) buckets[bucket] = [];
+                buckets[bucket].push(n);
+            } catch(e) {}
         });
 
-        if (markers.length > 0) {
-            try { this.candleSeries.setMarkers(markers); } catch (e) {}
-        }
+        // Build one marker per bucket
+        const markers = Object.entries(buckets).map(([bucketTs, group]) => {
+            // Pick dominant sentiment across the group
+            let best = group.reduce((acc, n) => {
+                return (SENT_PRIO[n.sentiment] || 0) > (SENT_PRIO[acc.sentiment] || 0) ? n : acc;
+            }, group[0]);
+
+            // Dominant category (most frequent)
+            const catCount = {};
+            group.forEach(n => { catCount[n.category || 'NEWS'] = (catCount[n.category || 'NEWS'] || 0) + 1; });
+            const dominantCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0][0];
+
+            let color = '#94A3B8';
+            let shape = 'circle';
+            if (best.sentiment === 'bullish')  { color = '#10B981'; shape = 'arrowUp'; }
+            if (best.sentiment === 'bearish')  { color = '#EF4444'; shape = 'arrowDown'; }
+
+            const count = group.length;
+            return {
+                time: parseInt(bucketTs),
+                position: 'belowBar',
+                color,
+                shape,
+                // "CRYPTO ×3" if multiple, "MACRO" if single
+                text: dominantCat + (count > 1 ? ' ×' + count : ''),
+                // Hover title = first headline (or merged)
+                title: count > 1
+                    ? `${count} berita: ${group.map(n => n.title).join(' | ').slice(0, 200)}`
+                    : (group[0].title || ''),
+            };
+        });
+
+        // LightweightCharts requires markers sorted ascending by time
+        markers.sort((a, b) => a.time - b.time);
+
+        try { this.candleSeries.setMarkers(markers); } catch (e) {}
     }
 }
 
