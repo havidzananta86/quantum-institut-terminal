@@ -1,0 +1,19 @@
+<?php
+/**
+ * API Keys — SALIN file ini menjadi `api_keys.php` lalu isi nilainya.
+ * `api_keys.php` sudah di .gitignore (jangan commit nilai asli).
+ */
+
+// Twelve Data — forex & metals (XAUUSD, EURUSD)
+// Daftar gratis di https://twelvedata.com (800 credits/hari, 8/menit)
+define('TWELVE_DATA_KEY', 'ISI_API_KEY_TWELVE_DATA_ANDA');
+
+// Google Sign-In OAuth Client ID (PUBLIC — aman di sisi klien).
+// Cara membuat:
+//   1. Buka https://console.cloud.google.com/apis/credentials
+//   2. Create Credentials → OAuth client ID → Web application
+//   3. Authorized JavaScript origins: http://localhost (dan/atau domain produksi)
+//   4. Salin Client ID (format: xxxxx.apps.googleusercontent.com) ke bawah ini.
+// Biarkan string kosong untuk menonaktifkan tombol Google
+// (login.html otomatis menampilkan "Segera Hadir").
+define('GOOGLE_CLIENT_ID', '');

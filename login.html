@@ -232,12 +232,14 @@
                 <div class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-4">
                     <div class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ATAU OTENTIKASI LISENSI CEPAT</div>
                     
-                    <!-- Tombol Google Account — full-width setelah Web3 dihapus -->
+                    <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, fallback jujur jika belum -->
                     <div class="font-mono text-xs">
-                        <button type="button" onclick="simulateGoogleConnect()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
+                        <button id="btnGoogleFallback" type="button" onclick="handleGoogleClick()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
                             <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.58 3.3-3.23 5.485-6.887 5.485-4.14 0-7.5-3.36-7.5-7.5s3.36-7.5 7.5-7.5c1.86 0 3.55.69 4.86 1.83l2.36-2.36C17.5 1.7 15.02 1 12.24 1 6.13 1 1.18 5.95 1.18 12s4.95 11 11.06 11c6.34 0 10.55-4.46 10.55-10.74 0-.72-.08-1.42-.2-2.115H12.24z"/></svg>
-                            Masuk Dengan Google Account
+                            <span id="googleBtnLabel">Masuk Dengan Google Account</span>
                         </button>
+                        <!-- Container tombol resmi Google Identity Services (muncul jika Client ID terisi) -->
+                        <div id="googleGsiButton" class="hidden justify-center mt-1"></div>
                     </div>
 
                     <!-- Register Link -->
@@ -458,8 +460,80 @@
             showQuantumToast(msg, 'error');
         }
 
-        function simulateGoogleConnect() {
-            showQuantumToast('Login dengan Google belum tersedia. Gunakan kunci lisensi atau email.', 'info');
+        // --- 6. GOOGLE SIGN-IN (Google Identity Services) ---
+        let _googleClientId = '';
+
+        (async function initGoogleAuth() {
+            try {
+                const res = await fetch('api/auth-config.php', { cache: 'no-store' });
+                const json = await res.json();
+                if (json?.data?.google_enabled && json.data.google_client_id) {
+                    _googleClientId = json.data.google_client_id;
+                    loadGoogleGsi();
+                } else {
+                    // Belum dikonfigurasi → tandai tombol dengan jujur
+                    const label = document.getElementById('googleBtnLabel');
+                    if (label) label.textContent = 'Masuk Dengan Google (Segera Hadir)';
+                    const btn = document.getElementById('btnGoogleFallback');
+                    if (btn) btn.classList.add('opacity-60');
+                }
+            } catch (e) { /* endpoint tak terjangkau → tombol tetap fallback */ }
+        })();
+
+        function loadGoogleGsi() {
+            const s = document.createElement('script');
+            s.src = 'https://accounts.google.com/gsi/client';
+            s.async = true; s.defer = true;
+            s.onload = () => {
+                if (!window.google?.accounts?.id) return;
+                google.accounts.id.initialize({
+                    client_id: _googleClientId,
+                    callback: handleGoogleCredential,
+                });
+                const container = document.getElementById('googleGsiButton');
+                const fallback  = document.getElementById('btnGoogleFallback');
+                if (container) {
+                    container.classList.remove('hidden');
+                    container.classList.add('flex');
+                    google.accounts.id.renderButton(container, {
+                        theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'pill', width: 280
+                    });
+                }
+                if (fallback) fallback.classList.add('hidden');
+            };
+            document.head.appendChild(s);
+        }
+
+        function handleGoogleClick() {
+            if (!_googleClientId) {
+                showQuantumToast('Login Google belum diaktifkan oleh admin. Gunakan kunci lisensi atau email.', 'info');
+                return;
+            }
+            if (window.google?.accounts?.id) google.accounts.id.prompt();
+        }
+
+        async function handleGoogleCredential(response) {
+            const credential = response?.credential;
+            if (!credential) { showQuantumToast('Login Google dibatalkan.', 'info'); return; }
+            try {
+                const res = await fetch('api/auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'google', credential }),
+                    signal: AbortSignal.timeout(12000)
+                });
+                const data = await res.json();
+                if (res.ok && data?.status === 'success' && data.data?.token) {
+                    const { token, ...user } = data.data;
+                    QuantumAuth.saveSession(token, user, true);
+                    showQuantumToast('⚡ Login Google Berhasil! Mengalihkan ke Terminal...', 'success');
+                    setTimeout(() => { window.location.href = 'terminal.html'; }, 800);
+                } else {
+                    showQuantumToast(data?.message || 'Login Google gagal.', 'error');
+                }
+            } catch (e) {
+                showQuantumToast('Server autentikasi tidak dapat dihubungi.', 'error');
+            }
         }
     </script>
 </body>

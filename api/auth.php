@@ -147,6 +147,112 @@ if ($type === 'license') {
         echo json_encode(['status' => 'error', 'message' => 'Layanan autentikasi sedang tidak tersedia.']);
     }
 
+// =============================================
+// MODE 3: LOGIN GOOGLE (verifikasi ID token via Google tokeninfo)
+// =============================================
+} else if ($type === 'google') {
+    // Ambil Client ID dari config (publik, bukan secret)
+    $googleClientId = '';
+    $cfgPath = __DIR__ . '/../config/api_keys.php';
+    if (file_exists($cfgPath)) {
+        require_once $cfgPath;
+        if (defined('GOOGLE_CLIENT_ID')) $googleClientId = GOOGLE_CLIENT_ID;
+    }
+    if ($googleClientId === '') {
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'message' => 'Login Google belum dikonfigurasi di server.']);
+        exit();
+    }
+
+    $credential = isset($input['credential']) ? trim($input['credential']) : '';
+    if ($credential === '' || strlen($credential) > 4096) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Kredensial Google tidak valid.']);
+        exit();
+    }
+
+    // Verifikasi ID token ke endpoint resmi Google (tidak butuh client secret).
+    // Google memvalidasi signature & expiry; kita cek aud + email_verified.
+    $verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($credential);
+    $payloadRaw = false;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($verifyUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 6,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $payloadRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode < 200 || $httpCode >= 300) $payloadRaw = false;
+    }
+    if ($payloadRaw === false) {
+        http_response_code(502);
+        echo json_encode(['status' => 'error', 'message' => 'Gagal memverifikasi token Google. Coba lagi.']);
+        exit();
+    }
+
+    $p = json_decode($payloadRaw, true);
+    $audOk   = isset($p['aud']) && hash_equals($googleClientId, $p['aud']);
+    $emailOk = isset($p['email']) && (($p['email_verified'] ?? '') === 'true' || ($p['email_verified'] ?? false) === true);
+    $issOk   = isset($p['iss']) && in_array($p['iss'], ['accounts.google.com', 'https://accounts.google.com'], true);
+
+    if (!$audOk || !$emailOk || !$issOk) {
+        usleep(random_int(1000000, 2000000));
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Verifikasi Google gagal.']);
+        exit();
+    }
+
+    $email = strtolower(qi_sanitize_string($p['email'], 150));
+    $name  = qi_sanitize_string($p['name'] ?? explode('@', $email)[0], 100);
+
+    try {
+        $pdo = qi_db();
+
+        // Cari user by email; kalau belum ada → buat akun baru (role 'user')
+        $stmt = $pdo->prepare('SELECT id, email, role, is_active FROM users WHERE email = :email LIMIT 1');
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            // Password acak — login Google tidak pakai password, tapi kolom NOT NULL
+            $randomHash = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+            $ins = $pdo->prepare('INSERT INTO users (full_name, email, password_hash, role, is_active, status, created_at)
+                                  VALUES (:name, :email, :ph, :role, 1, :st, NOW())');
+            $ins->execute([':name' => $name ?: 'Pengguna Google', ':email' => $email, ':ph' => $randomHash, ':role' => 'user', ':st' => 'active']);
+            $userId = (int)$pdo->lastInsertId();
+            $role = 'user';
+        } else {
+            if (!$user['is_active']) {
+                http_response_code(403);
+                echo json_encode(['status' => 'error', 'message' => 'Akun tidak aktif.']);
+                exit();
+            }
+            $userId = (int)$user['id'];
+            $role = $user['role'];
+        }
+
+        $session = createSession($pdo, $userId);
+        echo json_encode([
+            'status'  => 'success',
+            'message' => 'Login Google Berhasil.',
+            'data'    => [
+                'user_id'       => $userId,
+                'email'         => $email,
+                'role'          => $role,
+                'token'         => $session['token'],
+                'token_expires' => $session['expires_at'],
+            ],
+        ]);
+    } catch (PDOException $e) {
+        error_log('[QI Auth] Google DB error: ' . $e->getMessage());
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'message' => 'Layanan autentikasi sedang tidak tersedia.']);
+    }
+
 } else {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Tipe autentikasi tidak dikenal.']);
