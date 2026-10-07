@@ -1,6 +1,6 @@
 {
     "status": "success",
-    "timestamp": "2026-10-06 01:44:10",
+    "timestamp": "2026-10-07 09:52:39",
     "count": 5,
     "data": [
         {
@@ -9,7 +9,7 @@
             "title": "Bitcoin Surges Above $68,500 as Institutional Inflows Hit 3-Month High",
             "url": "https:\/\/www.coindesk.com",
             "category": "CRYPTO",
-            "published_at": "2026-10-06T01:39:10+02:00",
+            "published_at": "2026-10-07T09:47:39+02:00",
             "sentiment": "bullish"
         },
         {
@@ -18,7 +18,7 @@
             "title": "US Dollar Index Holds Firm Ahead of Critical Inflation CPI Report",
             "url": "https:\/\/www.reuters.com",
             "category": "FOREX\/MACRO",
-            "published_at": "2026-10-06T01:24:10+02:00",
+            "published_at": "2026-10-07T09:32:39+02:00",
             "sentiment": "neutral"
         },
         {
@@ -27,7 +27,7 @@
             "title": "Gold (XAU\/USD) Rebounds Near $2,655 On Safe-Haven Demand & Rate Cut Expectations",
             "url": "https:\/\/www.bloomberg.com",
             "category": "GOLD",
-            "published_at": "2026-10-06T01:04:10+02:00",
+            "published_at": "2026-10-07T09:12:39+02:00",
             "sentiment": "bullish"
         },
         {
@@ -36,7 +36,7 @@
             "title": "Federal Reserve Officials Signal Gradual Rate Cuts as Labor Market Stabilizes",
             "url": "https:\/\/www.cnbc.com",
             "category": "MACRO",
-            "published_at": "2026-10-06T00:44:10+02:00",
+            "published_at": "2026-10-07T08:52:39+02:00",
             "sentiment": "neutral"
         },
         {
@@ -45,7 +45,7 @@
             "title": "Ethereum Open Interest Reaches Record Level as Dencun Upgrade Benefits Take Effect",
             "url": "https:\/\/cointelegraph.com",
             "category": "CRYPTO",
-            "published_at": "2026-10-06T00:24:10+02:00",
+            "published_at": "2026-10-07T08:32:39+02:00",
             "sentiment": "bullish"
         }
     ]

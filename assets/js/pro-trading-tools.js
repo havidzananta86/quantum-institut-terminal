@@ -1663,6 +1663,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                         <!-- Signals Audit Trail Table -->
                         <div class="space-y-1.5 max-h-60 overflow-y-auto thin-scrollbar">
                             ${history.map(s => {
+                                const esc = (txt) => typeof txt === 'string' ? txt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : String(txt || '');
+                                
                                 let statusBg = 'bg-slate-800 text-slate-300';
                                 if (s.status === 'HIT TP 🎯') statusBg = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
                                 else if (s.status === 'HIT SL 🛑') statusBg = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
@@ -1676,24 +1678,24 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                                     <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-1 text-xs">
                                         <div class="flex flex-wrap items-center justify-between gap-1">
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${s.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${s.side} ${s.symbol}</span>
-                                                <strong class="text-white">${s.engine_name} (${s.timeframe})</strong>
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${s.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${esc(s.side)} ${esc(s.symbol)}</span>
+                                                <strong class="text-white">${esc(s.engine_name)} (${esc(s.timeframe)})</strong>
                                                 ${mtfBadge}
-                                                <span class="text-[10px] text-slate-400">Score: <strong class="text-cyan-300">${s.confluence_score}%</strong> (N=${s.sample_size})</span>
+                                                <span class="text-[10px] text-slate-400">Score: <strong class="text-cyan-300">${+s.confluence_score}%</strong> (N=${+s.sample_size})</span>
                                             </div>
-                                            <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${statusBg}">${s.status}</span>
+                                            <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${statusBg}">${esc(s.status)}</span>
                                         </div>
 
                                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] text-slate-400 pt-1 border-t border-slate-900">
-                                            <div>Entry: <strong class="text-slate-200">$${s.entry}</strong></div>
-                                            <div>SL: <strong class="text-rose-400">$${s.sl}</strong> (ATR: ${s.atr})</div>
-                                            <div>TP: <strong class="text-emerald-400">$${s.tp}</strong> (${s.rr})</div>
-                                            <div>Invalidation: <span class="text-amber-300">${s.invalidation}</span></div>
+                                            <div>Entry: <strong class="text-slate-200">$${+s.entry}</strong></div>
+                                            <div>SL: <strong class="text-rose-400">$${+s.sl}</strong> (ATR: ${+s.atr})</div>
+                                            <div>TP: <strong class="text-emerald-400">$${+s.tp}</strong> (${esc(s.rr)})</div>
+                                            <div>Invalidation: <span class="text-amber-300">${esc(s.invalidation)}</span></div>
                                         </div>
 
                                         <div class="flex justify-between items-center text-[9px] text-slate-500 pt-0.5">
-                                            <span>Dibuat: ${s.timestamp}</span>
-                                            <span>Expiry: ${s.expiry}</span>
+                                            <span>Dibuat: ${esc(s.timestamp)}</span>
+                                            <span>Expiry: ${esc(s.expiry)}</span>
                                         </div>
                                     </div>
                                 `;

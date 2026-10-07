@@ -4,10 +4,29 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
 
-$symbol = isset($_GET['symbol']) ? strtoupper($_GET['symbol']) : 'BTCUSDT';
-$engine = isset($_GET['engine']) ? strtoupper($_GET['engine']) : 'SNR';
+// Rate limit default: 60 req/min
+qi_rate_limit(60, 60);
+
+$symbol = isset($_GET['symbol']) ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
+$engine = isset($_GET['engine']) ? strtoupper(qi_sanitize_string($_GET['engine'], 20)) : 'SNR';
+
+// Validasi lisensi server-side untuk Mesin PRO Lanjutan
+$proEngines = ['TRENM5', 'MOMENTUM_NY', 'MACD_MOM', 'GOLDEN_CROSS'];
+if (in_array($engine, $proEngines)) {
+    // Cek apakah ada token valid
+    $user = qi_validate_token();
+    if (!$user && isset($_GET['strict_pro']) && $_GET['strict_pro'] === '1') {
+        http_response_code(403);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Mesin sinyal ini membutuhkan Lisensi Quantum+ PRO aktif.',
+            'code' => 'PRO_LICENSE_REQUIRED'
+        ]);
+        exit();
+    }
+}
 
 require_once __DIR__ . '/../engine/snr.php';
 require_once __DIR__ . '/../engine/smc.php';

@@ -1,18 +1,50 @@
-# Quantum Institut Server Configuration
+# Quantum Institut Server Configuration — Hardened Security
 RewriteEngine On
 RewriteBase /
 
-# Prevent directory browsing
+# =============================================
+# PROTEKSI AKSES FOLDER & FILE SENSITIF
+# Blokir akses langsung ke folder internal
+# =============================================
 Options -Indexes
 
-# Security Headers
-Header set X-Content-Type-Options "nosniff"
-Header set X-Frame-Options "SAMEORIGIN"
-Header set X-XSS-Protection "1; mode=block"
+# Blokir folder sensitif: config, engine, database, cache, scratch, .vercel
+RewriteRule ^(config|engine|database|cache|scratch|\.vercel)/ - [F,L]
+
+# Blokir file sensitif langsung
+RewriteRule \.sql$ - [F,L]
+RewriteRule \.env$ - [F,L]
+RewriteRule \.log$ - [F,L]
+RewriteRule \.bak$ - [F,L]
+
+# =============================================
+# SECURITY HEADERS (LENGKAP)
+# =============================================
+<IfModule mod_headers.c>
+    # Cegah MIME sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Cegah clickjacking — hanya izinkan dari domain sendiri
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # XSS Protection fallback untuk browser lama
+    Header set X-XSS-Protection "1; mode=block"
+
+    # HSTS — paksa HTTPS selama 1 tahun + subdomains
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Referrer Policy — kirim origin saja saat cross-origin
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions Policy — nonaktifkan fitur browser yang tidak dipakai
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+    # Content Security Policy (CSP)
+    # Izinkan script dari CDN yang dipakai (TradingView, Tailwind, Lightweight Charts)
+    # Izinkan WebSocket ke Binance (wss://stream.binance.*)
+    # Izinkan fetch ke API sendiri + Binance REST + xaus.com
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://data-api.binance.vision https://api.binance.us wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app; frame-src https://s3.tradingview.com https://*.tradingview.com;"
+</IfModule>
 
 # Custom 404 Error Document
 ErrorDocument 404 /404.html
-
-# Protect configuration & engine files
-RewriteRule ^config/ - [F,L]
-RewriteRule ^engine/ - [F,L]

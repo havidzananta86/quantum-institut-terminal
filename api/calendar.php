@@ -6,7 +6,10 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+
+// Rate limit: 60 req/min
+qi_rate_limit(60, 60);
 
 $cacheDir = __DIR__ . '/../cache';
 if (!is_dir($cacheDir)) {
@@ -32,8 +35,8 @@ try {
             'header' => "User-Agent: QuantumInstitut/4.2\r\n"
         ],
         'ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false
+            'verify_peer' => true,
+            'verify_peer_name' => true
         ]
     ]);
 

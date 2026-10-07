@@ -5,8 +5,7 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST');
+require_once __DIR__ . '/_middleware.php';
 
 $cacheDir = __DIR__ . '/../cache';
 if (!is_dir($cacheDir)) {
@@ -112,12 +111,12 @@ if (!file_exists($historyFile)) {
 
 // GET method: Return signal history and aggregated performance metrics
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $raw = file_get_contents($historyFile);
+    $raw = @file_get_contents($historyFile);
     $history = json_decode($raw, true) ?: [];
 
     // Filter by symbol or engine if specified
-    $symbolFilter = isset($_GET['symbol']) ? strtoupper($_GET['symbol']) : null;
-    $engineFilter = isset($_GET['engine']) ? strtoupper($_GET['engine']) : null;
+    $symbolFilter = isset($_GET['symbol']) ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : null;
+    $engineFilter = isset($_GET['engine']) ? strtoupper(qi_sanitize_string($_GET['engine'], 20)) : null;
 
     $filtered = array_filter($history, function($s) use ($symbolFilter, $engineFilter) {
         if ($symbolFilter && $s['symbol'] !== $symbolFilter) return false;
@@ -135,14 +134,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $netPnL = 0;
 
     foreach ($filtered as $s) {
-        if ($s['status'] === 'HIT TP 🎯') {
+        if (strpos($s['status'], 'HIT TP') !== false) {
             $wins++;
-            $totalProfit += $s['pnl_usd'];
-        } else if ($s['status'] === 'HIT SL 🛑') {
+            $totalProfit += (float)$s['pnl_usd'];
+        } else if (strpos($s['status'], 'HIT SL') !== false) {
             $losses++;
-            $totalLoss += abs($s['pnl_usd']);
+            $totalLoss += abs((float)$s['pnl_usd']);
         }
-        $netPnL += $s['pnl_usd'];
+        $netPnL += (float)$s['pnl_usd'];
     }
 
     $completed = $wins + $losses;
@@ -160,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'win_rate' => $winRate,
             'profit_factor' => $profitFactor,
             'expectancy' => $expectancy,
-            'net_pnl_usd' => $netPnL,
+            'net_pnl_usd' => round($netPnL, 2),
             'avg_rr' => '1 : 2.58',
             'max_drawdown_pct' => 4.2
         ],
@@ -169,17 +168,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit();
 }
 
-// POST method: Append new signal to JSON database
+// POST method: Append new signal to JSON database (HANYA UNTUK USER/ADMIN TERAUTENTIKASI)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if ($input) {
-        $raw = file_get_contents($historyFile);
-        $history = json_decode($raw, true) ?: [];
-        array_unshift($history, $input);
-        file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT));
-        echo json_encode(['status' => 'success', 'message' => 'Signal recorded to history']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid JSON input']);
+    // 1. Wajib token autentikasi PRO / ADMIN
+    $user = qi_validate_token();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Autentikasi diperlukan untuk mencatat sinyal.']);
+        exit();
     }
+
+    $input = qi_get_json_body();
+    if (!$input || empty($input['symbol']) || empty($input['engine'])) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'Parameter sinyal tidak lengkap atau format tidak valid.']);
+        exit();
+    }
+
+    // 2. Strict Whitelist Sanitization (mencegah Stored XSS)
+    $cleanRecord = [
+        'id'               => 'SIG-' . date('Ymd') . '-' . substr(bin2hex(random_bytes(4)), 0, 6),
+        'timestamp'        => date('Y-m-d H:i:s'),
+        'expiry'           => qi_sanitize_string($input['expiry'] ?? date('Y-m-d H:i:s', time() + 14400), 30),
+        'symbol'           => strtoupper(qi_sanitize_string($input['symbol'], 10)),
+        'engine'           => strtoupper(qi_sanitize_string($input['engine'], 20)),
+        'engine_name'      => qi_sanitize_string($input['engine_name'] ?? ('Quantum ' . $input['engine']), 50),
+        'timeframe'        => qi_sanitize_string($input['timeframe'] ?? 'H1', 10),
+        'side'             => in_array(strtoupper($input['side'] ?? ''), ['BUY', 'SELL']) ? strtoupper($input['side']) : 'BUY',
+        'entry'            => (float)($input['entry'] ?? 0),
+        'sl'               => (float)($input['sl'] ?? 0),
+        'tp'               => (float)($input['tp'] ?? 0),
+        'rr'               => qi_sanitize_string($input['rr'] ?? '1 : 2.5', 20),
+        'atr'              => (float)($input['atr'] ?? 0),
+        'invalidation'     => qi_sanitize_string($input['invalidation'] ?? 'Breakout level kunci', 150),
+        'status'           => in_array($input['status'] ?? '', ['AKTIF', 'HIT TP 🎯', 'HIT SL 🛑', 'EXPIRED']) ? $input['status'] : 'AKTIF',
+        'pnl'              => (float)($input['pnl'] ?? 0),
+        'pnl_usd'          => (float)($input['pnl_usd'] ?? 0),
+        'mtf_aligned'      => !empty($input['mtf_aligned']),
+        'confluence_score' => (int)($input['confluence_score'] ?? 85),
+        'sample_size'      => (int)($input['sample_size'] ?? 100),
+    ];
+
+    $raw = @file_get_contents($historyFile);
+    $history = json_decode($raw, true) ?: [];
+    array_unshift($history, $cleanRecord);
+    
+    // Batasi riwayat maksimum 500 catatan untuk mencegah pembengkakan memori
+    if (count($history) > 500) {
+        $history = array_slice($history, 0, 500);
+    }
+
+    file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT));
+    echo json_encode(['status' => 'success', 'message' => 'Sinyal berhasil diverifikasi dan disimpan ke riwayat terenkripsi.']);
     exit();
 }

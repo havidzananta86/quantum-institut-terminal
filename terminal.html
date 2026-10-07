@@ -811,10 +811,30 @@
     </div>
 
     <!-- JS Core & Script Chart Sync Manager -->
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/ticker.js"></script>
     <script src="assets/js/chart-init.js"></script>
     <script>
+        // Check / init Auth Session State
+        (function checkTerminalAccess() {
+            const token = window.QuantumAuth ? window.QuantumAuth.getToken() : localStorage.getItem('qi_token');
+            const profileBadge = document.querySelector('a[href="login.html"]');
+            if (token) {
+                if (profileBadge) {
+                    profileBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>PRO ACTIVE</span>`;
+                    profileBadge.classList.replace('text-purple-300', 'text-emerald-300');
+                    profileBadge.classList.replace('border-purple-500/40', 'border-emerald-500/40');
+                }
+            } else {
+                if (profileBadge) {
+                    profileBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>DEMO / LOGIN</span>`;
+                    profileBadge.classList.replace('text-purple-300', 'text-amber-300');
+                    profileBadge.classList.replace('border-purple-500/40', 'border-amber-500/40');
+                }
+            }
+        })();
+
         let currentCleanSymbol = 'BTCUSDT';
         let currentQuantumEngine = 'SNR';
 
@@ -1167,6 +1187,20 @@
                 });
         }
 
+        function escHtml(str) {
+            if (typeof str !== 'string') return String(str || '');
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function safeUrl(url) {
+            if (typeof url !== 'string') return '#';
+            const clean = url.trim();
+            if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('#')) {
+                return clean;
+            }
+            return '#';
+        }
+
         function renderRealtimeNews() {
             const container = document.getElementById('newsContainer');
             if (!container) return;
@@ -1184,13 +1218,13 @@
                 itemDiv.className = 'p-3 rounded bg-slate-950/80 border border-slate-800 hover:border-purple-500/30 transition-all text-xs space-y-1.5';
                 itemDiv.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">${n.category}</span>
+                        <span class="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">${escHtml(n.category)}</span>
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400">${n.source}</span>
+                            <span class="text-[10px] text-slate-400">${escHtml(n.source)}</span>
                             ${sentBadge}
                         </div>
                     </div>
-                    <a href="${n.url}" target="_blank" class="font-bold text-white hover:text-cyan-300 transition-colors block font-sans text-sm">${n.title}</a>
+                    <a href="${safeUrl(n.url)}" target="_blank" rel="noopener noreferrer" class="font-bold text-white hover:text-cyan-300 transition-colors block font-sans text-sm">${escHtml(n.title)}</a>
                 `;
                 container.appendChild(itemDiv);
             });
