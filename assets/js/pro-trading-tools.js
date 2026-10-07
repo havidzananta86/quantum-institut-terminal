@@ -1073,10 +1073,14 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 `;
             }).join('');
         },
-        runBacktest() {
+        async runBacktest() {
             const symbol = document.getElementById('backtestPairSelect')?.value || 'XAUUSD';
-            const interval = document.getElementById('backtestTfSelect')?.value || 'H1';
+            const tfRaw  = document.getElementById('backtestTfSelect')?.value || 'H1';
             const engine = document.getElementById('backtestEngineSelect')?.value || 'SNR';
+
+            // Map UI labels → API interval params used by get-chart-data.php
+            const TF_MAP = { M5:'5', M15:'15', H1:'60', H4:'240', D1:'D' };
+            const interval = TF_MAP[tfRaw] || '60';   // API interval (60, 5, 15, 240, D)
 
             // --- Parameter biaya realistis dari input user ---
             const spreadCost = parseFloat(document.getElementById('backtestSpread')?.value) || 0.5;  // $ per trade
@@ -1092,17 +1096,43 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             };
             const label = pairLabels[symbol] || symbol;
 
-            // Prioritize real chart data; warn if using synthetic
-            let candles = window.quantumTerminalManager?._cachedCandles;
+            // --- Ambil candle data: cache jika symbol+interval match, fetch jika tidak ---
+            const mgr = window.quantumTerminalManager;
+            const cacheSymbol   = mgr?.currentSymbol;
+            const cacheInterval = mgr?.currentInterval;
+            const cacheHit = mgr?._cachedCandles?.length >= 50
+                          && cacheSymbol === symbol
+                          && cacheInterval === interval;
+
+            let candles    = null;
             let dataSource = 'live';
 
+            if (cacheHit) {
+                candles = mgr._cachedCandles;
+            } else {
+                // Cache miss → fetch langsung dari API
+                const runBtn = document.querySelector('[onclick*="runBacktest"]');
+                if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Fetching...'; }
+                if (window.showQuantumToast)
+                    window.showQuantumToast(`📡 Mengambil data ${symbol} ${tfRaw} dari server…`, 'info', 2000);
+                try {
+                    const res = await fetch(`api/get-chart-data.php?symbol=${symbol}&interval=${interval}`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.candles?.length >= 50) {
+                            candles = json.candles;
+                        }
+                    }
+                } catch (e) { /* network error, handled below */ }
+                if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run Backtest'; }
+            }
+
             if (!candles || candles.length < 50) {
-                // Fallback jika cache kosong
-                if (window.quantumTerminalManager?._generateSyntheticCandles) {
-                    candles = window.quantumTerminalManager._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
+                // Fallback: synthetic atau mock
+                if (mgr?._generateSyntheticCandles) {
+                    candles = mgr._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
                     dataSource = 'synthetic';
                 } else {
-                    // Last resort: mock data
                     candles = Array.from({length:100}, (_, i) => ({
                         time: Math.floor(Date.now() / 1000) - (100 - i) * 3600,
                         open: 4050 + Math.random() * 50, high: 4100 + Math.random() * 50,
@@ -1113,7 +1143,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             }
             if (dataSource !== 'live') {
                 if (window.showQuantumToast)
-                    window.showQuantumToast(`⚠️ Chart belum load data real untuk ${symbol}. Menggunakan ${dataSource} data.`, 'warning', 2500);
+                    window.showQuantumToast(`⚠️ Gagal ambil data real ${symbol} ${tfRaw}. Menggunakan ${dataSource} data.`, 'warning', 2500);
             }
 
             // --- Walk-forward / Out-of-Sample Split ---
@@ -1318,7 +1348,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             }
 
             this.lastBacktestResult = {
-                symbol, label, interval, engine,
+                symbol, label, interval: tfRaw, engine,
                 spreadCost, commissionPct, slippagePct, oosPct,
                 inSample: isResult,
                 outOfSample: oosResult
