@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="assets/js/auth.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -88,6 +89,65 @@
 </head>
 
 <body class="h-screen flex overflow-hidden text-slate-300 font-body">
+
+<!-- ═══ ACCESS GATE ═══ -->
+<div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:#070C1A;">
+    <div id="gateLoading" class="text-center">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#7C4DFF] mx-auto mb-3 flex items-center justify-center font-bold text-white text-lg">Q</div>
+        <div class="text-slate-500 text-sm animate-pulse">Memeriksa akses…</div>
+    </div>
+    <div id="gateUpgrade" class="hidden w-full max-w-lg">
+        <div class="bg-[#0C1220] border border-[#1E293B] rounded-2xl p-8 text-center shadow-2xl shadow-black/60">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00E5FF]/20 to-[#7C4DFF]/20 border border-[#00E5FF]/20 mx-auto mb-5 flex items-center justify-center text-3xl">🔒</div>
+            <div class="text-[10px] font-semibold text-[#00E5FF] uppercase tracking-[0.2em] mb-2">Fitur Premium</div>
+            <h1 class="font-heading font-bold text-white text-2xl mb-2">Economic Calendar</h1>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Fitur ini eksklusif untuk pengguna <span class="text-[#00E5FF] font-semibold">Quantum+ PRO</span>.</p>
+            <div class="space-y-2.5">
+                <a href="terminal.html" onclick="window.open('https://wa.me/6281234567890?text=Halo+saya+mau+upgrade+ke+Quantum+PRO','_blank')"
+                   class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF);">
+                    ⚡ Upgrade ke Quantum+ PRO
+                </a>
+                <a href="terminal.html" class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
+                    Lanjut dengan Terminal Gratis →
+                </a>
+            </div>
+            <div id="gateLoginHint" class="hidden mt-4 text-[10px] text-slate-600">
+                Sudah punya lisensi PRO?
+                <a href="login.html" onclick="try{sessionStorage.setItem('qi_redirect_after_login','economic-calendar.html')}catch(e){}" class="text-[#00E5FF] underline">Login di sini</a>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    var token = null, userData = null;
+    try {
+        token = (typeof QuantumAuth !== 'undefined' && QuantumAuth.getToken) ? QuantumAuth.getToken()
+              : (localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token'));
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        userData = raw ? JSON.parse(raw) : null;
+    } catch(e) {}
+    var isPro = userData && (userData.role === 'pro' || userData.role === 'admin');
+    if (!token) { try{sessionStorage.setItem('qi_redirect_after_login','economic-calendar.html');}catch(e){} window.location.replace('login.html'); return; }
+    if (!isPro) {
+        document.getElementById('gateLoading').classList.add('hidden');
+        document.getElementById('gateUpgrade').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('qiAccessGate').style.display = 'none';
+    fetch('api/auth.php', {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body: JSON.stringify({type:'verify_token'})
+    }).then(function(r){return r.json();}).then(function(d){
+        var role = d.data && d.data.role;
+        if (d.status !== 'success' || (role !== 'pro' && role !== 'admin')) {
+            document.getElementById('qiAccessGate').style.display = 'flex';
+            document.getElementById('gateLoading').classList.add('hidden');
+            document.getElementById('gateUpgrade').classList.remove('hidden');
+        }
+    }).catch(function(){});
+})();
+</script>
 
 <!-- ═══ LEFT SIDEBAR ═══ -->
 <aside id="sidebar" class="w-56 flex-shrink-0 bg-qi-panel border-r border-qi-border flex flex-col fixed lg:relative z-40 h-full overflow-y-auto">

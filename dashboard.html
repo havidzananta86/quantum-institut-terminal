@@ -11,6 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+    <!-- Auth must load before Tailwind so gate check fires immediately -->
+    <script src="assets/js/auth.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -82,6 +84,129 @@
 </head>
 
 <body class="h-screen flex overflow-hidden text-slate-300 font-body">
+
+<!-- ═══ ACCESS GATE (shown while checking / if not PRO) ═══ -->
+<div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+     style="background:#070C1A;">
+
+    <!-- Loading state (default) -->
+    <div id="gateLoading" class="text-center">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#7C4DFF] mx-auto mb-3 flex items-center justify-center font-bold text-white text-lg">Q</div>
+        <div class="text-slate-500 text-sm animate-pulse">Memeriksa akses…</div>
+    </div>
+
+    <!-- Upgrade gate (hidden until role check fails) -->
+    <div id="gateUpgrade" class="hidden w-full max-w-lg">
+        <!-- Blurred preview hint -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div class="w-full h-full opacity-[0.04]" style="background: repeating-linear-gradient(45deg,#00E5FF 0,#00E5FF 1px,transparent 0,transparent 50%); background-size:20px 20px;"></div>
+        </div>
+
+        <div class="relative bg-[#0C1220] border border-[#1E293B] rounded-2xl p-8 text-center shadow-2xl shadow-black/60">
+            <!-- Lock icon -->
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00E5FF]/20 to-[#7C4DFF]/20 border border-[#00E5FF]/20 mx-auto mb-5 flex items-center justify-center text-3xl">🔒</div>
+
+            <div class="text-[10px] font-semibold text-[#00E5FF] uppercase tracking-[0.2em] mb-2">Fitur Premium</div>
+            <h1 class="font-heading font-bold text-white text-2xl mb-2">Quantum Command Center</h1>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                Dashboard ini eksklusif untuk pengguna <span class="text-[#00E5FF] font-semibold">Quantum+ PRO</span>.<br>
+                Upgrade untuk akses penuh ke semua fitur intelijen pasar.
+            </p>
+
+            <!-- Feature list -->
+            <div class="grid grid-cols-2 gap-2 mb-7 text-left">
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> Live Market Tape 14 instrumen
+                </div>
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> Currency Strength Stack
+                </div>
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> Economic Calendar Heatmap
+                </div>
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> World Session Clock
+                </div>
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> Top Mover & Stat Cards
+                </div>
+                <div class="flex items-start gap-2 text-[11px] text-slate-300">
+                    <span class="text-[#10B981] mt-0.5">✓</span> Next High-Impact Countdown
+                </div>
+            </div>
+
+            <!-- CTAs -->
+            <div class="space-y-2.5">
+                <a href="terminal.html" onclick="window.open('https://wa.me/6281234567890?text=Halo+saya+mau+upgrade+ke+Quantum+PRO','_blank')"
+                   class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm transition-all"
+                   style="background: linear-gradient(135deg,#00E5FF,#7C4DFF);">
+                    ⚡ Upgrade ke Quantum+ PRO
+                </a>
+                <a href="terminal.html"
+                   class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
+                    Lanjut dengan Terminal Gratis →
+                </a>
+            </div>
+
+            <!-- Login hint if not logged in -->
+            <div id="gateLoginHint" class="hidden mt-4 text-[10px] text-slate-600">
+                Sudah punya lisensi PRO?
+                <a href="login.html" onclick="try{sessionStorage.setItem('qi_redirect_after_login','dashboard.html')}catch(e){}" class="text-[#00E5FF] underline">Login di sini</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gate check script — runs before DOM paint -->
+<script>
+(function() {
+    var token = null, userData = null;
+    try {
+        token = (typeof QuantumAuth !== 'undefined' && QuantumAuth.getToken)
+            ? QuantumAuth.getToken()
+            : (localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token'));
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        userData = raw ? JSON.parse(raw) : null;
+    } catch(e) {}
+
+    var isPro = userData && (userData.role === 'pro' || userData.role === 'admin');
+
+    if (!token) {
+        // Not logged in → go to login, come back after
+        try { sessionStorage.setItem('qi_redirect_after_login', 'dashboard.html'); } catch(e) {}
+        window.location.replace('login.html');
+        return;
+    }
+
+    if (!isPro) {
+        // Logged in but not PRO → show upgrade gate immediately
+        document.getElementById('gateLoading').classList.add('hidden');
+        document.getElementById('gateUpgrade').classList.remove('hidden');
+        document.getElementById('gateLoginHint').classList.add('hidden');
+        return;
+    }
+
+    // Client says PRO — verify server-side async, show dashboard now (optimistic)
+    document.getElementById('qiAccessGate').style.display = 'none';
+
+    // Async server verify (quietly revoke if token is forged)
+    fetch('api/auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'verify_token' })
+    }).then(function(r){ return r.json(); }).then(function(d){
+        var role = d.data && d.data.role;
+        if (d.status !== 'success' || (role !== 'pro' && role !== 'admin')) {
+            // Token invalid or downgraded — show gate
+            document.getElementById('qiAccessGate').style.display = 'flex';
+            document.getElementById('gateLoading').classList.add('hidden');
+            document.getElementById('gateUpgrade').classList.remove('hidden');
+        }
+    }).catch(function(){
+        // Network issue — keep optimistic access (local says PRO)
+    });
+})();
+</script>
 
 <!-- ═══════════════════════════════════════════════════════════
      LEFT SIDEBAR
