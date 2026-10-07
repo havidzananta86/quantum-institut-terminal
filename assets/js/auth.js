@@ -14,7 +14,7 @@ const QuantumAuth = {
 
     getUserData() {
         try {
-            const raw = localStorage.getItem('qi_user');
+            const raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
             return raw ? JSON.parse(raw) : null;
         } catch (e) {
             return null;

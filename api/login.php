@@ -24,15 +24,6 @@ $email = isset($input['email']) ? qi_sanitize_string($input['email'], 100) : '';
 $password = isset($input['password']) ? $input['password'] : '';
 
 if (!empty($license)) {
-    // Forward ke auth.php mode license
-    $_SERVER['REQUEST_METHOD'] = 'POST';
-    $GLOBALS['_qi_forwarded_input'] = json_encode([
-        'type' => 'license',
-        'license_key' => $license
-    ]);
-    // Buat stream wrapper untuk override php://input
-    // Lebih simpel: langsung validasi di sini
-
     try {
         require_once __DIR__ . '/../config/database.php';
         $pdo = getDBConnection();
@@ -45,7 +36,8 @@ if (!empty($license)) {
         $row = $stmt->fetch();
 
         if ($row) {
-            $token = bin2hex(random_bytes(32));
+            // Token harus disimpan ke user_sessions, kalau tidak qi_validate_token() selalu menolak
+            $token = createSession($pdo, $row['user_id'])['token'];
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Otentikasi Berhasil',
@@ -84,7 +76,7 @@ if (!empty($license)) {
         $user = $stmt->fetch();
 
         if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
-            $token = bin2hex(random_bytes(32));
+            $token = createSession($pdo, $user['id'])['token'];
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Login Berhasil',

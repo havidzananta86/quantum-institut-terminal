@@ -12,54 +12,30 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 
+$input = qi_get_json_body();
+$type = (is_array($input) && isset($input['type'])) ? qi_sanitize_string($input['type'], 20) : 'license';
+
+// MODE 0: VERIFIKASI TOKEN (dipanggil auth.js verifyServerSession) — tidak kena limit brute force
+if ($type === 'verify_token') {
+    $user = qi_validate_token();
+    if ($user) {
+        echo json_encode(['status' => 'success', 'data' => [
+            'email' => $user['email'], 'role' => $user['role'], 'expires_at' => $user['expires_at']
+        ]]);
+    } else {
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'message' => 'Sesi tidak valid atau kadaluarsa.', 'code' => 'AUTH_REQUIRED']);
+    }
+    exit();
+}
+
 // Rate limit ketat untuk auth: 5 request per 15 menit (anti brute force)
 qi_rate_limit(5, 900);
 
-$input = qi_get_json_body();
 if (!$input) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Body JSON tidak valid.']);
     exit();
-}
-
-$type = isset($input['type']) ? qi_sanitize_string($input['type'], 20) : 'license';
-
-/**
- * Helper: buat session token dan simpan ke database
- */
-function createSession($pdo, $userId) {
-    $token = bin2hex(random_bytes(32));
-    $tokenHash = hash('sha256', $token); // Simpan hash, bukan token asli
-    $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-    $ua = qi_sanitize_string($_SERVER['HTTP_USER_AGENT'] ?? '', 500);
-
-    // Hapus session lama yang sudah expired untuk user ini
-    $stmt = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :uid AND expires_at < NOW()');
-    $stmt->execute([':uid' => $userId]);
-
-    // Batasi max 5 sesi aktif per user (keamanan multi-device)
-    $stmt = $pdo->prepare('SELECT COUNT(*) as cnt FROM user_sessions WHERE user_id = :uid AND expires_at > NOW()');
-    $stmt->execute([':uid' => $userId]);
-    $count = $stmt->fetch()['cnt'] ?? 0;
-    if ($count >= 5) {
-        // Hapus sesi tertua
-        $stmt = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :uid ORDER BY created_at ASC LIMIT 1');
-        $stmt->execute([':uid' => $userId]);
-    }
-
-    // Simpan sesi baru
-    $stmt = $pdo->prepare('INSERT INTO user_sessions (user_id, token, ip_address, user_agent, expires_at, created_at) 
-                           VALUES (:uid, :token, :ip, :ua, :exp, NOW())');
-    $stmt->execute([
-        ':uid' => $userId,
-        ':token' => $tokenHash,
-        ':ip' => $ip,
-        ':ua' => $ua,
-        ':exp' => $expiresAt
-    ]);
-
-    return ['token' => $token, 'expires_at' => $expiresAt];
 }
 
 // =============================================

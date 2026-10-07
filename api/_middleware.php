@@ -25,12 +25,8 @@ $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
 
 // Cek apakah origin termasuk yang diizinkan
 $originAllowed = false;
-foreach ($allowedOrigins as $allowed) {
-    if (strpos($origin, $allowed) === 0) {
-        $originAllowed = true;
-        break;
-    }
-}
+// Exact match — prefix match akan meloloskan 'http://localhost.evil.com'
+$originAllowed = in_array($origin, $allowedOrigins, true);
 
 if ($originAllowed && $origin) {
     header('Access-Control-Allow-Origin: ' . $origin);
@@ -57,7 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Default: 60 request per 60 detik per IP
 function qi_rate_limit($maxRequests = 60, $windowSeconds = 60) {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    $ipHash = md5($ip); // Hash IP untuk nama file yang aman
+    // Bucket terpisah per konfigurasi limit + endpoint, supaya limit global (60/60)
+    // dan limit ketat (mis. 5/900) tidak saling menimpa/reset file yang sama
+    $bucket = $maxRequests . '_' . $windowSeconds . '_' . basename($_SERVER['SCRIPT_NAME'] ?? '');
+    $ipHash = md5($ip . '|' . $bucket); // Hash IP untuk nama file yang aman
 
     $rateLimitDir = __DIR__ . '/../cache/ratelimit';
     if (!is_dir($rateLimitDir)) {
@@ -83,7 +82,7 @@ function qi_rate_limit($maxRequests = 60, $windowSeconds = 60) {
     $data['count']++;
 
     // Simpan state
-    @file_put_contents($rateLimitFile, json_encode($data));
+    @file_put_contents($rateLimitFile, json_encode($data), LOCK_EX);
 
     // Hitung sisa
     $remaining = max(0, $maxRequests - $data['count']);
@@ -223,6 +222,44 @@ function qi_require_pro() {
         exit();
     }
     return $user;
+}
+
+/**
+ * Helper: buat session token dan simpan ke database (dipakai auth.php & login.php)
+ */
+function createSession($pdo, $userId) {
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = hash('sha256', $token); // Simpan hash, bukan token asli
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    $ua = qi_sanitize_string($_SERVER['HTTP_USER_AGENT'] ?? '', 500);
+
+    // Hapus session lama yang sudah expired untuk user ini
+    $stmt = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :uid AND expires_at < NOW()');
+    $stmt->execute([':uid' => $userId]);
+
+    // Batasi max 5 sesi aktif per user (keamanan multi-device)
+    $stmt = $pdo->prepare('SELECT COUNT(*) as cnt FROM user_sessions WHERE user_id = :uid AND expires_at > NOW()');
+    $stmt->execute([':uid' => $userId]);
+    $count = $stmt->fetch()['cnt'] ?? 0;
+    if ($count >= 5) {
+        // Hapus sesi tertua
+        $stmt = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :uid ORDER BY created_at ASC LIMIT 1');
+        $stmt->execute([':uid' => $userId]);
+    }
+
+    // Simpan sesi baru
+    $stmt = $pdo->prepare('INSERT INTO user_sessions (user_id, token, ip_address, user_agent, expires_at, created_at) 
+                           VALUES (:uid, :token, :ip, :ua, :exp, NOW())');
+    $stmt->execute([
+        ':uid' => $userId,
+        ':token' => $tokenHash,
+        ':ip' => $ip,
+        ':ua' => $ua,
+        ':exp' => $expiresAt
+    ]);
+
+    return ['token' => $token, 'expires_at' => $expiresAt];
 }
 
 // =============================================

@@ -26,7 +26,7 @@ $priceMap = [
 ];
 
 $price = isset($priceMap[$plan]) ? $priceMap[$plan] : 270000;
-$orderId = 'QI-ORD-' . date('Ymd') . '-' . rand(1000, 9999);
+$orderId = 'QI-ORD-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
 // PENTING: Lisensi TIDAK DIBERIKAN sebelum status pembayaran = SUCCESS via Webhook verifikasi!
 echo json_encode([
