@@ -362,7 +362,7 @@
     <!-- MAIN TERMINAL WORKSPACE LAYOUT RESPONSIF -->
     <!-- Mobile (<1024px): Stack vertikal. Desktop (≥1024px): 3 Panel Horizontal -->
     <!-- pb-14: beri ruang untuk sticky mobile signal bar di bawah -->
-    <div class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden min-w-0 max-w-full overflow-x-hidden pb-14 lg:pb-0">
+    <div class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden min-w-0 max-w-full overflow-x-hidden pb-20 lg:pb-0">
         
         <!-- PANEL 1: VERTIKAL LEFT TOOLBAR (Hidden di Mobile & Tablet <1024px) -->
         <aside id="toolbar" class="hidden lg:flex w-14 bg-[#070D22] border-r border-slate-800 flex-col items-center py-3 gap-2 text-slate-400 shrink-0 select-none overflow-y-auto no-scrollbar z-20">
@@ -892,24 +892,27 @@
     </div>
 
     <!-- STICKY MOBILE SIGNAL BAR (tampil di bawah layar, hanya Mobile <1024px) -->
-    <div id="mobileStickySignal" class="fixed bottom-0 left-0 right-0 z-40 bg-[#070D22]/95 backdrop-blur-md border-t border-cyan-500/30 px-3 py-2 items-center justify-between gap-2 font-mono text-xs lg:hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0"></span>
-            <span id="mobileSignalEngine" class="text-cyan-300 font-bold text-[11px] truncate">Quantum SNR · SETUP</span>
-            <span class="text-slate-600">|</span>
-            <span class="text-[10px] text-slate-400 whitespace-nowrap">
-                Entry <span id="mobileSignalEntry" class="text-cyan-300 font-bold">68,420</span>
-                · SL <span id="mobileSignalSL" class="text-rose-400 font-bold">67,910</span>
-                · TP <span id="mobileSignalTP" class="text-emerald-400 font-bold">70,200</span>
-            </span>
+    <div id="mobileStickySignal" class="fixed bottom-0 left-0 right-0 z-40 bg-[#070D22]/97 backdrop-blur-md border-t border-cyan-500/30 px-3 pt-1.5 pb-2 flex-col gap-1 font-mono lg:hidden">
+        <!-- Row 1: engine label + buttons -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping shrink-0"></span>
+                <span id="mobileSignalEngine" class="text-cyan-300 font-bold text-[10px]">Quantum SNR · SETUP</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="setSignalAlert()" class="h-6 px-2 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-[10px] font-bold flex items-center gap-1 transition-all">
+                    🔔 Alert
+                </button>
+                <button onclick="document.querySelector('aside:last-of-type').scrollIntoView({behavior:'smooth'})" class="h-6 px-2 rounded-md bg-slate-800 text-slate-300 border border-slate-700 hover:border-cyan-500/40 text-[10px] flex items-center gap-1 transition-all">
+                    ↓ Detail
+                </button>
+            </div>
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="setSignalAlert()" class="h-7 px-2.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-[10px] font-bold flex items-center gap-1 transition-all">
-                🔔 Alert
-            </button>
-            <button onclick="document.querySelector('aside:last-of-type').scrollIntoView({behavior:'smooth'})" class="h-7 px-2 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:border-cyan-500/40 text-[10px] flex items-center gap-1 transition-all">
-                ↓ Detail
-            </button>
+        <!-- Row 2: Entry / SL / TP values -->
+        <div class="grid grid-cols-3 text-center text-[10px]">
+            <div class="text-slate-500">E: <span id="mobileSignalEntry" class="text-cyan-300 font-bold">68,420</span></div>
+            <div class="text-slate-500">SL: <span id="mobileSignalSL" class="text-rose-400 font-bold">67,910</span></div>
+            <div class="text-slate-500">TP: <span id="mobileSignalTP" class="text-emerald-400 font-bold">70,200</span></div>
         </div>
     </div>
 
