@@ -357,6 +357,19 @@
         }
 
 
+        // Prefill email & buka tab email jika datang dari halaman register
+        (function prefillFromRegister() {
+            try {
+                const email = sessionStorage.getItem('qi_prefill_email');
+                if (email) {
+                    sessionStorage.removeItem('qi_prefill_email');
+                    const emailInput = document.getElementById('emailInput');
+                    if (emailInput) emailInput.value = email;
+                    switchAuthTab('email');
+                }
+            } catch (e) {}
+        })();
+
         // --- 2. AUTH TAB SWITCHER ---
         function switchAuthTab(mode) {
             const formLicense = document.getElementById('formLicense');

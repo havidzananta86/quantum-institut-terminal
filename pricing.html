@@ -5,22 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paket Berlangganan Quantum+ | Quantum Institut</title>
     <meta name="description" content="Pilihan Paket Berlangganan Quantum+ Pro. Akses 9 Mesin Kuantum, 12 Slot Cek Banyak, m1 & m5 Emas/Forex.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050A1A">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; }
-        h1, h2, h3, .font-heading { font-family: 'Space Grotesk', sans-serif; }
-        .glass-card {
-            background: linear-gradient(135deg, rgba(13, 24, 54, 0.8) 0%, rgba(10, 17, 40, 0.9) 100%);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(124, 77, 255, 0.2);
+        .glass-card-purple {
+            background: linear-gradient(135deg, rgba(13,24,54,0.80) 0%, rgba(10,17,40,0.92) 100%);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(124, 77, 255, 0.20);
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .glass-card-purple:hover {
+            transform: translateY(-4px);
+            border-color: rgba(124, 77, 255, 0.50);
+            box-shadow: 0 16px 40px -12px rgba(124, 77, 255, 0.35);
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
     <!-- Header -->
-    <header class="w-full px-6 py-5 flex items-center justify-between border-b border-purple-500/20">
+    <header class="w-full px-5 sm:px-6 py-5 flex items-center justify-between border-b border-purple-500/20">
         <a href="index.html" class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -33,87 +40,189 @@
     </header>
 
     <!-- Pricing Content -->
-    <main class="max-w-7xl mx-auto px-4 py-16 space-y-12">
+    <main class="max-w-7xl w-full mx-auto px-4 py-12 sm:py-16 space-y-10 sm:space-y-12">
         <div class="text-center max-w-3xl mx-auto space-y-4">
             <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-mono">
                 PAKET LISENSI QUANTUM+
             </div>
-            <h1 class="text-4xl font-bold font-heading text-white">Pilih Paket Akses Terminal Pro</h1>
-            <p class="text-slate-300">Nikmati pemantauan 12 pasar simultan, notifikasi Telegram instan, dan 4 mesin khusus.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold font-heading text-gradient-brand">Pilih Paket Akses Terminal Pro</h1>
+            <p class="text-slate-300 text-sm sm:text-base">Pantau 12 pasar simultan, notifikasi Telegram instan, dan 4 mesin khusus PRO.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
             <!-- 1 Month -->
-            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
                 <div class="space-y-4">
                     <div class="text-xs font-mono text-slate-400">1 BULAN</div>
                     <div class="text-3xl font-bold font-heading text-white">Rp55.000</div>
+                    <div class="text-[11px] text-slate-500 font-mono">Rp55.000 / bln</div>
                     <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
                         <li>✓ 9 Mesin Kuantum</li>
                         <li>✓ Live Telegram Alert</li>
                         <li>✓ Rangkuman Pagi WIB</li>
                     </ul>
                 </div>
-                <button onclick="orderPlan('1 Bulan', 55000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">Pilih 1 Bulan</button>
+                <button onclick="orderPlan('1 Bulan', 55000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 1 Bulan</button>
             </div>
 
             <!-- 3 Months -->
-            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
                 <div class="space-y-4">
-                    <div class="text-xs font-mono text-slate-400">3 BULAN (HEMAT 9%)</div>
+                    <div class="text-xs font-mono text-slate-400">3 BULAN <span class="text-emerald-400">· HEMAT 9%</span></div>
                     <div class="text-3xl font-bold font-heading text-cyan-400">Rp150.000</div>
-                    <div class="text-[11px] text-slate-400 font-mono">(Rp50.000 / bln)</div>
+                    <div class="text-[11px] text-slate-500 font-mono">Rp50.000 / bln</div>
                     <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
                         <li>✓ Semua Fitur 1 Bulan</li>
                         <li>✓ 12 Slot Cek Banyak</li>
                         <li>✓ Jam Sunyi Custom</li>
                     </ul>
                 </div>
-                <button onclick="orderPlan('3 Bulan', 150000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">Pilih 3 Bulan</button>
+                <button onclick="orderPlan('3 Bulan', 150000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 3 Bulan</button>
             </div>
 
             <!-- 6 Months POPULAR -->
-            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between border-2 border-purple-500/60 shadow-lg">
+            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between border-2 !border-purple-500/60 relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-purple-600 text-white text-[10px] font-bold font-mono px-3 py-1 rounded-bl-lg">POPULER</div>
                 <div class="space-y-4">
-                    <div class="text-xs font-mono text-purple-300">6 BULAN (POPULER - HEMAT 18%)</div>
-                    <div class="text-3xl font-bold font-heading text-purple-300">Rp270.000</div>
-                    <div class="text-[11px] text-slate-400 font-mono">(Rp45.000 / bln)</div>
+                    <div class="text-xs font-mono text-purple-300">6 BULAN <span class="text-emerald-400">· HEMAT 18%</span></div>
+                    <div class="text-3xl font-bold font-heading text-gradient-purple">Rp270.000</div>
+                    <div class="text-[11px] text-slate-500 font-mono">Rp45.000 / bln</div>
                     <ul class="space-y-2 text-xs text-slate-200 border-t border-purple-900/60 pt-4">
-                        <li>✓ Akses Full m1 & m5 Emas/Forex</li>
+                        <li>✓ Akses Full m1 &amp; m5 Emas/Forex</li>
                         <li>✓ Antrean Server Prioritas</li>
                         <li>✓ Webhook Integration</li>
                     </ul>
                 </div>
-                <button onclick="orderPlan('6 Bulan', 270000)" class="mt-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs">Pilih 6 Bulan</button>
+                <button onclick="orderPlan('6 Bulan', 270000)" class="mt-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all">Pilih 6 Bulan</button>
             </div>
 
             <!-- 12 Months -->
-            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
                 <div class="space-y-4">
-                    <div class="text-xs font-mono text-slate-400">12 BULAN (BEST VALUE)</div>
+                    <div class="text-xs font-mono text-slate-400">12 BULAN <span class="text-emerald-400">· BEST VALUE</span></div>
                     <div class="text-3xl font-bold font-heading text-emerald-400">Rp500.000</div>
-                    <div class="text-[11px] text-slate-400 font-mono">(Rp41.666 / bln)</div>
+                    <div class="text-[11px] text-slate-500 font-mono">Rp41.666 / bln</div>
                     <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
                         <li>✓ Akses Tanpa Batas 1 Tahun</li>
                         <li>✓ Hemat Maksimal Rp160.000</li>
                         <li>✓ VIP Lounge Community</li>
                     </ul>
                 </div>
-                <button onclick="orderPlan('12 Bulan', 500000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">Pilih 12 Bulan</button>
+                <button onclick="orderPlan('12 Bulan', 500000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 12 Bulan</button>
             </div>
         </div>
+
+        <p class="text-center text-[11px] text-slate-500 font-mono max-w-xl mx-auto">
+            🔒 Kunci lisensi aktif dikirim otomatis setelah pembayaran terverifikasi oleh payment gateway.
+        </p>
     </main>
 
     <footer class="py-6 text-center text-xs font-mono text-slate-400 border-t border-slate-900">
         © 2026 Quantum Institut Market Terminal.
     </footer>
 
+    <!-- ORDER / PAYMENT MODAL -->
+    <div id="orderModal" onclick="if(event.target===this) closeOrderModal()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+        <div class="w-full max-w-md glass-card rounded-2xl p-6 space-y-4 border border-purple-500/40">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <span class="text-purple-400 text-lg">🧾</span> Ringkasan Pesanan
+                </h3>
+                <button onclick="closeOrderModal()" class="text-slate-400 hover:text-white text-sm" aria-label="Tutup">✕</button>
+            </div>
+
+            <div id="orderLoading" class="py-8 text-center text-slate-400 text-xs">
+                <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-purple-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                Membuat tagihan pesanan...
+            </div>
+
+            <div id="orderDetails" class="hidden space-y-3 text-xs">
+                <div class="flex justify-between"><span class="text-slate-400">Paket</span><strong id="odPlan" class="text-white"></strong></div>
+                <div class="flex justify-between"><span class="text-slate-400">Order ID</span><strong id="odOrderId" class="text-cyan-300"></strong></div>
+                <div class="flex justify-between"><span class="text-slate-400">Total Bayar</span><strong id="odAmount" class="text-purple-300 text-base"></strong></div>
+                <div class="flex justify-between"><span class="text-slate-400">Status</span><span id="odStatus" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold"></span></div>
+
+                <div class="border-t border-slate-800 pt-3">
+                    <div class="text-slate-400 mb-2">Metode Pembayaran</div>
+                    <div id="odMethods" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <div class="bg-slate-950/80 rounded-lg p-3 border border-slate-800 text-center space-y-2">
+                    <div id="odQris" class="text-[9px] text-slate-500 break-all leading-relaxed"></div>
+                    <div class="text-[10px] text-amber-300">⏱ Selesaikan sebelum <strong id="odExpires"></strong></div>
+                </div>
+
+                <p class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-3">
+                    🔒 Ini demo alur pemesanan. Kunci lisensi dikirim otomatis setelah pembayaran terverifikasi gateway. Sudah bayar? <a href="login.html" class="text-cyan-400 hover:underline">Masuk di sini</a>.
+                </p>
+            </div>
+
+            <div id="orderError" class="hidden py-6 text-center text-rose-400 text-xs"></div>
+        </div>
+    </div>
+
     <script src="assets/js/main.js"></script>
     <script>
-        function orderPlan(name, price) {
-            showQuantumToast(`⚡ Memilih Paket Quantum+ ${name} (Rp${price.toLocaleString('id-ID')}). Mengalihkan ke Payment Gateway...`, "success");
-            setTimeout(() => { window.location.href = "login.html"; }, 1000);
+        const orderModal = document.getElementById('orderModal');
+
+        function closeOrderModal() { orderModal.classList.add('hidden'); }
+
+        function showSection(id) {
+            ['orderLoading', 'orderDetails', 'orderError'].forEach(s => {
+                document.getElementById(s).classList.toggle('hidden', s !== id);
+            });
         }
+
+        async function orderPlan(name, price) {
+            orderModal.classList.remove('hidden');
+            showSection('orderLoading');
+
+            let res, data;
+            try {
+                res = await fetch('api/payment.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plan: name }),
+                    signal: AbortSignal.timeout(10000)
+                });
+                data = await res.json();
+            } catch (err) {
+                showSection('orderError');
+                document.getElementById('orderError').textContent = 'Server pembayaran tidak dapat dihubungi. Coba lagi nanti.';
+                return;
+            }
+
+            if (res.ok && data?.status === 'success' && data.data) {
+                const d = data.data;
+                document.getElementById('odPlan').textContent = d.plan || name;
+                document.getElementById('odOrderId').textContent = d.order_id || '-';
+                document.getElementById('odAmount').textContent = 'Rp' + Number(d.amount_idr || price).toLocaleString('id-ID');
+                document.getElementById('odStatus').textContent = d.payment_status || 'PENDING';
+                document.getElementById('odQris').textContent = d.qr_string ? ('QRIS: ' + d.qr_string.slice(0, 64) + '…') : '';
+                document.getElementById('odExpires').textContent = d.expires_at || '-';
+
+                const methods = document.getElementById('odMethods');
+                methods.innerHTML = '';
+                (d.payment_methods || ['QRIS']).forEach(m => {
+                    const span = document.createElement('span');
+                    span.className = 'px-2 py-1 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700';
+                    span.textContent = m;
+                    methods.appendChild(span);
+                });
+
+                showSection('orderDetails');
+                showQuantumToast('🧾 Tagihan untuk paket ' + (d.plan || name) + ' berhasil dibuat.', 'success');
+            } else {
+                showSection('orderError');
+                const msg = res.status === 429
+                    ? 'Terlalu banyak permintaan order. Coba lagi beberapa saat.'
+                    : (data?.message || 'Gagal membuat pesanan. Silakan coba lagi.');
+                document.getElementById('orderError').textContent = msg;
+            }
+        }
+
+        // Esc untuk tutup modal
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOrderModal(); });
     </script>
 </body>
 </html>

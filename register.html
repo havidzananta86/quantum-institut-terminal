@@ -5,34 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Akun | Quantum Institut Market Terminal</title>
     <meta name="description" content="Daftar akun Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050A1A">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; min-height: 100vh; }
-        h1, h2, h3, .font-heading { font-family: 'Space Grotesk', sans-serif; }
-        .glass-card {
-            background: linear-gradient(135deg, rgba(13, 24, 54, 0.85) 0%, rgba(10, 17, 40, 0.95) 100%);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            box-shadow: 0 15px 35px -10px rgba(0, 229, 255, 0.15);
-        }
         .input-quantum {
             background: rgba(5, 10, 26, 0.8);
             border: 1px solid rgba(0, 229, 255, 0.2);
             color: #FFFFFF;
-            transition: all 0.25s ease;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
         .input-quantum:focus {
             outline: none;
             border-color: #00E5FF;
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
+        .input-quantum.invalid { border-color: #FF5252; box-shadow: 0 0 12px rgba(255,82,82,0.25); }
     </style>
 </head>
 <body class="flex flex-col justify-between min-h-screen">
 
     <!-- Header Nav -->
-    <header class="w-full px-6 py-5 flex items-center justify-between border-b border-cyan-500/10">
+    <header class="w-full px-5 sm:px-6 py-5 flex items-center justify-between border-b border-cyan-500/10">
         <a href="index.html" class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -49,40 +45,51 @@
         <div class="w-full max-w-md glass-card rounded-2xl p-6 sm:p-8 space-y-6">
             <div class="text-center space-y-2">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
-                    PENDAFTARAN LISENSI TERMINAL
+                    PENDAFTARAN AKUN GRATIS
                 </div>
                 <h1 class="text-2xl font-bold font-heading text-white">Buat Akun Quantum</h1>
-                <p class="text-xs text-slate-400">Akses 9 mesin analisa kuantum real-time.</p>
+                <p class="text-xs text-slate-400">Daftar gratis, lalu upgrade ke Quantum+ PRO untuk akses penuh 9 mesin.</p>
             </div>
 
-            <form onsubmit="handleRegister(event)" class="space-y-4">
+            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4" novalidate>
                 <div>
                     <label for="regName" class="block text-xs font-mono text-slate-300 mb-1.5">NAMA LENGKAP</label>
-                    <input type="text" id="regName" required placeholder="Nama Anda" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                    <input type="text" id="regName" required placeholder="Nama Anda" autocomplete="name" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
                 </div>
 
                 <div>
                     <label for="regEmail" class="block text-xs font-mono text-slate-300 mb-1.5">ALAMAT EMAIL</label>
-                    <input type="email" id="regEmail" required placeholder="trader@quantuminstitut.market" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                    <input type="email" id="regEmail" required placeholder="trader@quantuminstitut.market" autocomplete="email" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
                 </div>
 
                 <div>
-                    <label for="regPassword" class="block text-xs font-mono text-slate-300 mb-1.5">KATA SANDI</label>
-                    <input type="password" id="regPassword" required placeholder="••••••••••••" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                    <label for="regPassword" class="block text-xs font-mono text-slate-300 mb-1.5 flex justify-between">
+                        <span>KATA SANDI</span>
+                        <span class="text-[10px] text-slate-500">Min. 8 karakter</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="regPassword" required minlength="8" placeholder="••••••••••••" autocomplete="new-password" class="w-full px-4 py-3 pr-12 rounded-xl input-quantum text-sm">
+                        <button type="button" onclick="toggleRegPassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 text-xs" aria-label="Tampilkan sandi">👁</button>
+                    </div>
+                    <!-- Password strength meter -->
+                    <div class="mt-2 h-1 rounded-full bg-slate-800 overflow-hidden">
+                        <div id="pwStrengthBar" class="h-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <div id="pwStrengthText" class="text-[10px] text-slate-500 mt-1 font-mono h-3"></div>
                 </div>
 
-                <div class="flex items-center gap-2 text-xs font-mono text-slate-400 pt-1">
-                    <input type="checkbox" id="regTerms" required class="w-4 h-4 rounded bg-slate-900 border-cyan-500/30 text-cyan-400">
-                    <label for="regTerms" class="cursor-pointer">Saya menyetujui Syarat & Ketentuan Risk Disclaimer.</label>
+                <div class="flex items-start gap-2 text-xs font-mono text-slate-400 pt-1">
+                    <input type="checkbox" id="regTerms" required class="w-4 h-4 mt-0.5 rounded bg-slate-900 border-cyan-500/30 text-cyan-400 shrink-0">
+                    <label for="regTerms" class="cursor-pointer leading-relaxed">Saya menyetujui Syarat &amp; Ketentuan serta Risk Disclaimer trading.</label>
                 </div>
 
-                <button type="submit" class="w-full py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm shadow-lg transition-all">
-                    Daftar & Aktifkan Lisensi →
+                <button type="submit" id="btnRegister" class="w-full py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                    Buat Akun Gratis →
                 </button>
             </form>
 
             <div class="text-center text-xs font-mono text-slate-400 border-t border-slate-800 pt-4">
-                Sudah memiliki Kunci Lisensi? <a href="login.html" class="text-cyan-400 font-bold hover:underline">Masuk Langsung</a>
+                Sudah punya akun? <a href="login.html" class="text-cyan-400 font-bold hover:underline">Masuk Langsung</a>
             </div>
         </div>
     </main>
@@ -93,10 +100,85 @@
 
     <script src="assets/js/main.js"></script>
     <script>
-        function handleRegister(e) {
+        function toggleRegPassword() {
+            const el = document.getElementById('regPassword');
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        // Password strength meter
+        document.getElementById('regPassword').addEventListener('input', function () {
+            const v = this.value;
+            let score = 0;
+            if (v.length >= 8) score++;
+            if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+            if (/\d/.test(v)) score++;
+            if (/[^A-Za-z0-9]/.test(v)) score++;
+            const bar = document.getElementById('pwStrengthBar');
+            const txt = document.getElementById('pwStrengthText');
+            const levels = [
+                { w: '0%',   c: '',               t: '' },
+                { w: '25%',  c: 'bg-rose-500',    t: 'Lemah' },
+                { w: '50%',  c: 'bg-amber-500',   t: 'Sedang' },
+                { w: '75%',  c: 'bg-cyan-500',    t: 'Kuat' },
+                { w: '100%', c: 'bg-emerald-500', t: 'Sangat Kuat' }
+            ];
+            const lv = levels[score];
+            bar.style.width = lv.w;
+            bar.className = 'h-full transition-all duration-300 ' + lv.c;
+            txt.textContent = v ? lv.t : '';
+        });
+
+        async function handleRegister(e) {
             e.preventDefault();
-            showQuantumToast("✓ Pendaftaran Berhasil! Kunci Lisensi Anda telah dibuat.", "success");
-            setTimeout(() => { window.location.href = "login.html"; }, 1000);
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const terms = document.getElementById('regTerms').checked;
+            const btn = document.getElementById('btnRegister');
+            const pwInput = document.getElementById('regPassword');
+
+            // Validasi klien
+            if (!name || !email) { showQuantumToast('Nama dan email wajib diisi.', 'error'); return; }
+            if (password.length < 8) {
+                pwInput.classList.add('invalid');
+                showQuantumToast('Kata sandi minimal 8 karakter.', 'error');
+                return;
+            }
+            pwInput.classList.remove('invalid');
+            if (!terms) { showQuantumToast('Centang persetujuan Syarat & Ketentuan dulu.', 'warning'); return; }
+
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> <span>Mendaftar...</span>';
+            const restore = () => { btn.disabled = false; btn.innerHTML = original; };
+
+            let res, data;
+            try {
+                res = await fetch('api/register.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ full_name: name, email: email, password: password }),
+                    signal: AbortSignal.timeout(10000)
+                });
+                data = await res.json();
+            } catch (err) {
+                restore();
+                showQuantumToast('Server registrasi tidak dapat dihubungi. Coba lagi nanti.', 'error');
+                return;
+            }
+
+            if ((res.status === 201 || res.ok) && data?.status === 'success') {
+                showQuantumToast('✓ Akun berhasil dibuat! Silakan masuk.', 'success');
+                try { sessionStorage.setItem('qi_prefill_email', email); } catch (e) {}
+                setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+                return;
+            }
+
+            restore();
+            const msg = res.status === 429
+                ? `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((data?.retry_after || 60) / 60)} menit.`
+                : (data?.message || 'Pendaftaran gagal. Silakan coba lagi.');
+            showQuantumToast(msg, 'error');
         }
     </script>
 </body>
