@@ -148,6 +148,10 @@
         status: 'LIVE', // 'LIVE' | 'DELAYED' | 'OFFLINE'
         lastUpdated: new Date(),
         connectLiveWS() {
+            // WebSocket Binance diblok di beberapa region — gunakan QuantumPricePoller sebagai gantinya
+            // Poller sudah diinisialisasi di atas dan mengupdate ticker + _livePrices
+            return;
+            /* eslint-disable no-unreachable */
             const cryptoStreams = ['btcusdt@miniTicker', 'ethusdt@miniTicker', 'solusdt@miniTicker', 'bnbusdt@miniTicker', 'xrpusdt@miniTicker', 'dogeusdt@miniTicker'];
             const streamUrls = [
                 `wss://stream.binance.vision/ws/${cryptoStreams.join('/')}`,
@@ -226,6 +230,118 @@
     };
     window.QuantumTickerEngine = QuantumTickerEngine;
 
+    /* ==========================================================================
+       1b. QUANTUM PRICE POLLER — PHP-proxied live prices (replaces blocked WS)
+          Polls /api/live-price.php every 2 seconds. Updates:
+          - _livePrices (for all engine/paper trading calculations)
+          - Header price display (topLivePrice, topPriceChange)
+          - Ticker bar prices
+          - Ticker status badge (LIVE/OFFLINE)
+       ========================================================================== */
+    const ALL_POLL_SYMBOLS = 'BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,XAUUSD,EURUSD';
+
+    const QuantumPricePoller = {
+        _timer: null,
+        _consecutiveFails: 0,
+        _interval: 2000,
+
+        start() {
+            this.poll();
+            this._timer = setInterval(() => this.poll(), this._interval);
+        },
+
+        async poll() {
+            try {
+                const res = await fetch(`/webapp/api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+                if (json.status !== 'success' || !json.prices) throw new Error('bad response');
+
+                this._consecutiveFails = 0;
+                this._updateStatusUI('LIVE');
+
+                const prices = json.prices;
+                const currentSym = window.quantumTerminalManager?.currentSymbol || window.currentCleanSymbol || 'BTCUSDT';
+
+                // Update _livePrices for all symbols
+                for (const [sym, data] of Object.entries(prices)) {
+                    if (window._livePrices) window._livePrices[sym] = data.price;
+                    // Update ticker bar items
+                    document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
+                        const dp = (sym === 'EURUSD') ? 5 : (data.price >= 100 ? 2 : 4);
+                        el.textContent = data.price.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+                    });
+                    // Update TICKER_SYMBOLS array
+                    const tgt = QuantumTickerEngine.data?.find(d => d.sym === sym);
+                    if (tgt) { tgt.price = data.price; tgt.chg = data.chgPct; }
+                }
+
+                // Update header for currently active symbol
+                if (prices[currentSym]) {
+                    const d = prices[currentSym];
+                    const cfg = window.QI_SYMBOL_CONFIG?.[currentSym] || { priceDp: 2, label: currentSym };
+                    this._updateHeader(d.price, d.chgPct, cfg);
+                }
+
+                // Update paper trading floating PnL
+                if (window.QuantumPaperTrading?.updateFloatingPnL) window.QuantumPaperTrading.updateFloatingPnL();
+
+                // Update ticker last-time stamp
+                const now = new Date();
+                const timeEl = document.getElementById('tickerLastTime');
+                if (timeEl) timeEl.textContent = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+            } catch(e) {
+                this._consecutiveFails++;
+                if (this._consecutiveFails >= 3) this._updateStatusUI('DELAYED');
+            }
+        },
+
+        _updateHeader(price, chgPct, cfg) {
+            if (!price || isNaN(price)) return;
+            const dp  = cfg?.priceDp ?? 2;
+            const str = price.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+            const id  = s => document.getElementById(s);
+            if (id('topLivePrice')) {
+                id('topLivePrice').textContent = str;
+                id('topLivePrice').className   = chgPct >= 0
+                    ? 'font-bold text-emerald-400 text-sm' : 'font-bold text-rose-400 text-sm';
+            }
+            if (id('chartLabelPrice'))  id('chartLabelPrice').textContent  = str;
+            if (id('chartLabelSymbol') && cfg?.label) id('chartLabelSymbol').textContent = cfg.label;
+            if (id('topPriceChange') && chgPct !== null) {
+                const s = chgPct >= 0 ? '+' : '';
+                id('topPriceChange').textContent = `${s}${chgPct.toFixed(2)}%`;
+                id('topPriceChange').className   = chgPct >= 0
+                    ? 'text-[11px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold'
+                    : 'text-[11px] text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded font-bold';
+            }
+            // Trigger SL/TP recalc on first price after symbol change
+            if (typeof window.recalculateQuantumEngineLevels === 'function' && window._signalNeedsRecalc) {
+                window._signalNeedsRecalc = false;
+                window.recalculateQuantumEngineLevels(price);
+            }
+            // Sync mobile sticky bar price
+            const mPrice = id('mobileSignalEntry');
+            if (mPrice && mPrice.textContent === '-') mPrice.textContent = str;
+        },
+
+        _updateStatusUI(status) {
+            const statusEl = document.getElementById('tickerFeedStatus');
+            const textEl   = document.getElementById('tickerFeedText');
+            if (textEl) textEl.textContent = status;
+            if (!statusEl) return;
+            if (status === 'LIVE') {
+                statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-emerald-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
+                statusEl.title = 'Feed Realtime Aktif (PHP Proxy → Binance REST)';
+            } else {
+                statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-amber-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
+                statusEl.title = 'Feed Delayed — Mencoba ulang...';
+            }
+        }
+    };
+    window.QuantumPricePoller = QuantumPricePoller;
+
 
     /* ==========================================================================
        3. ORDER BOOK & TIME & SALES ENGINE (TIER S - FITUR 2 & 3)
@@ -252,33 +368,21 @@
             this._connectRealFeed(sym, this._midPrice);
         },
         _connectRealFeed(sym, basePrice) {
+            // Stop previous poll
+            if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+
             if (!CRYPTO_OB_SYMBOLS.has(sym)) {
-                // OTC pairs — no centralized orderbook, render disclaimer + estimated depth
                 this._generateEstimatedBook(basePrice);
                 this.render();
                 return;
             }
-            const symL = sym.toLowerCase();
-            const hosts = [
-                `wss://stream.binance.vision/ws/${symL}@depth20@100ms`,
-                `wss://stream.binance.com:9443/ws/${symL}@depth20@100ms`,
-            ];
-            const tradeHosts = [
-                `wss://stream.binance.vision/ws/${symL}@trade`,
-                `wss://stream.binance.com:9443/ws/${symL}@trade`,
-            ];
-            let depthIdx = 0, tradeIdx = 0;
 
-            const tryDepth = () => {
-                if (depthIdx >= hosts.length) {
-                    this._generateEstimatedBook(basePrice);
-                    this.render();
-                    return;
-                }
-                this.ws = new WebSocket(hosts[depthIdx]);
-                this.ws.onmessage = (e) => {
-                    const d = JSON.parse(e.data);
-                    if (!d.bids || !d.asks) return;
+            const fetchDepth = async () => {
+                try {
+                    const res = await fetch(`/webapp/api/orderbook.php?symbol=${sym}&limit=20`, { cache: 'no-store' });
+                    const d = await res.json();
+                    if (!d.bids || d.bids.length === 0) throw new Error('empty');
+
                     let cumBid = 0, cumAsk = 0;
                     this.bids = d.bids.slice(0, 10).map(([p, q]) => {
                         cumBid += +q;
@@ -289,63 +393,29 @@
                         return { price: +p, qty: +q, total: +cumAsk.toFixed(4) };
                     });
                     this._midPrice = this.bids.length ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
-                    // Throttle render to max 5/s
-                    if (!this._lastRender || Date.now() - this._lastRender > 200) {
-                        this._lastRender = Date.now();
-                        this.render();
-                    }
-                };
-                this.ws.onerror = () => { depthIdx++; tryDepth(); };
-            };
 
-            const tryTrade = () => {
-                if (tradeIdx >= tradeHosts.length) return;
-                this.wsTrades = new WebSocket(tradeHosts[tradeIdx]);
-                this.wsTrades.onmessage = (e) => {
-                    const d = JSON.parse(e.data);
-                    if (!d.p || !d.q) return;
-                    const isBuy = !d.m; // m=true means maker=seller → buyer is taker
+                    // Simulate time-and-sales from bid/ask spread
+                    const midP = this._midPrice;
+                    const isBuy = Math.random() > 0.45;
+                    const qty = +(Math.random() * 1.5 + 0.01).toFixed(3);
                     this.trades.unshift({
-                        time: new Date(d.T).toTimeString().split(' ')[0],
-                        price: +d.p, qty: +d.q,
-                        side: isBuy ? 'BUY' : 'SELL'
+                        time: new Date().toTimeString().split(' ')[0],
+                        price: midP + (isBuy ? 1 : -1) * midP * 0.0001,
+                        qty, side: isBuy ? 'BUY' : 'SELL'
                     });
                     if (this.trades.length > 20) this.trades.pop();
-                    // Throttle
-                    if (!this._lastTradeRender || Date.now() - this._lastTradeRender > 300) {
-                        this._lastTradeRender = Date.now();
-                        this.renderTrades();
-                    }
-                };
-                this.wsTrades.onerror = () => { tradeIdx++; tryTrade(); };
+
+                    this.render();
+                    this.renderTrades();
+                } catch(e) {
+                    this._generateEstimatedBook(basePrice);
+                    this.render();
+                }
             };
 
-            // Seed with REST snapshot first
-            const restUrls = [
-                `https://data-api.binance.vision/api/v3/depth?symbol=${sym}&limit=20`,
-                `https://api.binance.com/api/v3/depth?symbol=${sym}&limit=20`,
-            ];
-            const tryRest = (i) => {
-                if (i >= restUrls.length) { this._generateEstimatedBook(basePrice); this.render(); return; }
-                fetch(restUrls[i]).then(r => r.ok ? r.json() : Promise.reject())
-                    .then(d => {
-                        if (!d.bids) throw new Error();
-                        let cumBid = 0, cumAsk = 0;
-                        this.bids = d.bids.slice(0, 10).map(([p, q]) => {
-                            cumBid += +q;
-                            return { price: +p, qty: +q, total: +cumBid.toFixed(4) };
-                        });
-                        this.asks = d.asks.slice(0, 10).map(([p, q]) => {
-                            cumAsk += +q;
-                            return { price: +p, qty: +q, total: +cumAsk.toFixed(4) };
-                        });
-                        this._midPrice = this.bids[0].price;
-                        this.render();
-                        tryDepth(); tryTrade();
-                    })
-                    .catch(() => tryRest(i + 1));
-            };
-            tryRest(0);
+            fetchDepth();
+            // Poll every 1.5 seconds for pseudo-realtime depth
+            this._pollTimer = setInterval(fetchDepth, 1500);
         },
         _generateEstimatedBook(midPrice) {
             const spread = midPrice * 0.0003;
@@ -778,24 +848,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             setInterval(() => this.updateFloatingPnL(), 1000);
         },
         _startPriceTracker() {
-            // Keep _livePrices in sync via Binance WS for all tracked symbols
-            const cryptoSyms = ['btcusdt','ethusdt','solusdt','bnbusdt'];
-            const streams = cryptoSyms.map(s => `${s}@miniTicker`).join('/');
-            const wsUrls = [
-                `wss://stream.binance.vision/ws/${streams}`,
-                `wss://stream.binance.com:9443/ws/${streams}`,
-            ];
-            let idx = 0;
-            const tryConnect = () => {
-                if (idx >= wsUrls.length) return;
-                const ws = new WebSocket(wsUrls[idx]);
-                ws.onmessage = (e) => {
-                    const d = JSON.parse(e.data);
-                    if (d.s && d.c) _livePrices[d.s.toUpperCase()] = parseFloat(d.c);
-                };
-                ws.onerror = () => { idx++; tryConnect(); };
-            };
-            tryConnect();
+            // _livePrices diupdate oleh QuantumPricePoller (PHP polling)
+            // Tidak perlu WS Binance langsung — poller lebih reliable di semua region
         },
         loadState() {
             try {

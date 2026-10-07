@@ -940,6 +940,20 @@
 
         const basePrices = { BTCUSDT: 68450.20, XAUUSD: 2654.20, ETHUSDT: 3520.10, EURUSD: 1.0895, SOLUSDT: 184.50 };
 
+        async function fetchCandlesForEngine(symbol, interval) {
+            try {
+                const res = await fetch(`/webapp/api/get-chart-data.php?symbol=${symbol}&interval=${interval}`, { cache: 'no-store' });
+                const json = await res.json();
+                if (json.candles && json.candles.length > 0) {
+                    window._cachedCandles = json.candles;
+                    const last = json.candles[json.candles.length - 1];
+                    if (window._livePrices) window._livePrices[symbol] = last.close;
+                    window._signalNeedsRecalc = true;
+                    if (window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
+                }
+            } catch(e) {}
+        }
+
         function loadRealtimeSymbol(tvSymbol, cleanSymbol, defaultPrice) {
             currentCleanSymbol = cleanSymbol;
             window._signalNeedsRecalc = true;
@@ -948,22 +962,23 @@
             const currentTf = quantumTerminalManager?.currentInterval || '60';
             syncTVChart(cleanSymbol, currentTf);
 
-            // Lightweight Charts engine (hidden, for data analysis)
+            // Fetch fresh candles for engine analysis via PHP proxy
+            fetchCandlesForEngine(cleanSymbol, currentTf);
+
+            // Lightweight Charts engine (hidden fallback)
             if (quantumTerminalManager) {
                 quantumTerminalManager.setSymbol(cleanSymbol);
             } else {
                 recalculateQuantumEngineLevels(defaultPrice);
             }
 
-            if (window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
             if (window.QuantumOrderBook) window.QuantumOrderBook.setSymbol(cleanSymbol, defaultPrice);
         }
 
         function setChartInterval(tf) {
-            // Sync TradingView main chart interval
             const sym = quantumTerminalManager?.currentSymbol || currentCleanSymbol || 'BTCUSDT';
             syncTVChart(sym, tf);
-
+            fetchCandlesForEngine(sym, tf);
             if (quantumTerminalManager) quantumTerminalManager.setInterval(tf);
         }
 
@@ -989,7 +1004,7 @@
             if (!container || typeof TradingView === 'undefined') return;
             container.innerHTML = '';
             _tvReady = false;
-            _tvWidget = new TradingView.widget({
+            _tvWidget = new window.TradingView.widget({
                 "autosize": true,
                 "symbol": tvSymbol || 'BINANCE:BTCUSDT',
                 "interval": TV_INTERVAL_MAP[tfInterval] || '60',
@@ -1025,7 +1040,11 @@
                 "popup_width": "1000",
                 "popup_height": "650",
             });
-            _tvWidget.onChartReady(() => { _tvReady = true; });
+            if (_tvWidget && typeof _tvWidget.onChartReady === 'function') {
+                _tvWidget.onChartReady(() => { _tvReady = true; });
+            } else {
+                setTimeout(() => { _tvReady = true; }, 4000);
+            }
         }
 
         function syncTVChart(cleanSymbol, tfInterval) {
@@ -1644,7 +1663,13 @@
             // Initialize TradingView Advanced Chart as primary visible chart
             initMainTVChart('BINANCE:BTCUSDT', '60');
 
-            // Initialize Lightweight Charts engine in background (hidden element)
+            // Start PHP-proxied price poller (replaces Binance WebSocket)
+            if (window.QuantumPricePoller) window.QuantumPricePoller.start();
+
+            // Fetch initial candles for engine analysis (BTC H1 as default)
+            fetchCandlesForEngine('BTCUSDT', '60');
+
+            // Initialize Lightweight Charts engine in background (hidden element, data only)
             initQuantumRealtimeSystem();
             fetchEconomicCalendar();
             fetchRealtimeNews();
