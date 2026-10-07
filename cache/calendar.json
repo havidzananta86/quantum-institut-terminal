@@ -1,7 +1,7 @@
 {
     "status": "success",
-    "timestamp": "2026-10-06 01:44:10",
-    "count": 82,
+    "timestamp": "2026-10-07 08:55:32",
+    "count": 83,
     "cache_expires_in_sec": 300,
     "data": [
         {
@@ -341,18 +341,6 @@
             "actual": "-"
         },
         {
-            "id": "ff_c6af246179e834e147f422a1a8d1ba3d",
-            "source": "ForexFactory",
-            "title": "MPC Member Mann Speaks",
-            "country": "GBP",
-            "currency": "GBP",
-            "date": "2026-10-06T04:30:00-04:00",
-            "impact": "low",
-            "forecast": "-",
-            "previous": "-",
-            "actual": "-"
-        },
-        {
             "id": "ff_1d65be6520fe12889cacf8a87f58d1a7",
             "source": "ForexFactory",
             "title": "Housing Equity Withdrawal q\/q",
@@ -362,6 +350,18 @@
             "impact": "low",
             "forecast": "-11.9B",
             "previous": "-12.6B",
+            "actual": "-"
+        },
+        {
+            "id": "ff_c6af246179e834e147f422a1a8d1ba3d",
+            "source": "ForexFactory",
+            "title": "MPC Member Mann Speaks",
+            "country": "GBP",
+            "currency": "GBP",
+            "date": "2026-10-06T04:30:00-04:00",
+            "impact": "low",
+            "forecast": "-",
+            "previous": "-",
             "actual": "-"
         },
         {
@@ -377,6 +377,18 @@
             "actual": "-"
         },
         {
+            "id": "ff_3e9fd9c71852a6e1335c36368c85a64c",
+            "source": "ForexFactory",
+            "title": "ADP Weekly Employment Change",
+            "country": "USD",
+            "currency": "USD",
+            "date": "2026-10-06T08:14:00-04:00",
+            "impact": "low",
+            "forecast": "-",
+            "previous": "20.0K",
+            "actual": "-"
+        },
+        {
             "id": "ff_bbf379ae371113e8333d44775e0dedc5",
             "source": "ForexFactory",
             "title": "ADP Weekly Employment Change",
@@ -385,19 +397,7 @@
             "date": "2026-10-06T08:15:00-04:00",
             "impact": "low",
             "forecast": "-",
-            "previous": "-",
-            "actual": "-"
-        },
-        {
-            "id": "ff_e6fe4f5207feb190cdf81076d885c361",
-            "source": "ForexFactory",
-            "title": "ADP Weekly Employment Change",
-            "country": "USD",
-            "currency": "USD",
-            "date": "2026-10-06T08:16:00-04:00",
-            "impact": "low",
-            "forecast": "-",
-            "previous": "20.0K",
+            "previous": "22.5K",
             "actual": "-"
         },
         {
@@ -437,12 +437,12 @@
             "actual": "-"
         },
         {
-            "id": "ff_56cf4f92e60bf2999153021cb6589a02",
+            "id": "ff_aad90b22c977afab5fb4d3535b55a175",
             "source": "ForexFactory",
             "title": "RCM\/TIPP Economic Optimism",
             "country": "USD",
             "currency": "USD",
-            "date": "2026-10-06T10:10:00-04:00",
+            "date": "2026-10-06T10:01:00-04:00",
             "impact": "low",
             "forecast": "44.5",
             "previous": "45.6",
@@ -461,12 +461,12 @@
             "actual": "-"
         },
         {
-            "id": "ff_688ce08dd8601031f3ae715c993da82c",
+            "id": "ff_11802e2d60d9985f818b4259ea85f92a",
             "source": "ForexFactory",
             "title": "GDT Price Index",
             "country": "NZD",
             "currency": "NZD",
-            "date": "2026-10-06T10:50:00-04:00",
+            "date": "2026-10-06T11:46:00-04:00",
             "impact": "low",
             "forecast": "-",
             "previous": "-1.1%",
@@ -528,7 +528,7 @@
             "currency": "JPY",
             "date": "2026-10-07T01:00:00-04:00",
             "impact": "low",
-            "forecast": "118.3%",
+            "forecast": "118.1%",
             "previous": "117.9%",
             "actual": "-"
         },
@@ -552,7 +552,7 @@
             "currency": "GBP",
             "date": "2026-10-07T02:00:00-04:00",
             "impact": "low",
-            "forecast": "0.2%",
+            "forecast": "0.0%",
             "previous": "-0.2%",
             "actual": "-"
         },
@@ -588,8 +588,20 @@
             "currency": "USD",
             "date": "2026-10-07T10:30:00-04:00",
             "impact": "low",
-            "forecast": "-",
+            "forecast": "1.9M",
             "previous": "0.9M",
+            "actual": "-"
+        },
+        {
+            "id": "ff_ba95d3840017b2fa471ae723abc5af24",
+            "source": "ForexFactory",
+            "title": "President Trump Speaks",
+            "country": "USD",
+            "currency": "USD",
+            "date": "2026-10-07T13:00:00-04:00",
+            "impact": "medium",
+            "forecast": "-",
+            "previous": "-",
             "actual": "-"
         },
         {
@@ -624,7 +636,7 @@
             "currency": "USD",
             "date": "2026-10-07T15:00:00-04:00",
             "impact": "low",
-            "forecast": "14.4B",
+            "forecast": "14.5B",
             "previous": "18.1B",
             "actual": "-"
         },
@@ -648,7 +660,7 @@
             "currency": "JPY",
             "date": "2026-10-07T19:50:00-04:00",
             "impact": "low",
-            "forecast": "2.13T",
+            "forecast": "2.14T",
             "previous": "2.52T",
             "actual": "-"
         },
@@ -696,7 +708,7 @@
             "currency": "EUR",
             "date": "2026-10-08T02:00:00-04:00",
             "impact": "low",
-            "forecast": "18.9B",
+            "forecast": "19.0B",
             "previous": "21.3B",
             "actual": "-"
         },
@@ -840,7 +852,7 @@
             "currency": "USD",
             "date": "2026-10-08T10:30:00-04:00",
             "impact": "low",
-            "forecast": "-",
+            "forecast": "79B",
             "previous": "64B",
             "actual": "-"
         },
@@ -936,7 +948,7 @@
             "currency": "CAD",
             "date": "2026-10-09T08:30:00-04:00",
             "impact": "high",
-            "forecast": "6.2K",
+            "forecast": "6.3K",
             "previous": "-41.7K",
             "actual": "-"
         },
@@ -960,7 +972,7 @@
             "currency": "USD",
             "date": "2026-10-09T10:00:00-04:00",
             "impact": "medium",
-            "forecast": "47.6",
+            "forecast": "47.5",
             "previous": "47.8",
             "actual": "-"
         },

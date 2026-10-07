@@ -815,6 +815,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const interval = document.getElementById('backtestTfSelect')?.value || 'H1';
             const engine = document.getElementById('backtestEngineSelect')?.value || 'SNR';
 
+            // --- Parameter biaya realistis dari input user ---
+            const spreadCost = parseFloat(document.getElementById('backtestSpread')?.value) || 0.5;  // $ per trade
+            const commissionPct = parseFloat(document.getElementById('backtestCommission')?.value) || 0.02; // % per sisi
+            const slippagePct = parseFloat(document.getElementById('backtestSlippage')?.value) || 0.10; // % deviasi random
+            const oosPct = parseInt(document.getElementById('backtestOosPct')?.value) || 30; // % data untuk out-of-sample
+
             const pairLabels = {
                 XAUUSD: 'XAU/USD (Gold Spot)',
                 BTCUSDT: 'BTC/USDT (Bitcoin)',
@@ -828,170 +834,364 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 candles = window.quantumTerminalManager?._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
             }
 
-            const results = [];
-            let winCount = 0;
-            let lossCount = 0;
-            let totalPnL = 0;
-            let totalRisked = 0;
-            let totalGained = 0;
-            let maxDrawdown = 0;
-            let peakEquity = 10000;
-            let currentEquity = 10000;
+            // --- Walk-forward / Out-of-Sample Split ---
+            const splitIndex = oosPct > 0 ? Math.floor(candles.length * (1 - oosPct / 100)) : candles.length;
+            const inSampleCandles = candles.slice(0, splitIndex);
+            const outOfSampleCandles = oosPct > 0 ? candles.slice(splitIndex) : [];
 
-            const step = Math.max(2, Math.floor(candles.length / 30));
+            // --- Fungsi helper: jalankan simulasi pada subset candle ---
+            const runSimulation = (candleSet, labelPrefix) => {
+                const results = [];
+                let winCount = 0;
+                let lossCount = 0;
+                let totalPnL = 0;
+                let totalGained = 0;
+                let totalRisked = 0;
+                let totalSpreadCost = 0;
+                let totalCommCost = 0;
+                let totalSlippageCost = 0;
+                let maxDrawdown = 0;
+                let peakEquity = 10000;
+                let currentEquity = 10000;
+                const equityCurve = [10000]; // titik-titik equity untuk visualisasi
+                const pnlSeries = []; // untuk Sharpe / Sortino
+                let totalDurationBars = 0;
 
-            for (let i = 15; i < candles.length - 3; i += step) {
-                const c = candles[i];
-                const prev = candles[i - 1];
-                const prev2 = candles[i - 2] || prev;
-                const windowCandles = candles.slice(Math.max(0, i - 20), i + 1);
+                const step = Math.max(2, Math.floor(candleSet.length / 30));
 
-                // Engine-Specific Strategy Signals
-                let isBuy = false;
-                if (engine === 'SNR') {
-                    const lowest = Math.min(...windowCandles.map(w => w.low));
-                    isBuy = Math.abs(c.low - lowest) < (c.close * 0.002);
-                } else if (engine === 'SMC') {
-                    const maxHigh = Math.max(...windowCandles.map(w => w.high));
-                    isBuy = c.close > maxHigh * 0.998;
-                } else if (engine === 'EMA200') {
-                    const avgCloses = windowCandles.reduce((a, b) => a + b.close, 0) / windowCandles.length;
-                    isBuy = c.close >= avgCloses;
-                } else if (engine === 'ICHI') {
-                    const highest = Math.max(...windowCandles.map(w => w.high));
-                    const lowest = Math.min(...windowCandles.map(w => w.low));
-                    const tenkan = (highest + lowest) / 2;
-                    isBuy = c.close > tenkan;
-                } else if (engine === 'FIBO') {
-                    const highest = Math.max(...windowCandles.map(w => w.high));
-                    const lowest = Math.min(...windowCandles.map(w => w.low));
-                    const fib618 = lowest + (highest - lowest) * 0.618;
-                    isBuy = c.close >= fib618;
-                } else if (engine === 'TRENM5') {
-                    isBuy = (c.close - prev.close) > (prev.close - prev2.close);
-                } else if (engine === 'MOMENTUM_NY') {
-                    const hour = new Date(c.time * 1000).getUTCHours();
-                    isBuy = (hour >= 13 && hour <= 20) && (c.close > prev.close);
-                } else if (engine === 'MACD_MOM') {
-                    isBuy = (c.close - c.open) > (prev.close - prev.open);
-                } else if (engine === 'GOLDEN_CROSS') {
-                    const shortMA = windowCandles.slice(-5).reduce((a,b)=>a+b.close,0) / 5;
-                    const longMA = windowCandles.reduce((a,b)=>a+b.close,0) / windowCandles.length;
-                    isBuy = shortMA >= longMA;
-                } else {
-                    isBuy = c.close >= prev.close;
+                for (let i = 15; i < candleSet.length - 3; i += step) {
+                    const c = candleSet[i];
+                    const prev = candleSet[i - 1];
+                    const prev2 = candleSet[i - 2] || prev;
+                    const windowCandles = candleSet.slice(Math.max(0, i - 20), i + 1);
+
+                    // Engine-Specific Strategy Signals (semua 9 mesin)
+                    let isBuy = false;
+                    if (engine === 'SNR') {
+                        const lowest = Math.min(...windowCandles.map(w => w.low));
+                        isBuy = Math.abs(c.low - lowest) < (c.close * 0.002);
+                    } else if (engine === 'SMC') {
+                        const maxHigh = Math.max(...windowCandles.map(w => w.high));
+                        isBuy = c.close > maxHigh * 0.998;
+                    } else if (engine === 'EMA200') {
+                        const avgCloses = windowCandles.reduce((a, b) => a + b.close, 0) / windowCandles.length;
+                        isBuy = c.close >= avgCloses;
+                    } else if (engine === 'ICHI') {
+                        const highest = Math.max(...windowCandles.map(w => w.high));
+                        const lowest = Math.min(...windowCandles.map(w => w.low));
+                        const tenkan = (highest + lowest) / 2;
+                        isBuy = c.close > tenkan;
+                    } else if (engine === 'FIBO') {
+                        const highest = Math.max(...windowCandles.map(w => w.high));
+                        const lowest = Math.min(...windowCandles.map(w => w.low));
+                        const fib618 = lowest + (highest - lowest) * 0.618;
+                        isBuy = c.close >= fib618;
+                    } else if (engine === 'TRENM5') {
+                        isBuy = (c.close - prev.close) > (prev.close - prev2.close);
+                    } else if (engine === 'MOMENTUM_NY') {
+                        const hour = new Date(c.time * 1000).getUTCHours();
+                        isBuy = (hour >= 13 && hour <= 20) && (c.close > prev.close);
+                    } else if (engine === 'MACD_MOM') {
+                        isBuy = (c.close - c.open) > (prev.close - prev.open);
+                    } else if (engine === 'GOLDEN_CROSS') {
+                        const shortMA = windowCandles.slice(-5).reduce((a,b)=>a+b.close,0) / 5;
+                        const longMA = windowCandles.reduce((a,b)=>a+b.close,0) / windowCandles.length;
+                        isBuy = shortMA >= longMA;
+                    } else {
+                        isBuy = c.close >= prev.close;
+                    }
+
+                    const side = isBuy ? 'BUY' : 'SELL';
+                    const entryPrice = c.close;
+
+                    // ATR-based SL/TP (volatility-based, bukan fixed %)
+                    const atr = Math.abs(c.high - c.low) || (entryPrice * 0.005);
+                    const slDist = atr * 1.2;
+                    const tpDist = slDist * 2.5;
+
+                    const sl = side === 'BUY' ? +(entryPrice - slDist).toFixed(2) : +(entryPrice + slDist).toFixed(2);
+                    const tp = side === 'BUY' ? +(entryPrice + tpDist).toFixed(2) : +(entryPrice - tpDist).toFixed(2);
+
+                    // Simulasi exit dari candle selanjutnya
+                    const next = candleSet[i + 1] || c;
+                    const next2 = candleSet[i + 2] || next;
+                    // Cek apakah TP atau SL terkena dalam 1-2 candle berikutnya
+                    let isWin = false;
+                    let exitBar = 1;
+                    if (side === 'BUY') {
+                        if (next.high >= tp) { isWin = true; exitBar = 1; }
+                        else if (next.low <= sl) { isWin = false; exitBar = 1; }
+                        else if (next2.high >= tp) { isWin = true; exitBar = 2; }
+                        else if (next2.low <= sl) { isWin = false; exitBar = 2; }
+                        else { isWin = next2.close >= entryPrice; exitBar = 2; }
+                    } else {
+                        if (next.low <= tp) { isWin = true; exitBar = 1; }
+                        else if (next.high >= sl) { isWin = false; exitBar = 1; }
+                        else if (next2.low <= tp) { isWin = true; exitBar = 2; }
+                        else if (next2.high >= sl) { isWin = false; exitBar = 2; }
+                        else { isWin = next2.close <= entryPrice; exitBar = 2; }
+                    }
+                    totalDurationBars += exitBar;
+                    const exitPrice = isWin ? tp : sl;
+
+                    const lotSize = symbol === 'XAUUSD' ? 0.5 : (symbol === 'BTCUSDT' ? 0.1 : 1.0);
+                    const pipMultiplier = symbol === 'XAUUSD' ? 50 : (symbol === 'BTCUSDT' ? 1 : 1000);
+                    
+                    // PnL kotor (sebelum biaya)
+                    let grossPnl = isWin
+                        ? +(Math.abs(tpDist) * lotSize * pipMultiplier).toFixed(2)
+                        : -+(Math.abs(slDist) * lotSize * pipMultiplier).toFixed(2);
+
+                    // --- Hitung biaya realistis ---
+                    // 1. Spread cost (diterapkan sebagai biaya tetap per trade)
+                    const thisSpreadCost = spreadCost * lotSize;
+                    // 2. Commission cost (% dari nilai notional, buka + tutup = 2x)
+                    const notional = entryPrice * lotSize;
+                    const thisCommCost = +(notional * (commissionPct / 100) * 2).toFixed(2);
+                    // 3. Slippage cost (deviasi acak ±slippagePct dari entry)
+                    const slippageDeviation = (Math.random() * 2 - 1) * (slippagePct / 100);
+                    const thisSlippageCost = +Math.abs(entryPrice * slippageDeviation * lotSize * (pipMultiplier / entryPrice)).toFixed(2);
+
+                    const totalCost = thisSpreadCost + thisCommCost + thisSlippageCost;
+                    const netPnl = +(grossPnl - totalCost).toFixed(2);
+
+                    totalSpreadCost += thisSpreadCost;
+                    totalCommCost += thisCommCost;
+                    totalSlippageCost += thisSlippageCost;
+
+                    if (netPnl >= 0) {
+                        winCount++;
+                        totalGained += netPnl;
+                    } else {
+                        lossCount++;
+                        totalRisked += Math.abs(netPnl);
+                    }
+
+                    totalPnL += netPnl;
+                    pnlSeries.push(netPnl);
+                    currentEquity += netPnl;
+                    equityCurve.push(+currentEquity.toFixed(2));
+                    if (currentEquity > peakEquity) peakEquity = currentEquity;
+                    const dd = ((peakEquity - currentEquity) / peakEquity) * 100;
+                    if (dd > maxDrawdown) maxDrawdown = dd;
+
+                    results.push({
+                        date: new Date(c.time * 1000).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }),
+                        symbol: symbol,
+                        engine: engine,
+                        side: side,
+                        entry: entryPrice,
+                        sl: sl,
+                        tp: tp,
+                        exit: exitPrice,
+                        grossPnl: grossPnl,
+                        cost: +totalCost.toFixed(2),
+                        pnl: netPnl,
+                        isWin: netPnl >= 0,
+                        durationBars: exitBar
+                    });
                 }
 
-                const side = isBuy ? 'BUY' : 'SELL';
-                const entryPrice = c.close;
-                
-                const atr = Math.abs(c.high - c.low) || (entryPrice * 0.005);
-                const slDist = atr * 1.2;
-                const tpDist = slDist * 2.5;
+                const totalTrades = winCount + lossCount;
+                const winRate = totalTrades > 0 ? Math.round((winCount / totalTrades) * 100) : 0;
+                const profitFactor = totalRisked > 0 ? +(totalGained / totalRisked).toFixed(2) : 0;
+                const avgPnl = totalTrades > 0 ? +(totalPnL / totalTrades).toFixed(2) : 0;
+                const avgDuration = totalTrades > 0 ? +(totalDurationBars / totalTrades).toFixed(1) : 0;
 
-                const sl = side === 'BUY' ? +(entryPrice - slDist).toFixed(2) : +(entryPrice + slDist).toFixed(2);
-                const tp = side === 'BUY' ? +(entryPrice + tpDist).toFixed(2) : +(entryPrice - tpDist).toFixed(2);
+                // Sharpe Ratio (annualized, asumsi 252 trading days)
+                const meanReturn = pnlSeries.length > 0 ? pnlSeries.reduce((a,b) => a+b, 0) / pnlSeries.length : 0;
+                const variance = pnlSeries.length > 1
+                    ? pnlSeries.reduce((s, r) => s + (r - meanReturn) ** 2, 0) / (pnlSeries.length - 1) : 0;
+                const stdDev = Math.sqrt(variance);
+                const sharpeRatio = stdDev > 0 ? +((meanReturn / stdDev) * Math.sqrt(252)).toFixed(2) : 0;
 
-                const next = candles[i + 1] || c;
-                const isWin = side === 'BUY' ? next.close >= entryPrice : next.close <= entryPrice;
-                const exitPrice = isWin ? tp : sl;
+                // Sortino Ratio (hanya hitung downside deviation)
+                const downsideReturns = pnlSeries.filter(r => r < 0);
+                const downsideVariance = downsideReturns.length > 1
+                    ? downsideReturns.reduce((s, r) => s + (r - meanReturn) ** 2, 0) / (downsideReturns.length - 1) : 0;
+                const downsideDev = Math.sqrt(downsideVariance);
+                const sortinoRatio = downsideDev > 0 ? +((meanReturn / downsideDev) * Math.sqrt(252)).toFixed(2) : 0;
 
-                const lotSize = symbol === 'XAUUSD' ? 0.5 : (symbol === 'BTCUSDT' ? 0.1 : 1.0);
-                const pnl = isWin 
-                    ? +(Math.abs(tpDist) * lotSize * (symbol === 'XAUUSD' ? 50 : (symbol === 'BTCUSDT' ? 1 : 1000))).toFixed(2)
-                    : -+(Math.abs(slDist) * lotSize * (symbol === 'XAUUSD' ? 50 : (symbol === 'BTCUSDT' ? 1 : 1000))).toFixed(2);
+                // Peringatan low sample
+                const lowSampleWarning = totalTrades < 30;
 
-                if (pnl >= 0) {
-                    winCount++;
-                    totalGained += pnl;
-                } else {
-                    lossCount++;
-                    totalRisked += Math.abs(pnl);
-                }
+                return {
+                    labelPrefix, totalTrades, winCount, lossCount, winRate, totalPnL: +totalPnL.toFixed(2),
+                    profitFactor, maxDrawdown: +maxDrawdown.toFixed(1), avgPnl, avgDuration,
+                    sharpeRatio, sortinoRatio, lowSampleWarning,
+                    totalSpreadCost: +totalSpreadCost.toFixed(2),
+                    totalCommCost: +totalCommCost.toFixed(2),
+                    totalSlippageCost: +totalSlippageCost.toFixed(2),
+                    equityCurve, results
+                };
+            };
 
-                totalPnL += pnl;
-                currentEquity += pnl;
-                if (currentEquity > peakEquity) peakEquity = currentEquity;
-                const dd = ((peakEquity - currentEquity) / peakEquity) * 100;
-                if (dd > maxDrawdown) maxDrawdown = dd;
+            // --- Jalankan simulasi In-Sample ---
+            const isResult = runSimulation(inSampleCandles, 'IN-SAMPLE');
 
-                results.push({
-                    date: new Date(c.time * 1000).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }),
-                    symbol: symbol,
-                    engine: engine,
-                    side: side,
-                    entry: entryPrice,
-                    sl: sl,
-                    tp: tp,
-                    exit: exitPrice,
-                    pnl: pnl,
-                    isWin: pnl >= 0
-                });
+            // --- Jalankan simulasi Out-of-Sample (kalau aktif) ---
+            let oosResult = null;
+            if (outOfSampleCandles.length > 20) {
+                oosResult = runSimulation(outOfSampleCandles, 'OUT-OF-SAMPLE');
             }
 
-            const totalTrades = winCount + lossCount;
-            const winRate = totalTrades > 0 ? Math.round((winCount / totalTrades) * 100) : 0;
-            const profitFactor = totalRisked > 0 ? (totalGained / totalRisked).toFixed(2) : '3.20';
-
             this.lastBacktestResult = {
-                symbol, label, interval, engine, totalTrades, winCount, lossCount, winRate, totalPnL, profitFactor, maxDrawdown: maxDrawdown.toFixed(1), results
+                symbol, label, interval, engine,
+                spreadCost, commissionPct, slippagePct, oosPct,
+                inSample: isResult,
+                outOfSample: oosResult
             };
 
             this.renderBacktestResult();
             if (window.showQuantumToast) {
-                window.showQuantumToast(`⚡ BACKTEST SELESAI: ${label} [${engine}] Win Rate: ${winRate}% (PnL: +$${totalPnL.toFixed(2)})`, 'success');
+                const wr = isResult.winRate;
+                const pnl = isResult.totalPnL;
+                const tag = oosResult ? ` | OOS WR: ${oosResult.winRate}%` : '';
+                window.showQuantumToast(`⚡ BACKTEST SELESAI: ${label} [${engine}] IS Win Rate: ${wr}% (Net PnL: ${pnl >= 0 ? '+' : ''}$${pnl})${tag}`, 'success');
             }
+        },
+        resetBacktestDefaults() {
+            // Reset semua input ke default XAUUSD
+            const defs = { backtestSpread: '0.50', backtestCommission: '0.020', backtestSlippage: '0.10', backtestOosPct: '30' };
+            Object.entries(defs).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            });
+            if (window.showQuantumToast) window.showQuantumToast('↺ Parameter backtest direset ke default', 'info', 1500);
         },
         renderBacktestResult() {
             const container = document.getElementById('backtestResultContainer');
             if (!container) return;
 
-            const res = this.lastBacktestResult;
-            if (!res) {
-                container.innerHTML = `<div class="text-center py-3 text-slate-500 font-mono text-xs">Pilih Pasangan (XAUUSD / BTCUSDT), Timeframe, dan Mesin lalu klik "JALANKAN BACKTEST".</div>`;
+            const data = this.lastBacktestResult;
+            if (!data) {
+                container.innerHTML = `<div class="text-center py-3 text-slate-500 font-mono text-xs">Pilih Pasangan, Timeframe, dan Mesin lalu klik "JALANKAN BACKTEST".</div>`;
                 return;
             }
 
-            const pnlColor = res.totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400';
+            const renderSection = (res, sectionLabel, borderColor) => {
+                const pnlColor = res.totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                const lowSampleBadge = res.lowSampleWarning
+                    ? `<div class="col-span-2 sm:col-span-5 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold flex items-center gap-1.5">
+                         ⚠️ LOW SAMPLE (${res.totalTrades} trade) — Jumlah trade terlalu sedikit untuk kesimpulan statistik yang valid. Minimal 30 trade disarankan.
+                       </div>` : '';
 
-            container.innerHTML = `
-                <div class="space-y-2">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900/90 p-2.5 rounded border border-cyan-500/30 font-mono text-xs">
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">SIMBOL & MESIN</span>
-                            <strong class="text-cyan-300 font-bold">${res.label} (${res.engine})</strong>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">WIN RATE HASIL</span>
-                            <strong class="text-emerald-400 font-bold text-sm">${res.winRate}% (${res.winCount}/${res.totalTrades} Trade)</strong>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">TOTAL PROFIT / LOSS</span>
-                            <strong class="${pnlColor} font-bold text-sm">${res.totalPnL >= 0 ? '+' : ''}$${res.totalPnL.toFixed(2)}</strong>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">PROFIT FACTOR / MAX DD</span>
-                            <strong class="text-purple-300 font-bold">${res.profitFactor} | -${res.maxDrawdown}%</strong>
-                        </div>
-                    </div>
+                // Mini equity curve ASCII sparkline
+                const eq = res.equityCurve;
+                const eqMin = Math.min(...eq);
+                const eqMax = Math.max(...eq);
+                const eqRange = eqMax - eqMin || 1;
+                const sparkChars = '▁▂▃▄▅▆▇█';
+                const sparkline = eq.map(v => {
+                    const idx = Math.round(((v - eqMin) / eqRange) * (sparkChars.length - 1));
+                    return sparkChars[idx];
+                }).join('');
+                const eqColor = eq[eq.length - 1] >= eq[0] ? 'text-emerald-400' : 'text-rose-400';
 
-                    <div class="max-h-36 overflow-y-auto space-y-1 pr-1 thin-scrollbar">
-                        ${res.results.map(r => `
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-1.5 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] font-mono gap-1">
-                                <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${r.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${r.side}</span>
-                                    <strong class="text-white">${r.symbol}</strong>
-                                    <span class="text-slate-400 text-[10px]">Entry $${r.entry} → Exit $${r.exit}</span>
-                                </div>
-                                <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                                    <span class="text-slate-400 text-[10px]">SL $${r.sl} | TP $${r.tp}</span>
-                                    <span class="${r.isWin?'text-emerald-400':'text-rose-400'} font-bold">${r.isWin?'+':''}$${r.pnl.toFixed(2)}</span>
-                                </div>
+                return `
+                    <div class="space-y-2 p-2.5 rounded-xl bg-slate-900/90 border ${borderColor}">
+                        <!-- Header Section Label -->
+                        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                            <span class="text-[10px] font-bold font-mono ${borderColor.includes('cyan') ? 'text-cyan-300' : 'text-purple-300'}">${sectionLabel}: ${data.label} (${data.engine})</span>
+                            <span class="text-[10px] text-slate-500 font-mono">${res.totalTrades} TRADE</span>
+                        </div>
+                        ${lowSampleBadge}
+
+                        <!-- Metrik Utama 5 Kolom -->
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">WIN RATE</span>
+                                <strong class="text-emerald-400 font-bold text-sm">${res.winRate}%</strong>
+                                <span class="text-[9px] text-slate-500 block">${res.winCount}W / ${res.lossCount}L</span>
                             </div>
-                        `).join('')}
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">NET P&L</span>
+                                <strong class="${pnlColor} font-bold text-sm">${res.totalPnL >= 0 ? '+' : ''}$${res.totalPnL.toFixed(2)}</strong>
+                                <span class="text-[9px] text-slate-500 block">Avg ${res.avgPnl >= 0 ? '+' : ''}$${res.avgPnl}/trade</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">PROFIT FACTOR</span>
+                                <strong class="text-cyan-300 font-bold text-sm">${res.profitFactor}</strong>
+                                <span class="text-[9px] text-slate-500 block">Max DD -${res.maxDrawdown}%</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">SHARPE / SORTINO</span>
+                                <strong class="text-purple-300 font-bold text-sm">${res.sharpeRatio} / ${res.sortinoRatio}</strong>
+                                <span class="text-[9px] text-slate-500 block">Avg ${res.avgDuration} bar/trade</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">BIAYA TOTAL</span>
+                                <strong class="text-amber-300 font-bold text-sm">$${(res.totalSpreadCost + res.totalCommCost + res.totalSlippageCost).toFixed(2)}</strong>
+                                <span class="text-[9px] text-slate-500 block">Spr $${res.totalSpreadCost} | Kom $${res.totalCommCost} | Slip $${res.totalSlippageCost}</span>
+                            </div>
+                        </div>
+
+                        <!-- Equity Curve Sparkline -->
+                        <div class="px-2 py-1.5 rounded bg-slate-950 border border-slate-800 font-mono">
+                            <div class="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                                <span>📈 EQUITY CURVE</span>
+                                <span>Start: $${eq[0].toLocaleString()} → End: $${eq[eq.length-1].toLocaleString()}</span>
+                            </div>
+                            <div class="${eqColor} text-sm tracking-[2px] overflow-hidden whitespace-nowrap" title="Equity curve mini chart">${sparkline}</div>
+                        </div>
+
+                        <!-- Trade List -->
+                        <div class="max-h-36 overflow-y-auto space-y-1 pr-1 thin-scrollbar">
+                            ${res.results.map(r => `
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-1.5 rounded bg-slate-950/80 border border-slate-800/80 text-[11px] font-mono gap-1">
+                                    <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${r.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${r.side}</span>
+                                        <strong class="text-white">${r.symbol}</strong>
+                                        <span class="text-slate-400 text-[10px]">Entry $${r.entry} → Exit $${r.exit}</span>
+                                        <span class="text-[9px] text-amber-400/70" title="Biaya spread+komisi+slippage">(-$${r.cost})</span>
+                                    </div>
+                                    <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                                        <span class="text-slate-400 text-[10px]">SL $${r.sl} | TP $${r.tp} | ${r.durationBars}bar</span>
+                                        <span class="${r.isWin?'text-emerald-400':'text-rose-400'} font-bold">${r.isWin?'+':''}$${r.pnl.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
+                `;
+            };
+
+            // Render In-Sample + Out-of-Sample
+            let html = '<div class="space-y-3">';
+            html += renderSection(data.inSample, '📊 IN-SAMPLE', 'border-cyan-500/30');
+            if (data.outOfSample) {
+                html += renderSection(data.outOfSample, '🧪 OUT-OF-SAMPLE (Walk-Forward)', 'border-purple-500/30');
+                // Perbandingan IS vs OOS
+                const isr = data.inSample;
+                const oosr = data.outOfSample;
+                const wrDelta = isr.winRate - oosr.winRate;
+                const pfDelta = (isr.profitFactor - oosr.profitFactor).toFixed(2);
+                const overfitRisk = wrDelta > 15 ? 'TINGGI' : (wrDelta > 8 ? 'SEDANG' : 'RENDAH');
+                const overfitColor = wrDelta > 15 ? 'text-rose-400 bg-rose-500/10 border-rose-500/40' : (wrDelta > 8 ? 'text-amber-400 bg-amber-500/10 border-amber-500/40' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/40');
+                html += `
+                    <div class="p-2.5 rounded-xl ${overfitColor} border font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <strong class="block text-[11px]">🔍 ANALISIS OVERFIT (IS vs OOS)</strong>
+                            <span class="text-[10px]">WR Delta: ${wrDelta > 0 ? '+' : ''}${wrDelta}% | PF Delta: ${pfDelta} | Risiko Overfit: <strong>${overfitRisk}</strong></span>
+                        </div>
+                        <span class="text-[10px] font-bold">${overfitRisk === 'RENDAH' ? '✅ Strategi konsisten' : (overfitRisk === 'SEDANG' ? '⚠️ Perlu validasi lebih lanjut' : '🚨 Strategi mungkin overfit, jangan andalkan!')}</span>
+                    </div>
+                `;
+            }
+
+            // Parameter yang dipakai
+            html += `
+                <div class="px-2 py-1.5 rounded bg-slate-950/80 border border-slate-800 text-[10px] text-slate-500 font-mono flex flex-wrap gap-3">
+                    <span>Spread: $${data.spreadCost}</span>
+                    <span>Komisi: ${data.commissionPct}%</span>
+                    <span>Slippage: ±${data.slippagePct}%</span>
+                    <span>OOS Split: ${data.oosPct}%</span>
+                    <span>Engine: ${data.engine}</span>
+                    <span>TF: ${data.interval}</span>
                 </div>
             `;
+            html += '</div>';
+            container.innerHTML = html;
         },
         render() {
             const balEl = document.getElementById('paperBalanceDisplay');
