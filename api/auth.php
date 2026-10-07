@@ -51,8 +51,7 @@ if ($type === 'license') {
     }
 
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $pdo = getDBConnection();
+        $pdo = qi_db();
 
         // Cari lisensi di database
         $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role 
@@ -112,8 +111,7 @@ if ($type === 'license') {
     }
 
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $pdo = getDBConnection();
+        $pdo = qi_db();
 
         // Cari user berdasarkan email
         $stmt = $pdo->prepare('SELECT id, email, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');

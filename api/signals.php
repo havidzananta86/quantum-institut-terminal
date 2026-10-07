@@ -5,11 +5,12 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(60, 60);
 
-$symbol = isset($_GET['symbol']) ? strtoupper($_GET['symbol']) : 'BTCUSDT';
-$timeframe = isset($_GET['timeframe']) ? strtoupper($_GET['timeframe']) : 'H1';
-$engine = isset($_GET['engine']) ? strtoupper($_GET['engine']) : 'SNR';
+$symbol = isset($_GET['symbol']) ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
+$timeframe = isset($_GET['timeframe']) ? strtoupper(qi_sanitize_string($_GET['timeframe'], 5)) : 'H1';
+$engine = isset($_GET['engine']) ? strtoupper(qi_sanitize_string($_GET['engine'], 20)) : 'SNR';
 
 // Mock live response data per symbol
 $marketData = [

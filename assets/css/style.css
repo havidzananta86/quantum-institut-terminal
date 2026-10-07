@@ -1,122 +1,181 @@
-/* Quantum Institut Global Master Stylesheet */
+/* ============================================================
+   Quantum Institut — Global Master Stylesheet v2
+   Updated: 2026-10-07
+   ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* -------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+------------------------------------------------------- */
 :root {
-    --quantum-dark: #050A1A;
-    --quantum-navy: #0A1128;
-    --quantum-card: #0D1836;
-    --quantum-cyan: #00E5FF;
-    --quantum-purple: #7C4DFF;
-    --quantum-green: #00E676;
-    --quantum-red: #FF5252;
+    --qi-dark:     #050A1A;
+    --qi-navy:     #0A1128;
+    --qi-card:     #0D1836;
+    --qi-border:   rgba(0, 229, 255, 0.12);
+    --qi-cyan:     #00E5FF;
+    --qi-purple:   #7C4DFF;
+    --qi-green:    #00E676;
+    --qi-red:      #FF5252;
+    --qi-amber:    #FFAB00;
+
+    /* Glow shadows */
+    --glow-cyan:   0 0 24px rgba(0, 229, 255, 0.25);
+    --glow-purple: 0 0 24px rgba(124, 77, 255, 0.25);
+    --glow-green:  0 0 24px rgba(0, 230, 118, 0.20);
+
+    /* Typography */
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* -------------------------------------------------------
+   Base Reset & Body
+------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
 }
 
 body {
-    background-color: var(--quantum-dark);
+    background-color: var(--qi-dark);
     color: #E2E8F0;
-    font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, .font-heading {
-    font-family: 'Space Grotesk', sans-serif;
-}
+h1, h2, h3, h4, h5, .font-heading { font-family: var(--font-heading); }
+code, kbd, pre, .font-mono       { font-family: var(--font-mono); }
 
-.font-mono {
-    font-family: 'JetBrains Mono', monospace;
-}
+/* -------------------------------------------------------
+   Scrollbar — Quantum Dark Theme
+------------------------------------------------------- */
+*::-webkit-scrollbar         { width: 4px; height: 4px; background: transparent; }
+*::-webkit-scrollbar-thumb   { background: rgba(0, 229, 255, 0.20); border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.50); }
+*::-webkit-scrollbar-track   { background: transparent; }
+*                             { scrollbar-width: thin; scrollbar-color: rgba(0, 229, 255, 0.20) transparent; }
 
+.no-scrollbar::-webkit-scrollbar        { display: none !important; width: 0 !important; height: 0 !important; }
+.no-scrollbar                           { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+
+.thin-scrollbar::-webkit-scrollbar       { height: 3px; width: 3px; background: transparent; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.25); border-radius: 99px; }
+.thin-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.55); }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.thin-scrollbar                          { scrollbar-width: thin; scrollbar-color: rgba(0, 229, 255, 0.25) transparent; }
+
+/* -------------------------------------------------------
+   Glass Card Component
+------------------------------------------------------- */
 .glass-card {
-    background: linear-gradient(135deg, rgba(13, 24, 54, 0.75) 0%, rgba(10, 17, 40, 0.88) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 229, 255, 0.18);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, rgba(13,24,54,0.80) 0%, rgba(10,17,40,0.92) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--qi-border);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
-
 .glass-card:hover {
-    border-color: rgba(0, 229, 255, 0.45);
-    box-shadow: 0 12px 35px -10px rgba(0, 229, 255, 0.25);
+    border-color: rgba(0, 229, 255, 0.38);
+    box-shadow: var(--glow-cyan);
 }
 
-/* =============================================
-   SCROLLBAR UTILITY — Quantum Institut Terminal
-   Scroll tetap berfungsi, native bar disembunyikan
-   ============================================= */
+/* -------------------------------------------------------
+   Gradient Text Utilities
+------------------------------------------------------- */
+.text-gradient-cyan   { background: linear-gradient(135deg, #00E5FF 0%, #00B0CC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.text-gradient-purple { background: linear-gradient(135deg, #A78BFA 0%, #7C4DFF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.text-gradient-brand  { background: linear-gradient(135deg, #00E5FF 0%, #7C4DFF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
-/* Universal Dark Scrollbars for any unstyled overflowing element */
-*::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-    background: rgba(0, 229, 255, 0.2);
-    border-radius: 99px;
-}
-*::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 229, 255, 0.5);
-}
-*::-webkit-scrollbar-track {
-    background: transparent;
-}
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 229, 255, 0.2) transparent;
-}
+/* -------------------------------------------------------
+   Glow Borders
+------------------------------------------------------- */
+.glow-cyan   { box-shadow: var(--glow-cyan); }
+.glow-purple { box-shadow: var(--glow-purple); }
+.border-glow-cyan   { border-color: rgba(0, 229, 255, 0.50) !important; }
+.border-glow-purple { border-color: rgba(124, 77, 255, 0.50) !important; }
 
-/* .no-scrollbar — sembunyikan scrollbar sepenuhnya (Chrome, Safari, Edge, Opera) */
-.no-scrollbar::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
+/* -------------------------------------------------------
+   Scroll Reveal Animation
+------------------------------------------------------- */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* .no-scrollbar — sembunyikan scrollbar sepenuhnya (Firefox & IE/Edge lama) */
-.no-scrollbar {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+.reveal.active { opacity: 1; transform: translateY(0); }
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* .thin-scrollbar — scrollbar tipis transparan bergaya Quantum (opsional untuk area vertikal) */
-.thin-scrollbar::-webkit-scrollbar {
-    height: 3px;
-    width: 3px;
-    background: transparent;
+/* -------------------------------------------------------
+   Ticker Marquee (landing page & terminal)
+------------------------------------------------------- */
+@keyframes ticker {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
-.thin-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 229, 255, 0.25);
-    border-radius: 99px;
+.animate-ticker {
+    animation: ticker 40s linear infinite;
 }
-.thin-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 229, 255, 0.55);
-}
-.thin-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-.thin-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 229, 255, 0.25) transparent;
-}
+.animate-ticker:hover { animation-play-state: paused; }
 
-/* Offset smooth scroll agar tidak tertutup sticky navbar */
-section[id] {
-    scroll-margin-top: 90px;
+/* -------------------------------------------------------
+   Pulse Glow (logo & status dots)
+------------------------------------------------------- */
+@keyframes pulseGlow {
+    0%,100% { opacity: 0.5; filter: drop-shadow(0 0 8px rgba(0,229,255,0.4)); }
+    50%      { opacity: 1;   filter: drop-shadow(0 0 22px rgba(124,77,255,0.8)); }
 }
+.animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
 
-/* Light Theme Override */
+/* -------------------------------------------------------
+   Stream / Feed Pulse
+------------------------------------------------------- */
+@keyframes streamPulse {
+    0%,100% { opacity: 1; filter: drop-shadow(0 0 6px var(--qi-cyan)); }
+    50%      { opacity: 0.4; filter: drop-shadow(0 0 1px var(--qi-cyan)); }
+}
+.pulse-stream { animation: streamPulse 2s ease-in-out infinite; }
+
+/* -------------------------------------------------------
+   Section Scroll Offset (sticky header)
+------------------------------------------------------- */
+section[id] { scroll-margin-top: 80px; }
+
+/* -------------------------------------------------------
+   Light Theme Override
+------------------------------------------------------- */
 html.light-theme {
-    --quantum-dark: #F8FAFC;
-    --quantum-navy: #F1F5F9;
-    --quantum-card: #FFFFFF;
+    --qi-dark:  #F8FAFC;
+    --qi-navy:  #F1F5F9;
+    --qi-card:  #FFFFFF;
+    --qi-border: rgba(100, 116, 139, 0.20);
 }
-html.light-theme body {
-    background-color: #F8FAFC !important;
-    color: #0F172A !important;
-}
-html.light-theme header {
-    background-color: #FFFFFF !important;
-    border-color: #CBD5E1 !important;
-}
-html.light-theme main, html.light-theme aside {
-    background-color: #F8FAFC !important;
+html.light-theme body  { background-color: #F8FAFC !important; color: #0F172A !important; }
+html.light-theme header { background-color: #FFFFFF !important; border-color: #CBD5E1 !important; }
+html.light-theme .glass-card { background: rgba(248,250,252,0.92) !important; }
+
+/* -------------------------------------------------------
+   Responsive Breakpoint Helpers
+------------------------------------------------------- */
+@media (max-width: 479px) {
+    .hero-title { font-size: 1.5rem !important; line-height: 1.25 !important; }
+    .touch-target-min { min-height: 44px; min-width: 44px; }
 }
 
+/* -------------------------------------------------------
+   Status / Badge Colors
+------------------------------------------------------- */
+.badge-setup    { background: rgba(0,229,255,0.15); color: #00E5FF; border: 1px solid rgba(0,229,255,0.40); }
+.badge-pantau   { background: rgba(255,171,0,0.15); color: #FFAB00; border: 1px solid rgba(255,171,0,0.40); }
+.badge-hold     { background: rgba(255,82,82,0.15);  color: #FF5252; border: 1px solid rgba(255,82,82,0.40); }
+.badge-pro      { background: rgba(124,77,255,0.15); color: #A78BFA; border: 1px solid rgba(124,77,255,0.40); }

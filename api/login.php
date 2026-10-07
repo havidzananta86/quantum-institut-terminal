@@ -25,8 +25,7 @@ $password = isset($input['password']) ? $input['password'] : '';
 
 if (!empty($license)) {
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $pdo = getDBConnection();
+        $pdo = qi_db();
 
         $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role 
                                FROM license_keys lk 
@@ -68,8 +67,7 @@ if (!empty($license)) {
     }
 
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $pdo = getDBConnection();
+        $pdo = qi_db();
 
         $stmt = $pdo->prepare('SELECT id, email, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => strtolower($email)]);

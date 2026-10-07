@@ -142,6 +142,41 @@ function qi_get_json_body() {
 }
 
 /**
+ * Ambil koneksi database dengan aman.
+ * Jika config/database.php belum dibuat, kembalikan JSON 503 yang rapi
+ * (bukan fatal error yang membocorkan path server).
+ *
+ * @param bool $fatal  true = langsung kirim 503 & exit; false = kembalikan null
+ * @return PDO|null
+ */
+function qi_db($fatal = true) {
+    $configPath = __DIR__ . '/../config/database.php';
+    if (!file_exists($configPath)) {
+        error_log('[QI] config/database.php belum dibuat. Salin dari config/database.php.example');
+        if ($fatal) {
+            http_response_code(503);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Database belum dikonfigurasi. Hubungi administrator.',
+                'code'    => 'DB_NOT_CONFIGURED'
+            ]);
+            exit();
+        }
+        return null;
+    }
+    require_once $configPath;
+    if (!function_exists('getDBConnection')) {
+        if ($fatal) {
+            http_response_code(503);
+            echo json_encode(['status' => 'error', 'message' => 'Konfigurasi database tidak valid.', 'code' => 'DB_CONFIG_INVALID']);
+            exit();
+        }
+        return null;
+    }
+    return getDBConnection();
+}
+
+/**
  * Validasi token autentikasi dari header Authorization atau X-QI-Token
  * Mengembalikan data user atau null jika token tidak valid
  */
@@ -161,12 +196,12 @@ function qi_validate_token() {
 
     if (!$token) return null;
 
-    // Validasi token ke database
+    // Validasi token ke database (non-fatal: kalau DB belum siap, anggap token invalid)
     try {
-        require_once __DIR__ . '/../config/database.php';
-        $pdo = getDBConnection();
-        
-        $stmt = $pdo->prepare('SELECT u.id, u.email, u.role, s.expires_at 
+        $pdo = qi_db(false);
+        if (!$pdo) return null;
+
+        $stmt = $pdo->prepare('SELECT u.id, u.email, u.role, s.expires_at
                                FROM user_sessions s 
                                JOIN users u ON u.id = s.user_id 
                                WHERE s.token = :token AND s.expires_at > NOW()');

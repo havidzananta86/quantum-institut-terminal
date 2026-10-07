@@ -6,7 +6,8 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(60, 60);
 
 $cacheDir = __DIR__ . '/../cache';
 if (!is_dir($cacheDir)) {

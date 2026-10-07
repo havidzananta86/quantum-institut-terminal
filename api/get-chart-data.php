@@ -1,9 +1,10 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(60, 60);
 
-$symbol   = isset($_GET['symbol'])   ? strtoupper(trim($_GET['symbol'])) : 'BTCUSDT';
-$interval = isset($_GET['interval']) ? trim($_GET['interval'])           : '60';
+$symbol   = isset($_GET['symbol'])   ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
+$interval = isset($_GET['interval']) ? qi_sanitize_string($_GET['interval'], 5)            : '60';
 
 $intervalMapBinance = [
     '1' => '1m', '5' => '5m', '15' => '15m', '30' => '30m', '60' => '1h', '240' => '4h', 'D' => '1d'

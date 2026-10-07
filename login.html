@@ -312,6 +312,10 @@
         }
         initParticles();
 
+        // Hormati preferensi reduce-motion & hentikan animasi saat tab tidak terlihat (hemat baterai/CPU)
+        const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let rafId = null;
+
         function animateParticles() {
             ctx.clearRect(0, 0, width, height);
             for (let i = 0; i < particles.length; i++) {
@@ -331,9 +335,26 @@
                     }
                 }
             }
-            requestAnimationFrame(animateParticles);
+            rafId = requestAnimationFrame(animateParticles);
         }
-        animateParticles();
+
+        function startParticles() {
+            if (prefersReduced || rafId !== null) return;
+            animateParticles();
+        }
+        function stopParticles() {
+            if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+        }
+
+        if (prefersReduced) {
+            // Gambar satu frame statis saja
+            particles.forEach(p => p.draw());
+        } else {
+            startParticles();
+            document.addEventListener('visibilitychange', () => {
+                document.hidden ? stopParticles() : startParticles();
+            });
+        }
 
 
         // --- 2. AUTH TAB SWITCHER ---
