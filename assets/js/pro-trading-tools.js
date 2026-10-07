@@ -243,7 +243,7 @@
     const QuantumPricePoller = {
         _timer: null,
         _consecutiveFails: 0,
-        _interval: 2000,
+        _interval: 3000,
 
         start() {
             this.poll();

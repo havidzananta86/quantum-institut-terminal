@@ -478,8 +478,7 @@
                 <!-- TradingView Advanced Chart — chart utama yang terlihat -->
                 <div id="tv_advanced_main" style="width:100%;height:100%;display:block;"></div>
 
-                <!-- Lightweight Charts engine: tersembunyi, hanya untuk data candle & SNR/SMC/AI analisa -->
-                <div id="tradingview_advanced_widget" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;left:-9999px;top:-9999px;"></div>
+                <!-- NOTE: tradingview_advanced_widget removed — data engine now runs via PHP polling -->
 
                 <!-- CHART OVERLAY CONTROLS -->
                 <div class="absolute top-2 right-2 flex items-center gap-1.5 z-20">
@@ -1668,9 +1667,15 @@
 
             // Fetch initial candles for engine analysis (BTC H1 as default)
             fetchCandlesForEngine('BTCUSDT', '60');
+            // Refresh candles every 2 minutes to keep engine analysis current
+            setInterval(() => {
+                const sym = window.currentCleanSymbol || 'BTCUSDT';
+                const tf  = window.quantumTerminalManager?.currentInterval || '60';
+                fetchCandlesForEngine(sym, tf);
+            }, 120000);
 
-            // Initialize Lightweight Charts engine in background (hidden element, data only)
-            initQuantumRealtimeSystem();
+            // NOTE: initQuantumRealtimeSystem() removed — hidden LightweightCharts engine
+            // was spamming Binance WS errors. All price data now via QuantumPricePoller.
             fetchEconomicCalendar();
             fetchRealtimeNews();
             setInterval(() => updateWIBClockElement('clockWIB'), 1000);

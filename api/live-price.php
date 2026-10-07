@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
-qi_rate_limit(60, 10); // max 60 req / 10 detik per IP
+qi_rate_limit(120, 60); // max 120 req / 60 detik per IP (~2/s)
 
 if (!function_exists('qi_http_get')) {
     function qi_http_get($url, $timeout = 4) {
