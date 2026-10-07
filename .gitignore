@@ -32,6 +32,7 @@ package-lock.json
 *.log
 
 .vercel
+cache/chart/
 cache/ratelimit/
 
 # Claude Code local session config

@@ -935,69 +935,57 @@ class QuantumRealtimeTerminalManager {
         const sym   = cfg.binanceSym;
         const intvl = QI_INTERVAL_MAP[this.currentInterval]?.binance || '1h';
 
-        // Multi-endpoint fallback (Includes unblocked Binance Vision mirror for ID/global ISPs)
+        // ⚡ PRIORITAS 1: Backend lokal (same-origin + cached di server).
+        // Ini paling cepat: server sudah fetch & cache candle, browser cuma
+        // baca 1 request lokal. Kalau dapat data NYATA, langsung render + WS.
+        try {
+            const localUrl = `api/get-chart-data.php?symbol=${this.currentSymbol}&interval=${this.currentInterval}`;
+            const res = await fetch(localUrl, { signal: AbortSignal.timeout(4000) });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && Array.isArray(json.candles) && json.candles.length > 0 && !json.simulated) {
+                    this._renderCandles(json.candles, cfg);
+                    this._connectBinanceWS(sym, intvl); // live updates
+                    return;
+                }
+                // simpan data simulasi lokal sebagai cadangan terakhir
+                var localSimulated = (json.simulated && Array.isArray(json.candles)) ? json.candles : null;
+            }
+        } catch (e) {
+            console.warn('[QI Binance] backend lokal tidak tersedia:', e.message);
+        }
+
+        // PRIORITAS 2: Direct ke Binance (paralel, timeout pendek 3 dtk).
+        // Promise.any mengambil endpoint TERCEPAT yang berhasil.
         const endpoints = [
             `https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`,
             `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`,
-            `https://api.binance.us/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`
+            `https://api1.binance.com/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`
         ];
-
         let rawData = null;
+        try {
+            rawData = await Promise.any(endpoints.map(async (url) => {
+                const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+                if (!Array.isArray(json) || json.length === 0) throw new Error('empty');
+                return json;
+            }));
+        } catch (e) { /* semua endpoint gagal */ }
 
-        for (const url of endpoints) {
-            try {
-                const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-                if (res.ok) {
-                    const json = await res.json();
-                    if (Array.isArray(json) && json.length > 0) {
-                        rawData = json;
-                        break;
-                    }
-                }
-            } catch(e) {}
-        }
-
-        // Try CORS proxies if direct endpoints fail
-        if (!rawData) {
-            const targetUrl = `https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${intvl}&limit=300`;
-            for (const proxy of QI_CORS_PROXIES) {
-                try {
-                    const res = await fetch(`${proxy}${encodeURIComponent(targetUrl)}`, { signal: AbortSignal.timeout(6000) });
-                    const json = await res.json();
-                    if (Array.isArray(json) && json.length > 0) {
-                        rawData = json;
-                        break;
-                    }
-                } catch(e) {}
-            }
-        }
-
-        // Try Local Backend API
-        if (!rawData) {
-            const localSuccess = await this._loadLocalBackendFallback(cfg);
-            if (localSuccess) {
+        if (rawData) {
+            const candles = normalizeCandles(rawData, 'binance');
+            if (candles.length > 0) {
+                this._renderCandles(candles, cfg);
                 this._connectBinanceWS(sym, intvl);
                 return;
             }
         }
 
-        // Bulletproof Synthetic Candle Fallback
-        if (!rawData) {
-            console.warn(`[QI Binance] All endpoints failed — using synthetic candles for ${sym}`);
-            const candles = this._generateSyntheticCandles(sym, cfg.priceDp);
-            this._renderCandles(candles, cfg);
-            this._connectBinanceWS(sym, intvl);
-            return;
-        }
-
-        const candles = normalizeCandles(rawData, 'binance');
-        if (candles.length === 0) {
-            const synth = this._generateSyntheticCandles(sym, cfg.priceDp);
-            this._renderCandles(synth, cfg);
-            this._connectBinanceWS(sym, intvl);
-            return;
-        }
-
+        // PRIORITAS 3: data simulasi lokal (sudah di-fetch di atas) atau generate
+        const candles = localSimulated || this._generateSyntheticCandles(sym, cfg.priceDp);
+        candles.simulated = true;
+        console.warn(`[QI Binance] Semua feed gagal — pakai candle simulasi untuk ${sym}`);
         this._renderCandles(candles, cfg);
         this._connectBinanceWS(sym, intvl);
     }
