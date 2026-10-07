@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+require_once __DIR__ . '/../config/api_keys.php';
 qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
 
 $symbol   = isset($_GET['symbol'])   ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
@@ -83,32 +84,41 @@ if (in_array($symbol, ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'D
     }
 }
 
-// 1b. XAUUSD via Stooq spot → biquote.io MT5 → PAXG fallback
+// ─── Twelve Data interval map ────────────────────────────────────────────────
+$tdIntervalMap = ['1'=>'1min','5'=>'5min','15'=>'15min','30'=>'30min','60'=>'1h','240'=>'4h','D'=>'1day'];
+$tdInterval = $tdIntervalMap[$interval] ?? '1h';
+
+// Helper: parse Twelve Data time_series response into candle array
+function qi_parse_td_candles(array $values): array {
+    $out = [];
+    foreach ($values as $v) {
+        $t = strtotime($v['datetime'] ?? '');
+        if ($t > 0) {
+            $out[] = [
+                'time'   => $t,
+                'open'   => (float)$v['open'],
+                'high'   => (float)$v['high'],
+                'low'    => (float)$v['low'],
+                'close'  => (float)$v['close'],
+                'volume' => (float)($v['volume'] ?? 0),
+            ];
+        }
+    }
+    // Twelve Data returns newest-first; flip to oldest-first for chart
+    return array_reverse($out);
+}
+
+// 1b. XAUUSD: Twelve Data → biquote.io MT5 → PAXG fallback
 if (empty($candles) && $symbol === 'XAUUSD') {
-    // Stooq interval map: i=d daily, i=h hourly, i=w weekly
-    $stooqIntervalMap = ['1'=>'h','5'=>'h','15'=>'h','30'=>'h','60'=>'h','240'=>'h','D'=>'d'];
-    $stooqI = $stooqIntervalMap[$interval] ?? 'h';
-    $raw = qi_http_get("https://stooq.com/q/d/l/?s=xauusd&i={$stooqI}&e=json", 5);
+    // Primary: Twelve Data (sumber sama dengan analismarket.com)
+    $tdUrl = 'https://api.twelvedata.com/time_series?symbol=XAU%2FUSD'
+           . '&interval=' . $tdInterval . '&outputsize=300&apikey=' . TWELVE_DATA_KEY;
+    $raw = qi_http_get($tdUrl, 6);
     if ($raw) {
         $d = json_decode($raw, true);
-        $bars = $d['data'] ?? [];
-        if (is_array($bars) && count($bars) > 50) {
-            foreach ($bars as $b) {
-                // Format: {"Date":"2025-01-02","Open":"2635.6",...}
-                $t = strtotime($b['Date'] ?? '');
-                if ($t > 0) {
-                    $candles[] = [
-                        'time'   => $t,
-                        'open'   => (float)($b['Open']  ?? $b['open']  ?? 0),
-                        'high'   => (float)($b['High']  ?? $b['high']  ?? 0),
-                        'low'    => (float)($b['Low']   ?? $b['low']   ?? 0),
-                        'close'  => (float)($b['Close'] ?? $b['close'] ?? 0),
-                        'volume' => (float)($b['Volume']?? $b['volume']?? 0),
-                    ];
-                }
-            }
-            // Stooq returns oldest-first; take last 300
-            $candles = array_slice($candles, -300);
+        $values = $d['values'] ?? [];
+        if (is_array($values) && count($values) > 5 && !isset($d['code'])) {
+            $candles = qi_parse_td_candles($values);
         }
     }
 
@@ -157,28 +167,43 @@ if (empty($candles) && $symbol === 'XAUUSD') {
     }
 }
 
-// 1c. EURUSD via biquote.io MT5
+// 1c. EURUSD: Twelve Data → biquote.io fallback
 if (empty($candles) && $symbol === 'EURUSD') {
-    $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
-    $raw = qi_http_get("https://biquote.io/api/EURUSD/ohlc?interval={$biquoteTf}&limit=300", 4);
+    // Primary: Twelve Data
+    $tdUrl = 'https://api.twelvedata.com/time_series?symbol=EUR%2FUSD'
+           . '&interval=' . $tdInterval . '&outputsize=300&apikey=' . TWELVE_DATA_KEY;
+    $raw = qi_http_get($tdUrl, 6);
     if ($raw) {
-        $data = json_decode($raw, true);
-        $bars = $data['bars'] ?? (is_array($data) ? $data : []);
-        if (is_array($bars) && count($bars) > 0) {
-            foreach ($bars as $b) {
-                $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
-                if ($t > 0) {
-                    $candles[] = [
-                        'time'   => $t,
-                        'open'   => (float)$b['open'],
-                        'high'   => (float)$b['high'],
-                        'low'    => (float)$b['low'],
-                        'close'  => (float)$b['close'],
-                        'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
-                    ];
+        $d = json_decode($raw, true);
+        $values = $d['values'] ?? [];
+        if (is_array($values) && count($values) > 5 && !isset($d['code'])) {
+            $candles = qi_parse_td_candles($values);
+        }
+    }
+
+    // Fallback: biquote.io MT5
+    if (empty($candles)) {
+        $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
+        $raw = qi_http_get("https://biquote.io/api/EURUSD/ohlc?interval={$biquoteTf}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+            if (is_array($bars) && count($bars) > 0) {
+                foreach ($bars as $b) {
+                    $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
+                    if ($t > 0) {
+                        $candles[] = [
+                            'time'   => $t,
+                            'open'   => (float)$b['open'],
+                            'high'   => (float)$b['high'],
+                            'low'    => (float)$b['low'],
+                            'close'  => (float)$b['close'],
+                            'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                        ];
+                    }
                 }
+                usort($candles, fn($a, $b) => $a['time'] - $b['time']);
             }
-            usort($candles, fn($a, $b) => $a['time'] - $b['time']);
         }
     }
 }
