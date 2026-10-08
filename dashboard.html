@@ -852,24 +852,31 @@
             <button onclick="lwDeleteSelected()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 hover:border-red-500/40 hover:text-red-400 text-[11px] font-mono" title="Delete selected">✕</button>
             <button onclick="lwClearAll()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-500 hover:border-red-500/40 hover:text-red-400 text-[10px]" title="Clear all drawings">Clear</button>
             <div class="w-px h-4 bg-qi-border mx-0.5 shrink-0"></div>
-            <!-- Indicator selector dropdown -->
+            <!-- Indicator toggle buttons — langsung aktif/nonaktif di chart -->
             <div class="relative shrink-0" id="lwIndDropWrap">
                 <button id="lwIndBtn" onclick="toggleIndDropdown()" class="shrink-0 px-2 py-1 rounded border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan text-[10px] font-mono flex items-center gap-1" title="Pilih Indikator">Ind ▾</button>
-                <div id="lwIndDropdown" class="hidden absolute right-0 top-full mt-1 z-50 bg-[#080E1C] border border-qi-border rounded-xl shadow-xl p-3 w-52 space-y-2 text-[11px]">
-                    <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1">Auto Indikator</div>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indEMA20" class="accent-cyan-400" checked onchange="applyIndSettings()"> EMA 20</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indEMA50" class="accent-cyan-400" checked onchange="applyIndSettings()"> EMA 50</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indEMA200" class="accent-cyan-400" checked onchange="applyIndSettings()"> EMA 200</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indIchi" class="accent-cyan-400" checked onchange="applyIndSettings()"> Ichimoku</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indSR" class="accent-cyan-400" checked onchange="applyIndSettings()"> S&R Zones</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indFib" class="accent-cyan-400" checked onchange="applyIndSettings()"> Fibonacci</label>
-                    <label class="flex items-center gap-2 cursor-pointer hover:text-white text-slate-300"><input type="checkbox" id="indGX" class="accent-cyan-400" checked onchange="applyIndSettings()"> Golden Cross</label>
-                    <div class="border-t border-qi-border pt-2 flex gap-2">
-                        <button onclick="setAllInds(true)" class="flex-1 py-0.5 rounded border border-qi-cyan/30 text-qi-cyan text-[9px]">All On</button>
-                        <button onclick="setAllInds(false)" class="flex-1 py-0.5 rounded border border-qi-border text-slate-400 text-[9px]">All Off</button>
+                <div id="lwIndDropdown" class="hidden absolute right-0 top-full mt-1 z-50 bg-[#080E1C] border border-qi-border rounded-xl shadow-2xl p-3 w-56 text-[11px]" style="min-width:220px">
+                    <div class="text-[9px] text-slate-500 font-semibold uppercase tracking-widest mb-2.5">Pilih Indikator — klik untuk aktif/nonaktif</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button id="indEMA20"  data-on="true" onclick="toggleIndBtn(this)" class="ind-btn active py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>EMA 20</button>
+                        <button id="indEMA50"  data-on="true" onclick="toggleIndBtn(this)" class="ind-btn active py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>EMA 50</button>
+                        <button id="indEMA200" data-on="true" onclick="toggleIndBtn(this)" class="ind-btn active py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>EMA 200</button>
+                        <button id="indIchi"   data-on="true" onclick="toggleIndBtn(this)" class="ind-btn active py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-400 shrink-0"></span>Ichimoku</button>
+                        <button id="indSR"     data-on="true" onclick="toggleIndBtn(this)" class="ind-btn active py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>S&R Zones</button>
+                        <button id="indFib"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-yellow-400 shrink-0"></span>Fibonacci</button>
+                        <button id="indGX"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn py-1.5 px-2 rounded-lg border text-[10px] font-mono font-semibold transition-all text-left flex items-center gap-1.5 col-span-2"><span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>Golden Cross</button>
+                    </div>
+                    <div class="border-t border-qi-border mt-2.5 pt-2 flex gap-2">
+                        <button onclick="setAllInds(true)"  class="flex-1 py-1 rounded-lg border border-qi-cyan/30 text-qi-cyan text-[9px] hover:bg-qi-cyan/10 transition-all">✓ Semua On</button>
+                        <button onclick="setAllInds(false)" class="flex-1 py-1 rounded-lg border border-qi-border text-slate-400 text-[9px] hover:bg-white/5 transition-all">✕ Semua Off</button>
                     </div>
                 </div>
             </div>
+            <style>
+                .ind-btn { border-color: #0F1A2E; color: #475569; background: transparent; }
+                .ind-btn.active { border-color: #00E5FF44; color: #e2e8f0; background: rgba(0,229,255,0.07); }
+                .ind-btn:hover { border-color: #00E5FF66; background: rgba(0,229,255,0.1); }
+            </style>
             <!-- Screenshot button -->
             <button onclick="chartScreenshot()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-qi-cyan text-[10px]" title="Screenshot + AI Analisis">📷</button>
             <span class="ml-auto text-[9px] text-slate-600 font-mono shrink-0" id="lwChartStatus">lightweight-charts</span>
@@ -3113,6 +3120,7 @@ async function lwFetchAndSetData() {
         const candles = (data.candles || []).filter(c => c.time && c.open);
         if (!candles.length) { if (st) st.textContent = 'Tidak ada data'; return; }
         _lwSeries.setData(candles);
+        _lwLastCandles = candles;
         _lwChart.timeScale().fitContent();
         if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'}[_tvInterval]||_tvInterval) + ' · ' + candles.length + ' bar';
         drawAutoIndicators(candles);
@@ -3126,6 +3134,7 @@ let _lwEma20 = null, _lwEma50 = null, _lwEma200 = null;
 let _lwIchiT = null, _lwIchiK = null, _lwIchiChi = null, _lwIchiSA = null, _lwIchiSB = null;
 let _lwPriceLines = [];
 let _indicatorsEnabled = true;
+let _lwLastCandles = [];
 
 // ─── Indicator Calculations ──────────────────────────────────────────────────
 function _calcEMA(candles, period) {
@@ -3205,7 +3214,14 @@ function _calcGoldenCross(candles) {
     return markers.slice(-15);
 }
 
-function _getIndSetting(id) { const el = document.getElementById(id); return el ? el.checked : true; }
+function _getIndSetting(id) { const el = document.getElementById(id); return el ? el.dataset.on === 'true' : true; }
+
+function toggleIndBtn(btn) {
+    const isOn = btn.dataset.on === 'true';
+    btn.dataset.on = isOn ? 'false' : 'true';
+    btn.classList.toggle('active', !isOn);
+    applyIndSettings();
+}
 
 async function drawAutoIndicators(candles) {
     if (!_lwChart || !_lwSeries || !candles.length || !window._lwModules) return;
@@ -3287,13 +3303,21 @@ function applyIndSettings() {
     _indicatorsEnabled = anyOn;
     const btn = document.getElementById('lwIndBtn');
     if (btn) btn.classList.toggle('text-qi-cyan', anyOn);
-    if (_indicatorsEnabled) lwFetchAndSetData(); else clearIndicators();
+    // Use cached candles — no re-fetch needed
+    if (_lwLastCandles.length) {
+        clearIndicators();
+        if (_indicatorsEnabled) drawAutoIndicators(_lwLastCandles);
+    } else if (_indicatorsEnabled) {
+        lwFetchAndSetData();
+    } else {
+        clearIndicators();
+    }
 }
 
 function setAllInds(on) {
     ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.checked = on;
+        if (el) { el.dataset.on = on ? 'true' : 'false'; el.classList.toggle('active', on); }
     });
     applyIndSettings();
 }
