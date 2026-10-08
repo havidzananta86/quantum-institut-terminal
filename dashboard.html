@@ -101,9 +101,14 @@
         /* ── Panel system ── */
         #mainScroll { position:relative; }
         .panel-content { min-height: 100%; }
-        #panel-charts { height: calc(100vh - 160px); min-height: 500px; }
-        #panel-charts .flex-1 { height: 100%; }
-        #tv_chart_container { height: 100%; min-height: 500px; }
+        #panel-charts { height: calc(100vh - 112px); min-height: 500px; }
+        #tv_chart_container { height: 100%; min-height: 300px; }
+        #chartWatchlist { transition: width .2s ease; }
+        #chartWatchlist.hidden-list { width: 0; overflow: hidden; border: none; }
+        .chart-tab-btn.active { color: #00E5FF; border-bottom: 2px solid #00E5FF; background: rgba(0,229,255,.05); }
+        .wl-row { cursor:pointer; transition: background .15s; }
+        .wl-row:hover { background: rgba(255,255,255,.04); }
+        .wl-row.active-sym { background: rgba(0,229,255,.07); border-left: 2px solid #00E5FF; }
 
         /* ── Line clamp utility ── */
         .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -594,28 +599,103 @@
     </div><!-- /panel-overview -->
 
     <!-- ══ PANEL: Charts (TradingView) ══ -->
-    <div id="panel-charts" class="panel-content hidden h-full flex flex-col">
-        <!-- Symbol selector bar -->
-        <div class="px-4 py-2.5 border-b border-qi-border flex items-center gap-3 flex-shrink-0 bg-qi-panel/40">
-            <span class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Instrumen</span>
-            <div class="flex flex-wrap gap-1.5">
-                <button onclick="setChartSymbol('XAUUSD','OANDA:XAUUSD')" class="chart-sym-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">XAU/USD</button>
-                <button onclick="setChartSymbol('EURUSD','OANDA:EURUSD')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">EUR/USD</button>
-                <button onclick="setChartSymbol('GBPUSD','OANDA:GBPUSD')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">GBP/USD</button>
-                <button onclick="setChartSymbol('USDJPY','OANDA:USDJPY')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">USD/JPY</button>
-                <button onclick="setChartSymbol('BTCUSDT','BINANCE:BTCUSDT')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">BTC/USDT</button>
-                <button onclick="setChartSymbol('ETHUSDT','BINANCE:ETHUSDT')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">ETH/USDT</button>
+    <div id="panel-charts" class="panel-content hidden h-full flex flex-col overflow-hidden">
+        <!-- Top bar: symbol info + timeframe -->
+        <div class="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-qi-border bg-qi-panel/60">
+            <!-- Current symbol badge -->
+            <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
+                <span id="chartCurSym" class="font-heading font-bold text-white text-sm">XAU/USD</span>
+                <span id="chartCurPrice" class="font-mono text-qi-cyan text-sm">—</span>
+                <span id="chartCurChg" class="font-mono text-[11px] text-slate-400">—</span>
             </div>
-            <div class="ml-auto flex gap-1">
-                <button onclick="setChartInterval('15')"  class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">M15</button>
-                <button onclick="setChartInterval('60')"  class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">H1</button>
-                <button onclick="setChartInterval('240')" class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">H4</button>
-                <button onclick="setChartInterval('D')"   class="chart-tf-btn active px-2 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">D1</button>
+            <!-- Timeframe buttons -->
+            <div class="flex gap-1 ml-3">
+                <button onclick="setChartInterval('1')"   class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">1m</button>
+                <button onclick="setChartInterval('5')"   class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">5m</button>
+                <button onclick="setChartInterval('15')"  class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">M15</button>
+                <button onclick="setChartInterval('60')"  class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">H1</button>
+                <button onclick="setChartInterval('240')" class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">H4</button>
+                <button onclick="setChartInterval('D')"   class="chart-tf-btn active px-2 py-0.5 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">D1</button>
+                <button onclick="setChartInterval('W')"   class="chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white">W1</button>
             </div>
+            <!-- Right: toggle watchlist button -->
+            <button onclick="toggleChartWatchlist()" id="watchlistToggleBtn" title="Toggle Watchlist"
+                class="ml-auto text-slate-400 hover:text-qi-cyan text-xs border border-qi-border rounded px-2 py-0.5 font-mono">⊞ List</button>
         </div>
-        <!-- TradingView Advanced Chart -->
-        <div class="flex-1 min-h-0">
-            <div id="tv_chart_container" style="height:100%;min-height:500px;"></div>
+
+        <!-- Main body: chart + right watchlist -->
+        <div class="flex flex-1 min-h-0">
+            <!-- TradingView chart (flex-1) -->
+            <div class="flex-1 flex flex-col min-w-0 min-h-0">
+                <div id="tv_chart_container" class="flex-1" style="min-height:400px;"></div>
+                <!-- Bottom tabs: Posisi / Riwayat -->
+                <div class="flex-shrink-0 border-t border-qi-border bg-qi-panel/80" id="chartBottomPanel">
+                    <div class="flex items-center gap-0 border-b border-qi-border">
+                        <button onclick="setChartTab('positions')" data-ctab="positions"
+                            class="chart-tab-btn active text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-qi-cyan border-b-2 border-b-qi-cyan bg-qi-cyan/5">
+                            Posisi &amp; Order
+                        </button>
+                        <button onclick="setChartTab('history')" data-ctab="history"
+                            class="chart-tab-btn text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-slate-400 hover:text-white">
+                            Riwayat
+                        </button>
+                        <button onclick="setChartTab('journal')" data-ctab="journal"
+                            class="chart-tab-btn text-[10px] font-semibold px-4 py-2 text-slate-400 hover:text-white">
+                            Jurnal
+                        </button>
+                        <div class="ml-auto px-3 flex items-center gap-3">
+                            <span class="text-[10px] text-slate-500 font-mono">Akun Simulasi</span>
+                            <span id="chartAccBalance" class="text-[11px] font-mono font-bold text-white">$10,000.00</span>
+                            <span id="chartFloatPnl" class="text-[11px] font-mono font-bold text-slate-400">P&L: —</span>
+                        </div>
+                    </div>
+                    <div id="chartTabContent" class="overflow-y-auto" style="max-height:160px;">
+                        <div class="px-4 py-3 text-center text-slate-600 text-xs">Tidak ada posisi terbuka</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Watchlist sidebar -->
+            <div id="chartWatchlist" class="w-52 border-l border-qi-border flex flex-col flex-shrink-0 bg-qi-panel/40 overflow-hidden">
+                <!-- Search -->
+                <div class="px-2 py-2 border-b border-qi-border">
+                    <input id="watchlistSearch" type="text" placeholder="Cari simbol…" oninput="filterWatchlist()"
+                        class="w-full bg-[#0A0F1E] border border-qi-border rounded px-2 py-1.5 text-[10px] text-white placeholder-slate-600 outline-none focus:border-qi-cyan/40">
+                </div>
+                <!-- Groups -->
+                <div id="watchlistBody" class="flex-1 overflow-y-auto text-xs">
+                    <!-- Rendered by JS -->
+                    <div class="px-3 py-4 text-center text-slate-600 text-[10px]">Memuat…</div>
+                </div>
+                <!-- Quick order -->
+                <div class="flex-shrink-0 border-t border-qi-border p-2 bg-qi-card/60">
+                    <div class="text-[9px] text-slate-500 font-semibold uppercase tracking-wider mb-1.5 text-center">Trading Simulasi</div>
+                    <div class="text-center mb-2">
+                        <div class="font-heading font-bold text-white text-base" id="chartOrderSym">XAU/USD</div>
+                        <div class="font-mono text-qi-cyan text-sm" id="chartOrderPrice">—</div>
+                    </div>
+                    <div class="flex gap-1.5 mb-2">
+                        <select id="chartOrderLots" class="flex-1 bg-qi-card border border-qi-border text-[10px] text-white rounded px-1 py-1 outline-none">
+                            <option value="0.01">0.01 lot</option>
+                            <option value="0.05">0.05 lot</option>
+                            <option value="0.1" selected>0.1 lot</option>
+                            <option value="0.5">0.5 lot</option>
+                            <option value="1">1.0 lot</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="chartQuickOrder('SELL')"
+                            class="py-2 rounded font-bold text-[11px] text-white bg-qi-red hover:bg-red-500 transition-colors">
+                            SELL
+                        </button>
+                        <button onclick="chartQuickOrder('BUY')"
+                            class="py-2 rounded font-bold text-[11px] text-white bg-qi-green hover:bg-green-500 transition-colors">
+                            BUY
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1427,6 +1507,7 @@ async function fetchMarketData() {
         renderMarketTape(_lastPrices);
         renderStatCards(_lastPrices);
         document.getElementById('tapeUpdated').textContent = new Date().toLocaleTimeString('id-ID');
+        updateWatchlistPrices();
     } catch(e) {}
 }
 
@@ -2342,13 +2423,41 @@ function renderCalTable() {
 }
 
 // ─── TradingView Chart ─────────────────────────────────────────────────────
-let _tvWidget = null;
-let _tvSymbol = 'OANDA:XAUUSD';
-let _tvInterval = 'D';
+let _tvWidget    = null;
+let _tvSymbol    = 'OANDA:XAUUSD';
+let _tvSymLabel  = 'XAU/USD';
+let _tvInterval  = 'D';
+let _chartTab    = 'positions';
+let _wlVisible   = true;
+
+// Watchlist groups & symbols
+const WL_GROUPS = [
+    { label: 'CRYPTO', syms: [
+        { label:'BTC/USDT', key:'BTCUSDT',  tv:'BINANCE:BTCUSDT' },
+        { label:'ETH/USDT', key:'ETHUSDT',  tv:'BINANCE:ETHUSDT' },
+        { label:'SOL/USDT', key:'SOLUSDT',  tv:'BINANCE:SOLUSDT' },
+        { label:'BNB/USDT', key:'BNBUSDT',  tv:'BINANCE:BNBUSDT' },
+        { label:'XRP/USDT', key:'XRPUSDT',  tv:'BINANCE:XRPUSDT' },
+    ]},
+    { label: 'FOREX & EMAS', syms: [
+        { label:'XAU/USD', key:'XAUUSD',  tv:'OANDA:XAUUSD' },
+        { label:'EUR/USD', key:'EURUSD',  tv:'OANDA:EURUSD' },
+        { label:'GBP/USD', key:'GBPUSD',  tv:'OANDA:GBPUSD' },
+        { label:'USD/JPY', key:'USDJPY',  tv:'OANDA:USDJPY' },
+        { label:'AUD/USD', key:'AUDUSD',  tv:'OANDA:AUDUSD' },
+        { label:'USD/CHF', key:'USDCHF',  tv:'OANDA:USDCHF' },
+        { label:'USD/CAD', key:'USDCAD',  tv:'OANDA:USDCAD' },
+        { label:'GBP/JPY', key:'GBPJPY',  tv:'OANDA:GBPJPY' },
+        { label:'EUR/JPY', key:'EURJPY',  tv:'OANDA:EURJPY' },
+    ]},
+];
 
 function initTvChart() {
     const container = document.getElementById('tv_chart_container');
     if (!container) return;
+    renderWatchlist();
+    updateChartHeader();
+    renderChartTab();
     if (window.TradingView) { buildTvWidget(); return; }
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/tv.js';
@@ -2363,7 +2472,7 @@ function buildTvWidget() {
     const innerId = 'tv_inner_' + Date.now();
     const inner = document.createElement('div');
     inner.id = innerId;
-    inner.style.cssText = 'width:100%;height:100%;min-height:500px;';
+    inner.style.cssText = 'width:100%;height:100%;';
     container.appendChild(inner);
     _tvWidget = new TradingView.widget({
         autosize: true,
@@ -2373,7 +2482,7 @@ function buildTvWidget() {
         theme: 'dark',
         style: '1',
         locale: 'id',
-        toolbar_bg: '#0C1220',
+        toolbar_bg: '#050A14',
         enable_publishing: false,
         withdateranges: true,
         hide_side_toolbar: false,
@@ -2383,27 +2492,202 @@ function buildTvWidget() {
     });
 }
 
-function setChartSymbol(sym, tvSym) {
-    _tvSymbol = tvSym;
-    document.querySelectorAll('.chart-sym-btn').forEach(b => {
-        b.classList.toggle('active', b.textContent.trim().replace('/','') === sym.replace('USDT','').replace('USD',''));
-        b.className = b.classList.contains('active')
-            ? 'chart-sym-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
-            : 'chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors';
-    });
+function setChartSymbolFull(key, tvSym, label) {
+    _tvSymbol   = tvSym;
+    _tvSymLabel = label;
+    updateChartHeader();
+    renderWatchlist();
     buildTvWidget();
+}
+
+function updateChartHeader() {
+    const symEl   = document.getElementById('chartCurSym');
+    const pEl     = document.getElementById('chartCurPrice');
+    const chgEl   = document.getElementById('chartCurChg');
+    const ordSym  = document.getElementById('chartOrderSym');
+    const ordPrc  = document.getElementById('chartOrderPrice');
+    if (symEl) symEl.textContent = _tvSymLabel;
+    // find key for this tv symbol
+    const allSyms = WL_GROUPS.flatMap(g => g.syms);
+    const found   = allSyms.find(s => s.tv === _tvSymbol);
+    if (found && _lastPrices[found.key]) {
+        const p = _lastPrices[found.key];
+        if (pEl)    pEl.textContent  = parseFloat(p.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:5});
+        if (chgEl)  { const c = parseFloat(p.chgPct||0); chgEl.textContent = (c>=0?'+':'')+c.toFixed(2)+'%'; chgEl.className = 'font-mono text-[11px] '+(c>=0?'text-qi-green':'text-qi-red'); }
+        if (ordPrc) ordPrc.textContent = parseFloat(p.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:5});
+    } else {
+        if (pEl)    pEl.textContent  = '—';
+        if (chgEl)  chgEl.textContent = '';
+        if (ordPrc) ordPrc.textContent = '—';
+    }
+    if (ordSym) ordSym.textContent = _tvSymLabel;
+}
+
+function renderWatchlist(query) {
+    const body = document.getElementById('watchlistBody');
+    if (!body) return;
+    const q = (query || '').toLowerCase();
+    let html = '';
+    for (const grp of WL_GROUPS) {
+        const rows = grp.syms.filter(s => !q || s.label.toLowerCase().includes(q));
+        if (!rows.length) continue;
+        html += `<div class="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest border-b border-qi-border/40 bg-qi-panel/40">${grp.label}</div>`;
+        for (const s of rows) {
+            const isActive = s.tv === _tvSymbol;
+            const p = _lastPrices[s.key];
+            const price = p ? parseFloat(p.price) : null;
+            const chg   = p ? parseFloat(p.chgPct||0) : null;
+            const chgCls = chg === null ? 'text-slate-500' : chg >= 0 ? 'text-qi-green' : 'text-qi-red';
+            const chgStr = chg === null ? '—' : (chg>=0?'+':'')+chg.toFixed(2)+'%';
+            const priceStr = price === null ? '—' : price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:5});
+            html += `<div onclick="setChartSymbolFull('${s.key}','${s.tv}','${s.label}')"
+                class="wl-row${isActive?' active-sym':''} flex items-center justify-between px-3 py-2 border-b border-qi-border/20">
+                <div>
+                    <div class="font-mono font-bold text-[11px] ${isActive?'text-qi-cyan':'text-white'}">${s.label}</div>
+                </div>
+                <div class="text-right">
+                    <div class="font-mono text-[11px] text-white">${priceStr}</div>
+                    <div class="font-mono text-[9px] ${chgCls}">${chgStr}</div>
+                </div>
+            </div>`;
+        }
+    }
+    body.innerHTML = html || '<div class="px-3 py-4 text-center text-slate-600 text-[10px]">Tidak ditemukan</div>';
+}
+
+function filterWatchlist() {
+    const q = document.getElementById('watchlistSearch')?.value || '';
+    renderWatchlist(q);
+}
+
+function toggleChartWatchlist() {
+    _wlVisible = !_wlVisible;
+    const wl  = document.getElementById('chartWatchlist');
+    const btn = document.getElementById('watchlistToggleBtn');
+    if (wl)  wl.classList.toggle('hidden-list', !_wlVisible);
+    if (btn) btn.textContent = _wlVisible ? '⊞ List' : '⊟ List';
 }
 
 function setChartInterval(iv) {
     _tvInterval = iv;
-    const labels = { '15':'M15', '60':'H1', '240':'H4', 'D':'D1' };
+    const labels = {'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'};
     document.querySelectorAll('.chart-tf-btn').forEach(b => {
         const isActive = labels[iv] === b.textContent.trim();
         b.className = isActive
-            ? 'chart-tf-btn active px-2 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
-            : 'chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors';
+            ? 'chart-tf-btn active px-2 py-0.5 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white';
     });
     buildTvWidget();
+}
+
+function setChartTab(tab) {
+    _chartTab = tab;
+    document.querySelectorAll('.chart-tab-btn').forEach(b => {
+        const active = b.dataset.ctab === tab;
+        b.className = active
+            ? 'chart-tab-btn active text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-qi-cyan border-b-2 border-b-qi-cyan bg-qi-cyan/5'
+            : 'chart-tab-btn text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-slate-400 hover:text-white';
+    });
+    renderChartTab();
+}
+
+function renderChartTab() {
+    const el = document.getElementById('chartTabContent');
+    if (!el) return;
+    if (_chartTab === 'positions') {
+        // Show open positions from paper trading
+        if (!_ptPositions.length) {
+            el.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-[10px]">Tidak ada posisi terbuka. Klik BUY/SELL untuk membuka trade.</div>';
+            return;
+        }
+        let floatTotal = 0;
+        const rows = _ptPositions.map(p => {
+            const cur = _lastPrices[p.symbol];
+            let pnl = 0;
+            if (cur) {
+                const curP  = parseFloat(cur.price);
+                const entP  = parseFloat(p.entryPrice);
+                const diff  = p.side==='BUY' ? curP - entP : entP - curP;
+                pnl = diff * p.lots * ptPnlMult(p.symbol);
+            }
+            floatTotal += pnl;
+            const pnlCls = pnl >= 0 ? 'text-qi-green' : 'text-qi-red';
+            return `<tr class="border-b border-qi-border/30 text-[10px] font-mono">
+                <td class="px-3 py-1.5 text-white font-bold">${SYMBOL_LABELS[p.symbol]||p.symbol}</td>
+                <td class="px-2 py-1.5 ${p.side==='BUY'?'text-qi-green':'text-qi-red'} font-bold">${p.side}</td>
+                <td class="px-2 py-1.5 text-slate-300">${p.lots}</td>
+                <td class="px-2 py-1.5 text-slate-300">${parseFloat(p.entryPrice).toFixed(4)}</td>
+                <td class="px-2 py-1.5 ${pnlCls} font-bold">${pnl>=0?'+':''}$${pnl.toFixed(2)}</td>
+                <td class="px-2 py-1.5"><button onclick="ptClosePosition('${p.id}')" class="text-qi-red hover:underline text-[9px]">Tutup</button></td>
+            </tr>`;
+        }).join('');
+        const flCls = floatTotal >= 0 ? 'text-qi-green' : 'text-qi-red';
+        const flEl  = document.getElementById('chartFloatPnl');
+        if (flEl) { flEl.textContent = `P&L: ${floatTotal>=0?'+':''}$${floatTotal.toFixed(2)}`; flEl.className = `text-[11px] font-mono font-bold ${flCls}`; }
+        el.innerHTML = `<table class="w-full"><thead><tr class="text-[9px] text-slate-500 uppercase border-b border-qi-border">
+            <th class="px-3 py-1 text-left">Simbol</th><th class="px-2 py-1 text-left">Arah</th>
+            <th class="px-2 py-1 text-left">Lot</th><th class="px-2 py-1 text-left">Entry</th>
+            <th class="px-2 py-1 text-left">P&L</th><th class="px-2 py-1"></th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+    } else if (_chartTab === 'history') {
+        const hist = JSON.parse(localStorage.getItem('qi_pt_history')||'[]').slice(-20).reverse();
+        if (!hist.length) { el.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-[10px]">Belum ada riwayat trade.</div>'; return; }
+        const rows = hist.map(h => {
+            const pnlCls = (h.pnl||0) >= 0 ? 'text-qi-green' : 'text-qi-red';
+            return `<tr class="border-b border-qi-border/30 text-[10px] font-mono">
+                <td class="px-3 py-1.5 text-white">${SYMBOL_LABELS[h.symbol]||h.symbol}</td>
+                <td class="px-2 py-1.5 ${h.side==='BUY'?'text-qi-green':'text-qi-red'}">${h.side}</td>
+                <td class="px-2 py-1.5 text-slate-300">${h.lots}</td>
+                <td class="px-2 py-1.5 ${pnlCls}">${(h.pnl||0)>=0?'+':''}$${(h.pnl||0).toFixed(2)}</td>
+                <td class="px-2 py-1.5 text-slate-500 text-[9px]">${h.closeTime?new Date(h.closeTime).toLocaleString('id-ID'):'—'}</td>
+            </tr>`;
+        }).join('');
+        el.innerHTML = `<table class="w-full"><thead><tr class="text-[9px] text-slate-500 uppercase border-b border-qi-border">
+            <th class="px-3 py-1 text-left">Simbol</th><th class="px-2 py-1">Arah</th>
+            <th class="px-2 py-1">Lot</th><th class="px-2 py-1">P&L</th><th class="px-2 py-1 text-left">Waktu Tutup</th>
+        </tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+        el.innerHTML = '<div class="px-4 py-3 text-center text-slate-500 text-[10px]">Fitur jurnal akan segera hadir.</div>';
+    }
+}
+
+function chartQuickOrder(side) {
+    // Determine key from current TV symbol
+    const allSyms = WL_GROUPS.flatMap(g => g.syms);
+    const found   = allSyms.find(s => s.tv === _tvSymbol);
+    if (!found) { alert('Simbol tidak dikenali untuk paper trading'); return; }
+    const lots = parseFloat(document.getElementById('chartOrderLots')?.value || '0.1');
+    const cur  = _lastPrices[found.key];
+    if (!cur) { alert('Harga belum tersedia, tunggu sebentar'); return; }
+    const price = parseFloat(cur.price);
+    const newPos = {
+        id: 'pt_' + Date.now(),
+        symbol: found.key,
+        side,
+        lots,
+        entryPrice: price,
+        openTime: new Date().toISOString(),
+    };
+    _ptPositions.push(newPos);
+    ptSaveToServer();
+    renderChartTab();
+    updateChartHeader();
+    // Flash feedback
+    const btn = side === 'BUY'
+        ? document.querySelector('#chartWatchlist button.bg-qi-green')
+        : document.querySelector('#chartWatchlist button.bg-qi-red');
+    if (btn) { btn.style.opacity = '0.5'; setTimeout(()=>btn.style.opacity='1', 300); }
+}
+
+// Update watchlist prices on every market data fetch
+function updateWatchlistPrices() {
+    if (_activePanel !== 'panel-charts') return;
+    renderWatchlist(document.getElementById('watchlistSearch')?.value || '');
+    updateChartHeader();
+    renderChartTab();
+    // Update account balance
+    const balEl = document.getElementById('chartAccBalance');
+    if (balEl && _ptBalance !== undefined) balEl.textContent = '$' + _ptBalance.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 // ─── Signal Matrix ─────────────────────────────────────────────────────────
