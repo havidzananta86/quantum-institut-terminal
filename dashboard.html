@@ -3564,40 +3564,30 @@ async function fetchCryptoStrength() {
     }
 }
 
-const COMM_TV_MAP = {
-    'XAUUSD': 'TVC:GOLD', 'XAGUSD': 'TVC:SILVER', 'WTIUSD': 'TVC:USOIL',
-    'NGAS':   'PEPPERSTONE:NATGAS', 'COPPER': 'TVC:COPPER',
-};
+const COMM_SYMS   = ['XAUUSD','XAGUSD','WTIUSD','NGAS','COPPER'];
 const COMM_LABELS = { XAUUSD:'Gold', XAGUSD:'Silver', WTIUSD:'Crude Oil', NGAS:'Natural Gas', COPPER:'Copper' };
 const COMM_COLORS = { XAUUSD:'#FFD700', XAGUSD:'#C0C0C0', WTIUSD:'#4A7C59', NGAS:'#3498DB', COPPER:'#B87333' };
 
 async function fetchCommodityStrength() {
     const barsEl  = document.getElementById('commStrengthBars');
     const tableEl = document.getElementById('commStrengthTable');
-    if (barsEl) barsEl.innerHTML = '<div class="text-[11px] text-slate-600 text-center py-4 animate-pulse">Memuat data komoditas…</div>';
+    if (barsEl) barsEl.innerHTML = '<div class="text-[11px] text-slate-600 text-center py-4 animate-pulse">Memuat data komoditas dari TradingView…</div>';
 
     try {
-        const tickers = Object.values(COMM_TV_MAP);
-        const body = JSON.stringify({
-            symbols: { tickers, query: { types: [] } },
-            columns: ['close','change','Recommend.All|1D','Recommend.All|240','RSI','MACD.macd','MACD.signal','EMA20','EMA50']
-        });
-        const res  = await fetch('https://scanner.tradingview.com/global/scan', { method:'POST', headers:{'Content-Type':'application/json'}, body });
+        const res  = await fetch('api/tv-scan.php?symbols=' + COMM_SYMS.join(','));
         const json = await res.json();
-        const tvData = json.data || [];
+        if (json.status !== 'success') throw new Error(json.message);
+        const data = json.data || {};
 
-        const tickerToSym = {};
-        Object.entries(COMM_TV_MAP).forEach(([sym, tv]) => tickerToSym[tv] = sym);
-
-        const items = tvData.map(item => {
-            const sym = tickerToSym[item.s] || item.s;
-            const d = item.d || [];
-            const price = d[0], chg = d[1] != null ? d[1] : 0;
-            const rec = d[2], rec4h = d[3];
-            const score = rec != null ? Math.max(0, Math.min(100, Math.round(50 + rec * 50))) : 50;
-            const sig = rec != null ? (rec >= 0.5 ? 'STRONG BUY' : rec >= 0.1 ? 'BUY' : rec <= -0.5 ? 'STRONG SELL' : rec <= -0.1 ? 'SELL' : 'NEUTRAL') : 'N/A';
-            return { sym, name: COMM_LABELS[sym] || sym, score, chg, price, signal: sig };
-        }).sort((a,b) => b.score - a.score);
+        const items = COMM_SYMS.map(sym => {
+            const d = data[sym];
+            if (!d) return null;
+            const chg = d.change != null ? d.change : 0;
+            const rec = d.timeframes?.['1D']?.value ?? 0;
+            const score = Math.max(0, Math.min(100, Math.round(50 + rec * 50)));
+            const sig = d.timeframes?.['1D']?.signal || 'NEUTRAL';
+            return { sym, name: COMM_LABELS[sym] || sym, score, chg, price: d.price, signal: sig.replace('_',' ') };
+        }).filter(Boolean).sort((a,b) => b.score - a.score);
 
         if (barsEl && items.length) {
             barsEl.innerHTML = items.map((c, i) => {

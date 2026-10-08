@@ -29,6 +29,11 @@ $TV_SYMBOLS = [
     'BNBUSDT' => 'BINANCE:BNBUSDT',
     'XRPUSDT' => 'BINANCE:XRPUSDT',
     'DOGEUSDT'=> 'BINANCE:DOGEUSDT',
+    // Commodities
+    'XAGUSD'  => 'TVC:SILVER',
+    'WTIUSD'  => 'TVC:USOIL',
+    'NGAS'    => 'PEPPERSTONE:NATGAS',
+    'COPPER'  => 'TVC:COPPER',
 ];
 
 $requestSymbols = isset($_GET['symbols'])
