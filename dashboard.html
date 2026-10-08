@@ -5506,7 +5506,7 @@ async function fetchLiquidations() {
     if (!body) return;
     body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-600 animate-pulse">Memuat data likuidasi…</td></tr>';
     try {
-        // Gunakan PHP proxy untuk menghindari CSP/CORS (server fetches dari Binance Futures)
+        // PHP proxy: coba fapi.binance.com, fallback ke spot 24h ticker
         const res = await fetch('api/crypto-futures.php?action=liquidation');
         const j   = await res.json();
         if (!j.ok || !j.data?.length) throw new Error('no data');
@@ -5515,21 +5515,22 @@ async function fetchLiquidations() {
             const chg    = parseFloat(t.change);
             const price  = parseFloat(t.price);
             const vol    = parseFloat(t.volume);
-            const fr     = t.funding ?? 0;
+            const fr     = t.funding ?? null;
             const liqSide = t.liqSide === 'LONG' ? 'LONG LIQ 🔴' : t.liqSide === 'SHORT' ? 'SHORT LIQ 🟢' : chg <= -1.5 ? 'LONG SQUEEZE' : chg >= 1.5 ? 'SHORT SQUEEZE' : 'NETRAL';
             const liqColor = chg <= -1.5 ? 'text-red-400' : chg >= 1.5 ? 'text-green-400' : 'text-slate-400';
             const chgColor = chg >= 0 ? 'text-green-400' : 'text-red-400';
-            const frColor  = fr > 0.01 ? 'text-green-400' : fr < -0.01 ? 'text-red-400' : 'text-slate-500';
+            const frColor  = fr !== null ? (fr > 0.01 ? 'text-green-400' : fr < -0.01 ? 'text-red-400' : 'text-slate-500') : 'text-slate-700';
             const sym      = t.symbol.replace('USDT','/USDT');
             const volFmt   = vol >= 1e9 ? '$' + (vol/1e9).toFixed(1) + 'B' : '$' + (vol/1e6).toFixed(0) + 'M';
             const priceFmt = price >= 1000 ? price.toLocaleString('en-US',{maximumFractionDigits:1}) : price.toPrecision(5);
+            const frFmt    = fr !== null ? fr.toFixed(4) + '%' : '—';
             return `<tr class="border-b border-qi-border/20 hover:bg-white/2 transition-colors">
                 <td class="px-3 py-2 text-left font-bold text-white">${sym}</td>
                 <td class="px-3 py-2 text-right text-slate-300 font-mono">${priceFmt}</td>
                 <td class="px-3 py-2 text-right font-mono font-bold ${chgColor}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</td>
                 <td class="px-3 py-2 text-right text-slate-400 font-mono">${volFmt}</td>
                 <td class="px-3 py-2 text-center text-[9px] font-bold ${liqColor}">${liqSide}</td>
-                <td class="px-3 py-2 text-right font-mono text-[9px] ${frColor}">${fr.toFixed(4)}%</td>
+                <td class="px-3 py-2 text-right font-mono text-[9px] ${frColor}">${frFmt}</td>
             </tr>`;
         }).join('');
     } catch(e) {

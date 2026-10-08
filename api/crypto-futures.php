@@ -12,29 +12,54 @@ function curlGet(string $url): array|false {
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 8,
-        CURLOPT_USERAGENT      => 'QuantumInstitut/1.0',
-        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (QuantumTerminal)',
+        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
     $body = curl_exec($ch);
-    $err  = curl_error($ch);
     curl_close($ch);
-    if ($err || $body === false) return false;
+    if (!$body) return false;
     $decoded = json_decode($body, true);
     return is_array($decoded) ? $decoded : false;
 }
 
 if ($action === 'liquidation') {
-    // Fetch 24h ticker + funding rate dari Binance Futures
+    // Coba Binance Futures dulu, fallback ke Binance Spot 24h ticker
     $TOP = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','LINKUSDT','AVAXUSDT','ADAUSDT','LTCUSDT'];
 
+    // Coba fapi (Binance Futures) dulu
     $tickers = curlGet('https://fapi.binance.com/fapi/v1/ticker/24hr');
-    $funding = curlGet('https://fapi.binance.com/fapi/v1/premiumIndex');
+    $source  = 'futures';
+
+    if ($tickers === false) {
+        // Fallback: Binance Spot 24h ticker — coba beberapa host (sama dengan live-price.php)
+        $symsParam = urlencode(json_encode($TOP));
+        $hosts = ['https://data-api.binance.vision', 'https://api.binance.com', 'https://api1.binance.com'];
+        foreach ($hosts as $host) {
+            $tickers = curlGet("{$host}/api/v3/ticker/24hr?symbols={$symsParam}");
+            if ($tickers !== false) break;
+        }
+        $source = 'spot';
+    }
 
     if ($tickers === false) {
         http_response_code(502);
-        echo json_encode(['error' => 'Gagal mengambil data Binance Futures']);
+        echo json_encode(['error' => 'Gagal mengambil data Binance']);
         exit;
+    }
+
+    // Funding rate (hanya tersedia dari futures, lewati jika spot)
+    $fundMap = [];
+    if ($source === 'futures') {
+        $funding = curlGet('https://fapi.binance.com/fapi/v1/premiumIndex');
+        if ($funding) {
+            foreach ($funding as $f) {
+                $fundMap[$f['symbol']] = isset($f['lastFundingRate'])
+                    ? round((float)$f['lastFundingRate'] * 100, 4)
+                    : null;
+            }
+        }
     }
 
     // Filter ke TOP_SYMS saja
@@ -42,31 +67,21 @@ if ($action === 'liquidation') {
     usort($filtered, fn($a, $b) => (float)$b['quoteVolume'] <=> (float)$a['quoteVolume']);
     $filtered = array_slice($filtered, 0, 8);
 
-    // Build funding map
-    $fundMap = [];
-    if ($funding) {
-        foreach ($funding as $f) {
-            $fundMap[$f['symbol']] = isset($f['lastFundingRate'])
-                ? round((float)$f['lastFundingRate'] * 100, 4)
-                : null;
-        }
-    }
-
     // Compose response
     $rows = [];
     foreach ($filtered as $t) {
         $sym  = $t['symbol'];
-        $chg  = round((float)$t['priceChangePercent'], 2);
+        $chg  = round((float)($t['priceChangePercent'] ?? 0), 2);
         $rows[] = [
-            'symbol'    => $sym,
-            'price'     => $t['lastPrice'],
-            'change'    => $chg,
-            'volume'    => $t['quoteVolume'],
-            'funding'   => $fundMap[$sym] ?? null,
-            'liqSide'   => $chg <= -3 ? 'LONG' : ($chg >= 3 ? 'SHORT' : 'NEUTRAL'),
+            'symbol'  => $sym,
+            'price'   => $t['lastPrice'] ?? $t['weightedAvgPrice'] ?? '0',
+            'change'  => $chg,
+            'volume'  => $t['quoteVolume'] ?? '0',
+            'funding' => $fundMap[$sym] ?? null,
+            'liqSide' => $chg <= -3 ? 'LONG' : ($chg >= 3 ? 'SHORT' : 'NEUTRAL'),
         ];
     }
-    echo json_encode(['ok' => true, 'data' => $rows]);
+    echo json_encode(['ok' => true, 'data' => $rows, 'source' => $source]);
 
 } elseif ($action === 'idr') {
     // Kurs USD/IDR via Frankfurter
