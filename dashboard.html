@@ -677,9 +677,12 @@
                         <li class="flex items-center gap-2 text-slate-300"><span class="text-qi-cyan shrink-0">✓</span> 3D Session Globe + Correlation</li>
                         <li class="flex items-center gap-2 text-slate-300"><span class="text-qi-cyan shrink-0">✓</span> Track Record & AI Outlook Harian</li>
                     </ul>
-                    <a href="pricing.html" class="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-qi-cyan/10 border border-qi-cyan/30 text-qi-cyan text-[11px] font-semibold hover:bg-qi-cyan/20 transition-all">
+                    <a id="upgradeCTABtn" href="pricing.html" class="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-qi-cyan/10 border border-qi-cyan/30 text-qi-cyan text-[11px] font-semibold hover:bg-qi-cyan/20 transition-all">
                         Upgrade ke PRO →
                     </a>
+                    <div id="proActiveMsg" class="hidden mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-qi-cyan/5 border border-qi-cyan/20 text-qi-cyan text-[11px] font-semibold">
+                        ⭐ Paket PRO Aktif — Semua fitur terbuka
+                    </div>
                 </div>
             </div>
         </div>
@@ -697,6 +700,13 @@
                     if (icon) icon.textContent = '⭐';
                     if (lbl) lbl.textContent = role === 'admin' ? 'ADMIN' : 'PRO';
                     if (banner) banner.classList.add('border-qi-cyan/30'); else banner.classList.add('border-qi-border');
+                    // Hide upgrade CTA, show active msg
+                    const upgradeBtn = document.getElementById('upgradeCTABtn');
+                    const proMsg = document.getElementById('proActiveMsg');
+                    if (upgradeBtn) upgradeBtn.style.display = 'none';
+                    if (proMsg) proMsg.classList.remove('hidden');
+                    const vipLabel = document.getElementById('vipPriceLabel');
+                    if (vipLabel) vipLabel.textContent = role === 'admin' ? '★ ADMIN' : '✓ Aktif';
                 } else {
                     if (badge) badge.classList.add('border-slate-700','text-slate-400','bg-slate-800/40');
                     if (banner) banner.classList.add('border-qi-border');
@@ -933,6 +943,7 @@
             <button id="indSR"     data-on="true"  onclick="toggleIndBtn(this)" class="ind-btn active shrink-0 flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-mono font-semibold transition-all" title="S&R Zones"><span class="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"></span>S&amp;R</button>
             <button id="indFib"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-mono font-semibold transition-all" title="Fibonacci"><span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0"></span>Fibo</button>
             <button id="indGX"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-mono font-semibold transition-all" title="Golden / Death Cross"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>G.Cross</button>
+            <button id="indSND"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-1 rounded border text-[10px] font-mono font-semibold transition-all" title="Supply & Demand Fresh Zones"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span>S&amp;D</button>
             <span class="w-px h-4 bg-qi-border/60 mx-1 shrink-0"></span>
             <button onclick="setAllInds(true)"  class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-500 hover:text-qi-cyan hover:border-qi-cyan/30 text-[9px] transition-all" title="Aktifkan semua">All ✓</button>
             <button onclick="setAllInds(false)" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-500 hover:text-red-400 hover:border-red-500/30 text-[9px] transition-all" title="Nonaktifkan semua">All ✕</button>
@@ -3251,6 +3262,7 @@ async function lwFetchAndSetData() {
 let _lwEma20 = null, _lwEma50 = null, _lwEma200 = null;
 let _lwIchiT = null, _lwIchiK = null, _lwIchiChi = null, _lwIchiSA = null, _lwIchiSB = null;
 let _lwPriceLines = [];
+let _lwSDLines = [];
 let _indicatorsEnabled = true;
 let _lwLastCandles = [];
 
@@ -3394,6 +3406,58 @@ async function drawAutoIndicators(candles) {
         const crosses = _calcGoldenCross(candles);
         if (crosses.length) { try { _lwSeries.setMarkers(crosses); } catch(e){} }
     }
+
+    if (_getIndSetting('indSND')) {
+        const zones = _detectSDZones(candles);
+        zones.forEach(z => {
+            const isSupply = z.type === 'supply';
+            const col = isSupply ? '#FF1744CC' : '#00C853CC';
+            const label = isSupply ? `Supply ${z.label}` : `Demand ${z.label}`;
+            try {
+                _lwSDLines.push(_lwSeries.createPriceLine({ price: z.high, color: col, lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: label }));
+                _lwSDLines.push(_lwSeries.createPriceLine({ price: z.low,  color: col, lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '' }));
+            } catch(e) {}
+        });
+    }
+}
+
+function _detectSDZones(candles) {
+    const zones = [];
+    const n = candles.length;
+    const lookback = Math.min(n, 200);
+    const start = n - lookback;
+
+    for (let i = start + 1; i < n - 2; i++) {
+        const prev = candles[i - 1];
+        const curr = candles[i];
+        const next = candles[i + 1];
+
+        const currBody  = Math.abs(curr.close - curr.open);
+        const currRange = curr.high - curr.low || 1;
+        const nextBody  = Math.abs(next.close - next.open);
+        const nextRange = next.high - next.low || 1;
+
+        const isBase       = currBody < currRange * 0.35;
+        const isImpulsive  = nextBody > currRange * 1.2 && nextRange > currRange * 0.8;
+        if (!isBase || !isImpulsive) continue;
+
+        const zoneHigh = Math.max(curr.high, prev.high);
+        const zoneLow  = Math.min(curr.low,  prev.low);
+
+        const laterCandles = candles.slice(i + 2);
+        const isFreshSupply = !laterCandles.some(c => c.low <= zoneHigh && c.high >= zoneLow);
+        const isFreshDemand = !laterCandles.some(c => c.high >= zoneLow && c.low <= zoneHigh);
+
+        const priceScale = zoneHigh > 1000 ? 0 : zoneHigh > 10 ? 2 : 5;
+        const midLabel = ((zoneHigh + zoneLow) / 2).toFixed(priceScale);
+
+        if (next.close < next.open && isFreshSupply) {
+            zones.push({ type: 'supply', high: zoneHigh, low: zoneLow, label: midLabel });
+        } else if (next.close > next.open && isFreshDemand) {
+            zones.push({ type: 'demand', high: zoneHigh, low: zoneLow, label: midLabel });
+        }
+    }
+    return zones.slice(-8);
 }
 
 function clearIndicators() {
@@ -3403,11 +3467,13 @@ function clearIndicators() {
     _lwEma20 = _lwEma50 = _lwEma200 = _lwIchiT = _lwIchiK = _lwIchiChi = _lwIchiSA = _lwIchiSB = null;
     _lwPriceLines.forEach(pl => { if (_lwSeries) { try { _lwSeries.removePriceLine(pl); } catch(e){} } });
     _lwPriceLines = [];
+    _lwSDLines.forEach(pl => { if (_lwSeries) { try { _lwSeries.removePriceLine(pl); } catch(e){} } });
+    _lwSDLines = [];
     if (_lwSeries) { try { _lwSeries.setMarkers([]); } catch(e){} }
 }
 
 function applyIndSettings() {
-    const anyOn = ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX'].some(id => _getIndSetting(id));
+    const anyOn = ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX','indSND'].some(id => _getIndSetting(id));
     _indicatorsEnabled = anyOn;
     const btn = document.getElementById('lwIndBtn');
     if (btn) btn.classList.toggle('text-qi-cyan', anyOn);
@@ -3423,7 +3489,7 @@ function applyIndSettings() {
 }
 
 function setAllInds(on) {
-    ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX'].forEach(id => {
+    ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX','indSND'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.dataset.on = on ? 'true' : 'false'; el.classList.toggle('active', on); }
     });
