@@ -2630,7 +2630,7 @@ function renderChartTab() {
             <th class="px-2 py-1 text-left">P&L</th><th class="px-2 py-1"></th>
         </tr></thead><tbody>${rows}</tbody></table>`;
     } else if (_chartTab === 'history') {
-        const hist = JSON.parse(localStorage.getItem('qi_pt_history')||'[]').slice(-20).reverse();
+        const hist = (_ptHistory || []).slice(0, 20);
         if (!hist.length) { el.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-[10px]">Belum ada riwayat trade.</div>'; return; }
         const rows = hist.map(h => {
             const pnlCls = (h.pnl||0) >= 0 ? 'text-qi-green' : 'text-qi-red';
