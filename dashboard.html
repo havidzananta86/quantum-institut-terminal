@@ -3564,9 +3564,9 @@ async function fetchCryptoStrength() {
     }
 }
 
-const COMM_SYMS   = ['XAUUSD','XAGUSD','WTIUSD','NGAS','COPPER'];
-const COMM_LABELS = { XAUUSD:'Gold', XAGUSD:'Silver', WTIUSD:'Crude Oil', NGAS:'Natural Gas', COPPER:'Copper' };
-const COMM_COLORS = { XAUUSD:'#FFD700', XAGUSD:'#C0C0C0', WTIUSD:'#4A7C59', NGAS:'#3498DB', COPPER:'#B87333' };
+const COMM_SYMS   = ['XAUUSD','XAGUSD','WTIUSD','NGAS','COPPER','PLATINUM'];
+const COMM_LABELS = { XAUUSD:'Gold', XAGUSD:'Silver', WTIUSD:'Crude Oil', NGAS:'Natural Gas', COPPER:'Copper', PLATINUM:'Platinum' };
+const COMM_COLORS = { XAUUSD:'#FFD700', XAGUSD:'#C0C0C0', WTIUSD:'#4A7C59', NGAS:'#3498DB', COPPER:'#B87333', PLATINUM:'#E5E4E2' };
 
 async function fetchCommodityStrength() {
     const barsEl  = document.getElementById('commStrengthBars');

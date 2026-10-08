@@ -31,9 +31,10 @@ $TV_SYMBOLS = [
     'DOGEUSDT'=> 'BINANCE:DOGEUSDT',
     // Commodities
     'XAGUSD'  => 'TVC:SILVER',
-    'WTIUSD'  => 'TVC:USOIL',
-    'NGAS'    => 'PEPPERSTONE:NATGAS',
-    'COPPER'  => 'TVC:COPPER',
+    'WTIUSD'  => 'NYMEX:CL1!',
+    'NGAS'    => 'NYMEX:NG1!',
+    'COPPER'  => 'COMEX:HG1!',
+    'PLATINUM'=> 'TVC:PLATINUM',
 ];
 
 $requestSymbols = isset($_GET['symbols'])
