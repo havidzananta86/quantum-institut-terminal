@@ -2292,6 +2292,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        ========================================================================== */
     const QuantumTrackRecord = {
         data: null,
+        MIN_SAMPLE: 30,   // below this the performance metrics are statistically meaningless
         async render() {
             const container = document.getElementById('panelTrackRecord');
             const innerContainer = document.getElementById('trackRecordContainer');
@@ -2306,6 +2307,17 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
                 const m = json.metrics;
                 const history = json.history;
+
+                // A win rate off a handful of trades is noise, not an edge. Say so plainly
+                // rather than letting "100% win rate" stand next to a VERIFIED badge.
+                const nSample = Number(m.completed_trades) || 0;
+                const smallSampleNote = nSample >= this.MIN_SAMPLE ? '' : `
+                        <div class="p-2 rounded-lg bg-amber-500/5 border border-amber-500/30 text-[10px] text-amber-200/90 leading-relaxed">
+                            <strong class="text-amber-300">⚠ Sampel terlalu kecil (N=${nSample}).</strong>
+                            Win rate, profit factor, dan expectancy di atas <em>belum</em> signifikan secara statistik
+                            dan tidak bisa dipakai memproyeksikan hasil ke depan. Dibutuhkan minimal
+                            ${this.MIN_SAMPLE} trade selesai sebelum angka ini layak dinilai.
+                        </div>`;
 
                 innerContainer.innerHTML = `
                     <div class="space-y-3 font-mono text-xs">
@@ -2332,9 +2344,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                                 <span class="text-[9px] text-slate-500 block">Risk Controlled</span>
                             </div>
                             <div class="col-span-2 sm:col-span-1 flex items-center justify-end">
-                                <span class="px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">VERIFIED AUDIT TRAIL</span>
+                                ${nSample >= this.MIN_SAMPLE
+                                    ? '<span class="px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">VERIFIED AUDIT TRAIL</span>'
+                                    : '<span class="px-2.5 py-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[10px] font-bold">SAMPEL AWAL</span>'}
                             </div>
                         </div>
+                        ${smallSampleNote}
 
                         <!-- Signals Audit Trail Table -->
                         <div class="space-y-1.5 max-h-60 overflow-y-auto thin-scrollbar">
