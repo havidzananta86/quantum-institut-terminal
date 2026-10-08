@@ -585,10 +585,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
             <!-- ECONOMIC CALENDAR, ORDER BOOK, PAPER TRADING & PRO SUITE DRAWER -->
             <div class="w-full rounded-xl border border-cyan-500/20 bg-[#070D22] p-3 font-mono text-xs space-y-3">
-                
-                <!-- Main Panel Tabs: 5 Pro Trading Modules -->
+
+                <!-- Main Panel Tabs -->
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
                     <div class="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5">
+                        <!-- ── AREA GRATIS ── -->
+                        <span class="text-[9px] text-cyan-500/60 font-mono px-1 hidden sm:inline">GRATIS:</span>
                         <button onclick="switchBottomTab('calendar')" id="tab-calendar" class="px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs">
                             <span>📅 KALENDER</span>
                         </button>
@@ -598,20 +600,26 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                         <button onclick="switchBottomTab('orderbook')" id="tab-orderbook" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs">
                             <span>📖 ORDER BOOK</span>
                         </button>
-                        <button onclick="switchBottomTab('papertrading')" id="tab-papertrading" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs">
-                            <span>💼 PAPER TRADING</span>
+
+                        <!-- ── DIVIDER ── -->
+                        <span class="h-4 w-px bg-slate-700 mx-0.5 hidden sm:inline-block"></span>
+                        <span class="text-[9px] text-purple-400/70 font-mono px-0.5 hidden sm:inline">PRO:</span>
+
+                        <!-- ── AREA PRO ── -->
+                        <button onclick="switchBottomTabGated('papertrading')" id="tab-papertrading" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs group">
+                            <span>💼 PAPER TRADING</span><span class="tab-pro-badge hidden sm:inline group-hover:opacity-100">PRO</span>
                         </button>
-                        <button onclick="switchBottomTab('confluence')" id="tab-confluence" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 transition-all flex items-center gap-1 text-xs" title="Multi-Timeframe Confluence Matrix & Liquidity Heatmap">
-                            <span>📊 MATRIX</span>
+                        <button onclick="switchBottomTabGated('confluence')" id="tab-confluence" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 transition-all flex items-center gap-1 text-xs group" title="Multi-Timeframe Confluence Matrix & Liquidity Heatmap">
+                            <span>📊 MATRIX</span><span class="tab-pro-badge hidden sm:inline group-hover:opacity-100">PRO</span>
                         </button>
-                        <button onclick="switchBottomTab('trackrecord')" id="tab-trackrecord" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs" title="Riwayat Audit Sinyal Realtime & Kredibilitas Performance">
-                            <span>📈 TRACK RECORD</span>
+                        <button onclick="switchBottomTabGated('trackrecord')" id="tab-trackrecord" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs group" title="Riwayat Audit Sinyal Realtime & Kredibilitas Performance">
+                            <span>📈 TRACK RECORD</span><span class="tab-pro-badge hidden sm:inline group-hover:opacity-100">PRO</span>
                         </button>
-                        <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
-                            <span>🤖 AI RADAR</span>
+                        <button onclick="switchBottomTabGated('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs group">
+                            <span>🤖 AI RADAR</span><span class="tab-pro-badge hidden sm:inline group-hover:opacity-100">PRO</span>
                         </button>
-                        <button onclick="switchBottomTab('correlation')" id="tab-correlation" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs" title="Matriks Korelasi Pearson antar instrumen">
-                            <span>🔮 KORELASI</span>
+                        <button onclick="switchBottomTabGated('correlation')" id="tab-correlation" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs group" title="Matriks Korelasi Pearson antar instrumen">
+                            <span>🔮 KORELASI</span><span class="tab-pro-badge hidden sm:inline group-hover:opacity-100">PRO</span>
                         </button>
                     </div>
 
@@ -1322,27 +1330,84 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         let selectedCalendarCurrency = 'ALL';
         let selectedCalendarImpact = 'ALL';
 
+        // --- Helpers: role detection ---
+        const PRO_TABS = new Set(['papertrading', 'confluence', 'trackrecord', 'aiscanner', 'correlation']);
+        function _isProUser() {
+            try {
+                const u = JSON.parse(localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user') || 'null');
+                return u && (u.role === 'pro' || u.role === 'admin');
+            } catch (e) { return false; }
+        }
+
+        // Gated entry point for PRO tabs — shows upgrade modal for non-PRO
+        function switchBottomTabGated(tabName) {
+            if (PRO_TABS.has(tabName) && !_isProUser()) {
+                showProUpgradeModal(tabName);
+                return;
+            }
+            switchBottomTab(tabName);
+        }
+
+        // PRO upgrade modal
+        function showProUpgradeModal(fromTab) {
+            const labels = { papertrading: 'Paper Trading', confluence: 'Confluence Matrix',
+                             trackrecord: 'Track Record', aiscanner: 'AI Radar', correlation: 'Correlation Matrix' };
+            const label = labels[fromTab] || fromTab;
+            const existing = document.getElementById('proUpgradeModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'proUpgradeModal';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
+            modal.style.background = 'rgba(5,10,26,0.92)';
+            modal.style.backdropFilter = 'blur(8px)';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="w-full max-w-sm glass-card rounded-2xl p-6 sm:p-8 border border-purple-500/40 shadow-2xl text-center space-y-4 font-mono" style="background:linear-gradient(135deg,rgba(13,24,54,0.95),rgba(10,17,40,0.98))">
+                    <div class="text-3xl">🔒</div>
+                    <div>
+                        <div class="text-[10px] text-purple-400 uppercase tracking-widest mb-1">Fitur Quantum+ PRO</div>
+                        <div class="font-heading font-bold text-white text-lg leading-tight">${label}</div>
+                        <div class="text-slate-400 text-xs mt-2 leading-relaxed">Fitur ini eksklusif untuk pengguna <span class="text-purple-300 font-bold">Quantum+ PRO</span>. Upgrade sekarang untuk akses penuh.</div>
+                    </div>
+                    <div class="space-y-2 pt-2">
+                        <a href="pricing.html" class="block py-3 rounded-xl font-heading font-bold text-sm text-slate-950 transition-all" style="background:linear-gradient(135deg,#A78BFA,#7C4DFF)">⚡ Lihat Paket PRO →</a>
+                        <button onclick="document.getElementById('proUpgradeModal')?.remove()" class="block w-full py-2.5 rounded-xl text-xs text-slate-400 border border-slate-800 hover:border-slate-600 hover:text-white transition-all">Nanti Saja</button>
+                    </div>
+                    <div class="text-[10px] text-slate-600 border-t border-slate-800 pt-3">Mulai dari Rp55.000 / bulan · Aktif instan</div>
+                </div>`;
+            document.body.appendChild(modal);
+            document.addEventListener('keydown', function escClose(e) {
+                if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escClose); }
+            });
+        }
+
         function switchBottomTab(tabName) {
             const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner', 'correlation'];
+            const panelIdMap = { orderbook: 'panelOrderBook', papertrading: 'panelPaperTrading',
+                                 aiscanner: 'panelAIScanner', confluence: 'panelConfluenceMatrix',
+                                 trackrecord: 'panelTrackRecord', correlation: 'panelCorrelation' };
+
             tabs.forEach(t => {
-                const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
-                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : t === 'trackrecord' ? 'TrackRecord' : ''}`);
+                const panelId = panelIdMap[t] || ('panel' + t.charAt(0).toUpperCase() + t.slice(1));
+                const panel = document.getElementById(panelId);
                 const tabBtn = document.getElementById(`tab-${t}`);
 
-                if (panel) {
-                    if (t === tabName) {
-                        panel.classList.remove('hidden');
-                    } else {
-                        panel.classList.add('hidden');
-                    }
-                }
+                if (panel) panel.classList.toggle('hidden', t !== tabName);
 
                 if (tabBtn) {
+                    const isPro = PRO_TABS.has(t);
+                    const proSuffix = isPro ? `<span class="tab-pro-badge hidden sm:inline">PRO</span>` : '';
+                    const icons = { calendar:'📅 KALENDER', news:'📰 BERITA', orderbook:'📖 ORDER BOOK',
+                                    papertrading:'💼 PAPER TRADING', confluence:'📊 MATRIX',
+                                    trackrecord:'📈 TRACK RECORD', aiscanner:'🤖 AI RADAR', correlation:'🔮 KORELASI' };
                     if (t === tabName) {
                         tabBtn.className = "px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs";
                     } else {
-                        tabBtn.className = "px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1 text-xs";
+                        const hoverClass = isPro ? 'hover:text-purple-300' : 'hover:text-white';
+                        tabBtn.className = `px-2.5 py-1.5 rounded-lg text-slate-400 ${hoverClass} transition-all flex items-center gap-1 text-xs group`;
                     }
+                    tabBtn.innerHTML = `<span>${icons[t]}</span>${t !== tabName ? proSuffix : ''}`;
                 }
             });
 
@@ -2457,18 +2522,39 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         }
     </script>
 
-    <!-- ── Disclaimer Footer ───────────────────────────────────────── -->
-    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-3 px-4 text-center mt-auto">
+    <!-- ── Disclaimer Footer (desktop only — mobile uses bottom nav) ── -->
+    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-3 px-4 text-center hidden md:block">
         <p class="text-[10px] text-slate-500 leading-relaxed max-w-4xl mx-auto">
             ⚠ <strong class="text-slate-400">Bukan Nasihat Keuangan.</strong>
-            Sinyal, analisa, dan data yang ditampilkan di platform ini disediakan semata-mata untuk tujuan edukasi dan informasi.
-            Quantum Institut <em>tidak</em> memberikan saran investasi, rekomendasi trading, atau panduan keuangan.
-            Semua keputusan trading adalah tanggung jawab penuh pengguna.
-            Perdagangan instrumen keuangan mengandung risiko tinggi termasuk kemungkinan kehilangan seluruh modal.
+            Platform ini untuk tujuan edukasi. Semua keputusan trading adalah tanggung jawab penuh pengguna.
             Kinerja masa lalu tidak menjamin hasil di masa mendatang.
         </p>
         <p class="text-[9px] text-slate-600 mt-1">© 2026 Quantum Institut</p>
     </footer>
+
+    <!-- ── Mobile Bottom Nav (md and below only) ─────────────────────── -->
+    <nav class="mobile-bottom-nav md:hidden" id="mobileBottomNav" aria-label="Navigasi bawah">
+        <a href="dashboard.html" class="mobile-bottom-nav-item" title="Command Center">
+            <span class="nav-icon">🌐</span>
+            <span>Dashboard</span>
+        </a>
+        <button onclick="switchBottomTabGated('calendar')" class="mobile-bottom-nav-item" id="mbnCalendar" title="Kalender Ekonomi">
+            <span class="nav-icon">📅</span>
+            <span>Kalender</span>
+        </button>
+        <button onclick="switchBottomTabGated('news')" class="mobile-bottom-nav-item" id="mbnNews" title="Berita">
+            <span class="nav-icon">📰</span>
+            <span>Berita</span>
+        </button>
+        <button onclick="switchBottomTabGated('aiscanner')" class="mobile-bottom-nav-item" id="mbnAI" title="AI Radar PRO">
+            <span class="nav-icon">🤖</span>
+            <span>AI Radar</span>
+        </button>
+        <a href="profile.html" class="mobile-bottom-nav-item" title="Profil">
+            <span class="nav-icon">👤</span>
+            <span>Profil</span>
+        </a>
+    </nav>
 
 </body>
 </html>
