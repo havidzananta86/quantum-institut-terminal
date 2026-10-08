@@ -156,6 +156,56 @@
 </head>
 <body class="flex flex-col min-h-screen lg:h-screen text-slate-200 antialiased selection:bg-cyan-500/30 overflow-x-hidden min-w-[320px]">
 
+<!-- ═══ 3D Loading Screen ═══ -->
+<div id="qiLoadScreen" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center" style="background:#030810;">
+    <style>
+        @keyframes qiCubeRotate { 0%{transform:rotateX(-20deg) rotateY(0deg)} 100%{transform:rotateX(-20deg) rotateY(360deg)} }
+        @keyframes qiPulseRing  { 0%{transform:scale(.6);opacity:.8} 50%{transform:scale(1);opacity:.3} 100%{transform:scale(.6);opacity:.8} }
+        @keyframes qiBarLoad    { 0%{width:0} 100%{width:100%} }
+        @keyframes qiFadeOut    { to{opacity:0;visibility:hidden} }
+        .qi-cube-wrap { perspective:400px; width:60px; height:60px; }
+        .qi-cube { width:60px; height:60px; position:relative; transform-style:preserve-3d; animation:qiCubeRotate 2s linear infinite; }
+        .qi-cube-face { position:absolute; width:60px; height:60px; border:1.5px solid rgba(0,229,255,.35); background:rgba(0,229,255,.04); backdrop-filter:blur(2px); }
+        .qi-cube-face:nth-child(1){transform:translateZ(30px)}
+        .qi-cube-face:nth-child(2){transform:rotateY(180deg) translateZ(30px)}
+        .qi-cube-face:nth-child(3){transform:rotateY(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(4){transform:rotateY(-90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(5){transform:rotateX(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(6){transform:rotateX(-90deg) translateZ(30px)}
+        .qi-ring { width:90px; height:90px; border:1px solid rgba(124,77,255,.2); border-radius:50%; position:absolute; animation:qiPulseRing 2s ease-in-out infinite; }
+        .qi-ring:nth-child(2){animation-delay:.5s;border-color:rgba(0,229,255,.15);}
+        #qiLoadScreen.done { animation:qiFadeOut .5s .1s forwards; }
+    </style>
+    <div class="relative flex items-center justify-center mb-6">
+        <div class="qi-ring"></div><div class="qi-ring"></div>
+        <div class="qi-cube-wrap"><div class="qi-cube">
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+        </div></div>
+    </div>
+    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-3">Quantum Institut</div>
+    <div class="text-[9px] font-mono text-slate-600 mb-4" id="qiLoadStatus">Initializing Quantum Terminal…</div>
+    <div class="w-48 h-[2px] bg-[#0F1A2E] rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#00E5FF] to-[#7C4DFF]" style="animation:qiBarLoad 2s ease-out forwards;"></div>
+    </div>
+</div>
+<script>
+(function(){
+    var msgs = ['Connecting to market data…','Loading trading engines…','Calibrating quantum models…','Terminal ready…'];
+    var el = document.getElementById('qiLoadStatus'), idx = 0;
+    var iv = setInterval(function(){ if(el && idx < msgs.length) el.textContent = msgs[idx++]; }, 500);
+    window.addEventListener('load', function(){
+        clearInterval(iv);
+        if(el) el.textContent = 'Ready';
+        setTimeout(function(){
+            var ls = document.getElementById('qiLoadScreen');
+            if(ls) ls.classList.add('done');
+            setTimeout(function(){ if(ls) ls.remove(); }, 700);
+        }, 300);
+    });
+})();
+</script>
+
 <!-- ══════════ NAVIGATION SIDEBAR (slide-in overlay) ══════════ -->
 <aside id="qiNavSidebar"
        class="fixed top-0 left-0 h-full w-56 z-50 bg-[#0C1220] border-r border-slate-800

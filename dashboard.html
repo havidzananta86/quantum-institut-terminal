@@ -181,6 +181,57 @@
 </head>
 
 <body class="h-screen flex overflow-hidden text-slate-300 font-body">
+
+<!-- ═══ 3D LOADING SCREEN ═══ -->
+<div id="qiLoadScreen" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center" style="background:#030810;">
+    <style>
+        @keyframes qiCubeRotate { 0%{transform:rotateX(-20deg) rotateY(0deg)} 100%{transform:rotateX(-20deg) rotateY(360deg)} }
+        @keyframes qiPulseRing  { 0%{transform:scale(.6);opacity:.8} 50%{transform:scale(1);opacity:.3} 100%{transform:scale(.6);opacity:.8} }
+        @keyframes qiBarLoad    { 0%{width:0} 100%{width:100%} }
+        @keyframes qiFadeOut    { to{opacity:0;visibility:hidden} }
+        .qi-cube-wrap { perspective:400px; width:60px; height:60px; }
+        .qi-cube { width:60px; height:60px; position:relative; transform-style:preserve-3d; animation:qiCubeRotate 2s linear infinite; }
+        .qi-cube-face { position:absolute; width:60px; height:60px; border:1.5px solid rgba(0,229,255,.35); background:rgba(0,229,255,.04); backdrop-filter:blur(2px); }
+        .qi-cube-face:nth-child(1){transform:translateZ(30px)}
+        .qi-cube-face:nth-child(2){transform:rotateY(180deg) translateZ(30px)}
+        .qi-cube-face:nth-child(3){transform:rotateY(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(4){transform:rotateY(-90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(5){transform:rotateX(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(6){transform:rotateX(-90deg) translateZ(30px)}
+        .qi-ring { width:90px; height:90px; border:1px solid rgba(124,77,255,.2); border-radius:50%; position:absolute; animation:qiPulseRing 2s ease-in-out infinite; }
+        .qi-ring:nth-child(2){animation-delay:.5s;border-color:rgba(0,229,255,.15);}
+        #qiLoadScreen.done { animation:qiFadeOut .5s .1s forwards; }
+    </style>
+    <div class="relative flex items-center justify-center mb-6">
+        <div class="qi-ring"></div><div class="qi-ring"></div>
+        <div class="qi-cube-wrap"><div class="qi-cube">
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+        </div></div>
+    </div>
+    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-3">Quantum Institut</div>
+    <div class="text-[9px] font-mono text-slate-600 mb-4" id="qiLoadStatus">Initializing Command Center…</div>
+    <div class="w-48 h-[2px] bg-[#0F1A2E] rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#00E5FF] to-[#7C4DFF]" style="animation:qiBarLoad 2s ease-out forwards;"></div>
+    </div>
+</div>
+<script>
+(function(){
+    var msgs = ['Connecting to data feeds…','Loading market modules…','Preparing interface…'];
+    var el = document.getElementById('qiLoadStatus'), idx = 0;
+    var iv = setInterval(function(){ if(el && idx < msgs.length) el.textContent = msgs[idx++]; }, 600);
+    window.addEventListener('load', function(){
+        clearInterval(iv);
+        if(el) el.textContent = 'Ready';
+        setTimeout(function(){
+            var ls = document.getElementById('qiLoadScreen');
+            if(ls) ls.classList.add('done');
+            setTimeout(function(){ if(ls) ls.remove(); }, 700);
+        }, 300);
+    });
+})();
+</script>
+
 <!-- Panel load bar -->
 <div id="panelLoadBar"></div>
 
@@ -436,9 +487,6 @@
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
             <button data-panel="panel-paper" onclick="switchPanel('panel-paper')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">💼</span> Paper Trading
-            </button>
-            <button data-panel="panel-backtest" onclick="switchPanel('panel-backtest')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">⏪</span> Backtester
             </button>
             <button data-panel="panel-track" onclick="switchPanel('panel-track')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🏆</span> Track Record
@@ -1369,85 +1417,6 @@
         </div>
     </div>
 
-    <!-- ══ PANEL: Backtester ══ -->
-    <div id="panel-backtest" class="panel-content hidden p-4 space-y-4">
-        <!-- Config bar -->
-        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-qi-border">
-                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Strategy Backtester — Uji Strategi Historis</span>
-            </div>
-            <div class="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Instrumen</label>
-                    <select id="btSymbol" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none">
-                        <option value="BTCUSDT">BTC/USDT</option>
-                        <option value="ETHUSDT">ETH/USDT</option>
-                        <option value="XAUUSD">XAU/USD</option>
-                        <option value="EURUSD">EUR/USD</option>
-                        <option value="GBPUSD">GBP/USD</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Timeframe</label>
-                    <select id="btTF" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none">
-                        <option value="60">H1</option>
-                        <option value="240">H4</option>
-                        <option value="D">D1</option>
-                        <option value="15">M15</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Strategi</label>
-                    <select id="btStrategy" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none">
-                        <option value="ema_cross">EMA 9/21 Crossover</option>
-                        <option value="rsi_ob">RSI Overbought/Oversold</option>
-                        <option value="snr">Support & Resistance</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Risk/Trade (%)</label>
-                    <input id="btRisk" type="number" value="1" min="0.1" max="10" step="0.1" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="runBacktest()" class="w-full px-4 py-1.5 rounded font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">▶ Jalankan</button>
-                </div>
-            </div>
-        </div>
-        <!-- Results metrics -->
-        <div id="btResults" class="hidden space-y-4">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="btMetrics"></div>
-            <!-- Equity curve (simple bar chart) -->
-            <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-                <div class="px-4 py-3 border-b border-qi-border">
-                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Equity Curve</span>
-                </div>
-                <div id="btEquityChart" class="p-4 flex items-end gap-0.5 h-32 overflow-x-auto"></div>
-            </div>
-            <!-- Trade list -->
-            <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-                <div class="px-4 py-3 border-b border-qi-border">
-                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Daftar Trade</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs font-mono">
-                        <thead><tr class="border-b border-qi-border text-[10px] text-slate-500 uppercase">
-                            <th class="px-4 py-2 text-left">#</th>
-                            <th class="px-3 py-2">Arah</th>
-                            <th class="px-3 py-2">Entry</th>
-                            <th class="px-3 py-2">Exit</th>
-                            <th class="px-3 py-2">P&L%</th>
-                            <th class="px-3 py-2">Durasi</th>
-                        </tr></thead>
-                        <tbody id="btTradeList"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div id="btLoading" class="hidden bg-qi-card border border-qi-border rounded-xl p-8 text-center">
-            <div class="text-slate-500 text-sm">Menganalisa data historis…</div>
-        </div>
-    </div>
-
     <!-- ══ PANEL: Track Record ══ -->
     <div id="panel-track" class="panel-content hidden p-4 space-y-4">
         <!-- Metrics -->
@@ -2069,7 +2038,6 @@ const PANEL_META = {
     'panel-radar':        { icon:'⚡', title:'Quantum AI Radar' },
     'panel-paper':        { icon:'💼', title:'Paper Trading' },
     'panel-ai':           { icon:'🤖', title:'AI Trading Assistant' },
-    'panel-backtest':     { icon:'⏪', title:'Backtester' },
     'panel-track':        { icon:'🏆', title:'Track Record' },
     'panel-correlation':  { icon:'🔮', title:'Correlation Matrix' },
     'panel-cot':          { icon:'📋', title:'COT Analysis' },
@@ -3015,58 +2983,85 @@ const SIGNAL_TFS  = [
 async function fetchSignalMatrix() {
     const body = document.getElementById('signalMatrixBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-slate-600 text-xs">Menghitung EMA/RSI/MACD untuk ${SIGNAL_SYMS.length} instrumen…</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-slate-600 text-xs animate-pulse">Memuat data TradingView untuk ${SIGNAL_SYMS.length} instrumen…</td></tr>`;
 
-    const results = {};
-    await Promise.all(SIGNAL_SYMS.map(async sym => {
-        const tfs = await Promise.allSettled(
-            SIGNAL_TFS.map(tf => fetch(`api/get-chart-data.php?symbol=${sym}&interval=${tf.interval}`).then(r => r.json()))
-        );
-        results[sym] = tfs.map(res => {
-            if (res.status !== 'fulfilled' || !res.value.candles?.length) return null;
-            return analyzeCandles(res.value.candles);
-        });
-    }));
+    const tvSigCls = {
+        STRONG_BUY:'text-qi-green font-bold', BUY:'text-qi-green',
+        STRONG_SELL:'text-qi-red font-bold', SELL:'text-qi-red',
+        NEUTRAL:'text-slate-500', NO_DATA:'text-slate-600'
+    };
+    const tvSigIcon = {
+        STRONG_BUY:'▲▲', BUY:'▲', STRONG_SELL:'▼▼', SELL:'▼',
+        NEUTRAL:'◆', NO_DATA:'—'
+    };
+    const tvSigLabel = {
+        STRONG_BUY:'STRONG BUY', BUY:'BUY', STRONG_SELL:'STRONG SELL',
+        SELL:'SELL', NEUTRAL:'NEUTRAL', NO_DATA:'—'
+    };
+    const tfKeys = ['15','60','240','1D'];
 
-    const sigCls  = { BULLISH:'text-qi-green', BEARISH:'text-qi-red', NEUTRAL:'text-slate-500' };
-    const sigIcon = { BULLISH:'▲', BEARISH:'▼', NEUTRAL:'◆' };
+    try {
+        const res  = await fetch('api/tv-scan.php?symbols=' + SIGNAL_SYMS.join(','));
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message || 'API error');
 
-    body.innerHTML = SIGNAL_SYMS.map(sym => {
-        const tfs   = results[sym] || [null, null, null, null];
-        const score = tfs.reduce((acc, r) => acc + (r?.signal === 'BULLISH' ? 1 : r?.signal === 'BEARISH' ? -1 : 0), 0);
-        let summary = 'NEUTRAL', sumCls = 'text-slate-500';
-        if (score >= 2) { summary = 'BULLISH'; sumCls = 'text-qi-green font-bold'; }
-        if (score <= -2){ summary = 'BEARISH'; sumCls = 'text-qi-red font-bold'; }
+        const data = json.data || {};
+        const srcEl = document.getElementById('signalSource');
+        if (srcEl) srcEl.textContent = `Source: TradingView · ${new Date().toLocaleTimeString('id-ID')}`;
 
-        const label  = SYMBOL_LABELS[sym] || sym;
-        // Last TF (D1) for RSI/MACD display
-        const d1     = tfs[tfs.length - 1];
-        const rsiVal = d1 ? d1.rsi : '—';
-        const rsiCls = d1 ? (d1.rsi > 65 ? 'text-qi-red' : d1.rsi < 35 ? 'text-[#3B82F6]' : 'text-slate-300') : 'text-slate-500';
-        const emaCls = d1?.ema20 && d1?.ema50 ? (d1.ema20 > d1.ema50 ? 'text-qi-green' : 'text-qi-red') : 'text-slate-500';
-        const emaStr = d1?.ema20 && d1?.ema50 ? (d1.ema20 > d1.ema50 ? 'EMA↑' : 'EMA↓') : '—';
-        const macdCls= d1 ? (d1.macdH > 0 ? 'text-qi-green' : 'text-qi-red') : 'text-slate-500';
-        const macdStr= d1 ? (d1.macdH > 0 ? 'MACD↑' : 'MACD↓') : '—';
+        body.innerHTML = SIGNAL_SYMS.map(sym => {
+            const d = data[sym];
+            if (!d) return `<tr class="border-b border-qi-border/50"><td class="px-4 py-2.5 text-white text-[12px]">${SYMBOL_LABELS[sym]||sym}</td><td colspan="7" class="text-center text-slate-600 text-[11px]">No data</td></tr>`;
 
-        const cells = tfs.map(r => {
-            const cls  = sigCls[r?.signal]  || 'text-slate-600';
-            const icon = sigIcon[r?.signal] || '—';
-            return `<td class="px-3 py-2.5 text-center font-mono text-[11px] ${cls}">${r ? icon + ' ' + r.signal : '—'}</td>`;
+            const tfs = d.timeframes || {};
+            const ind = d.indicators || {};
+
+            // Summary: count buy/sell across timeframes
+            let buyCount = 0, sellCount = 0;
+            tfKeys.forEach(tf => {
+                const sig = tfs[tf]?.signal || 'NEUTRAL';
+                if (sig.includes('BUY')) buyCount++;
+                if (sig.includes('SELL')) sellCount++;
+            });
+            let summary = 'NEUTRAL', sumCls = 'text-slate-500';
+            if (buyCount >= 3) { summary = 'STRONG BUY'; sumCls = 'text-qi-green font-bold'; }
+            else if (buyCount >= 2) { summary = 'BUY'; sumCls = 'text-qi-green'; }
+            else if (sellCount >= 3) { summary = 'STRONG SELL'; sumCls = 'text-qi-red font-bold'; }
+            else if (sellCount >= 2) { summary = 'SELL'; sumCls = 'text-qi-red'; }
+
+            const rsi    = ind.rsi != null ? ind.rsi.toFixed(1) : '—';
+            const rsiCls = ind.rsi != null ? (ind.rsi > 65 ? 'text-qi-red' : ind.rsi < 35 ? 'text-[#3B82F6]' : 'text-slate-300') : 'text-slate-500';
+
+            const macdUp = ind.macd != null && ind.macd_signal != null ? ind.macd > ind.macd_signal : null;
+            const macdCls = macdUp === true ? 'text-qi-green' : macdUp === false ? 'text-qi-red' : 'text-slate-500';
+            const macdStr = macdUp === true ? 'MACD↑' : macdUp === false ? 'MACD↓' : '—';
+
+            const emaUp  = ind.ema20 && ind.ema50 ? ind.ema20 > ind.ema50 : null;
+            const emaCls = emaUp === true ? 'text-qi-green' : emaUp === false ? 'text-qi-red' : 'text-slate-500';
+            const emaStr = emaUp === true ? 'EMA↑' : emaUp === false ? 'EMA↓' : '—';
+
+            const cells = tfKeys.map(tf => {
+                const sig  = tfs[tf]?.signal || 'NO_DATA';
+                const cls  = tvSigCls[sig]  || 'text-slate-600';
+                const icon = tvSigIcon[sig] || '—';
+                const lbl  = tvSigLabel[sig]|| sig;
+                return `<td class="px-3 py-2.5 text-center font-mono text-[11px] ${cls}">${icon} ${lbl}</td>`;
+            }).join('');
+
+            return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors">
+                <td class="px-4 py-2.5 font-semibold text-white text-[12px]">${SYMBOL_LABELS[sym]||sym}</td>
+                ${cells}
+                <td class="px-3 py-2 text-center"><span class="font-mono text-[10px] ${rsiCls}">${rsi}</span></td>
+                <td class="px-3 py-2 text-center">
+                    <span class="font-mono text-[10px] ${emaCls}">${emaStr}</span>
+                    <span class="font-mono text-[10px] ${macdCls} ml-1">${macdStr}</span>
+                </td>
+                <td class="px-3 py-2.5 text-center font-mono text-[11px] ${sumCls}">${summary}</td>
+            </tr>`;
         }).join('');
-
-        return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors">
-            <td class="px-4 py-2.5 font-semibold text-white text-[12px]">${label}</td>
-            ${cells}
-            <td class="px-3 py-2 text-center">
-                <span class="font-mono text-[10px] ${rsiCls}">${rsiVal}</span>
-            </td>
-            <td class="px-3 py-2 text-center">
-                <span class="font-mono text-[10px] ${emaCls}">${emaStr}</span>
-                <span class="font-mono text-[10px] ${macdCls} ml-1">${macdStr}</span>
-            </td>
-            <td class="px-3 py-2.5 text-center font-mono text-[11px] ${sumCls}">${summary}</td>
-        </tr>`;
-    }).join('');
+    } catch(err) {
+        body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-qi-red text-xs">Gagal memuat data TradingView: ${err.message}</td></tr>`;
+    }
 }
 
 // ─── Technical Outlook ─────────────────────────────────────────────────────
@@ -3115,64 +3110,86 @@ async function fetchOutlook() {
     const upd  = document.getElementById('outlookUpdated');
     if (!grid) return;
 
-    // Load TradingView TA widget for selected symbol
     loadTvTaWidget(_outlookSym);
 
-    grid.innerHTML = SYMBOLS.slice(0, 9).map(() => '<div class="skel h-24 rounded-xl"></div>').join('');
+    grid.innerHTML = SYMBOLS.map(() => '<div class="skel h-28 rounded-xl"></div>').join('');
 
-    const results = await Promise.allSettled(
-        SYMBOLS.slice(0, 9).map(sym =>
-            fetch(`api/get-chart-data.php?symbol=${sym}&interval=D`).then(r => r.json())
-        )
-    );
+    try {
+        const res  = await fetch('api/tv-scan.php?symbols=' + SYMBOLS.join(','));
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message || 'API error');
 
-    if (upd) upd.textContent = `Updated: ${new Date().toLocaleTimeString('id-ID')} — EMA20/50 cross + RSI14 + MACD`;
+        const data = json.data || {};
+        if (upd) upd.textContent = `Updated: ${new Date().toLocaleTimeString('id-ID')} — Source: TradingView Technical Analysis`;
 
-    grid.innerHTML = results.map((res, i) => {
-        const sym   = SYMBOLS[i];
-        const label = SYMBOL_LABELS[sym] || sym;
-        let analysis = null;
-        if (res.status === 'fulfilled' && res.value.candles?.length >= 55) {
-            analysis = analyzeCandles(res.value.candles);
-        }
+        const sigMap = {
+            STRONG_BUY:  { cls:'text-qi-green font-bold', icon:'▲▲', label:'STRONG BUY' },
+            BUY:         { cls:'text-qi-green',           icon:'▲',  label:'BUY' },
+            NEUTRAL:     { cls:'text-slate-400',          icon:'◆',  label:'NEUTRAL' },
+            SELL:        { cls:'text-qi-red',             icon:'▼',  label:'SELL' },
+            STRONG_SELL: { cls:'text-qi-red font-bold',   icon:'▼▼', label:'STRONG SELL' },
+        };
 
-        const signal  = analysis?.signal || 'NEUTRAL';
-        const rsi     = analysis ? analysis.rsi : '—';
-        const macdDir = analysis ? (analysis.macdH > 0 ? 'positive' : 'negative') : null;
-        const emaDir  = analysis?.ema20 && analysis?.ema50 ? (analysis.ema20 > analysis.ema50 ? 'bullish' : 'bearish') : null;
+        grid.innerHTML = SYMBOLS.map(sym => {
+            const d = data[sym];
+            const label = SYMBOL_LABELS[sym] || sym;
+            if (!d) return `<div class="bg-qi-panel border border-qi-border rounded-xl p-3"><span class="text-white text-[11px]">${label}</span><div class="text-slate-600 text-[10px] mt-2">No data</div></div>`;
 
-        const sigCls  = signal === 'BULLISH' ? 'text-qi-green' : signal === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
-        const sigIcon = signal === 'BULLISH' ? '▲' : signal === 'BEARISH' ? '▼' : '◆';
-        const rsiColor = !analysis ? '#94A3B8' : rsi > 65 ? '#EF4444' : rsi < 35 ? '#3B82F6' : '#10B981';
-        const rsiLabel = !analysis ? 'No data' : rsi > 70 ? 'Overbought' : rsi > 60 ? 'Bullish zone' : rsi < 30 ? 'Oversold' : rsi < 40 ? 'Bearish zone' : 'Neutral zone';
-        const rsiW     = analysis ? Math.min(100, rsi) : 50;
+            const tfs = d.timeframes || {};
+            const ind = d.indicators || {};
 
-        return `<div class="bg-qi-panel border border-qi-border rounded-xl p-3 hover:border-qi-cyan/30 transition-colors">
-            <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-white text-[11px]">${label}</span>
-                <span class="text-[10px] font-mono font-bold ${sigCls}">${sigIcon} ${signal}</span>
-            </div>
-            <!-- RSI bar -->
-            <div class="mb-2">
-                <div class="flex justify-between text-[9px] text-slate-500 mb-0.5">
-                    <span>RSI 14</span><span class="font-mono" style="color:${rsiColor}">${rsi}</span>
+            // Daily signal as primary
+            const dailySig = tfs['1D']?.signal || 'NEUTRAL';
+            const s = sigMap[dailySig] || sigMap.NEUTRAL;
+
+            // RSI
+            const rsi = ind.rsi != null ? ind.rsi.toFixed(1) : '—';
+            const rsiNum = ind.rsi;
+            const rsiColor = rsiNum == null ? '#94A3B8' : rsiNum > 65 ? '#EF4444' : rsiNum < 35 ? '#3B82F6' : '#10B981';
+            const rsiLabel = rsiNum == null ? 'No data' : rsiNum > 70 ? 'Overbought' : rsiNum > 60 ? 'Bullish zone' : rsiNum < 30 ? 'Oversold' : rsiNum < 40 ? 'Bearish zone' : 'Neutral zone';
+            const rsiW = rsiNum != null ? Math.min(100, rsiNum) : 50;
+
+            // EMA / MACD from real indicators
+            const emaDir = ind.ema20 && ind.ema50 ? (ind.ema20 > ind.ema50 ? 'bullish' : 'bearish') : null;
+            const macdDir = ind.macd != null && ind.macd_signal != null ? (ind.macd > ind.macd_signal ? 'positive' : 'negative') : null;
+
+            // Multi-TF mini badges
+            const tfBadges = ['15','60','240','1D'].map(tf => {
+                const sig = tfs[tf]?.signal || 'NEUTRAL';
+                const c = sig.includes('BUY') ? 'bg-qi-green/15 text-qi-green' : sig.includes('SELL') ? 'bg-qi-red/15 text-qi-red' : 'bg-slate-800/50 text-slate-500';
+                const lbl = tf === '15' ? 'M15' : tf === '60' ? 'H1' : tf === '240' ? 'H4' : 'D1';
+                const icon = sig.includes('BUY') ? '▲' : sig.includes('SELL') ? '▼' : '—';
+                return `<span class="px-1 py-0.5 rounded text-[8px] font-mono ${c}">${lbl}${icon}</span>`;
+            }).join('');
+
+            return `<div class="bg-qi-panel border border-qi-border rounded-xl p-3 hover:border-qi-cyan/30 transition-colors">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-white text-[11px]">${label}</span>
+                    <span class="text-[10px] font-mono font-bold ${s.cls}">${s.icon} ${s.label}</span>
                 </div>
-                <div class="h-1.5 bg-[#0F1A2E] rounded-full overflow-hidden">
-                    <div class="h-full rounded-full transition-all" style="width:${rsiW}%;background:${rsiColor}"></div>
+                <div class="mb-2">
+                    <div class="flex justify-between text-[9px] text-slate-500 mb-0.5">
+                        <span>RSI 14</span><span class="font-mono" style="color:${rsiColor}">${rsi}</span>
+                    </div>
+                    <div class="h-1.5 bg-[#0F1A2E] rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all" style="width:${rsiW}%;background:${rsiColor}"></div>
+                    </div>
+                    <div class="text-[9px] mt-0.5" style="color:${rsiColor}">${rsiLabel}</div>
                 </div>
-                <div class="text-[9px] mt-0.5" style="color:${rsiColor}">${rsiLabel}</div>
-            </div>
-            <!-- EMA / MACD status -->
-            <div class="flex gap-2 text-[9px]">
-                <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${emaDir === 'bullish' ? 'bg-qi-green/10 text-qi-green' : emaDir === 'bearish' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
-                    ${emaDir === 'bullish' ? 'EMA20>50 ↑' : emaDir === 'bearish' ? 'EMA20<50 ↓' : 'EMA —'}
-                </span>
-                <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${macdDir === 'positive' ? 'bg-qi-green/10 text-qi-green' : macdDir === 'negative' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
-                    ${macdDir === 'positive' ? 'MACD ↑' : macdDir === 'negative' ? 'MACD ↓' : 'MACD —'}
-                </span>
-            </div>
-        </div>`;
-    }).join('');
+                <div class="flex gap-1.5 text-[9px] mb-1.5">
+                    <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${emaDir === 'bullish' ? 'bg-qi-green/10 text-qi-green' : emaDir === 'bearish' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
+                        ${emaDir === 'bullish' ? 'EMA20>50 ↑' : emaDir === 'bearish' ? 'EMA20<50 ↓' : 'EMA —'}
+                    </span>
+                    <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${macdDir === 'positive' ? 'bg-qi-green/10 text-qi-green' : macdDir === 'negative' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
+                        ${macdDir === 'positive' ? 'MACD ↑' : macdDir === 'negative' ? 'MACD ↓' : 'MACD —'}
+                    </span>
+                </div>
+                <div class="flex gap-1">${tfBadges}</div>
+            </div>`;
+        }).join('');
+    } catch(err) {
+        grid.innerHTML = `<div class="col-span-full text-center text-qi-red text-xs py-4">Gagal memuat data: ${err.message}</div>`;
+    }
 }
 
 // ─── Heatmap Panel ─────────────────────────────────────────────────────────
@@ -3738,182 +3755,6 @@ async function ptSaveToServer() {
             body: JSON.stringify(payload),
         });
     } catch(e) {}
-}
-
-// ─── Backtester ────────────────────────────────────────────────────────────
-async function runBacktest() {
-    const sym      = document.getElementById('btSymbol')?.value || 'BTCUSDT';
-    const tf       = document.getElementById('btTF')?.value || '60';
-    const strategy = document.getElementById('btStrategy')?.value || 'ema_cross';
-    const riskPct  = parseFloat(document.getElementById('btRisk')?.value || 1);
-
-    document.getElementById('btResults').classList.add('hidden');
-    document.getElementById('btLoading').classList.remove('hidden');
-
-    try {
-        const res  = await fetch(`api/get-chart-data.php?symbol=${sym}&interval=${tf}`);
-        const data = await res.json();
-        const candles = data.candles || [];
-        if (candles.length < 30) {
-            document.getElementById('btLoading').classList.add('hidden');
-            return;
-        }
-
-        const trades = [];
-        let equity = 10000;
-        const equityHistory = [equity];
-
-        if (strategy === 'ema_cross') {
-            // EMA 9/21 crossover
-            const k9 = 2/10, k21 = 2/22;
-            let e9 = candles[0].close, e21 = candles[0].close;
-            let prevE9 = e9, prevE21 = e21;
-            let inTrade = null;
-
-            for (let i = 1; i < candles.length; i++) {
-                prevE9 = e9; prevE21 = e21;
-                e9  = candles[i].close * k9  + e9  * (1 - k9);
-                e21 = candles[i].close * k21 + e21 * (1 - k21);
-                const crossUp   = prevE9 <= prevE21 && e9 > e21;
-                const crossDown = prevE9 >= prevE21 && e9 < e21;
-
-                if (inTrade && (crossDown && inTrade.side === 'BUY' || crossUp && inTrade.side === 'SELL' || i === candles.length - 1)) {
-                    const exit = candles[i].close;
-                    const pnlPct = (inTrade.side === 'BUY' ? (exit - inTrade.entry) / inTrade.entry : (inTrade.entry - exit) / inTrade.entry) * 100;
-                    const pnlAmt = equity * riskPct / 100 * (pnlPct / 2);
-                    equity += pnlAmt;
-                    trades.push({ side: inTrade.side, entry: inTrade.entry, exit, pnlPct, duration: i - inTrade.bar });
-                    equityHistory.push(Math.round(equity * 100) / 100);
-                    inTrade = null;
-                }
-                if (!inTrade && (crossUp || crossDown)) {
-                    inTrade = { side: crossUp ? 'BUY' : 'SELL', entry: candles[i].close, bar: i };
-                }
-            }
-        } else if (strategy === 'rsi_ob') {
-            // RSI OB/OS
-            let prevAvgGain = 0, prevAvgLoss = 0;
-            const period = 14;
-            const closes = candles.map(c => c.close);
-            let inTrade = null;
-
-            for (let i = period; i < closes.length; i++) {
-                let g = 0, l = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    const diff = closes[j] - closes[j-1];
-                    if (diff > 0) g += diff; else l += Math.abs(diff);
-                }
-                const rs = l > 0 ? g/period / (l/period) : 100;
-                const rsiVal = 100 - 100 / (1 + rs);
-
-                if (inTrade && ((rsiVal > 50 && inTrade.side === 'BUY') || (rsiVal < 50 && inTrade.side === 'SELL') || i === closes.length - 1)) {
-                    const exit = closes[i];
-                    const pnlPct = (inTrade.side === 'BUY' ? (exit - inTrade.entry) / inTrade.entry : (inTrade.entry - exit) / inTrade.entry) * 100;
-                    const pnlAmt = equity * riskPct / 100 * (pnlPct / 2);
-                    equity += pnlAmt;
-                    trades.push({ side: inTrade.side, entry: inTrade.entry, exit, pnlPct, duration: i - inTrade.bar });
-                    equityHistory.push(Math.round(equity * 100) / 100);
-                    inTrade = null;
-                }
-                if (!inTrade) {
-                    if (rsiVal < 30) inTrade = { side:'BUY', entry:closes[i], bar:i };
-                    else if (rsiVal > 70) inTrade = { side:'SELL', entry:closes[i], bar:i };
-                }
-            }
-        } else {
-            // SNR: buy on support bounce, sell on resistance rejection
-            for (let i = 20; i < candles.length - 5; i++) {
-                const window = candles.slice(i-20, i);
-                const support = Math.min(...window.map(c => c.low));
-                const resist  = Math.max(...window.map(c => c.high));
-                const cur = candles[i];
-                const isSupBounce = cur.low <= support * 1.001 && cur.close > cur.open;
-                const isResReject = cur.high >= resist * 0.999 && cur.close < cur.open;
-
-                if (isSupBounce) {
-                    const tp = cur.close * 1.015, sl = support * 0.998;
-                    let exitIdx = i+1, exitPrice = candles[Math.min(i+5, candles.length-1)].close, hit = 'time';
-                    for (let j = i+1; j < Math.min(i+10, candles.length); j++) {
-                        if (candles[j].high >= tp) { exitPrice = tp; exitIdx = j; hit = 'tp'; break; }
-                        if (candles[j].low  <= sl) { exitPrice = sl; exitIdx = j; hit = 'sl'; break; }
-                    }
-                    const pnlPct = (exitPrice - cur.close) / cur.close * 100;
-                    const pnlAmt = equity * riskPct / 100 * pnlPct;
-                    equity += pnlAmt;
-                    trades.push({ side:'BUY', entry:cur.close, exit:exitPrice, pnlPct, duration:exitIdx-i });
-                    equityHistory.push(Math.round(equity * 100) / 100);
-                    i = exitIdx;
-                }
-            }
-        }
-
-        // Metrics
-        const wins   = trades.filter(t => t.pnlPct > 0).length;
-        const losses = trades.filter(t => t.pnlPct < 0).length;
-        const total  = trades.length;
-        const wr     = total > 0 ? (wins/total*100).toFixed(1) : 0;
-        const grossP = trades.filter(t=>t.pnlPct>0).reduce((s,t)=>s+t.pnlPct,0);
-        const grossL = Math.abs(trades.filter(t=>t.pnlPct<0).reduce((s,t)=>s+t.pnlPct,0));
-        const pf     = grossL > 0 ? (grossP/grossL).toFixed(2) : (grossP > 0 ? '∞' : '0');
-        const netRet = ((equity-10000)/10000*100).toFixed(2);
-        const maxDD  = (() => {
-            let peak = equityHistory[0], dd = 0;
-            for (const e of equityHistory) { peak = Math.max(peak, e); dd = Math.max(dd, (peak-e)/peak*100); }
-            return dd.toFixed(2);
-        })();
-
-        // Render metrics
-        const metEl = document.getElementById('btMetrics');
-        if (metEl) {
-            const cards = [
-                { label:'Win Rate',    val:`${wr}%`,    cls:'text-qi-green' },
-                { label:'Total Trade', val:total,       cls:'text-white' },
-                { label:'Profit Factor',val:pf,         cls:'text-qi-cyan' },
-                { label:'Net Return',  val:`${netRet}%`,cls:netRet>=0?'text-qi-green':'text-qi-red'},
-                { label:'Max DD',      val:`${maxDD}%`, cls:'text-qi-red' },
-                { label:'Balance Akhir',val:`$${Math.round(equity).toLocaleString()}`, cls:'text-qi-gold'},
-            ];
-            metEl.innerHTML = cards.map(c => `<div class="bg-qi-card border border-qi-border rounded-xl p-3 text-center">
-                <div class="text-[10px] text-slate-500 mb-1">${c.label}</div>
-                <div class="font-mono font-bold ${c.cls}">${c.val}</div>
-            </div>`).join('');
-        }
-
-        // Equity curve bars
-        const chartEl = document.getElementById('btEquityChart');
-        if (chartEl && equityHistory.length > 1) {
-            const min = Math.min(...equityHistory);
-            const max = Math.max(...equityHistory);
-            const range = max - min || 1;
-            chartEl.innerHTML = equityHistory.map((v, i) => {
-                const h = Math.max(2, Math.round((v - min) / range * 100));
-                const cls = v >= equityHistory[i-1 >= 0 ? i-1 : 0] ? 'bg-qi-green' : 'bg-qi-red';
-                return `<div class="flex-shrink-0 w-1.5 rounded-t ${cls}" style="height:${h}%" title="$${v.toLocaleString()}"></div>`;
-            }).join('');
-        }
-
-        // Trade list
-        const tlEl = document.getElementById('btTradeList');
-        if (tlEl) {
-            tlEl.innerHTML = trades.slice(-30).reverse().map((t, i) => {
-                const pnlCls = t.pnlPct >= 0 ? 'text-qi-green' : 'text-qi-red';
-                return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02]">
-                    <td class="px-4 py-2 text-slate-500">${trades.length - i}</td>
-                    <td class="px-3 py-2 ${t.side==='BUY'?'text-qi-green':'text-qi-red'}">${t.side}</td>
-                    <td class="px-3 py-2 tabular-nums">${t.entry.toFixed(DP[document.getElementById('btSymbol').value]||2)}</td>
-                    <td class="px-3 py-2 tabular-nums">${t.exit.toFixed(DP[document.getElementById('btSymbol').value]||2)}</td>
-                    <td class="px-3 py-2 tabular-nums font-bold ${pnlCls}">${t.pnlPct>=0?'+':''}${t.pnlPct.toFixed(3)}%</td>
-                    <td class="px-3 py-2 text-slate-500">${t.duration} candle</td>
-                </tr>`;
-            }).join('') || '<tr><td colspan="6" class="px-4 py-4 text-center text-slate-600">Tidak ada trade</td></tr>';
-        }
-
-        document.getElementById('btLoading').classList.add('hidden');
-        document.getElementById('btResults').classList.remove('hidden');
-
-    } catch(e) {
-        document.getElementById('btLoading').classList.add('hidden');
-    }
 }
 
 // ─── Track Record ──────────────────────────────────────────────────────────
