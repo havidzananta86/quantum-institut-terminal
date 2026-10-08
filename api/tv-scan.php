@@ -103,7 +103,7 @@ curl_setopt_array($ch, [
     ],
     CURLOPT_TIMEOUT        => 10,
     CURLOPT_CONNECTTIMEOUT => 5,
-    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
 ]);
 $raw      = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

@@ -10,7 +10,7 @@ if (!function_exists('qi_http_get')) {
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout,
                 CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_USERAGENT => 'Mozilla/5.0 (QuantumTerminal)', CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (QuantumTerminal)', CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
             ]);
             $res = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
             return ($res && $code >= 200 && $code < 300) ? $res : false;
@@ -41,7 +41,7 @@ if (isset($fxSymbols[$symbol])) {
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'User-Agent: Mozilla/5.0'],
-        CURLOPT_TIMEOUT => 5, CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_TIMEOUT => 5, CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
     ]);
     $raw = curl_exec($ch); curl_close($ch);
     $tvData = json_decode($raw, true);

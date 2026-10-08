@@ -31,7 +31,7 @@ if (!function_exists('qi_http_get')) {
                 CURLOPT_CONNECTTIMEOUT => 4,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_USERAGENT      => 'Mozilla/5.0 (QuantumTerminal NewsBot)',
-                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
             ]);
             $res  = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

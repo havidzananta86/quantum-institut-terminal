@@ -5,6 +5,8 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: public, max-age=60'); // cache 60 detik
 
+$_qi_dev = in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true);
+
 $action = $_GET['action'] ?? 'liquidation';
 
 function curlGet(string $url): array|false {
@@ -14,7 +16,7 @@ function curlGet(string $url): array|false {
         CURLOPT_TIMEOUT        => 8,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (QuantumTerminal)',
-        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYPEER => $_qi_dev ? false : true,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
     $body = curl_exec($ch);

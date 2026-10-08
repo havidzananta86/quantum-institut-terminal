@@ -86,7 +86,7 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
     CURLOPT_TIMEOUT        => 20,
-    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
     CURLOPT_HTTPHEADER     => [
         'Content-Type: application/json',
         'Authorization: Bearer ' . $groqKey,

@@ -37,7 +37,7 @@ curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_POSTFIELDS     => $payload,
     CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
 ]);
 $raw  = curl_exec($ch);
 $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

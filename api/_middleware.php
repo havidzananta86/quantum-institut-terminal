@@ -10,6 +10,11 @@
  * Cara pakai: require_once __DIR__ . '/_middleware.php';
  */
 
+// Dev mode: nonaktifkan SSL verify hanya di localhost
+if (!defined('QI_DEV')) {
+    define('QI_DEV', in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true));
+}
+
 // =============================================
 // 1. CORS YANG KETAT — Hanya izinkan origin terpercaya
 // =============================================
