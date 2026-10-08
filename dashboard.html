@@ -896,7 +896,10 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
                     <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Signal Matrix — MTF Bias</span>
                 </div>
-                <button onclick="fetchSignalMatrix()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
+                <div class="flex items-center gap-3">
+                    <span id="signalSource" class="text-[9px] text-slate-600 font-mono"></span>
+                    <button onclick="fetchSignalMatrix()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-xs font-mono" id="signalMatrixTable">
@@ -980,6 +983,11 @@
                     <button id="calFilterMed"  onclick="toggleCalFilter('med')"  class="badge-med  px-2 py-1 text-[10px] font-bold rounded cursor-pointer opacity-100 hover:opacity-80">● Med</button>
                     <button id="calFilterLow"  onclick="toggleCalFilter('low')"  class="badge-low  px-2 py-1 text-[10px] font-bold rounded cursor-pointer opacity-100 hover:opacity-80">● Low</button>
                 </div>
+                <div class="flex gap-1 ml-2">
+                    <button onclick="switchCalView('table')" data-calview="table" class="cal-view-btn px-2 py-1 text-[10px] font-semibold rounded border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">Table</button>
+                    <button onclick="switchCalView('grid')"  data-calview="grid"  class="cal-view-btn px-2 py-1 text-[10px] font-semibold rounded border border-qi-border text-slate-400 hover:border-slate-500">Grid</button>
+                    <button onclick="switchCalView('list')"  data-calview="list"  class="cal-view-btn px-2 py-1 text-[10px] font-semibold rounded border border-qi-border text-slate-400 hover:border-slate-500">List</button>
+                </div>
                 <select id="calFilterCur" onchange="renderCalTable()" class="ml-auto text-[10px] bg-[#080E1C] border border-qi-border text-slate-300 rounded px-2 py-1 outline-none">
                     <option value="ALL">All countries</option>
                     <option value="USD">🇺🇸 USD</option>
@@ -993,8 +1001,8 @@
                 </select>
             </div>
         </div>
-        <!-- Calendar table -->
-        <div class="flex-1 overflow-auto">
+        <!-- Calendar table view -->
+        <div id="calViewTable" class="flex-1 overflow-auto">
             <table class="w-full text-xs" id="calTable">
                 <thead class="sticky top-0 bg-[#050A14] z-10">
                     <tr class="border-b border-qi-border text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -1011,6 +1019,27 @@
                     <tr><td colspan="7" class="px-4 py-8 text-center text-slate-600">Memuat…</td></tr>
                 </tbody>
             </table>
+        </div>
+        <!-- Calendar grid view -->
+        <div id="calViewGrid" class="flex-1 overflow-auto hidden px-4 pb-4">
+            <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                <span class="text-[9px] font-mono text-slate-500">Mon</span>
+                <span class="text-[9px] font-mono text-slate-500">Tue</span>
+                <span class="text-[9px] font-mono text-slate-500">Wed</span>
+                <span class="text-[9px] font-mono text-slate-500">Thu</span>
+                <span class="text-[9px] font-mono text-slate-500">Fri</span>
+                <span class="text-[9px] font-mono text-slate-500">Sat</span>
+                <span class="text-[9px] font-mono text-slate-500">Sun</span>
+            </div>
+            <div id="calGrid2" class="grid grid-cols-7 gap-1"></div>
+            <div id="calDayEvents2" class="hidden mt-3 bg-qi-card border border-qi-border rounded-lg p-3">
+                <div id="calDayTitle2" class="text-[10px] font-semibold text-slate-300 mb-2"></div>
+                <div id="calDayEventList2" class="max-h-40 overflow-auto"></div>
+            </div>
+        </div>
+        <!-- Calendar full list view -->
+        <div id="calViewList" class="flex-1 overflow-auto hidden">
+            <div id="calFullList"></div>
         </div>
     </div>
 
@@ -3242,8 +3271,23 @@ async function fetchOutlook() {
 
 // ─── Heatmap Panel ─────────────────────────────────────────────────────────
 let _calSelected2 = null;
+let _calCurrentView = 'table';
+function switchCalView(view) {
+    _calCurrentView = view;
+    ['table','grid','list'].forEach(v => {
+        const el = document.getElementById('calView' + v.charAt(0).toUpperCase() + v.slice(1));
+        if (el) el.classList.toggle('hidden', v !== view);
+    });
+    document.querySelectorAll('.cal-view-btn').forEach(btn => {
+        const isActive = btn.dataset.calview === view;
+        btn.className = 'cal-view-btn px-2 py-1 text-[10px] font-semibold rounded border ' +
+            (isActive ? 'border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan' : 'border-qi-border text-slate-400 hover:border-slate-500');
+    });
+    if (view === 'grid' && _calEvents.length) renderCalGrid2(_calEvents);
+    if (view === 'list' && _calEvents.length) renderCalFullList(_calEvents);
+}
 function initHeatmapPanel() {
-    if (_calEvents.length) { renderCalTable(); return; }
+    if (_calEvents.length) { renderCalTable(); renderCalGrid2(_calEvents); renderCalFullList(_calEvents); return; }
     const body = document.getElementById('calTableBody');
     if (body) body.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-600">Memuat kalender…</td></tr>';
     fetchCalendarData();
@@ -3258,6 +3302,8 @@ async function fetchCalendarData() {
         const cntEl = document.getElementById('calEventCount');
         if (cntEl) cntEl.textContent = `${_calEvents.length} events`;
         renderCalTable();
+        renderCalGrid2(_calEvents);
+        renderCalFullList(_calEvents);
     } catch(e) {
         const body = document.getElementById('calTableBody');
         if (body) body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Gagal memuat kalender</td></tr>';
