@@ -80,6 +80,23 @@
             #sidebar { transform: translateX(-100%); transition: transform .25s; }
             #sidebar.open { transform: translateX(0); }
         }
+
+        /* ── Panel system ── */
+        #mainScroll { position:relative; }
+        .panel-content { min-height: 100%; }
+        #panel-charts { height: calc(100vh - 160px); min-height: 500px; }
+        #panel-charts .flex-1 { height: 100%; }
+        #tv_chart_container { height: 100%; min-height: 500px; }
+
+        /* ── Line clamp utility ── */
+        .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+        /* ── Chart symbol/tf buttons ── */
+        .chart-sym-btn.active, .chart-tf-btn.active {
+            border-color: rgba(0,229,255,0.4) !important;
+            background: rgba(0,229,255,0.1) !important;
+            color: #00E5FF !important;
+        }
     </style>
 </head>
 
@@ -225,64 +242,64 @@
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 px-2 py-3 space-y-4 text-xs">
+    <nav class="flex-1 px-2 py-3 space-y-4 text-xs" id="dashNav">
 
         <!-- MARKET INTELLIGENCE -->
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market Intelligence</div>
-            <a href="terminal.html#radar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            <button data-panel="panel-radar" onclick="switchPanel('panel-radar')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">⚡</span> Quantum AI Radar
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">PRO</span>
-            </a>
-            <a href="terminal.html#signals" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-signal" onclick="switchPanel('panel-signal')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📡</span> Signal Matrix
-            </a>
-            <a href="terminal.html#analysis" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-outlook" onclick="switchPanel('panel-outlook')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🔬</span> Technical Outlook
-            </a>
-            <a href="economic-calendar.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-heatmap" onclick="switchPanel('panel-heatmap')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🗓</span> Economic Heatmap
-            </a>
+            </button>
         </div>
 
         <!-- MARKET -->
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
-            <a href="terminal.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            <button data-panel="panel-charts" onclick="switchPanel('panel-charts')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📈</span> Charts
-            </a>
-            <a href="terminal.html#orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-orderbook" onclick="switchPanel('panel-orderbook')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📊</span> Order Book
-            </a>
-            <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-news" onclick="switchPanel('panel-news')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📰</span> News Feed
-            </a>
-            <a href="economic-calendar.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-heatmap" onclick="switchPanel('panel-heatmap')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📅</span> Economic Calendar
-            </a>
-            <a href="#market-overview" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer">
+            </button>
+            <button data-panel="panel-overview" onclick="switchPanel('panel-overview')" class="nav-item active w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md">
                 <span class="text-base">🌐</span> Market Overview
-            </a>
-            <a href="#strength" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-strength" onclick="switchPanel('panel-strength')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">💪</span> Currency Strength
-            </a>
+            </button>
         </div>
 
         <!-- TOOLS -->
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
-            <a href="terminal.html#trading" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            <button data-panel="panel-paper" onclick="switchPanel('panel-paper')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">💼</span> Paper Trading
-            </a>
-            <a href="terminal.html#backtest" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-backtest" onclick="switchPanel('panel-backtest')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">⏪</span> Backtester
-            </a>
-            <a href="terminal.html#track" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-track" onclick="switchPanel('panel-track')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🏆</span> Track Record
-            </a>
-            <a href="terminal.html#matrix" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 cursor-pointer">
+            </button>
+            <button data-panel="panel-correlation" onclick="switchPanel('panel-correlation')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🔮</span> Correlation Matrix
-            </a>
+            </button>
         </div>
     </nav>
 
@@ -360,8 +377,17 @@
         </div>
     </div>
 
+    <!-- ── PANEL TITLE BAR ── -->
+    <div id="panelTitleBar" class="px-5 py-2 border-b border-qi-border flex items-center gap-2 flex-shrink-0 bg-qi-panel/60">
+        <span id="panelTitleIcon" class="text-sm">🌐</span>
+        <span id="panelTitleText" class="text-xs font-semibold text-white font-mono uppercase tracking-wider">Market Overview</span>
+    </div>
+
     <!-- ── SCROLLABLE BODY ── -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div class="flex-1 overflow-y-auto" id="mainScroll">
+
+    <!-- ══ PANEL: Market Overview ══ -->
+    <div id="panel-overview" class="panel-content p-4 space-y-4">
 
         <!-- ── STAT CARDS ── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -579,7 +605,287 @@
             Quantum Institut Market Terminal — Data real-time dari Binance, Twelve Data, Biquote, Frankfurter ECB
         </div>
 
-    </div><!-- /scrollable body -->
+    </div><!-- /panel-overview -->
+
+    <!-- ══ PANEL: Charts (TradingView) ══ -->
+    <div id="panel-charts" class="panel-content hidden h-full flex flex-col">
+        <!-- Symbol selector bar -->
+        <div class="px-4 py-2.5 border-b border-qi-border flex items-center gap-3 flex-shrink-0 bg-qi-panel/40">
+            <span class="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Instrumen</span>
+            <div class="flex flex-wrap gap-1.5">
+                <button onclick="setChartSymbol('XAUUSD','OANDA:XAUUSD')" class="chart-sym-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">XAU/USD</button>
+                <button onclick="setChartSymbol('EURUSD','OANDA:EURUSD')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">EUR/USD</button>
+                <button onclick="setChartSymbol('GBPUSD','OANDA:GBPUSD')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">GBP/USD</button>
+                <button onclick="setChartSymbol('USDJPY','OANDA:USDJPY')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">USD/JPY</button>
+                <button onclick="setChartSymbol('BTCUSDT','BINANCE:BTCUSDT')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">BTC/USDT</button>
+                <button onclick="setChartSymbol('ETHUSDT','BINANCE:ETHUSDT')" class="chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">ETH/USDT</button>
+            </div>
+            <div class="ml-auto flex gap-1">
+                <button onclick="setChartInterval('15')"  class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">M15</button>
+                <button onclick="setChartInterval('60')"  class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">H1</button>
+                <button onclick="setChartInterval('240')" class="chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors">H4</button>
+                <button onclick="setChartInterval('D')"   class="chart-tf-btn active px-2 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">D1</button>
+            </div>
+        </div>
+        <!-- TradingView Advanced Chart -->
+        <div class="flex-1 min-h-0">
+            <div id="tv_chart_container" style="height:100%;min-height:500px;"></div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Signal Matrix ══ -->
+    <div id="panel-signal" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Signal Matrix — MTF Bias</span>
+                </div>
+                <button onclick="fetchSignalMatrix()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs font-mono" id="signalMatrixTable">
+                    <thead>
+                        <tr class="border-b border-qi-border text-[10px] text-slate-500 uppercase">
+                            <th class="px-4 py-2.5 text-left">Instrument</th>
+                            <th class="px-3 py-2.5 text-center">M15</th>
+                            <th class="px-3 py-2.5 text-center">H1</th>
+                            <th class="px-3 py-2.5 text-center">H4</th>
+                            <th class="px-3 py-2.5 text-center">D1</th>
+                            <th class="px-3 py-2.5 text-center">Kesimpulan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="signalMatrixBody">
+                        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-600">Memuat signal matrix…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Technical Outlook ══ -->
+    <div id="panel-outlook" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="text-qi-purple text-sm">🔬</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Technical Outlook</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-mono" id="outlookUpdated">—</span>
+            </div>
+            <div id="outlookGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+                <div class="text-center text-slate-600 text-xs py-8 col-span-full">Memuat data…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Economic Heatmap ══ -->
+    <div id="panel-heatmap" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="text-qi-gold text-sm">📅</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Economic Calendar</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5 text-[10px]">
+                        <span class="w-2 h-2 rounded-sm bg-qi-red inline-block"></span><span class="text-slate-500">High</span>
+                        <span class="w-2 h-2 rounded-sm bg-qi-gold inline-block ml-1"></span><span class="text-slate-500">Med</span>
+                        <span class="w-2 h-2 rounded-sm bg-qi-green inline-block ml-1"></span><span class="text-slate-500">Low</span>
+                    </div>
+                    <a href="economic-calendar.html" class="text-[10px] text-qi-cyan hover:underline font-mono">Halaman Penuh →</a>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="grid grid-cols-7 gap-1 mb-1">
+                    <div class="text-[9px] text-slate-600 text-center font-semibold">SEN</div><div class="text-[9px] text-slate-600 text-center font-semibold">SEL</div>
+                    <div class="text-[9px] text-slate-600 text-center font-semibold">RAB</div><div class="text-[9px] text-slate-600 text-center font-semibold">KAM</div>
+                    <div class="text-[9px] text-slate-600 text-center font-semibold">JUM</div><div class="text-[9px] text-slate-600 text-center font-semibold">SAB</div>
+                    <div class="text-[9px] text-slate-600 text-center font-semibold">MIN</div>
+                </div>
+                <div id="calGrid2" class="grid grid-cols-7 gap-1"></div>
+            </div>
+            <div id="calDayEvents2" class="hidden border-t border-qi-border px-4 py-3">
+                <div class="text-[10px] font-semibold text-slate-400 mb-2" id="calDayTitle2">—</div>
+                <div id="calDayEventList2" class="space-y-1"></div>
+            </div>
+        </div>
+        <!-- Event list full -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Semua Event Minggu Ini</span>
+            </div>
+            <div id="calFullList" class="divide-y divide-qi-border/50 max-h-80 overflow-y-auto">
+                <div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Order Book ══ -->
+    <div id="panel-orderbook" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-green session-dot"></span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Order Book</span>
+                </div>
+                <select id="obSymbolSelect" onchange="fetchOrderBook(this.value)" class="text-[10px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1 outline-none">
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-qi-border/50">
+                <!-- Asks -->
+                <div>
+                    <div class="px-4 py-2 text-[10px] font-semibold text-qi-red uppercase tracking-wider border-b border-qi-border/50">Asks (Jual)</div>
+                    <div id="obAsks" class="divide-y divide-qi-border/30 max-h-72 overflow-y-auto">
+                        <div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat…</div>
+                    </div>
+                </div>
+                <!-- Bids -->
+                <div>
+                    <div class="px-4 py-2 text-[10px] font-semibold text-qi-green uppercase tracking-wider border-b border-qi-border/50">Bids (Beli)</div>
+                    <div id="obBids" class="divide-y divide-qi-border/30 max-h-72 overflow-y-auto">
+                        <div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat…</div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-2 border-t border-qi-border flex items-center justify-between">
+                <span class="text-[10px] text-slate-600 font-mono">Mid Price</span>
+                <span class="text-[11px] font-mono font-bold text-white" id="obMidPrice">—</span>
+                <span class="text-[10px] text-slate-600 font-mono" id="obUpdated">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: News Feed ══ -->
+    <div id="panel-news" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Berita Pasar</span>
+                </div>
+                <button onclick="fetchDashNews()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
+            </div>
+            <div id="dashNewsList" class="divide-y divide-qi-border/50">
+                <div class="px-4 py-8 text-center text-slate-600 text-xs">Memuat berita…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Currency Strength (Full) ══ -->
+    <div id="panel-strength" class="panel-content hidden p-4 space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Full strength bars -->
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-qi-purple text-sm">💪</span>
+                        <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Currency Strength Index</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500" id="strengthUpdated2">—</span>
+                </div>
+                <div id="strengthStackFull" class="space-y-3">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+            <!-- Pairs heat table -->
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-cyan text-sm">📊</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Live Pair Prices</span>
+                </div>
+                <div id="strengthPairTable" class="space-y-1.5">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: AI Radar ══ -->
+    <div id="panel-radar" class="panel-content hidden p-4 space-y-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl p-6 text-center">
+            <div class="text-4xl mb-3">⚡</div>
+            <div class="font-heading font-bold text-white text-lg mb-2">Quantum AI Radar</div>
+            <p class="text-slate-400 text-sm mb-5">AI Scanner multi-instrumen dengan 9 mesin kuantum. Buka di Terminal PRO untuk pengalaman penuh.</p>
+            <a href="terminal.html" onclick="sessionStorage.setItem('qi_open_tab','aiscanner')"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-heading font-bold text-slate-950 text-sm"
+               style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">
+                ⚡ Buka AI Radar di Terminal
+            </a>
+        </div>
+        <!-- Quick scan summary from live prices -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Quick Scan — Mover Terkuat</span>
+            </div>
+            <div id="radarQuickScan" class="divide-y divide-qi-border/50">
+                <div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat data…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Paper Trading ══ -->
+    <div id="panel-paper" class="panel-content hidden p-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl p-6 text-center max-w-lg mx-auto">
+            <div class="text-4xl mb-3">💼</div>
+            <div class="font-heading font-bold text-white text-lg mb-2">Paper Trading Simulator</div>
+            <p class="text-slate-400 text-sm mb-5 leading-relaxed">Latih strategi trading dengan akun simulasi tanpa risiko modal nyata. Tersedia di Terminal PRO.</p>
+            <a href="terminal.html" onclick="sessionStorage.setItem('qi_open_tab','papertrading')"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-heading font-bold text-slate-950 text-sm"
+               style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">
+                💼 Buka Paper Trading
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Backtester ══ -->
+    <div id="panel-backtest" class="panel-content hidden p-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl p-6 text-center max-w-lg mx-auto">
+            <div class="text-4xl mb-3">⏪</div>
+            <div class="font-heading font-bold text-white text-lg mb-2">Strategy Backtester</div>
+            <p class="text-slate-400 text-sm mb-5 leading-relaxed">Uji strategi dengan data historis. Lihat win rate, drawdown, dan performa berbasis data.</p>
+            <a href="terminal.html" onclick="sessionStorage.setItem('qi_open_tab','confluence')"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-heading font-bold text-slate-950 text-sm"
+               style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">
+                ⏪ Buka Backtester
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Track Record ══ -->
+    <div id="panel-track" class="panel-content hidden p-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl p-6 text-center max-w-lg mx-auto">
+            <div class="text-4xl mb-3">🏆</div>
+            <div class="font-heading font-bold text-white text-lg mb-2">Track Record Audit</div>
+            <p class="text-slate-400 text-sm mb-5 leading-relaxed">Rekam jejak sinyal dengan statistik jujur: win rate, profit factor, sample size, dan analisa mendalam.</p>
+            <a href="terminal.html" onclick="sessionStorage.setItem('qi_open_tab','trackrecord')"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-heading font-bold text-slate-950 text-sm"
+               style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">
+                🏆 Buka Track Record
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Correlation Matrix ══ -->
+    <div id="panel-correlation" class="panel-content hidden p-4">
+        <div class="bg-qi-card border border-qi-border rounded-xl p-6 text-center max-w-lg mx-auto">
+            <div class="text-4xl mb-3">🔮</div>
+            <div class="font-heading font-bold text-white text-lg mb-2">Correlation Matrix 10×10</div>
+            <p class="text-slate-400 text-sm mb-5 leading-relaxed">Pearson correlation matrix untuk 10 instrumen. Deteksi korelasi positif/negatif antar pair secara real-time.</p>
+            <a href="terminal.html" onclick="sessionStorage.setItem('qi_open_tab','correlation')"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-heading font-bold text-slate-950 text-sm"
+               style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">
+                🔮 Buka Correlation Matrix
+            </a>
+        </div>
+    </div>
+
+    </div><!-- /mainScroll -->
 </div><!-- /main -->
 
 
@@ -1105,10 +1411,495 @@ fetchCalendarCount();
 fetchStrengthStack();
 fetchCalendarHeatmap();
 fetchMtfBias('XAUUSD');
-setInterval(fetchMarketData,      15000); // harga 15 detik
-setInterval(fetchStrengthStack,   30000); // strength 30 detik
-setInterval(fetchCalendarHeatmap, 300000);// kalender 5 menit
+setInterval(fetchMarketData,      15000);
+setInterval(fetchStrengthStack,   30000);
+setInterval(fetchCalendarHeatmap, 300000);
 setInterval(() => fetchMtfBias(document.getElementById('mtfPairSelect')?.value || 'XAUUSD'), 120000);
+
+// ─── Panel Switcher ────────────────────────────────────────────────────────
+const PANEL_META = {
+    'panel-overview':     { icon:'🌐', title:'Market Overview' },
+    'panel-charts':       { icon:'📈', title:'Charts' },
+    'panel-signal':       { icon:'📡', title:'Signal Matrix' },
+    'panel-outlook':      { icon:'🔬', title:'Technical Outlook' },
+    'panel-heatmap':      { icon:'📅', title:'Economic Calendar' },
+    'panel-orderbook':    { icon:'📊', title:'Order Book' },
+    'panel-news':         { icon:'📰', title:'News Feed' },
+    'panel-strength':     { icon:'💪', title:'Currency Strength' },
+    'panel-radar':        { icon:'⚡', title:'Quantum AI Radar' },
+    'panel-paper':        { icon:'💼', title:'Paper Trading' },
+    'panel-backtest':     { icon:'⏪', title:'Backtester' },
+    'panel-track':        { icon:'🏆', title:'Track Record' },
+    'panel-correlation':  { icon:'🔮', title:'Correlation Matrix' },
+};
+let _activePanel = 'panel-overview';
+let _panelInited = new Set(['panel-overview']);
+
+function switchPanel(id) {
+    if (_activePanel === id) return;
+    // Hide current
+    document.querySelectorAll('.panel-content').forEach(p => p.classList.add('hidden'));
+    // Show new
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+    // Update nav active state
+    document.querySelectorAll('#dashNav [data-panel]').forEach(btn => {
+        const isActive = btn.dataset.panel === id;
+        btn.classList.toggle('active', isActive);
+        if (!isActive) btn.classList.add('text-slate-400');
+        else btn.classList.remove('text-slate-400');
+    });
+    // Update title bar
+    const meta = PANEL_META[id] || { icon:'●', title: id };
+    const ti = document.getElementById('panelTitleIcon');
+    const tt = document.getElementById('panelTitleText');
+    if (ti) ti.textContent = meta.icon;
+    if (tt) tt.textContent = meta.title;
+    // Close mobile sidebar
+    const sb = document.getElementById('sidebar');
+    const ovl = document.getElementById('sidebarOverlay');
+    if (sb?.classList.contains('open')) { sb.classList.remove('open'); ovl?.classList.add('hidden'); }
+    // Scroll to top
+    const ms = document.getElementById('mainScroll');
+    if (ms) ms.scrollTop = 0;
+    _activePanel = id;
+    // Lazy-init panels
+    if (!_panelInited.has(id)) {
+        _panelInited.add(id);
+        initPanel(id);
+    }
+}
+
+function initPanel(id) {
+    if (id === 'panel-charts')    initTvChart();
+    if (id === 'panel-signal')    fetchSignalMatrix();
+    if (id === 'panel-outlook')   fetchOutlook();
+    if (id === 'panel-heatmap')   initHeatmapPanel();
+    if (id === 'panel-orderbook') fetchOrderBook('BTCUSDT');
+    if (id === 'panel-news')      fetchDashNews();
+    if (id === 'panel-strength')  fetchStrengthFull();
+    if (id === 'panel-radar')     renderRadarQuickScan();
+}
+
+// ─── TradingView Chart ─────────────────────────────────────────────────────
+let _tvWidget = null;
+let _tvSymbol = 'OANDA:XAUUSD';
+let _tvInterval = 'D';
+
+function initTvChart() {
+    const container = document.getElementById('tv_chart_container');
+    if (!container) return;
+    if (window.TradingView) { buildTvWidget(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js';
+    script.onload = buildTvWidget;
+    document.head.appendChild(script);
+}
+
+function buildTvWidget() {
+    const container = document.getElementById('tv_chart_container');
+    if (!container || !window.TradingView) return;
+    container.innerHTML = '';
+    const innerId = 'tv_inner_' + Date.now();
+    const inner = document.createElement('div');
+    inner.id = innerId;
+    inner.style.cssText = 'width:100%;height:100%;min-height:500px;';
+    container.appendChild(inner);
+    _tvWidget = new TradingView.widget({
+        autosize: true,
+        symbol: _tvSymbol,
+        interval: _tvInterval,
+        timezone: 'Asia/Jakarta',
+        theme: 'dark',
+        style: '1',
+        locale: 'id',
+        toolbar_bg: '#0C1220',
+        enable_publishing: false,
+        withdateranges: true,
+        hide_side_toolbar: false,
+        allow_symbol_change: true,
+        studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies'],
+        container_id: innerId,
+    });
+}
+
+function setChartSymbol(sym, tvSym) {
+    _tvSymbol = tvSym;
+    document.querySelectorAll('.chart-sym-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim().replace('/','') === sym.replace('USDT','').replace('USD',''));
+        b.className = b.classList.contains('active')
+            ? 'chart-sym-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'chart-sym-btn px-2.5 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors';
+    });
+    buildTvWidget();
+}
+
+function setChartInterval(iv) {
+    _tvInterval = iv;
+    const labels = { '15':'M15', '60':'H1', '240':'H4', 'D':'D1' };
+    document.querySelectorAll('.chart-tf-btn').forEach(b => {
+        const isActive = labels[iv] === b.textContent.trim();
+        b.className = isActive
+            ? 'chart-tf-btn active px-2 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'chart-tf-btn px-2 py-1 rounded text-[10px] font-mono border border-slate-700 text-slate-400 hover:border-qi-cyan/40 hover:text-white transition-colors';
+    });
+    buildTvWidget();
+}
+
+// ─── Signal Matrix ─────────────────────────────────────────────────────────
+const SIGNAL_SYMS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','BTCUSDT','ETHUSDT'];
+const SIGNAL_TFS  = [
+    { label:'M15', interval:'15' },
+    { label:'H1',  interval:'60' },
+    { label:'H4',  interval:'240' },
+    { label:'D1',  interval:'D' },
+];
+
+async function fetchSignalMatrix() {
+    const body = document.getElementById('signalMatrixBody');
+    if (!body) return;
+    body.innerHTML = `<tr><td colspan="6" class="px-4 py-4 text-center text-slate-600 text-xs">Menganalisa ${SIGNAL_SYMS.length * SIGNAL_TFS.length} kombinasi…</td></tr>`;
+
+    const results = {};
+    await Promise.all(SIGNAL_SYMS.map(async sym => {
+        const tfs = await Promise.allSettled(
+            SIGNAL_TFS.map(tf => fetch(`api/get-chart-data.php?symbol=${sym}&interval=${tf.interval}`).then(r => r.json()))
+        );
+        results[sym] = tfs.map(res => {
+            if (res.status !== 'fulfilled' || !res.value.candles?.length) return null;
+            const candles = res.value.candles.slice(-10);
+            const bullish = candles.filter(c => c.close > c.open).length;
+            if (bullish >= 7) return 'BULLISH';
+            if (bullish <= 3) return 'BEARISH';
+            return 'NEUTRAL';
+        });
+    }));
+
+    const biasCls = { BULLISH:'text-qi-green', BEARISH:'text-qi-red', NEUTRAL:'text-slate-500' };
+    const biasIcon = { BULLISH:'▲', BEARISH:'▼', NEUTRAL:'◆' };
+
+    body.innerHTML = SIGNAL_SYMS.map(sym => {
+        const tfs = results[sym] || [null, null, null, null];
+        const score = tfs.reduce((acc, b) => acc + (b === 'BULLISH' ? 1 : b === 'BEARISH' ? -1 : 0), 0);
+        let summary = 'NEUTRAL', sumCls = 'text-slate-500';
+        if (score >= 2) { summary = 'BULLISH'; sumCls = 'text-qi-green font-bold'; }
+        if (score <= -2) { summary = 'BEARISH'; sumCls = 'text-qi-red font-bold'; }
+        const label = SYMBOL_LABELS[sym] || sym;
+        const cells = tfs.map(b => {
+            const cls = biasCls[b] || 'text-slate-600';
+            const icon = biasIcon[b] || '—';
+            return `<td class="px-3 py-2.5 text-center font-mono text-[11px] ${cls}">${b ? icon + ' ' + b : '—'}</td>`;
+        }).join('');
+        return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors">
+            <td class="px-4 py-2.5 font-semibold text-white">${label}</td>
+            ${cells}
+            <td class="px-3 py-2.5 text-center font-mono text-[11px] ${sumCls}">${summary}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ─── Technical Outlook ─────────────────────────────────────────────────────
+async function fetchOutlook() {
+    const grid = document.getElementById('outlookGrid');
+    const upd  = document.getElementById('outlookUpdated');
+    if (!grid) return;
+    grid.innerHTML = SYMBOLS.slice(0, 9).map(() => `<div class="skel h-24 rounded-xl"></div>`).join('');
+
+    const results = await Promise.allSettled(
+        SYMBOLS.slice(0, 9).map(sym =>
+            fetch(`api/get-chart-data.php?symbol=${sym}&interval=60`).then(r => r.json())
+        )
+    );
+
+    grid.innerHTML = results.map((res, i) => {
+        const sym = SYMBOLS[i];
+        const label = SYMBOL_LABELS[sym] || sym;
+        let trend = 'NEUTRAL', rsiEst = 50, vol = 'Normal';
+        if (res.status === 'fulfilled' && res.value.candles?.length >= 10) {
+            const candles = res.value.candles.slice(-14);
+            const gains = candles.filter(c => c.close > c.open).length;
+            rsiEst = Math.round((gains / candles.length) * 100);
+            if (rsiEst > 60) { trend = 'BULLISH'; }
+            else if (rsiEst < 40) { trend = 'BEARISH'; }
+            const last5 = candles.slice(-5);
+            const avgRange = last5.reduce((s, c) => s + Math.abs(c.high - c.low), 0) / 5;
+            const all5 = candles.reduce((s, c) => s + Math.abs(c.high - c.low), 0) / candles.length;
+            vol = avgRange > all5 * 1.3 ? 'Tinggi' : avgRange < all5 * 0.7 ? 'Rendah' : 'Normal';
+        }
+        const trendCls = trend === 'BULLISH' ? 'text-qi-green' : trend === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
+        const trendIcon = trend === 'BULLISH' ? '▲' : trend === 'BEARISH' ? '▼' : '◆';
+        const rsiColor = rsiEst > 65 ? '#EF4444' : rsiEst < 35 ? '#3B82F6' : '#10B981';
+        const rsiLabel = rsiEst > 65 ? 'Overbought' : rsiEst < 35 ? 'Oversold' : 'Netral';
+        return `<div class="bg-qi-panel border border-qi-border rounded-xl p-3 hover:border-qi-cyan/30 transition-colors">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-white text-[11px]">${label}</span>
+                <span class="text-[10px] font-mono font-bold ${trendCls}">${trendIcon} ${trend}</span>
+            </div>
+            <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[9px] text-slate-500 w-8">RSI~</span>
+                <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" style="width:${rsiEst}%;background:${rsiColor}"></div>
+                </div>
+                <span class="text-[9px] font-mono text-slate-400">${rsiEst}</span>
+            </div>
+            <div class="flex items-center justify-between text-[9px]">
+                <span class="text-slate-500">${rsiLabel}</span>
+                <span class="font-mono text-slate-500">Vol: <span class="text-slate-300">${vol}</span></span>
+            </div>
+        </div>`;
+    }).join('');
+    if (upd) upd.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ─── Heatmap Panel (reuses calendar data) ─────────────────────────────────
+let _calSelected2 = null;
+function initHeatmapPanel() {
+    if (_calEvents.length) {
+        renderCalGrid2(_calEvents);
+        renderCalFullList(_calEvents);
+    } else {
+        fetch('api/calendar.php').then(r => r.json()).then(d => {
+            _calEvents = d.events || d.data || [];
+            renderCalGrid2(_calEvents);
+            renderCalFullList(_calEvents);
+        }).catch(() => {});
+    }
+}
+
+function renderCalGrid2(events) {
+    const now = new Date(), year = now.getFullYear(), month = now.getMonth();
+    const dayMap = {};
+    events.forEach(e => {
+        if (!e.date) return;
+        const d = new Date(e.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (!dayMap[key]) dayMap[key] = { high:0, medium:0, low:0, events:[] };
+        const imp = (e.impact||'low').toLowerCase();
+        dayMap[key][imp === 'high' ? 'high' : imp === 'medium' ? 'medium' : 'low']++;
+        dayMap[key].events.push(e);
+    });
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const todayKey = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const grid = document.getElementById('calGrid2');
+    if (!grid) return;
+    let html = '';
+    for (let i = 0; i < startOffset; i++) html += '<div class="aspect-square"></div>';
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const info = dayMap[key];
+        let bg = 'bg-qi-panel hover:bg-slate-700/50';
+        let dot = '';
+        if (info) {
+            if (info.high > 0)        { bg = 'bg-qi-red/20 hover:bg-qi-red/30';    dot = '<span class="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-qi-red"></span>'; }
+            else if (info.medium > 0) { bg = 'bg-qi-gold/15 hover:bg-qi-gold/25';  dot = '<span class="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-qi-gold"></span>'; }
+            else                      { bg = 'bg-qi-green/10 hover:bg-qi-green/20'; dot = '<span class="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-qi-green"></span>'; }
+        }
+        const todayRing = key === todayKey ? ' ring-1 ring-qi-cyan' : '';
+        const selRing   = key === _calSelected2 ? ' ring-1 ring-white/60' : '';
+        const total = info ? (info.high + info.medium + info.low) : 0;
+        html += `<div onclick="selectCalDay2('${key}')" class="aspect-square relative rounded cursor-pointer flex items-end justify-start p-0.5 ${bg}${todayRing}${selRing} transition-all" title="${total} event">
+            ${dot}<span class="text-[9px] font-mono ${key === todayKey ? 'text-qi-cyan font-bold' : 'text-slate-500'}">${day}</span>
+            ${total > 0 ? `<span class="absolute bottom-0.5 left-0.5 text-[8px] text-white/50">${total}</span>` : ''}
+        </div>`;
+    }
+    grid.innerHTML = html;
+}
+
+function selectCalDay2(key) {
+    _calSelected2 = key;
+    renderCalGrid2(_calEvents);
+    const evts = _calEvents.filter(e => {
+        if (!e.date) return false;
+        const d = new Date(e.date);
+        const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return k === key;
+    });
+    const panel = document.getElementById('calDayEvents2');
+    const title = document.getElementById('calDayTitle2');
+    const list  = document.getElementById('calDayEventList2');
+    if (!panel || !list) return;
+    if (!evts.length) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    if (title) title.textContent = `${evts.length} event pada ${key}`;
+    const IMPACT_CLS = { high:'text-qi-red', medium:'text-qi-gold', low:'text-qi-green' };
+    list.innerHTML = evts.map(e => {
+        const imp = (e.impact||'low').toLowerCase();
+        const cls = IMPACT_CLS[imp] || 'text-slate-400';
+        const t = e.date ? new Date(e.date).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div class="flex items-start gap-2 py-1 border-b border-qi-border/40 last:border-0">
+            <span class="text-[9px] font-mono text-slate-600 w-10 shrink-0 mt-0.5">${t}</span>
+            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${e.currency||''}</span>
+            <span class="text-[10px] text-slate-300 leading-tight">${e.title||'—'}</span>
+            <span class="ml-auto text-[9px] ${cls} shrink-0">${imp.toUpperCase()}</span>
+        </div>`;
+    }).join('');
+}
+
+function renderCalFullList(events) {
+    const el = document.getElementById('calFullList');
+    if (!el) return;
+    const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const IMPACT_CLS = { high:'text-qi-red', medium:'text-qi-gold', low:'text-qi-green' };
+    if (!sorted.length) { el.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Tidak ada data</div>'; return; }
+    el.innerHTML = sorted.map(e => {
+        const imp = (e.impact||'low').toLowerCase();
+        const cls = IMPACT_CLS[imp] || 'text-slate-400';
+        const dt = e.date ? new Date(e.date).toLocaleString('id-ID',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div class="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[.02] transition-colors">
+            <span class="text-[9px] font-mono text-slate-500 w-28 shrink-0">${dt}</span>
+            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${e.currency||''}</span>
+            <span class="text-[10px] text-slate-300 leading-tight flex-1 truncate">${e.title||'—'}</span>
+            <span class="text-[9px] ${cls} shrink-0 font-semibold">${imp.toUpperCase()}</span>
+        </div>`;
+    }).join('');
+}
+
+// ─── Order Book ────────────────────────────────────────────────────────────
+async function fetchOrderBook(sym) {
+    const asksEl = document.getElementById('obAsks');
+    const bidsEl = document.getElementById('obBids');
+    const midEl  = document.getElementById('obMidPrice');
+    const updEl  = document.getElementById('obUpdated');
+    if (!asksEl || !bidsEl) return;
+    asksEl.innerHTML = bidsEl.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-xs">Memuat…</div>';
+    try {
+        const res  = await fetch(`api/order-book.php?symbol=${sym}&limit=12`);
+        const data = await res.json();
+        const asks = (data.asks || []).slice(0, 12).reverse();
+        const bids = (data.bids || []).slice(0, 12);
+        const maxAskVol = Math.max(...asks.map(r => parseFloat(r[1]||0)), 1);
+        const maxBidVol = Math.max(...bids.map(r => parseFloat(r[1]||0)), 1);
+        const fmtRow = (r, color, maxVol) => {
+            const price = parseFloat(r[0]).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:6});
+            const vol   = parseFloat(r[1]).toFixed(4);
+            const pct   = (parseFloat(r[1]) / maxVol * 100).toFixed(0);
+            return `<div class="relative flex items-center justify-between px-4 py-1.5 text-[11px] font-mono hover:bg-white/[.02]">
+                <div class="absolute inset-0 right-auto" style="width:${pct}%;background:${color}18"></div>
+                <span class="relative ${color === '#EF4444' ? 'text-qi-red' : 'text-qi-green'}">${price}</span>
+                <span class="relative text-slate-500">${vol}</span>
+            </div>`;
+        };
+        asksEl.innerHTML = asks.map(r => fmtRow(r, '#EF4444', maxAskVol)).join('') || '<div class="px-4 py-3 text-center text-slate-600 text-xs">—</div>';
+        bidsEl.innerHTML = bids.map(r => fmtRow(r, '#10B981', maxBidVol)).join('') || '<div class="px-4 py-3 text-center text-slate-600 text-xs">—</div>';
+        if (midEl && asks.length && bids.length) {
+            const mid = ((parseFloat(asks[0][0]) + parseFloat(bids[0][0])) / 2);
+            midEl.textContent = mid.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:6});
+        }
+        if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID');
+    } catch(e) {
+        asksEl.innerHTML = bidsEl.innerHTML = '<div class="px-4 py-4 text-center text-slate-600 text-xs">Data tidak tersedia</div>';
+    }
+}
+
+// ─── Dashboard News ────────────────────────────────────────────────────────
+async function fetchDashNews() {
+    const el = document.getElementById('dashNewsList');
+    if (!el) return;
+    el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Memuat berita…</div>';
+    try {
+        const res  = await fetch('api/news.php?limit=30');
+        const data = await res.json();
+        const items = data.items || data.news || data.articles || [];
+        if (!items.length) { el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Tidak ada berita</div>'; return; }
+        el.innerHTML = items.map(n => {
+            const title = n.title || n.headline || '—';
+            const src   = n.source || n.provider || '';
+            const dt    = n.published_at || n.date || n.time || '';
+            const dtStr = dt ? new Date(dt).toLocaleString('id-ID',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+            const url   = n.url || n.link || '#';
+            return `<a href="${url}" target="_blank" rel="noopener"
+                class="flex items-start gap-3 px-4 py-3 hover:bg-white/[.03] transition-colors cursor-pointer">
+                <div class="flex-1 min-w-0">
+                    <div class="text-[11px] text-slate-200 leading-snug line-clamp-2">${title}</div>
+                    <div class="flex items-center gap-2 mt-1">
+                        ${src ? `<span class="text-[9px] font-mono text-qi-cyan">${src}</span>` : ''}
+                        ${dtStr ? `<span class="text-[9px] text-slate-600">${dtStr}</span>` : ''}
+                    </div>
+                </div>
+                <span class="text-slate-600 text-xs mt-0.5 flex-shrink-0">↗</span>
+            </a>`;
+        }).join('');
+    } catch(e) {
+        el.innerHTML = '<div class="px-4 py-4 text-center text-slate-600 text-xs">Gagal memuat berita</div>';
+    }
+}
+
+// ─── Currency Strength Full ────────────────────────────────────────────────
+async function fetchStrengthFull() {
+    const stackEl = document.getElementById('strengthStackFull');
+    const pairEl  = document.getElementById('strengthPairTable');
+    const updEl   = document.getElementById('strengthUpdated2');
+    try {
+        const res  = await fetch('api/currency-strength.php');
+        const data = await res.json();
+        const currencies = (data.currencies || []).sort((a, b) => b.score - a.score);
+        if (stackEl && currencies.length) {
+            stackEl.innerHTML = currencies.map((c, i) => {
+                const color = CUR_COLORS[c.currency] || '#94A3B8';
+                const chg   = parseFloat(c.chgPct ?? 0);
+                const chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+                const chgCls = chg > 0 ? 'text-qi-green' : chg < 0 ? 'text-qi-red' : 'text-slate-500';
+                return `<div class="flex items-center gap-2">
+                    <div class="w-8 text-right text-[11px] font-mono font-bold text-white">${c.currency}</div>
+                    <div class="flex-1 bg-qi-panel rounded-full h-3 overflow-hidden">
+                        <div class="strength-bar h-full rounded-full" style="width:${c.score}%;background:${color}"></div>
+                    </div>
+                    <div class="w-8 text-[11px] font-mono text-slate-400 tabular-nums">${c.score}</div>
+                    <div class="w-14 text-[10px] font-mono ${chgCls} tabular-nums text-right">${chgStr}</div>
+                    <div class="text-[9px] text-slate-600 w-5 text-center">#${i+1}</div>
+                </div>`;
+            }).join('');
+        }
+        if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID');
+    } catch(e) {}
+
+    // Pair prices from _lastPrices
+    if (pairEl && Object.keys(_lastPrices).length) {
+        const FX_PAIRS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','NZDUSD','USDCHF','USDCAD'];
+        pairEl.innerHTML = FX_PAIRS.map(sym => {
+            const d = _lastPrices[sym];
+            if (!d) return '';
+            const price = fmt(sym, d.price);
+            const pct = parseFloat(d.chgPct ?? 0);
+            const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+            const cls = pct >= 0 ? 'text-qi-green' : 'text-qi-red';
+            return `<div class="flex items-center justify-between py-1.5 border-b border-qi-border/40 last:border-0">
+                <span class="text-[11px] font-semibold text-white font-mono">${SYMBOL_LABELS[sym]||sym}</span>
+                <span class="text-[11px] font-mono text-white tabular-nums">${price}</span>
+                <span class="text-[10px] font-mono ${cls} tabular-nums">${pctStr}</span>
+            </div>`;
+        }).filter(Boolean).join('');
+    }
+}
+
+// ─── Radar Quick Scan ──────────────────────────────────────────────────────
+function renderRadarQuickScan() {
+    const el = document.getElementById('radarQuickScan');
+    if (!el || !Object.keys(_lastPrices).length) {
+        if (el) el.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat data harga…</div>';
+        setTimeout(renderRadarQuickScan, 2000);
+        return;
+    }
+    const sorted = Object.entries(_lastPrices)
+        .map(([sym, d]) => ({ sym, pct: parseFloat(d.chgPct ?? 0), price: d.price }))
+        .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+    el.innerHTML = sorted.map(({ sym, pct, price }) => {
+        const cls = pct >= 0 ? 'text-qi-green' : 'text-qi-red';
+        const bar = pct >= 0 ? 'bg-qi-green' : 'bg-qi-red';
+        const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        const barW = Math.min(Math.abs(pct) * 15, 100).toFixed(0);
+        const label = SYMBOL_LABELS[sym] || sym;
+        return `<div class="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[.02] transition-colors">
+            <span class="text-[11px] font-semibold text-white font-mono w-20">${label}</span>
+            <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full rounded-full ${bar}" style="width:${barW}%"></div>
+            </div>
+            <span class="text-[11px] font-mono tabular-nums ${cls} w-16 text-right">${pctStr}</span>
+        </div>`;
+    }).join('');
+}
 </script>
 
     <!-- ── Disclaimer Footer ───────────────────────────────────────── -->
