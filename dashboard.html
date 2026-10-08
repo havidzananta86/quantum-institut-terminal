@@ -1195,27 +1195,75 @@
 
     <!-- ══ PANEL: Currency Strength (Full) ══ -->
     <div id="panel-strength" class="panel-content hidden p-4 space-y-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <!-- Full strength bars -->
+        <!-- Category tabs -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="switchStrengthTab('forex')" id="strTabForex" class="px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/30">Forex</button>
+            <button onclick="switchStrengthTab('crypto')" id="strTabCrypto" class="px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-400 border border-qi-border hover:border-qi-purple/30">Crypto</button>
+            <button onclick="switchStrengthTab('commodities')" id="strTabComm" class="px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-400 border border-qi-border hover:border-qi-gold/30">Commodities</button>
+            <span class="ml-auto text-[10px] text-slate-500" id="strengthUpdated2">—</span>
+        </div>
+
+        <!-- Forex tab -->
+        <div id="strPanelForex" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="bg-qi-card border border-qi-border rounded-xl p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <span class="text-qi-purple text-sm">💪</span>
-                        <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Currency Strength Index</span>
-                    </div>
-                    <span class="text-[10px] text-slate-500" id="strengthUpdated2">—</span>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-purple text-sm">💪</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Currency Strength Index</span>
                 </div>
                 <div id="strengthStackFull" class="space-y-3">
                     <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
                 </div>
             </div>
-            <!-- Pairs heat table -->
             <div class="bg-qi-card border border-qi-border rounded-xl p-4">
                 <div class="flex items-center gap-2 mb-4">
                     <span class="text-qi-cyan text-sm">📊</span>
                     <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Live Pair Prices</span>
                 </div>
                 <div id="strengthPairTable" class="space-y-1.5">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crypto tab -->
+        <div id="strPanelCrypto" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-purple text-sm">💪</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Crypto Strength</span>
+                </div>
+                <div id="cryptoStrengthBars" class="space-y-3">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-cyan text-sm">📊</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Crypto Market Data</span>
+                </div>
+                <div id="cryptoStrengthTable" class="space-y-1.5">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commodities tab -->
+        <div id="strPanelComm" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-purple text-sm">💪</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Commodity Strength</span>
+                </div>
+                <div id="commStrengthBars" class="space-y-3">
+                    <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
+                </div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-qi-cyan text-sm">📊</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Commodity TradingView Signal</span>
+                </div>
+                <div id="commStrengthTable" class="space-y-1.5">
                     <div class="text-[11px] text-slate-600 text-center py-4">Memuat…</div>
                 </div>
             </div>
@@ -2020,7 +2068,7 @@ setInterval(() => {
     if (_activePanel === 'panel-radar') renderRadarQuickScan();
 }, 5000);
 // Auto-refresh order book — semua pair sekaligus
-const OB_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
+const OB_SYMS = ['XAUUSD','BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
 setInterval(() => {
     if (_activePanel === 'panel-orderbook') fetchAllOrderBooks();
 }, 3000);
@@ -3432,6 +3480,160 @@ async function fetchStrengthFull() {
                 <span class="text-[10px] font-mono ${cls} tabular-nums">${pctStr}</span>
             </div>`;
         }).filter(Boolean).join('');
+    }
+}
+
+// ─── Strength Tab Switcher ────────────────────────────────────────────────
+let _strTab = 'forex';
+const _strTabMap = { forex:'Forex', crypto:'Crypto', commodities:'Comm' };
+function switchStrengthTab(tab) {
+    _strTab = tab;
+    Object.entries(_strTabMap).forEach(([key, suffix]) => {
+        const panel = document.getElementById('strPanel' + suffix);
+        const btn   = document.getElementById('strTab' + suffix);
+        if (panel) panel.classList.toggle('hidden', key !== tab);
+        if (btn) {
+            btn.className = key === tab
+                ? 'px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/30'
+                : 'px-3 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-400 border border-qi-border';
+        }
+    });
+    if (tab === 'crypto')      fetchCryptoStrength();
+    if (tab === 'commodities') fetchCommodityStrength();
+}
+
+const CRYPTO_COLORS = { BTC:'#F7931A', ETH:'#627EEA', SOL:'#9945FF', BNB:'#F3BA2F', XRP:'#23292F', DOGE:'#C2A633' };
+const CRYPTO_SYMS   = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT'];
+
+async function fetchCryptoStrength() {
+    const barsEl  = document.getElementById('cryptoStrengthBars');
+    const tableEl = document.getElementById('cryptoStrengthTable');
+    if (barsEl) barsEl.innerHTML = '<div class="text-[11px] text-slate-600 text-center py-4 animate-pulse">Memuat data crypto dari TradingView…</div>';
+
+    try {
+        const res  = await fetch('api/tv-scan.php?symbols=' + CRYPTO_SYMS.join(','));
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message);
+        const data = json.data || {};
+
+        const items = CRYPTO_SYMS.map(sym => {
+            const d = data[sym];
+            if (!d) return null;
+            const chg = d.change != null ? d.change * 100 : 0;
+            const rec = d.timeframes?.['1D']?.value ?? 0;
+            const score = Math.max(0, Math.min(100, Math.round(50 + rec * 50)));
+            const name = sym.replace('USDT','');
+            return { name, sym, score, chg, price: d.price, rec, signal: d.timeframes?.['1D']?.signal || 'NEUTRAL' };
+        }).filter(Boolean).sort((a,b) => b.score - a.score);
+
+        if (barsEl && items.length) {
+            barsEl.innerHTML = items.map((c, i) => {
+                const color = CRYPTO_COLORS[c.name] || '#94A3B8';
+                const chgStr = (c.chg >= 0 ? '+' : '') + c.chg.toFixed(2) + '%';
+                const chgCls = c.chg > 0 ? 'text-qi-green' : c.chg < 0 ? 'text-qi-red' : 'text-slate-500';
+                return `<div class="flex items-center gap-2">
+                    <div class="w-10 text-right text-[11px] font-mono font-bold text-white">${c.name}</div>
+                    <div class="flex-1 bg-qi-panel rounded-full h-3 overflow-hidden">
+                        <div class="strength-bar h-full rounded-full" style="width:${c.score}%;background:${color}"></div>
+                    </div>
+                    <div class="w-8 text-[11px] font-mono text-slate-400 tabular-nums">${c.score}</div>
+                    <div class="w-14 text-[10px] font-mono ${chgCls} tabular-nums text-right">${chgStr}</div>
+                    <div class="text-[9px] text-slate-600 w-5 text-center">#${i+1}</div>
+                </div>`;
+            }).join('');
+        }
+
+        if (tableEl && items.length) {
+            tableEl.innerHTML = items.map(c => {
+                const sigCls = c.signal.includes('BUY') ? 'text-qi-green' : c.signal.includes('SELL') ? 'text-qi-red' : 'text-slate-400';
+                const priceFmt = c.price >= 1 ? c.price.toLocaleString('en-US',{maximumFractionDigits:2}) : c.price.toFixed(6);
+                const chgCls = c.chg >= 0 ? 'text-qi-green' : 'text-qi-red';
+                return `<div class="flex items-center justify-between py-1.5 border-b border-qi-border/40 last:border-0">
+                    <span class="text-[11px] font-semibold text-white font-mono">${c.name}/USDT</span>
+                    <span class="text-[11px] font-mono text-white tabular-nums">$${priceFmt}</span>
+                    <span class="text-[10px] font-mono ${chgCls} tabular-nums">${c.chg>=0?'+':''}${c.chg.toFixed(2)}%</span>
+                    <span class="text-[10px] font-mono font-bold ${sigCls}">${c.signal.replace('_',' ')}</span>
+                </div>`;
+            }).join('');
+        }
+
+        const updEl = document.getElementById('strengthUpdated2');
+        if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID') + ' · TradingView';
+    } catch(e) {
+        if (barsEl) barsEl.innerHTML = `<div class="text-qi-red text-[11px] text-center py-4">${e.message}</div>`;
+    }
+}
+
+const COMM_TV_MAP = {
+    'XAUUSD': 'TVC:GOLD', 'XAGUSD': 'TVC:SILVER', 'WTIUSD': 'TVC:USOIL',
+    'NGAS':   'PEPPERSTONE:NATGAS', 'COPPER': 'TVC:COPPER',
+};
+const COMM_LABELS = { XAUUSD:'Gold', XAGUSD:'Silver', WTIUSD:'Crude Oil', NGAS:'Natural Gas', COPPER:'Copper' };
+const COMM_COLORS = { XAUUSD:'#FFD700', XAGUSD:'#C0C0C0', WTIUSD:'#4A7C59', NGAS:'#3498DB', COPPER:'#B87333' };
+
+async function fetchCommodityStrength() {
+    const barsEl  = document.getElementById('commStrengthBars');
+    const tableEl = document.getElementById('commStrengthTable');
+    if (barsEl) barsEl.innerHTML = '<div class="text-[11px] text-slate-600 text-center py-4 animate-pulse">Memuat data komoditas…</div>';
+
+    try {
+        const tickers = Object.values(COMM_TV_MAP);
+        const body = JSON.stringify({
+            symbols: { tickers, query: { types: [] } },
+            columns: ['close','change','Recommend.All|1D','Recommend.All|240','RSI','MACD.macd','MACD.signal','EMA20','EMA50']
+        });
+        const res  = await fetch('https://scanner.tradingview.com/global/scan', { method:'POST', headers:{'Content-Type':'application/json'}, body });
+        const json = await res.json();
+        const tvData = json.data || [];
+
+        const tickerToSym = {};
+        Object.entries(COMM_TV_MAP).forEach(([sym, tv]) => tickerToSym[tv] = sym);
+
+        const items = tvData.map(item => {
+            const sym = tickerToSym[item.s] || item.s;
+            const d = item.d || [];
+            const price = d[0], chg = d[1] != null ? d[1]*100 : 0;
+            const rec = d[2], rec4h = d[3];
+            const score = rec != null ? Math.max(0, Math.min(100, Math.round(50 + rec * 50))) : 50;
+            const sig = rec != null ? (rec >= 0.5 ? 'STRONG BUY' : rec >= 0.1 ? 'BUY' : rec <= -0.5 ? 'STRONG SELL' : rec <= -0.1 ? 'SELL' : 'NEUTRAL') : 'N/A';
+            return { sym, name: COMM_LABELS[sym] || sym, score, chg, price, signal: sig };
+        }).sort((a,b) => b.score - a.score);
+
+        if (barsEl && items.length) {
+            barsEl.innerHTML = items.map((c, i) => {
+                const color = COMM_COLORS[c.sym] || '#94A3B8';
+                const chgStr = (c.chg >= 0 ? '+' : '') + c.chg.toFixed(2) + '%';
+                const chgCls = c.chg > 0 ? 'text-qi-green' : c.chg < 0 ? 'text-qi-red' : 'text-slate-500';
+                return `<div class="flex items-center gap-2">
+                    <div class="w-14 text-right text-[11px] font-mono font-bold text-white">${c.name}</div>
+                    <div class="flex-1 bg-qi-panel rounded-full h-3 overflow-hidden">
+                        <div class="strength-bar h-full rounded-full" style="width:${c.score}%;background:${color}"></div>
+                    </div>
+                    <div class="w-8 text-[11px] font-mono text-slate-400 tabular-nums">${c.score}</div>
+                    <div class="w-14 text-[10px] font-mono ${chgCls} tabular-nums text-right">${chgStr}</div>
+                    <div class="text-[9px] text-slate-600 w-5 text-center">#${i+1}</div>
+                </div>`;
+            }).join('');
+        }
+
+        if (tableEl && items.length) {
+            tableEl.innerHTML = items.map(c => {
+                const sigCls = c.signal.includes('BUY') ? 'text-qi-green' : c.signal.includes('SELL') ? 'text-qi-red' : 'text-slate-400';
+                const pFmt = c.price != null ? c.price.toLocaleString('en-US',{maximumFractionDigits:2}) : '—';
+                const chgCls = c.chg >= 0 ? 'text-qi-green' : 'text-qi-red';
+                return `<div class="flex items-center justify-between py-1.5 border-b border-qi-border/40 last:border-0">
+                    <span class="text-[11px] font-semibold text-white font-mono">${c.name}</span>
+                    <span class="text-[11px] font-mono text-white tabular-nums">$${pFmt}</span>
+                    <span class="text-[10px] font-mono ${chgCls} tabular-nums">${c.chg>=0?'+':''}${c.chg.toFixed(2)}%</span>
+                    <span class="text-[10px] font-mono font-bold ${sigCls}">${c.signal}</span>
+                </div>`;
+            }).join('');
+        }
+
+        const updEl = document.getElementById('strengthUpdated2');
+        if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID') + ' · TradingView';
+    } catch(e) {
+        if (barsEl) barsEl.innerHTML = `<div class="text-qi-red text-[11px] text-center py-4">${e.message}</div>`;
     }
 }
 
