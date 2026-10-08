@@ -718,11 +718,13 @@
                             <th class="px-3 py-2.5 text-center">H1</th>
                             <th class="px-3 py-2.5 text-center">H4</th>
                             <th class="px-3 py-2.5 text-center">D1</th>
+                            <th class="px-3 py-2.5 text-center">RSI</th>
+                            <th class="px-3 py-2.5 text-center">EMA/MACD</th>
                             <th class="px-3 py-2.5 text-center">Kesimpulan</th>
                         </tr>
                     </thead>
                     <tbody id="signalMatrixBody">
-                        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-600">Memuat signal matrix…</td></tr>
+                        <tr><td colspan="8" class="px-4 py-8 text-center text-slate-600">Memuat signal matrix…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -731,17 +733,38 @@
 
     <!-- ══ PANEL: Technical Outlook ══ -->
     <div id="panel-outlook" class="panel-content hidden p-4 space-y-4">
+        <!-- TradingView Technical Analysis (Option B) -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
             <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
                 <div class="flex items-center gap-2">
                     <span class="text-qi-purple text-sm">🔬</span>
-                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Technical Outlook</span>
+                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Technical Analysis — TradingView</span>
                 </div>
-                <span class="text-[10px] text-slate-500 font-mono" id="outlookUpdated">—</span>
+                <div class="flex flex-wrap gap-1" id="outlookSymBtns">
+                    <button onclick="setOutlookSym('OANDA:XAUUSD')"  data-sym="OANDA:XAUUSD"  class="outlook-sym active px-2 py-0.5 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">XAU/USD</button>
+                    <button onclick="setOutlookSym('OANDA:EURUSD')"  data-sym="OANDA:EURUSD"  class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">EUR/USD</button>
+                    <button onclick="setOutlookSym('OANDA:GBPUSD')"  data-sym="OANDA:GBPUSD"  class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">GBP/USD</button>
+                    <button onclick="setOutlookSym('OANDA:USDJPY')"  data-sym="OANDA:USDJPY"  class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">USD/JPY</button>
+                    <button onclick="setOutlookSym('BINANCE:BTCUSDT')" data-sym="BINANCE:BTCUSDT" class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">BTC/USDT</button>
+                    <button onclick="setOutlookSym('BINANCE:ETHUSDT')" data-sym="BINANCE:ETHUSDT" class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">ETH/USDT</button>
+                    <button onclick="setOutlookSym('OANDA:AUDUSD')"  data-sym="OANDA:AUDUSD"  class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">AUD/USD</button>
+                    <button onclick="setOutlookSym('OANDA:USDCHF')"  data-sym="OANDA:USDCHF"  class="outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400">USD/CHF</button>
+                </div>
+            </div>
+            <!-- TradingView TA widget loads here -->
+            <div id="tvTaWidgetWrap" style="height:420px;min-height:380px;"></div>
+        </div>
+
+        <!-- Option A: Our computed multi-symbol summary -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Multi-Symbol Summary (EMA/RSI/MACD)</span>
+                <button onclick="fetchOutlook()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
             </div>
             <div id="outlookGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
                 <div class="text-center text-slate-600 text-xs py-8 col-span-full">Memuat data…</div>
             </div>
+            <div class="px-4 pb-3 text-[10px] text-slate-500 font-mono" id="outlookUpdated"></div>
         </div>
     </div>
 
@@ -2422,6 +2445,65 @@ function renderCalTable() {
     }).join('');
 }
 
+// ─── Technical Indicator Engine ─────────────────────────────────────────────
+function calcEMA(closes, period) {
+    if (closes.length < period) return null;
+    const k = 2 / (period + 1);
+    let ema = closes.slice(0, period).reduce((s, v) => s + v, 0) / period;
+    for (let i = period; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
+    return ema;
+}
+
+function calcRSI(closes, period = 14) {
+    if (closes.length < period + 1) return 50;
+    let avgGain = 0, avgLoss = 0;
+    for (let i = 1; i <= period; i++) {
+        const d = closes[i] - closes[i - 1];
+        if (d > 0) avgGain += d; else avgLoss -= d;
+    }
+    avgGain /= period; avgLoss /= period;
+    for (let i = period + 1; i < closes.length; i++) {
+        const d = closes[i] - closes[i - 1];
+        avgGain = (avgGain * (period - 1) + Math.max(0, d)) / period;
+        avgLoss = (avgLoss * (period - 1) + Math.max(0, -d)) / period;
+    }
+    return avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+}
+
+function calcMACDHist(closes) {
+    if (closes.length < 35) return 0;
+    const macdSeries = [];
+    for (let i = 26; i <= closes.length; i++) {
+        const sl = closes.slice(0, i);
+        const e12 = calcEMA(sl, 12), e26 = calcEMA(sl, 26);
+        if (e12 !== null && e26 !== null) macdSeries.push(e12 - e26);
+    }
+    const signal = calcEMA(macdSeries, 9);
+    const last   = macdSeries[macdSeries.length - 1] ?? 0;
+    return last - (signal ?? 0);
+}
+
+function analyzeCandles(candles) {
+    if (!candles || candles.length < 55) return null;
+    const closes = candles.map(c => c.close);
+    const last   = closes[closes.length - 1];
+    const ema20  = calcEMA(closes, 20);
+    const ema50  = calcEMA(closes, 50);
+    const rsi    = calcRSI(closes.slice(-30), 14);
+    const macdH  = calcMACDHist(closes.slice(-60));
+
+    let bull = 0, bear = 0;
+    if (ema20 !== null && ema50 !== null) {
+        if (ema20 > ema50) bull++; else bear++;
+        if (last  > ema20) bull++; else bear++;
+    }
+    if (rsi  > 55) bull++; else if (rsi  < 45) bear++;
+    if (macdH > 0) bull++; else if (macdH < 0) bear++;
+
+    const signal = bull >= 3 ? 'BULLISH' : bear >= 3 ? 'BEARISH' : 'NEUTRAL';
+    return { signal, rsi: Math.round(rsi), ema20, ema50, macdH, bull, bear };
+}
+
 // ─── TradingView Chart ─────────────────────────────────────────────────────
 let _tvWidget    = null;
 let _tvSymbol    = 'OANDA:XAUUSD';
@@ -2702,7 +2784,7 @@ const SIGNAL_TFS  = [
 async function fetchSignalMatrix() {
     const body = document.getElementById('signalMatrixBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="6" class="px-4 py-4 text-center text-slate-600 text-xs">Menganalisa ${SIGNAL_SYMS.length * SIGNAL_TFS.length} kombinasi…</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-slate-600 text-xs">Menghitung EMA/RSI/MACD untuk ${SIGNAL_SYMS.length} instrumen…</td></tr>`;
 
     const results = {};
     await Promise.all(SIGNAL_SYMS.map(async sym => {
@@ -2711,88 +2793,155 @@ async function fetchSignalMatrix() {
         );
         results[sym] = tfs.map(res => {
             if (res.status !== 'fulfilled' || !res.value.candles?.length) return null;
-            const candles = res.value.candles.slice(-10);
-            const bullish = candles.filter(c => c.close > c.open).length;
-            if (bullish >= 7) return 'BULLISH';
-            if (bullish <= 3) return 'BEARISH';
-            return 'NEUTRAL';
+            return analyzeCandles(res.value.candles);
         });
     }));
 
-    const biasCls = { BULLISH:'text-qi-green', BEARISH:'text-qi-red', NEUTRAL:'text-slate-500' };
-    const biasIcon = { BULLISH:'▲', BEARISH:'▼', NEUTRAL:'◆' };
+    const sigCls  = { BULLISH:'text-qi-green', BEARISH:'text-qi-red', NEUTRAL:'text-slate-500' };
+    const sigIcon = { BULLISH:'▲', BEARISH:'▼', NEUTRAL:'◆' };
 
     body.innerHTML = SIGNAL_SYMS.map(sym => {
-        const tfs = results[sym] || [null, null, null, null];
-        const score = tfs.reduce((acc, b) => acc + (b === 'BULLISH' ? 1 : b === 'BEARISH' ? -1 : 0), 0);
+        const tfs   = results[sym] || [null, null, null, null];
+        const score = tfs.reduce((acc, r) => acc + (r?.signal === 'BULLISH' ? 1 : r?.signal === 'BEARISH' ? -1 : 0), 0);
         let summary = 'NEUTRAL', sumCls = 'text-slate-500';
         if (score >= 2) { summary = 'BULLISH'; sumCls = 'text-qi-green font-bold'; }
-        if (score <= -2) { summary = 'BEARISH'; sumCls = 'text-qi-red font-bold'; }
-        const label = SYMBOL_LABELS[sym] || sym;
-        const cells = tfs.map(b => {
-            const cls = biasCls[b] || 'text-slate-600';
-            const icon = biasIcon[b] || '—';
-            return `<td class="px-3 py-2.5 text-center font-mono text-[11px] ${cls}">${b ? icon + ' ' + b : '—'}</td>`;
+        if (score <= -2){ summary = 'BEARISH'; sumCls = 'text-qi-red font-bold'; }
+
+        const label  = SYMBOL_LABELS[sym] || sym;
+        // Last TF (D1) for RSI/MACD display
+        const d1     = tfs[tfs.length - 1];
+        const rsiVal = d1 ? d1.rsi : '—';
+        const rsiCls = d1 ? (d1.rsi > 65 ? 'text-qi-red' : d1.rsi < 35 ? 'text-[#3B82F6]' : 'text-slate-300') : 'text-slate-500';
+        const emaCls = d1?.ema20 && d1?.ema50 ? (d1.ema20 > d1.ema50 ? 'text-qi-green' : 'text-qi-red') : 'text-slate-500';
+        const emaStr = d1?.ema20 && d1?.ema50 ? (d1.ema20 > d1.ema50 ? 'EMA↑' : 'EMA↓') : '—';
+        const macdCls= d1 ? (d1.macdH > 0 ? 'text-qi-green' : 'text-qi-red') : 'text-slate-500';
+        const macdStr= d1 ? (d1.macdH > 0 ? 'MACD↑' : 'MACD↓') : '—';
+
+        const cells = tfs.map(r => {
+            const cls  = sigCls[r?.signal]  || 'text-slate-600';
+            const icon = sigIcon[r?.signal] || '—';
+            return `<td class="px-3 py-2.5 text-center font-mono text-[11px] ${cls}">${r ? icon + ' ' + r.signal : '—'}</td>`;
         }).join('');
+
         return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors">
-            <td class="px-4 py-2.5 font-semibold text-white">${label}</td>
+            <td class="px-4 py-2.5 font-semibold text-white text-[12px]">${label}</td>
             ${cells}
+            <td class="px-3 py-2 text-center">
+                <span class="font-mono text-[10px] ${rsiCls}">${rsiVal}</span>
+            </td>
+            <td class="px-3 py-2 text-center">
+                <span class="font-mono text-[10px] ${emaCls}">${emaStr}</span>
+                <span class="font-mono text-[10px] ${macdCls} ml-1">${macdStr}</span>
+            </td>
             <td class="px-3 py-2.5 text-center font-mono text-[11px] ${sumCls}">${summary}</td>
         </tr>`;
     }).join('');
 }
 
 // ─── Technical Outlook ─────────────────────────────────────────────────────
+let _outlookSym = 'OANDA:XAUUSD';
+
+function setOutlookSym(tvSym) {
+    _outlookSym = tvSym;
+    document.querySelectorAll('.outlook-sym').forEach(b => {
+        const active = b.dataset.sym === tvSym;
+        b.className = active
+            ? 'outlook-sym active px-2 py-0.5 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'outlook-sym px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-slate-500';
+    });
+    loadTvTaWidget(tvSym);
+}
+
+function loadTvTaWidget(tvSym) {
+    const wrap = document.getElementById('tvTaWidgetWrap');
+    if (!wrap) return;
+
+    // Clear old widget
+    wrap.innerHTML = '<div class="tradingview-widget-container" style="height:100%;width:100%;"><div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%;"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div></div>';
+
+    const config = {
+        interval: '1D',
+        width: '100%',
+        isTransparent: true,
+        height: 420,
+        symbol: tvSym,
+        showIntervalTabs: true,
+        displayMode: 'regular',
+        locale: 'id',
+        colorTheme: 'dark',
+    };
+
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.async = true;
+    script.textContent = JSON.stringify(config);
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+    wrap.querySelector('.tradingview-widget-container').appendChild(script);
+}
+
 async function fetchOutlook() {
     const grid = document.getElementById('outlookGrid');
     const upd  = document.getElementById('outlookUpdated');
     if (!grid) return;
-    grid.innerHTML = SYMBOLS.slice(0, 9).map(() => `<div class="skel h-24 rounded-xl"></div>`).join('');
+
+    // Load TradingView TA widget for selected symbol
+    loadTvTaWidget(_outlookSym);
+
+    grid.innerHTML = SYMBOLS.slice(0, 9).map(() => '<div class="skel h-24 rounded-xl"></div>').join('');
 
     const results = await Promise.allSettled(
         SYMBOLS.slice(0, 9).map(sym =>
-            fetch(`api/get-chart-data.php?symbol=${sym}&interval=60`).then(r => r.json())
+            fetch(`api/get-chart-data.php?symbol=${sym}&interval=D`).then(r => r.json())
         )
     );
 
+    if (upd) upd.textContent = `Updated: ${new Date().toLocaleTimeString('id-ID')} — EMA20/50 cross + RSI14 + MACD`;
+
     grid.innerHTML = results.map((res, i) => {
-        const sym = SYMBOLS[i];
+        const sym   = SYMBOLS[i];
         const label = SYMBOL_LABELS[sym] || sym;
-        let trend = 'NEUTRAL', rsiEst = 50, vol = 'Normal';
-        if (res.status === 'fulfilled' && res.value.candles?.length >= 10) {
-            const candles = res.value.candles.slice(-14);
-            const gains = candles.filter(c => c.close > c.open).length;
-            rsiEst = Math.round((gains / candles.length) * 100);
-            if (rsiEst > 60) { trend = 'BULLISH'; }
-            else if (rsiEst < 40) { trend = 'BEARISH'; }
-            const last5 = candles.slice(-5);
-            const avgRange = last5.reduce((s, c) => s + Math.abs(c.high - c.low), 0) / 5;
-            const all5 = candles.reduce((s, c) => s + Math.abs(c.high - c.low), 0) / candles.length;
-            vol = avgRange > all5 * 1.3 ? 'Tinggi' : avgRange < all5 * 0.7 ? 'Rendah' : 'Normal';
+        let analysis = null;
+        if (res.status === 'fulfilled' && res.value.candles?.length >= 55) {
+            analysis = analyzeCandles(res.value.candles);
         }
-        const trendCls = trend === 'BULLISH' ? 'text-qi-green' : trend === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
-        const trendIcon = trend === 'BULLISH' ? '▲' : trend === 'BEARISH' ? '▼' : '◆';
-        const rsiColor = rsiEst > 65 ? '#EF4444' : rsiEst < 35 ? '#3B82F6' : '#10B981';
-        const rsiLabel = rsiEst > 65 ? 'Overbought' : rsiEst < 35 ? 'Oversold' : 'Netral';
+
+        const signal  = analysis?.signal || 'NEUTRAL';
+        const rsi     = analysis ? analysis.rsi : '—';
+        const macdDir = analysis ? (analysis.macdH > 0 ? 'positive' : 'negative') : null;
+        const emaDir  = analysis?.ema20 && analysis?.ema50 ? (analysis.ema20 > analysis.ema50 ? 'bullish' : 'bearish') : null;
+
+        const sigCls  = signal === 'BULLISH' ? 'text-qi-green' : signal === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
+        const sigIcon = signal === 'BULLISH' ? '▲' : signal === 'BEARISH' ? '▼' : '◆';
+        const rsiColor = !analysis ? '#94A3B8' : rsi > 65 ? '#EF4444' : rsi < 35 ? '#3B82F6' : '#10B981';
+        const rsiLabel = !analysis ? 'No data' : rsi > 70 ? 'Overbought' : rsi > 60 ? 'Bullish zone' : rsi < 30 ? 'Oversold' : rsi < 40 ? 'Bearish zone' : 'Neutral zone';
+        const rsiW     = analysis ? Math.min(100, rsi) : 50;
+
         return `<div class="bg-qi-panel border border-qi-border rounded-xl p-3 hover:border-qi-cyan/30 transition-colors">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-semibold text-white text-[11px]">${label}</span>
-                <span class="text-[10px] font-mono font-bold ${trendCls}">${trendIcon} ${trend}</span>
+                <span class="text-[10px] font-mono font-bold ${sigCls}">${sigIcon} ${signal}</span>
             </div>
-            <div class="flex items-center gap-2 mb-1.5">
-                <span class="text-[9px] text-slate-500 w-8">RSI~</span>
-                <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full" style="width:${rsiEst}%;background:${rsiColor}"></div>
+            <!-- RSI bar -->
+            <div class="mb-2">
+                <div class="flex justify-between text-[9px] text-slate-500 mb-0.5">
+                    <span>RSI 14</span><span class="font-mono" style="color:${rsiColor}">${rsi}</span>
                 </div>
-                <span class="text-[9px] font-mono text-slate-400">${rsiEst}</span>
+                <div class="h-1.5 bg-[#0F1A2E] rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all" style="width:${rsiW}%;background:${rsiColor}"></div>
+                </div>
+                <div class="text-[9px] mt-0.5" style="color:${rsiColor}">${rsiLabel}</div>
             </div>
-            <div class="flex items-center justify-between text-[9px]">
-                <span class="text-slate-500">${rsiLabel}</span>
-                <span class="font-mono text-slate-500">Vol: <span class="text-slate-300">${vol}</span></span>
+            <!-- EMA / MACD status -->
+            <div class="flex gap-2 text-[9px]">
+                <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${emaDir === 'bullish' ? 'bg-qi-green/10 text-qi-green' : emaDir === 'bearish' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
+                    ${emaDir === 'bullish' ? 'EMA20>50 ↑' : emaDir === 'bearish' ? 'EMA20<50 ↓' : 'EMA —'}
+                </span>
+                <span class="px-1.5 py-0.5 rounded font-mono font-semibold ${macdDir === 'positive' ? 'bg-qi-green/10 text-qi-green' : macdDir === 'negative' ? 'bg-qi-red/10 text-qi-red' : 'bg-slate-800 text-slate-500'}">
+                    ${macdDir === 'positive' ? 'MACD ↑' : macdDir === 'negative' ? 'MACD ↓' : 'MACD —'}
+                </span>
             </div>
         </div>`;
     }).join('');
-    if (upd) upd.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
 }
 
 // ─── Heatmap Panel ─────────────────────────────────────────────────────────
