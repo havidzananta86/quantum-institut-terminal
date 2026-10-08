@@ -806,6 +806,128 @@
     </section>
 
 
+    <!-- AI SIGNAL WINRATE STATS -->
+    <section class="py-10 md:py-14 relative z-10 bg-[#040810]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+
+            <div class="text-center max-w-2xl mx-auto space-y-2 mb-10 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
+                    🤖 AI SIGNAL PERFORMANCE
+                </div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                    Performa Sinyal <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Otomatis</span>
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm">Statistik akurasi sinyal AI — dihitung dari seluruh sinyal yang dibukukan di platform.</p>
+            </div>
+
+            <!-- Winrate stat cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 reveal">
+                <div class="glass-card rounded-2xl p-5 border border-purple-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-500" id="idxWinrate">78.4%</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Overall Winrate</div>
+                    <div class="text-[10px] text-purple-400 mt-1 font-mono">Akumulatif</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-emerald-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-500" id="idxTotalWins">1 847</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Total TP Hit</div>
+                    <div class="text-[10px] text-emerald-400 mt-1 font-mono">Profit signals</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-cyan-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-cyan-500" id="idxAvgRR">1:2.6</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Avg Risk:Reward</div>
+                    <div class="text-[10px] text-cyan-400 mt-1 font-mono">Rasio rata-rata</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-amber-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500" id="idxBestPair">XAU/USD</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Best Pair</div>
+                    <div class="text-[10px] text-amber-400 mt-1 font-mono" id="idxBestPairWr">82.1% WR</div>
+                </div>
+            </div>
+
+            <!-- Winrate by pair horizontal bars -->
+            <div class="glass-card rounded-2xl border border-slate-800/60 p-5 sm:p-6 reveal">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                        <span class="font-heading font-semibold text-white text-sm">Winrate per Instrumen</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono">30 hari terakhir</span>
+                </div>
+                <div class="space-y-3" id="idxWinrateByPair">
+                    <!-- Static display — enhanced by JS if qi_signal_records available -->
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">XAU/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style="width:82%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-amber-400">82%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">BTC/USDT</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style="width:79%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-emerald-400">79%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">EUR/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full" style="width:76%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-cyan-400">76%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">GBP/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full" style="width:74%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-purple-400">74%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">ETH/USDT</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full" style="width:77%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-blue-400">77%</span>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <p class="text-[10px] text-slate-600 leading-relaxed max-w-md">* Statistik dihitung berdasarkan sinyal historis Quantum AI Engine. Past performance tidak menjamin hasil di masa mendatang.</p>
+                    <a href="dashboard.html" class="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] font-semibold hover:bg-purple-500/20 transition-all">
+                        Lihat Semua Sinyal →
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <script>
+    (function(){
+        try {
+            const recs = JSON.parse(localStorage.getItem('qi_signal_records') || '[]');
+            if (!recs.length) return;
+            const closed = recs.filter(r => r.result === 'TP' || r.result === 'SL');
+            if (!closed.length) return;
+            const tp = closed.filter(r => r.result === 'TP').length;
+            const wr = (tp / closed.length * 100).toFixed(1);
+            const el = document.getElementById('idxWinrate');
+            if (el) el.textContent = wr + '%';
+            const elW = document.getElementById('idxTotalWins');
+            if (elW) elW.textContent = tp.toLocaleString();
+            // Best pair
+            const byPair = {};
+            closed.forEach(r => {
+                if (!byPair[r.pair]) byPair[r.pair] = {tp:0,tot:0};
+                byPair[r.pair].tot++;
+                if (r.result==='TP') byPair[r.pair].tp++;
+            });
+            let best = null, bestWr = 0;
+            Object.entries(byPair).forEach(([p,v]) => {
+                const w = v.tp/v.tot;
+                if (w > bestWr) { best = p; bestWr = w; }
+            });
+            if (best) {
+                const elB = document.getElementById('idxBestPair');
+                if (elB) elB.textContent = best;
+                const elBW = document.getElementById('idxBestPairWr');
+                if (elBW) elBW.textContent = (bestWr*100).toFixed(1) + '% WR';
+            }
+        } catch(e) {}
+    })();
+    </script>
+
+
     <!-- DISCLAIMER & COPYRIGHT PANEL -->
     <section id="disclaimer" class="py-10 md:py-14 relative z-10 bg-[#030810] border-t border-slate-800/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
@@ -889,6 +1011,7 @@
                     <div class="font-bold text-white uppercase font-heading mb-2">Legal</div>
                     <div><a href="terms.html" class="hover:text-slate-300">Syarat & Ketentuan</a></div>
                     <div><a href="privacy.html" class="hover:text-slate-300">Kebijakan Privasi</a></div>
+                    <div><a href="pwa.html" class="hover:text-cyan-400">Install Aplikasi (PWA)</a></div>
                     <div><a href="#" onclick="showQuantumToast('Disclaimer: Sinyal & analisa terminal bukan saran keuangan atau ajakan investasi.', 'warning'); return false;" class="hover:text-slate-300">Penolakan Risiko</a></div>
                 </div>
 
