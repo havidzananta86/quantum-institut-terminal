@@ -177,7 +177,19 @@
             background:rgba(0,229,255,.1)!important;
             color:#00E5FF!important;
         }
+        /* ── Drawing toolbar ── */
+        .lw-draw-btn { transition: border-color .15s, color .15s; }
+        .lw-draw-btn.active { border-color:rgba(0,229,255,.4)!important; background:rgba(0,229,255,.1)!important; color:#00E5FF!important; }
     </style>
+    <!-- lightweight-charts importmap: resolves bare specifier for the drawing library -->
+    <script type="importmap">{"imports":{"lightweight-charts":"https://cdn.jsdelivr.net/npm/lightweight-charts@5/+esm"}}</script>
+    <!-- Expose chart modules to window so inline scripts can use them -->
+    <script type="module">
+        import { createChart, CandlestickSeries, LineStyle, CrosshairMode } from 'lightweight-charts';
+        import { DrawingManager } from 'https://cdn.jsdelivr.net/npm/lightweight-charts-drawing@0.5.1/dist/lightweight-charts-drawing.es.js';
+        window._lwModules = { createChart, CandlestickSeries, LineStyle, CrosshairMode, DrawingManager };
+        window.dispatchEvent(new CustomEvent('lc-modules-ready'));
+    </script>
 </head>
 
 <body class="h-screen flex overflow-hidden text-slate-300 font-body">
@@ -813,9 +825,27 @@
             <span class="ml-auto text-slate-700 font-mono text-[9px]" id="ohlcUpdated"></span>
         </div>
 
+        <!-- Drawing toolbar -->
+        <div class="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-b border-qi-border/40 bg-qi-panel/60 overflow-x-auto scrollbar-thin">
+            <span class="text-[9px] text-slate-600 font-semibold uppercase tracking-wider shrink-0 mr-0.5">Draw</span>
+            <button onclick="setChartTool(null)" data-tool="" class="lw-draw-btn active shrink-0 px-2 py-1 rounded border text-[11px] font-mono" title="Cursor (Esc)">⌖</button>
+            <button onclick="setChartTool('horizontal-line')" data-tool="horizontal-line" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[11px] font-mono" title="Horizontal Line">―</button>
+            <button onclick="setChartTool('vertical-line')" data-tool="vertical-line" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[11px] font-mono" title="Vertical Line">|</button>
+            <button onclick="setChartTool('trend-line')" data-tool="trend-line" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[11px] font-mono" title="Trend Line">╱</button>
+            <button onclick="setChartTool('ray')" data-tool="ray" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[10px] font-mono" title="Ray">Ray</button>
+            <button onclick="setChartTool('extended-line')" data-tool="extended-line" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[10px] font-mono" title="Extended Line">Ext</button>
+            <button onclick="setChartTool('fib-retracement')" data-tool="fib-retracement" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[10px]" title="Fibonacci Retracement">Fib</button>
+            <button onclick="setChartTool('rectangle')" data-tool="rectangle" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[11px] font-mono" title="Rectangle">▭</button>
+            <button onclick="setChartTool('text')" data-tool="text" class="lw-draw-btn shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 text-[11px] font-mono font-bold" title="Text Note">T</button>
+            <div class="w-px h-4 bg-qi-border mx-0.5 shrink-0"></div>
+            <button onclick="lwDeleteSelected()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 hover:border-red-500/40 hover:text-red-400 text-[11px] font-mono" title="Delete selected">✕</button>
+            <button onclick="lwClearAll()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-500 hover:border-red-500/40 hover:text-red-400 text-[10px]" title="Clear all drawings">Clear</button>
+            <span class="ml-auto text-[9px] text-slate-600 font-mono shrink-0" id="lwChartStatus">lightweight-charts</span>
+        </div>
+
         <!-- Main body: chart + right watchlist -->
         <div class="flex flex-1 min-h-0">
-            <!-- TradingView chart (flex-1) -->
+            <!-- lightweight-charts container (flex-1) -->
             <div class="flex-1 flex flex-col min-w-0 min-h-0">
                 <div id="tv_chart_container" class="flex-1" style="min-height:400px;"></div>
                 <!-- Bottom tabs: Posisi / Riwayat -->
@@ -2770,8 +2800,11 @@ function analyzeCandles(candles) {
     return { signal, rsi: Math.round(rsi), ema20, ema50, macdH, bull, bear };
 }
 
-// ─── TradingView Chart ─────────────────────────────────────────────────────
-let _tvWidget    = null;
+// ─── lightweight-charts Chart ──────────────────────────────────────────────
+let _lwChart     = null;
+let _lwSeries    = null;
+let _lwDrawings  = null;
+let _lwTool      = null;
 let _tvSymbol    = 'OANDA:XAUUSD';
 let _tvSymLabel  = 'XAU/USD';
 let _tvInterval  = 'D';
@@ -2801,43 +2834,118 @@ const WL_GROUPS = [
 ];
 
 function initTvChart() {
-    const container = document.getElementById('tv_chart_container');
-    if (!container) return;
     renderWatchlist();
     updateChartHeader();
     renderChartTab();
-    if (window.TradingView) { buildTvWidget(); return; }
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.onload = buildTvWidget;
-    document.head.appendChild(script);
+    buildLwChart();
 }
 
-function buildTvWidget() {
+async function buildLwChart() {
     const container = document.getElementById('tv_chart_container');
-    if (!container || !window.TradingView) return;
+    if (!container) return;
+
+    // Wait for ES modules to be ready
+    if (!window._lwModules) {
+        window.addEventListener('lc-modules-ready', () => buildLwChart(), { once: true });
+        const st = document.getElementById('lwChartStatus');
+        if (st) st.textContent = 'Memuat library…';
+        return;
+    }
+
+    const { createChart, CandlestickSeries, DrawingManager } = window._lwModules;
+
+    // Destroy existing instance
+    if (_lwDrawings) { try { _lwDrawings.destroy(); } catch(e){} _lwDrawings = null; }
+    if (_lwChart)    { try { _lwChart.remove(); }     catch(e){} _lwChart = null; _lwSeries = null; }
     container.innerHTML = '';
-    const innerId = 'tv_inner_' + Date.now();
-    const inner = document.createElement('div');
-    inner.id = innerId;
-    inner.style.cssText = 'width:100%;height:100%;';
-    container.appendChild(inner);
-    _tvWidget = new TradingView.widget({
-        autosize: true,
-        symbol: _tvSymbol,
-        interval: _tvInterval,
-        timezone: 'Asia/Jakarta',
-        theme: 'dark',
-        style: '1',
-        locale: 'id',
-        toolbar_bg: '#050A14',
-        enable_publishing: false,
-        withdateranges: true,
-        hide_side_toolbar: false,
-        allow_symbol_change: true,
-        studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies'],
-        container_id: innerId,
+
+    _lwChart = createChart(container, {
+        autoSize: true,
+        layout: {
+            background: { color: '#000000' },
+            textColor: '#64748B',
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 11,
+        },
+        grid: {
+            vertLines: { color: '#0F1A2E' },
+            horzLines: { color: '#0F1A2E' },
+        },
+        crosshair: {
+            mode: 1,
+            vertLine: { color: '#00E5FF55', width: 1, style: 2, labelBackgroundColor: '#050A14' },
+            horzLine: { color: '#00E5FF55', width: 1, style: 2, labelBackgroundColor: '#050A14' },
+        },
+        rightPriceScale: { borderColor: '#0F1A2E' },
+        timeScale: { borderColor: '#0F1A2E', timeVisible: true, secondsVisible: false },
     });
+
+    _lwSeries = _lwChart.addSeries(CandlestickSeries, {
+        upColor:        '#00C853',
+        downColor:      '#FF1744',
+        borderUpColor:  '#00C853',
+        borderDownColor:'#FF1744',
+        wickUpColor:    '#00C853',
+        wickDownColor:  '#FF1744',
+    });
+
+    _lwDrawings = new DrawingManager(_lwChart, _lwSeries, { magnet: 'weak' });
+
+    // Restore drawings for this symbol from localStorage
+    const drawKey = 'qi_lw_' + _tvSymbol.replace(/[^a-z0-9]/gi, '_');
+    try { const saved = localStorage.getItem(drawKey); if (saved) _lwDrawings.importJSON(saved); } catch(e){}
+    _lwDrawings.on('change', () => {
+        try { localStorage.setItem(drawKey, _lwDrawings.exportJSON()); } catch(e){}
+    });
+
+    const st = document.getElementById('lwChartStatus');
+    if (st) st.textContent = 'Caricating…';
+    await lwFetchAndSetData();
+    if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'}[_tvInterval]||_tvInterval);
+}
+
+async function lwFetchAndSetData() {
+    if (!_lwSeries) return;
+    const allSyms = WL_GROUPS.flatMap(g => g.syms);
+    const found   = allSyms.find(s => s.tv === _tvSymbol);
+    if (!found) return;
+    const st = document.getElementById('lwChartStatus');
+    try {
+        if (st) st.textContent = 'Memuat data…';
+        const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
+        const data = await res.json();
+        const candles = (data.candles || []).filter(c => c.time && c.open);
+        if (!candles.length) { if (st) st.textContent = 'Tidak ada data'; return; }
+        _lwSeries.setData(candles);
+        _lwChart.timeScale().fitContent();
+        if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'}[_tvInterval]||_tvInterval) + ' · ' + candles.length + ' bar';
+    } catch(e) {
+        if (st) st.textContent = 'Error: ' + e.message;
+    }
+}
+
+function setChartTool(kind) {
+    _lwTool = kind || null;
+    if (_lwDrawings) _lwDrawings.setTool(kind);
+    document.querySelectorAll('.lw-draw-btn').forEach(b => {
+        const isActive = (b.dataset.tool || '') === (kind || '');
+        b.className = 'lw-draw-btn shrink-0 px-2 py-1 rounded border text-[11px] font-mono' +
+            (isActive ? ' active' : ' border-qi-border text-slate-400');
+        if (!isActive && b.dataset.tool === 'fib-retracement') b.className = b.className.replace('text-[11px] font-mono', 'text-[10px]');
+        if (!isActive && (b.dataset.tool === 'ray' || b.dataset.tool === 'extended-line')) b.className = b.className.replace('text-[11px] font-mono', 'text-[10px] font-mono');
+        if (!isActive && b.dataset.tool === 'text') b.className = b.className.replace('font-mono', 'font-mono font-bold');
+    });
+}
+
+function lwDeleteSelected() {
+    if (!_lwDrawings) return;
+    _lwDrawings.selection().forEach(id => _lwDrawings.remove(id));
+}
+
+function lwClearAll() {
+    if (!_lwDrawings) return;
+    _lwDrawings.clear();
+    try { localStorage.removeItem('qi_lw_' + _tvSymbol.replace(/[^a-z0-9]/gi, '_')); } catch(e){}
 }
 
 function setChartSymbolFull(key, tvSym, label) {
@@ -2845,7 +2953,7 @@ function setChartSymbolFull(key, tvSym, label) {
     _tvSymLabel = label;
     updateChartHeader();
     renderWatchlist();
-    buildTvWidget();
+    buildLwChart();
 }
 
 function updateChartHeader() {
@@ -2931,7 +3039,9 @@ function setChartInterval(iv) {
             ? 'chart-tf-btn active px-2 py-0.5 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
             : 'chart-tf-btn px-2 py-0.5 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-qi-cyan/40 hover:text-white';
     });
-    buildTvWidget();
+    const tfLabel = document.getElementById('ohlcTf');
+    if (tfLabel) tfLabel.textContent = labels[iv] || iv;
+    lwFetchAndSetData();
 }
 
 function setChartTab(tab) {
