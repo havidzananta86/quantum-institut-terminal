@@ -194,67 +194,131 @@
         <div class="text-slate-500 text-sm animate-pulse">Memeriksa akses…</div>
     </div>
 
-    <!-- Upgrade gate (hidden until role check fails) -->
-    <div id="gateUpgrade" class="hidden w-full max-w-lg">
-        <!-- Blurred preview hint -->
+    <!-- Upgrade gate (hidden until role check fails) — Premium Data Center Portal -->
+    <div id="gateUpgrade" class="hidden w-full max-w-2xl">
+
+        <!-- Animated grid bg -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            <div class="w-full h-full opacity-[0.04]" style="background: repeating-linear-gradient(45deg,#00E5FF 0,#00E5FF 1px,transparent 0,transparent 50%); background-size:20px 20px;"></div>
+            <div class="absolute inset-0" style="background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,229,255,.03) 39px,rgba(0,229,255,.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,229,255,.03) 39px,rgba(0,229,255,.03) 40px);"></div>
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[2px] bg-gradient-to-r from-transparent via-[#00E5FF]/40 to-transparent animate-pulse"></div>
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[2px] bg-gradient-to-r from-transparent via-[#7C4DFF]/40 to-transparent animate-pulse"></div>
         </div>
 
-        <div class="relative bg-[#0C1220] border border-[#1E293B] rounded-2xl p-8 text-center shadow-2xl shadow-black/60">
-            <!-- Lock icon -->
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00E5FF]/20 to-[#7C4DFF]/20 border border-[#00E5FF]/20 mx-auto mb-5 flex items-center justify-center text-3xl">🔒</div>
-
-            <div class="text-[10px] font-semibold text-[#00E5FF] uppercase tracking-[0.2em] mb-2">Fitur Premium</div>
-            <h1 class="font-heading font-bold text-white text-2xl mb-2">Quantum Command Center</h1>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
-                Dashboard ini eksklusif untuk pengguna <span class="text-[#00E5FF] font-semibold">Quantum+ PRO</span>.<br>
-                Upgrade untuk akses penuh ke semua fitur intelijen pasar.
-            </p>
-
-            <!-- Feature list -->
-            <div class="grid grid-cols-2 gap-2 mb-7 text-left">
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> Live Market Tape 14 instrumen
+        <div class="relative">
+            <!-- Top label -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00E5FF]/20 bg-[#00E5FF]/5 mb-4">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#00E5FF] animate-pulse inline-block"></span>
+                    <span class="text-[10px] font-mono text-[#00E5FF] uppercase tracking-[0.25em]">Quantum Institut · Data Center</span>
                 </div>
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> Currency Strength Stack
-                </div>
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> Economic Calendar Heatmap
-                </div>
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> World Session Clock
-                </div>
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> Top Mover & Stat Cards
-                </div>
-                <div class="flex items-start gap-2 text-[11px] text-slate-300">
-                    <span class="text-[#10B981] mt-0.5">✓</span> Next High-Impact Countdown
-                </div>
+                <h1 class="font-heading font-bold text-white text-3xl sm:text-4xl tracking-tight mb-1">Command Center</h1>
+                <p class="text-slate-500 text-[11px] font-mono uppercase tracking-widest">Restricted Access · VIP Members Only</p>
             </div>
 
-            <!-- CTAs -->
-            <div class="space-y-2.5">
-                <a href="pricing.html"
-                   class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm transition-all"
-                   style="background: linear-gradient(135deg,#00E5FF,#7C4DFF);">
-                    ⚡ Upgrade ke Quantum+ PRO
-                </a>
-                <a href="terminal.html"
-                   class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
-                    Lanjut dengan Terminal Gratis →
-                </a>
-            </div>
+            <!-- Main card -->
+            <div class="bg-[#070D1C]/90 border border-[#0F1A2E] rounded-2xl overflow-hidden shadow-2xl shadow-[#00E5FF]/5">
 
-            <!-- Login hint if not logged in -->
-            <div id="gateLoginHint" class="hidden mt-4 text-[10px] text-slate-600">
-                Sudah punya lisensi PRO?
-                <a href="login.html" onclick="try{sessionStorage.setItem('qi_redirect_after_login','dashboard.html')}catch(e){}" class="text-[#00E5FF] underline">Login di sini</a>
+                <!-- Scan line header -->
+                <div class="h-[2px] bg-gradient-to-r from-[#00E5FF] via-[#7C4DFF] to-[#00E5FF] animate-pulse"></div>
+
+                <div class="p-6 sm:p-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+                        <!-- Left: Access info -->
+                        <div>
+                            <div class="text-[10px] font-mono text-slate-600 uppercase tracking-widest mb-4">Akses Premium Meliputi</div>
+                            <div class="space-y-2.5">
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-[#00E5FF] shrink-0">✦</span>
+                                    <span class="text-slate-300">Live Market Tape · 15 Instrumen</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-[#00E5FF] shrink-0">✦</span>
+                                    <span class="text-slate-300">AI Trading Assistant (Groq)</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-[#00E5FF] shrink-0">✦</span>
+                                    <span class="text-slate-300">Signal Matrix · Real Indicators</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-[#7C4DFF] shrink-0">✦</span>
+                                    <span class="text-slate-300">COT Analysis · CFTC Data</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-[#7C4DFF] shrink-0">✦</span>
+                                    <span class="text-slate-300">Currency Strength Stack</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-[#7C4DFF] shrink-0">✦</span>
+                                    <span class="text-slate-300">Paper Trading + Mini Chart</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center text-[9px] text-[#10B981] shrink-0">✦</span>
+                                    <span class="text-slate-300">News Impact & Confluence Matrix</span>
+                                </div>
+                                <div class="flex items-center gap-2.5 text-[12px]">
+                                    <span class="w-5 h-5 rounded-md bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center text-[9px] text-[#10B981] shrink-0">✦</span>
+                                    <span class="text-slate-300">Correlation Matrix 10×10</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Login / Upgrade CTAs -->
+                        <div class="flex flex-col justify-center">
+                            <div class="text-[10px] font-mono text-slate-600 uppercase tracking-widest mb-4">Autentikasi</div>
+
+                            <!-- PRO badge -->
+                            <div class="flex items-center gap-3 p-4 rounded-xl bg-[#050A14] border border-[#0F1A2E] mb-5">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#7C4DFF] flex items-center justify-center font-bold text-slate-950 text-lg shrink-0">Q</div>
+                                <div>
+                                    <div class="text-white text-sm font-semibold">Quantum+ PRO</div>
+                                    <div class="text-slate-500 text-[10px]">Akses penuh · All panels</div>
+                                </div>
+                                <div class="ml-auto">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-mono bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/20">VIP</span>
+                                </div>
+                            </div>
+
+                            <!-- Login hint for existing PRO users -->
+                            <div id="gateLoginHint" class="mb-3 p-3 rounded-xl bg-[#0C1220] border border-[#1E293B] text-center">
+                                <div class="text-[11px] text-slate-400 mb-2">Sudah punya lisensi PRO?</div>
+                                <a href="login.html" onclick="try{sessionStorage.setItem('qi_redirect_after_login','dashboard.html')}catch(e){}"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold text-slate-950 transition-all w-full justify-center"
+                                   style="background:linear-gradient(135deg,#00E5FF,#7C4DFF);">
+                                    🔐 Login ke Data Center
+                                </a>
+                            </div>
+
+                            <!-- Upgrade CTA -->
+                            <a href="pricing.html"
+                               class="block w-full py-3 rounded-xl font-heading font-bold text-[13px] text-center mb-2.5 transition-all border border-[#00E5FF]/30 text-[#00E5FF] hover:bg-[#00E5FF]/10"
+                               style="">
+                                ⚡ Upgrade ke Quantum+ PRO
+                            </a>
+                            <a href="terminal.html"
+                               class="block w-full py-2.5 rounded-xl text-[12px] text-slate-500 border border-[#0F1A2E] hover:border-[#1E293B] hover:text-slate-300 transition-all text-center">
+                                Lanjut dengan Terminal Gratis →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom status bar -->
+                <div class="px-6 py-2.5 border-t border-[#0F1A2E] flex items-center gap-3 bg-[#050A14]/60">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse inline-block"></span>
+                    <span class="text-[10px] font-mono text-slate-600">SYSTEM ONLINE · SECURE CONNECTION ESTABLISHED</span>
+                    <span class="ml-auto text-[10px] font-mono text-slate-700" id="gateTimestamp"></span>
+                </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+(function(){
+    var el = document.getElementById('gateTimestamp');
+    if (el) el.textContent = new Date().toISOString().replace('T',' ').substring(0,19) + ' UTC';
+})();
+</script>
 
 <!-- Gate check script — runs before DOM paint -->
 <script>

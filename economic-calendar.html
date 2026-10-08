@@ -177,8 +177,8 @@
             <a href="terminal.html#orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📊</span> Order Book</a>
             <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📰</span> News Feed</a>
             <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>📅</span> Economic Calendar</a>
-            <a href="dashboard.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
-            <a href="dashboard.html#strength" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
+            <a href="dashboard.html" id="ecSidebarDash1" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
+            <a href="dashboard.html#strength" id="ecSidebarDash2" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
@@ -214,7 +214,7 @@
             <button onclick="refreshCalendar()" id="refreshBtn" title="Refresh" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-qi-cyan hover:border-qi-cyan/30 transition-all text-[11px]">
                 <span id="refreshIcon">↻</span> Refresh
             </button>
-            <a href="dashboard.html" class="px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-white transition-all text-[11px]">Dashboard →</a>
+            <a href="dashboard.html" id="ecHeaderDash" class="px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-white transition-all text-[11px]">Dashboard →</a>
         </div>
     </div>
 
@@ -564,6 +564,34 @@ loadUserInfo();
 fetchCalendar();
 setInterval(() => fetchCalendar(true), 300000); // refresh every 5 min
 setInterval(updateUpdatedAgo, 10000);
+</script>
+
+<!-- PRO-gate dashboard links -->
+<script>
+(function(){
+    var isPro = false;
+    try {
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        var u = raw ? JSON.parse(raw) : null;
+        isPro = u && (u.role === 'pro' || u.role === 'admin');
+    } catch(e){}
+
+    if (isPro) return;
+
+    var lockStyle = function(el, label) {
+        el.href = 'pricing.html';
+        el.title = 'Quantum+ PRO Required';
+        el.innerHTML = el.innerHTML.replace(label, label) + ' <span style="font-size:8px;padding:1px 4px;border-radius:4px;border:1px solid #334155;color:#475569">🔒</span>';
+        el.style.opacity = '0.55';
+    };
+
+    var d1 = document.getElementById('ecSidebarDash1');
+    var d2 = document.getElementById('ecSidebarDash2');
+    var dh = document.getElementById('ecHeaderDash');
+    if (d1) lockStyle(d1, 'Market Overview');
+    if (d2) lockStyle(d2, 'Currency Strength');
+    if (dh) { dh.href = 'pricing.html'; dh.textContent = '🔒 PRO →'; dh.style.opacity = '0.6'; }
+})();
 </script>
 </body>
 </html>

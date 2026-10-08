@@ -185,7 +185,7 @@
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
-            <a href="dashboard.html" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🌐</span> Command Center</a>
+            <a href="dashboard.html" id="termSidebarDashLink" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🌐</span> Command Center</a>
             <a href="#chart"    onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400"><span>📈</span> Charts</a>
             <a href="#news"     onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📰</span> News Feed</a>
             <a href="#orderbook" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📊</span> Order Book</a>
@@ -227,7 +227,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
             </a>
 
             <!-- Dashboard link -->
-            <a href="dashboard.html" title="Quantum Command Center"
+            <a href="dashboard.html" id="termHeaderDashLink" title="Quantum Command Center"
                class="hidden xs:flex items-center gap-1 px-2 py-1 rounded-md text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all text-[10px] font-semibold shrink-0">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
                 <span>Dashboard</span>
@@ -2534,7 +2534,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
     <!-- ── Mobile Bottom Nav (md and below only) ─────────────────────── -->
     <nav class="mobile-bottom-nav md:hidden" id="mobileBottomNav" aria-label="Navigasi bawah">
-        <a href="dashboard.html" class="mobile-bottom-nav-item" title="Command Center">
+        <a href="dashboard.html" id="termMobileDashLink" class="mobile-bottom-nav-item" title="Command Center">
             <span class="nav-icon">🌐</span>
             <span>Dashboard</span>
         </a>
@@ -2555,6 +2555,42 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
             <span>Profil</span>
         </a>
     </nav>
+
+<!-- PRO-gate dashboard links: hide for free users -->
+<script>
+(function(){
+    var isPro = false;
+    try {
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        var u = raw ? JSON.parse(raw) : null;
+        isPro = u && (u.role === 'pro' || u.role === 'admin');
+    } catch(e){}
+
+    if (isPro) return; // PRO users see everything normally
+
+    // Sidebar: replace with locked upgrade link
+    var sidebar = document.getElementById('termSidebarDashLink');
+    if (sidebar) {
+        sidebar.href = 'pricing.html';
+        sidebar.title = 'Quantum+ PRO Required';
+        sidebar.innerHTML = '<span class="opacity-40">🌐</span><span class="text-slate-600">Command Center</span><span class="ml-auto text-[8px] font-mono px-1 py-0.5 rounded border border-slate-700 text-slate-600 shrink-0">🔒 PRO</span>';
+        sidebar.classList.remove('text-slate-400','hover:text-white','hover:bg-cyan-500/10');
+        sidebar.classList.add('cursor-pointer','opacity-70');
+    }
+
+    // Header: hide entirely for free users
+    var header = document.getElementById('termHeaderDashLink');
+    if (header) header.style.display = 'none';
+
+    // Mobile bottom nav: replace with pricing link
+    var mobile = document.getElementById('termMobileDashLink');
+    if (mobile) {
+        mobile.href = 'pricing.html';
+        mobile.title = 'Upgrade PRO';
+        mobile.innerHTML = '<span class="nav-icon opacity-50">🔒</span><span class="text-slate-600">PRO</span>';
+    }
+})();
+</script>
 
 </body>
 </html>
