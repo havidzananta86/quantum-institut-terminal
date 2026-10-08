@@ -20,10 +20,11 @@
             theme: {
                 extend: {
                     colors: {
-                        'qi-bg':     '#070C1A',
-                        'qi-panel':  '#0C1220',
-                        'qi-card':   '#111827',
-                        'qi-border': '#1E293B',
+                        'qi-bg':     '#000000',
+                        'qi-panel':  '#050A14',
+                        'qi-card':   '#080E1C',
+                        'qi-border': '#0F1A2E',
+                        'qi-navy':   '#0A4FA6',
                         'qi-cyan':   '#00E5FF',
                         'qi-purple': '#7C4DFF',
                         'qi-green':  '#10B981',
@@ -41,7 +42,7 @@
     </script>
 
     <style>
-        body { background:#070C1A; font-family:'Inter',sans-serif; }
+        body { background:#000000; font-family:'Inter',sans-serif; }
 
         /* ── Scrolling ticker ── */
         @keyframes ticker-scroll {
@@ -62,6 +63,22 @@
             50%       { opacity:.3; }
         }
         .session-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+        /* Impact badges */
+        .badge-high { background:#FF4444; color:#fff; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:700; letter-spacing:.5px; }
+        .badge-med  { background:#F59E0B; color:#000; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:700; letter-spacing:.5px; }
+        .badge-low  { background:#3B82F6; color:#fff; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:700; letter-spacing:.5px; }
+
+        /* Sentiment badges */
+        .sent-bull { color:#10B981; background:#10B98115; border:1px solid #10B98130; padding:1px 7px; border-radius:3px; font-size:9px; font-weight:600; }
+        .sent-bear { color:#EF4444; background:#EF444415; border:1px solid #EF444430; padding:1px 7px; border-radius:3px; font-size:9px; font-weight:600; }
+        .sent-neut { color:#94A3B8; background:#94A3B815; border:1px solid #94A3B830; padding:1px 7px; border-radius:3px; font-size:9px; font-weight:600; }
+
+        /* Filter button active */
+        .filter-btn-active { background:#0A4FA620; border-color:#0A4FA6; color:#60A5FA; }
+
+        /* COT bias bar */
+        .cot-bar { height:6px; border-radius:3px; transition:width .5s ease; }
 
         /* ── Strength bar ── */
         .strength-bar { transition: width .6s ease; }
@@ -299,6 +316,13 @@
             </button>
             <button data-panel="panel-correlation" onclick="switchPanel('panel-correlation')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🔮</span> Correlation Matrix
+            </button>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Analytics</div>
+            <button data-panel="panel-cot" onclick="switchPanel('panel-cot')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">📋</span> COT Analysis
+            </button>
+            <button data-panel="panel-impact" onclick="switchPanel('panel-impact')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">⚡</span> News Impact
             </button>
         </div>
     </nav>
@@ -641,44 +665,186 @@
         </div>
     </div>
 
-    <!-- ══ PANEL: Economic Heatmap ══ -->
-    <div id="panel-heatmap" class="panel-content hidden p-4 space-y-4">
-        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+    <!-- ══ PANEL: Economic Calendar ══ -->
+    <div id="panel-heatmap" class="panel-content hidden flex flex-col h-full">
+        <!-- Header toolbar -->
+        <div class="flex-shrink-0 px-4 pt-4 pb-3 bg-qi-bg space-y-3">
+            <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="text-qi-gold text-sm">📅</span>
-                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Economic Calendar</span>
+                    <span class="text-qi-gold">📅</span>
+                    <span class="font-heading font-bold text-white text-sm uppercase tracking-wider">Economic Calendar</span>
+                    <span class="text-[10px] font-mono text-slate-500" id="calEventCount">—</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-1.5 text-[10px]">
-                        <span class="w-2 h-2 rounded-sm bg-qi-red inline-block"></span><span class="text-slate-500">High</span>
-                        <span class="w-2 h-2 rounded-sm bg-qi-gold inline-block ml-1"></span><span class="text-slate-500">Med</span>
-                        <span class="w-2 h-2 rounded-sm bg-qi-green inline-block ml-1"></span><span class="text-slate-500">Low</span>
-                    </div>
-                    <a href="economic-calendar.html" class="text-[10px] text-qi-cyan hover:underline font-mono">Halaman Penuh →</a>
+                <div class="flex items-center gap-2">
+                    <button onclick="calNavWeek(-1)" class="w-6 h-6 rounded border border-qi-border text-slate-400 hover:border-slate-500 text-xs flex items-center justify-center">‹</button>
+                    <span class="text-[11px] font-mono text-slate-300" id="calWeekLabel">This week</span>
+                    <button onclick="calNavWeek(1)" class="w-6 h-6 rounded border border-qi-border text-slate-400 hover:border-slate-500 text-xs flex items-center justify-center">›</button>
                 </div>
             </div>
-            <div class="p-4">
-                <div class="grid grid-cols-7 gap-1 mb-1">
-                    <div class="text-[9px] text-slate-600 text-center font-semibold">SEN</div><div class="text-[9px] text-slate-600 text-center font-semibold">SEL</div>
-                    <div class="text-[9px] text-slate-600 text-center font-semibold">RAB</div><div class="text-[9px] text-slate-600 text-center font-semibold">KAM</div>
-                    <div class="text-[9px] text-slate-600 text-center font-semibold">JUM</div><div class="text-[9px] text-slate-600 text-center font-semibold">SAB</div>
-                    <div class="text-[9px] text-slate-600 text-center font-semibold">MIN</div>
+            <!-- Filters row -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex gap-1.5">
+                    <button id="calFilterHigh" onclick="toggleCalFilter('high')" class="badge-high px-2 py-1 text-[10px] font-bold rounded cursor-pointer opacity-100 hover:opacity-80">● High</button>
+                    <button id="calFilterMed"  onclick="toggleCalFilter('med')"  class="badge-med  px-2 py-1 text-[10px] font-bold rounded cursor-pointer opacity-100 hover:opacity-80">● Med</button>
+                    <button id="calFilterLow"  onclick="toggleCalFilter('low')"  class="badge-low  px-2 py-1 text-[10px] font-bold rounded cursor-pointer opacity-100 hover:opacity-80">● Low</button>
                 </div>
-                <div id="calGrid2" class="grid grid-cols-7 gap-1"></div>
-            </div>
-            <div id="calDayEvents2" class="hidden border-t border-qi-border px-4 py-3">
-                <div class="text-[10px] font-semibold text-slate-400 mb-2" id="calDayTitle2">—</div>
-                <div id="calDayEventList2" class="space-y-1"></div>
+                <select id="calFilterCur" onchange="renderCalTable()" class="ml-auto text-[10px] bg-[#080E1C] border border-qi-border text-slate-300 rounded px-2 py-1 outline-none">
+                    <option value="ALL">All countries</option>
+                    <option value="USD">🇺🇸 USD</option>
+                    <option value="EUR">🇪🇺 EUR</option>
+                    <option value="GBP">🇬🇧 GBP</option>
+                    <option value="JPY">🇯🇵 JPY</option>
+                    <option value="AUD">🇦🇺 AUD</option>
+                    <option value="CAD">🇨🇦 CAD</option>
+                    <option value="NZD">🇳🇿 NZD</option>
+                    <option value="CHF">🇨🇭 CHF</option>
+                </select>
             </div>
         </div>
-        <!-- Event list full -->
-        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-qi-border">
-                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Semua Event Minggu Ini</span>
+        <!-- Calendar table -->
+        <div class="flex-1 overflow-auto">
+            <table class="w-full text-xs" id="calTable">
+                <thead class="sticky top-0 bg-[#050A14] z-10">
+                    <tr class="border-b border-qi-border text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="px-4 py-2 text-left w-16">Time</th>
+                        <th class="px-3 py-2 text-center w-12">Cur</th>
+                        <th class="px-3 py-2 text-center w-16">Impact</th>
+                        <th class="px-4 py-2 text-left">Event</th>
+                        <th class="px-3 py-2 text-right w-20">Actual</th>
+                        <th class="px-3 py-2 text-right w-20">Forecast</th>
+                        <th class="px-3 py-2 text-right w-20">Previous</th>
+                    </tr>
+                </thead>
+                <tbody id="calTableBody">
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-600">Memuat…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: COT Analysis ══ -->
+    <div id="panel-cot" class="panel-content hidden p-4 space-y-4">
+        <!-- Tab header -->
+        <div class="flex flex-wrap items-center gap-2">
+            <button data-cot="pair" onclick="setCotTab('pair')" class="cot-tab px-4 py-1.5 rounded-lg text-[11px] font-semibold font-heading border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">⚖ Pair Analysis</button>
+            <button data-cot="all"  onclick="setCotTab('all')"  class="cot-tab px-4 py-1.5 rounded-lg text-[11px] font-semibold font-heading border border-qi-border text-slate-400 hover:border-slate-500">🌐 All Currencies</button>
+            <button data-cot="gold" onclick="setCotTab('gold')" class="cot-tab px-4 py-1.5 rounded-lg text-[11px] font-semibold font-heading border border-qi-border text-slate-400 hover:border-slate-500">🥇 Gold</button>
+            <span class="ml-auto text-[10px] font-mono text-slate-600" id="cotSource">CFTC · weekly</span>
+            <button onclick="fetchCot()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺</button>
+        </div>
+
+        <!-- Pair Analysis tab -->
+        <div id="cot-tab-pair" class="space-y-4">
+            <!-- Quick pairs -->
+            <div class="flex flex-wrap gap-1.5" id="cotPairBtns">
+                <button onclick="selectCotPair('EUR/USD')" class="cot-pair-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">EUR/USD</button>
+                <button onclick="selectCotPair('GBP/USD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">GBP/USD</button>
+                <button onclick="selectCotPair('USD/JPY')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">USD/JPY</button>
+                <button onclick="selectCotPair('USD/CHF')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">USD/CHF</button>
+                <button onclick="selectCotPair('AUD/USD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">AUD/USD</button>
+                <button onclick="selectCotPair('USD/CAD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">USD/CAD</button>
+                <button onclick="selectCotPair('NZD/USD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">NZD/USD</button>
+                <button onclick="selectCotPair('EUR/GBP')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">EUR/GBP</button>
+                <button onclick="selectCotPair('EUR/JPY')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">EUR/JPY</button>
+                <button onclick="selectCotPair('GBP/JPY')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">GBP/JPY</button>
+                <button onclick="selectCotPair('AUD/NZD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">AUD/NZD</button>
+                <button onclick="selectCotPair('GBP/AUD')" class="cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">GBP/AUD</button>
             </div>
-            <div id="calFullList" class="divide-y divide-qi-border/50 max-h-80 overflow-y-auto">
-                <div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat…</div>
+            <!-- Bias card -->
+            <div id="cotBiasCard" class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="text-center text-slate-600 text-xs py-4">Memuat data COT…</div>
+            </div>
+            <!-- Leg by leg -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="cotLegsGrid">
+            </div>
+        </div>
+
+        <!-- All Currencies tab -->
+        <div id="cot-tab-all" class="hidden">
+            <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+                <table class="w-full text-xs">
+                    <thead><tr class="border-b border-qi-border text-[10px] font-semibold text-slate-500 uppercase">
+                        <th class="px-4 py-2 text-left">Currency</th>
+                        <th class="px-3 py-2 text-center">Bias</th>
+                        <th class="px-3 py-2 text-right">Net Pos</th>
+                        <th class="px-3 py-2 text-right">Net %OI</th>
+                        <th class="px-3 py-2 text-right">Wk Flow</th>
+                        <th class="px-3 py-2 text-right">Longs</th>
+                        <th class="px-3 py-2 text-right">Shorts</th>
+                    </tr></thead>
+                    <tbody id="cotAllBody"><tr><td colspan="7" class="px-4 py-6 text-center text-slate-600">Memuat…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gold tab -->
+        <div id="cot-tab-gold" class="hidden space-y-4">
+            <div id="cotGoldCard" class="bg-qi-card border border-qi-border rounded-xl p-4">
+                <div class="text-center text-slate-600 text-xs py-4">Memuat data Gold COT…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: News Impact ══ -->
+    <div id="panel-impact" class="panel-content hidden p-4 space-y-4">
+        <!-- Controls -->
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Window -->
+            <div class="flex gap-1">
+                <button onclick="setImpactWindow('30m')" data-window="30m" class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">30m</button>
+                <button onclick="setImpactWindow('1h')"  data-window="1h"  class="impact-win-btn active px-2.5 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">1h</button>
+                <button onclick="setImpactWindow('2h')"  data-window="2h"  class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">2h</button>
+                <button onclick="setImpactWindow('4h')"  data-window="4h"  class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">4h</button>
+            </div>
+            <!-- Sort -->
+            <select id="impactSort" onchange="fetchNewsImpact()" class="text-[10px] bg-qi-card border border-qi-border text-slate-300 rounded px-2 py-1 outline-none">
+                <option value="avg_impact">Avg impact</option>
+                <option value="max_impact">Max impact</option>
+                <option value="median">Median</option>
+                <option value="consistency">Consistency</option>
+                <option value="hit_rate">Hit rate</option>
+                <option value="releases">Releases</option>
+            </select>
+            <!-- Impact filter -->
+            <div class="flex gap-1">
+                <button onclick="setImpactFilter('HIGH')" data-imp="HIGH" class="impact-filter-btn badge-high cursor-pointer px-2 py-1">High</button>
+                <button onclick="setImpactFilter('MED')"  data-imp="MED"  class="impact-filter-btn badge-med cursor-pointer px-2 py-1 opacity-50">Med</button>
+                <button onclick="setImpactFilter('LOW')"  data-imp="LOW"  class="impact-filter-btn badge-low cursor-pointer px-2 py-1 opacity-50">Low</button>
+            </div>
+            <!-- Currency filter -->
+            <select id="impactCur" onchange="fetchNewsImpact()" class="ml-auto text-[10px] bg-qi-card border border-qi-border text-slate-300 rounded px-2 py-1 outline-none">
+                <option value="ALL">All currencies</option>
+                <option value="USD">USD</option><option value="EUR">EUR</option>
+                <option value="GBP">GBP</option><option value="JPY">JPY</option>
+                <option value="AUD">AUD</option><option value="CAD">CAD</option>
+                <option value="NZD">NZD</option><option value="CHF">CHF</option>
+            </select>
+        </div>
+        <!-- Stats header -->
+        <div class="text-[10px] font-mono text-slate-500" id="impactStats">21,042 releases measured · <span id="impactRowCount">—</span> rows</div>
+        <!-- Table -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs font-mono" id="impactTable">
+                    <thead class="sticky top-0 bg-[#050A14]">
+                        <tr class="border-b border-qi-border text-[9px] font-semibold text-slate-500 uppercase">
+                            <th class="px-4 py-2 text-left min-w-[180px]">Event</th>
+                            <th class="px-3 py-2 text-left w-20">Pair</th>
+                            <th class="px-3 py-2 text-right w-20">Avg Impact</th>
+                            <th class="px-3 py-2 text-right w-16">Median</th>
+                            <th class="px-3 py-2 text-right w-14">p90</th>
+                            <th class="px-3 py-2 text-right w-14">Max</th>
+                            <th class="px-3 py-2 text-right w-20">Consistency</th>
+                            <th class="px-3 py-2 text-right w-16">Hit Rate</th>
+                            <th class="px-3 py-2 text-right w-16">Up Bias</th>
+                            <th class="px-3 py-2 text-right w-16">Releases</th>
+                            <th class="px-3 py-2 text-right w-14">Per yr</th>
+                        </tr>
+                    </thead>
+                    <tbody id="impactTableBody">
+                        <tr><td colspan="11" class="px-4 py-8 text-center text-slate-600">Memuat…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -698,18 +864,40 @@
     </div>
 
     <!-- ══ PANEL: News Feed ══ -->
-    <div id="panel-news" class="panel-content hidden p-4 space-y-4">
-        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-qi-border">
+    <div id="panel-news" class="panel-content hidden flex flex-col h-full">
+        <!-- Toolbar -->
+        <div class="flex-shrink-0 px-4 pt-4 pb-2 space-y-2 bg-qi-bg sticky top-0 z-10">
+            <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
-                    <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Berita Pasar</span>
+                    <span class="font-heading font-bold text-white text-sm uppercase tracking-wider">News Feed</span>
+                    <span class="text-[10px] font-mono text-slate-500 ml-1" id="newsCount">—</span>
                 </div>
-                <button onclick="fetchDashNews()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺ Refresh</button>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-500 font-mono" id="newsUpdated">—</span>
+                    <button onclick="fetchDashNews()" class="text-[10px] text-qi-cyan hover:underline font-mono">↺</button>
+                </div>
             </div>
-            <div id="dashNewsList" class="divide-y divide-qi-border/50">
-                <div class="px-4 py-8 text-center text-slate-600 text-xs">Memuat berita…</div>
+            <!-- Search -->
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">🔍</span>
+                <input id="newsSearch" type="text" placeholder="Search headlines..." oninput="filterNewsItems()"
+                    class="w-full bg-[#0A0F1E] border border-qi-border rounded-lg pl-8 pr-3 py-2 text-[11px] text-white placeholder-slate-600 outline-none focus:border-qi-cyan/40">
             </div>
+            <!-- Category filters -->
+            <div class="flex flex-wrap gap-1.5" id="newsCatFilters">
+                <button onclick="setNewsCat('All')" class="news-cat-btn active text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">All</button>
+                <button onclick="setNewsCat('Breaking')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Breaking</button>
+                <button onclick="setNewsCat('Forex')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Forex</button>
+                <button onclick="setNewsCat('Economy')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Economy</button>
+                <button onclick="setNewsCat('Central Banks')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Central Banks</button>
+                <button onclick="setNewsCat('Commodities')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Commodities</button>
+                <button onclick="setNewsCat('Geopolitical')" class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Geopolitical</button>
+            </div>
+        </div>
+        <!-- Articles list -->
+        <div id="dashNewsList" class="flex-1 overflow-y-auto divide-y divide-qi-border/30">
+            <div class="px-4 py-8 text-center text-slate-600 text-xs">Memuat berita…</div>
         </div>
     </div>
 
@@ -1576,6 +1764,8 @@ const PANEL_META = {
     'panel-backtest':     { icon:'⏪', title:'Backtester' },
     'panel-track':        { icon:'🏆', title:'Track Record' },
     'panel-correlation':  { icon:'🔮', title:'Correlation Matrix' },
+    'panel-cot':          { icon:'📋', title:'COT Analysis' },
+    'panel-impact':       { icon:'⚡', title:'News Impact' },
 };
 let _activePanel = 'panel-overview';
 let _panelInited = new Set(['panel-overview']);
@@ -1627,6 +1817,528 @@ function initPanel(id) {
     if (id === 'panel-paper')       ptLoadFromServer();
     if (id === 'panel-track')       fetchTrackRecord();
     if (id === 'panel-correlation') fetchCorrelation();
+    if (id === 'panel-cot')        fetchCot();
+    if (id === 'panel-impact')     fetchNewsImpact();
+}
+
+// ─── COT Analysis ──────────────────────────────────────────────────────────
+let _cotData = null;
+let _cotPair = 'EUR/USD';
+let _cotTab  = 'pair';
+
+function setCotTab(tab) {
+    _cotTab = tab;
+    document.querySelectorAll('.cot-tab').forEach(b => {
+        const active = b.dataset.cot === tab;
+        b.className = active
+            ? 'cot-tab px-4 py-1.5 rounded-lg text-[11px] font-semibold font-heading border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'cot-tab px-4 py-1.5 rounded-lg text-[11px] font-semibold font-heading border border-qi-border text-slate-400 hover:border-slate-500';
+    });
+    ['pair','all','gold'].forEach(t => {
+        const el = document.getElementById(`cot-tab-${t}`);
+        if (el) el.classList.toggle('hidden', t !== tab);
+    });
+    if (_cotData) renderCot(_cotData);
+}
+
+function selectCotPair(pair) {
+    _cotPair = pair;
+    document.querySelectorAll('.cot-pair-btn').forEach(b => {
+        const active = b.textContent.trim() === pair;
+        b.className = active
+            ? 'cot-pair-btn active px-2.5 py-1 rounded text-[10px] font-mono font-semibold border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'cot-pair-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400 hover:border-slate-600';
+    });
+    if (_cotData) renderCotPair(_cotData);
+}
+
+async function fetchCot() {
+    const biasCard = document.getElementById('cotBiasCard');
+    const allBody  = document.getElementById('cotAllBody');
+    if (biasCard) biasCard.innerHTML = '<div class="py-6 text-center text-slate-600 text-xs">Memuat COT data…</div>';
+    try {
+        const res  = await fetch('api/cot.php');
+        const data = await res.json();
+        if (data.status !== 'success') throw new Error(data.message);
+        _cotData = data;
+        const srcEl = document.getElementById('cotSource');
+        if (srcEl && data.currencies) {
+            const dates = Object.values(data.currencies).map(c=>c.reportDate).filter(Boolean);
+            const latest = dates.sort().reverse()[0] || '';
+            srcEl.textContent = `CFTC · ${latest || 'weekly'}`;
+        }
+        renderCot(data);
+    } catch(e) {
+        if (biasCard) biasCard.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">COT data tidak tersedia: ${e.message}</div>`;
+    }
+}
+
+function renderCot(data) {
+    if (_cotTab === 'pair') renderCotPair(data);
+    if (_cotTab === 'all')  renderCotAll(data);
+    if (_cotTab === 'gold') renderCotGold(data);
+}
+
+function renderCotPair(data) {
+    const biasCard = document.getElementById('cotBiasCard');
+    const legsGrid = document.getElementById('cotLegsGrid');
+    if (!biasCard || !data?.pairs) return;
+
+    const p    = data.pairs[_cotPair];
+    const bcur = data.currencies?.[p?.base]  || null;
+    const qcur = data.currencies?.[p?.quote] || null;
+
+    if (!p) {
+        biasCard.innerHTML = '<div class="py-6 text-center text-slate-500 text-xs">Data pair tidak tersedia</div>';
+        return;
+    }
+
+    const biasCls   = p.bias==='BULLISH' ? 'text-qi-green' : p.bias==='BEARISH' ? 'text-qi-red' : 'text-slate-400';
+    const biasArrow = p.bias==='BULLISH' ? '→ BULLISH' : p.bias==='BEARISH' ? '→ BEARISH' : '→ NEUTRAL';
+    const scoreNorm = Math.max(0, Math.min(100, (p.score + 100) / 2));
+    const barLeft   = p.score < 0 ? `${scoreNorm}%` : '50%';
+    const barW      = `${Math.abs(p.score / 2)}%`;
+    const barColor  = p.bias==='BULLISH' ? '#10B981' : p.bias==='BEARISH' ? '#EF4444' : '#94A3B8';
+    const wShiftCls = p.weekShift > 0 ? 'text-qi-green' : p.weekShift < 0 ? 'text-qi-red' : 'text-slate-400';
+
+    biasCard.innerHTML = `
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-heading font-bold text-white text-base">${p.pair}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${p.bias==='BULLISH'?'border-qi-green/40 bg-qi-green/10 text-qi-green':p.bias==='BEARISH'?'border-qi-red/40 bg-qi-red/10 text-qi-red':'border-slate-600 text-slate-400'}">${biasArrow}</span>
+                    <span class="text-[10px] text-slate-500">${p.conviction}</span>
+                </div>
+                <div class="text-[11px] text-slate-400">
+                    Week over week, speculators moved toward <strong class="text-white">${p.score < 0 ? p.quote : p.base}</strong> relative to
+                    <strong class="text-white">${p.score < 0 ? p.base : p.quote}</strong>
+                    ${Math.abs(p.score) > 10 ? ` (${p.conviction})` : ''}.
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] text-slate-500 mb-0.5">Bias Score</div>
+                <div class="font-mono font-bold text-2xl ${biasCls}">${p.score > 0 ? '+' : ''}${p.score}</div>
+            </div>
+        </div>
+        <!-- Score bar -->
+        <div class="mb-3">
+            <div class="flex justify-between text-[9px] text-slate-600 font-mono mb-1">
+                <span>${p.quote} favoured ◄</span>
+                <span>balanced</span>
+                <span>► ${p.base} favoured</span>
+            </div>
+            <div class="relative h-2 bg-[#0F1A2E] rounded-full overflow-hidden">
+                <div class="absolute top-0 h-full rounded-full" style="left:${barLeft};width:${barW};background:${barColor};"></div>
+                <div class="absolute top-0 left-1/2 w-px h-full bg-slate-600"></div>
+            </div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-600 mt-1">
+                <span>-100</span>
+                <span class="${wShiftCls} font-semibold">1W: ${p.weekShift>0?'+':''}${p.weekShift} pts toward ${p.weekShift>0?p.base:p.quote}</span>
+                <span>+100</span>
+            </div>
+        </div>
+        <!-- Base / Quote bars -->
+        <div class="space-y-2 mt-3">
+            ${renderCotLegBar(p.base, bcur, false)}
+            ${renderCotLegBar(p.quote, qcur, true)}
+        </div>`;
+
+    // Leg by leg cards
+    if (legsGrid) {
+        legsGrid.innerHTML = [
+            renderCotLegCard(p.base, bcur),
+            renderCotLegCard(p.quote, qcur),
+        ].join('');
+    }
+}
+
+function renderCotLegBar(label, d, isQuote) {
+    if (!d) return `<div class="flex items-center gap-2 text-[10px]"><span class="w-10 text-slate-400 font-mono font-bold">${label}</span><span class="text-slate-600">—</span></div>`;
+    const pct   = Math.abs(d.netPct);
+    const color = d.netPct > 0 ? '#10B981' : '#EF4444';
+    const wfCls = d.weekFlow > 0 ? 'text-qi-green' : d.weekFlow < 0 ? 'text-qi-red' : 'text-slate-500';
+    return `<div class="flex items-center gap-2">
+        <span class="w-10 text-[11px] font-mono font-bold text-slate-300">${label}</span>
+        <div class="flex-1 h-1.5 bg-[#0F1A2E] rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width:${Math.min(100,pct*3)}%;background:${color}"></div>
+        </div>
+        <span class="text-[10px] font-mono ${d.netPct>0?'text-qi-green':'text-qi-red'} w-12 text-right">${d.netPct>0?'+':''}${d.netPct}%</span>
+        <span class="text-[10px] font-mono ${wfCls} w-14 text-right">${d.weekFlow>0?'+':''}${d.weekFlow}%/w</span>
+    </div>`;
+}
+
+function renderCotLegCard(label, d) {
+    if (!d) return '';
+    const biasCls = d.bias==='BULLISH'?'text-qi-green':d.bias==='BEARISH'?'text-qi-red':'text-slate-400';
+    const wfCls   = d.weekFlow>0?'text-qi-green':d.weekFlow<0?'text-qi-red':'text-slate-400';
+    const fmtNum  = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n;
+    return `<div class="bg-qi-card border border-qi-border rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+            <div>
+                <span class="font-heading font-bold text-white text-sm">${label}</span>
+                <span class="ml-2 text-[10px] text-slate-500">— ${d.name}</span>
+            </div>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${d.bias==='BULLISH'?'border-qi-green/40 text-qi-green':d.bias==='BEARISH'?'border-qi-red/40 text-qi-red':'border-slate-600 text-slate-400'}">${d.bias}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="bg-[#0F1A2E] rounded p-2 text-center">
+                <div class="text-[9px] text-slate-500 mb-0.5">Long</div>
+                <div class="text-[11px] font-mono font-bold text-qi-green">${fmtNum(d.longs)}</div>
+                <div class="text-[9px] text-slate-600">${d.pctLong}% OI</div>
+            </div>
+            <div class="bg-[#0F1A2E] rounded p-2 text-center">
+                <div class="text-[9px] text-slate-500 mb-0.5">Short</div>
+                <div class="text-[11px] font-mono font-bold text-qi-red">${fmtNum(d.shorts)}</div>
+                <div class="text-[9px] text-slate-600">${d.pctShort}% OI</div>
+            </div>
+            <div class="bg-[#0F1A2E] rounded p-2 text-center">
+                <div class="text-[9px] text-slate-500 mb-0.5">Net Pos</div>
+                <div class="text-[11px] font-mono font-bold ${d.net>0?'text-qi-green':'text-qi-red'}">${d.net>0?'+':''}${fmtNum(d.net)}</div>
+                <div class="text-[9px] ${wfCls}">${d.weekFlow>0?'+':''}${d.weekFlow}%/wk</div>
+            </div>
+        </div>
+        <div class="flex justify-between text-[9px] text-slate-500">
+            <span>Wk Δ Long: <span class="${d.dLong>0?'text-qi-green':'text-qi-red'}">${d.dLong>0?'+':''}${fmtNum(d.dLong)}</span></span>
+            <span>Wk Δ Short: <span class="${d.dShort>0?'text-qi-green':'text-qi-red'}">${d.dShort>0?'+':''}${fmtNum(d.dShort)}</span></span>
+            <span>OI: ${fmtNum(d.oi)}</span>
+        </div>
+    </div>`;
+}
+
+function renderCotAll(data) {
+    const body = document.getElementById('cotAllBody');
+    if (!body || !data?.currencies) return;
+    const rows = Object.values(data.currencies)
+        .filter(c => c.label !== 'XAU')
+        .sort((a,b) => b.netPct - a.netPct);
+    const fmtN = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+    body.innerHTML = rows.map(d => {
+        const bCls = d.bias==='BULLISH'?'text-qi-green':d.bias==='BEARISH'?'text-qi-red':'text-slate-400';
+        const wCls = d.weekFlow>0?'text-qi-green':d.weekFlow<0?'text-qi-red':'text-slate-400';
+        const barW = Math.min(100, Math.abs(d.netPct) * 4);
+        const barC = d.netPct>0?'#10B981':'#EF4444';
+        return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02]">
+            <td class="px-4 py-2.5">
+                <div class="font-mono font-bold text-white text-[11px]">${d.label}</div>
+                <div class="text-[9px] text-slate-500">${d.name}</div>
+            </td>
+            <td class="px-3 py-2.5 text-center">
+                <span class="font-mono font-bold text-[10px] ${bCls}">${d.bias}</span>
+            </td>
+            <td class="px-3 py-2.5 text-right">
+                <div class="font-mono text-[10px] ${d.net>0?'text-qi-green':'text-qi-red'}">${d.net>0?'+':''}${fmtN(d.net)}</div>
+                <div class="mt-0.5 h-1 bg-[#0F1A2E] rounded-full overflow-hidden w-16 ml-auto"><div style="width:${barW}%;background:${barC};height:100%;border-radius:9px"></div></div>
+            </td>
+            <td class="px-3 py-2.5 text-right font-mono text-[10px] ${d.netPct>0?'text-qi-green':'text-qi-red'}">${d.netPct>0?'+':''}${d.netPct}%</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[10px] ${wCls}">${d.weekFlow>0?'+':''}${d.weekFlow}%</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[10px] text-qi-green">${fmtN(d.longs)}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[10px] text-qi-red">${fmtN(d.shorts)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderCotGold(data) {
+    const card = document.getElementById('cotGoldCard');
+    if (!card || !data?.currencies) return;
+    const d = data.currencies['XAU'];
+    if (!d) { card.innerHTML = '<div class="py-6 text-center text-slate-500 text-xs">Gold COT tidak tersedia</div>'; return; }
+    const biasCls = d.bias==='BULLISH'?'text-qi-green':d.bias==='BEARISH'?'text-qi-red':'text-slate-400';
+    const fmtN = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+    card.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <span class="text-xl">🥇</span>
+                <span class="ml-2 font-heading font-bold text-white text-base">Gold (Comex)</span>
+                <span class="ml-2 text-[10px] text-slate-500">${d.reportDate}</span>
+            </div>
+            <span class="font-mono font-bold text-lg ${biasCls}">${d.bias}</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div class="bg-[#0F1A2E] rounded-lg p-3 text-center">
+                <div class="text-[9px] text-slate-500 mb-1">Speculator Long</div>
+                <div class="font-mono font-bold text-qi-green text-sm">${fmtN(d.longs)}</div>
+                <div class="text-[9px] text-slate-600">${d.pctLong}% of OI</div>
+            </div>
+            <div class="bg-[#0F1A2E] rounded-lg p-3 text-center">
+                <div class="text-[9px] text-slate-500 mb-1">Speculator Short</div>
+                <div class="font-mono font-bold text-qi-red text-sm">${fmtN(d.shorts)}</div>
+                <div class="text-[9px] text-slate-600">${d.pctShort}% of OI</div>
+            </div>
+            <div class="bg-[#0F1A2E] rounded-lg p-3 text-center">
+                <div class="text-[9px] text-slate-500 mb-1">Net Position</div>
+                <div class="font-mono font-bold text-sm ${d.net>0?'text-qi-green':'text-qi-red'}">${d.net>0?'+':''}${fmtN(d.net)}</div>
+                <div class="text-[9px] ${d.netPct>0?'text-qi-green':'text-qi-red'}">${d.netPct}% OI</div>
+            </div>
+            <div class="bg-[#0F1A2E] rounded-lg p-3 text-center">
+                <div class="text-[9px] text-slate-500 mb-1">Weekly Flow</div>
+                <div class="font-mono font-bold text-sm ${d.weekFlow>0?'text-qi-green':'text-qi-red'}">${d.weekFlow>0?'+':''}${d.weekFlow}%</div>
+                <div class="text-[9px] text-slate-600">Open Int: ${fmtN(d.oi)}</div>
+            </div>
+        </div>
+        <div class="text-[11px] text-slate-400 bg-[#0F1A2E] rounded-lg p-3">
+            <strong class="${biasCls}">Gold positioning is ${d.bias.toLowerCase()}.</strong>
+            Specs are ${d.net > 0 ? 'net long' : 'net short'} ${fmtN(Math.abs(d.net))} contracts (${d.netPct}% of OI).
+            Weekly flow: ${d.dLong > 0 ? 'longs added +' + fmtN(d.dLong) : 'longs cut ' + fmtN(d.dLong)},
+            shorts ${d.dShort > 0 ? 'added +' + fmtN(d.dShort) : 'cut ' + fmtN(d.dShort)}.
+        </div>`;
+}
+
+// ─── News Impact ───────────────────────────────────────────────────────────
+let _impactWin    = '1h';
+let _impactFilter = 'HIGH';
+
+function setImpactWindow(w) {
+    _impactWin = w;
+    document.querySelectorAll('.impact-win-btn').forEach(b => {
+        const active = b.dataset.window === w;
+        b.className = active
+            ? 'impact-win-btn active px-2.5 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400';
+    });
+    fetchNewsImpact();
+}
+
+function setImpactFilter(f) {
+    _impactFilter = f;
+    document.querySelectorAll('.impact-filter-btn').forEach(b => {
+        b.style.opacity = b.dataset.imp === f ? '1' : '0.4';
+    });
+    fetchNewsImpact();
+}
+
+async function fetchNewsImpact() {
+    const body = document.getElementById('impactTableBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-slate-600">Memuat…</td></tr>';
+    const sort = document.getElementById('impactSort')?.value || 'avg_impact';
+    const cur  = document.getElementById('impactCur')?.value  || 'ALL';
+    try {
+        const res  = await fetch(`api/news-impact.php?window=${_impactWin}&sort=${sort}&impact=${_impactFilter}&currency=${cur}`);
+        const data = await res.json();
+        const rows = data.data || [];
+        const rcEl = document.getElementById('impactRowCount');
+        if (rcEl) rcEl.textContent = `${rows.length} rows`;
+        if (!rows.length) { body.innerHTML = '<tr><td colspan="11" class="px-4 py-6 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
+        body.innerHTML = rows.map((r, i) => {
+            const impCls  = r.impact==='HIGH'?'badge-high':r.impact==='MED'?'badge-med':'badge-low';
+            const avgPips = _impactWin==='30m' ? r.avg30m : r.avg1h;
+            const barW    = Math.min(100, avgPips / 100 * 100);
+            const consCls = r.cons >= 50 ? 'text-qi-green' : r.cons >= 30 ? 'text-qi-gold' : 'text-slate-400';
+            return `<tr class="border-b border-qi-border/40 hover:bg-white/[.015] transition-colors">
+                <td class="px-4 py-2">
+                    <div class="flex items-center gap-2">
+                        <span class="${impCls}">${r.impact}</span>
+                        <span class="font-mono text-[10px] text-slate-300 font-medium">${r.cur}</span>
+                        <span class="text-[10px] text-slate-200">${r.event}</span>
+                    </div>
+                </td>
+                <td class="px-3 py-2 text-[10px] font-mono text-qi-cyan">${r.pair}</td>
+                <td class="px-3 py-2 text-right">
+                    <div class="font-mono font-bold text-[11px] text-white">${avgPips.toFixed(1)}</div>
+                    <div class="mt-0.5 h-1 bg-[#0F1A2E] rounded-full overflow-hidden w-16 ml-auto"><div style="width:${barW}%;background:#F59E0B;height:100%;border-radius:9px"></div></div>
+                </td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-300">${r.med.toFixed(1)}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-300">${r.p90.toFixed(1)}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-400">${r.max.toFixed(1)}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] ${consCls}">${r.cons}%</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-qi-green">${r.hit}%</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-400">${r.upBias}%</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-300">${r.rel}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] text-slate-500">${r.pyr > 0 ? r.pyr.toFixed(1) : '—'}</td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        body.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-slate-500">Error: ${e.message}</td></tr>`;
+    }
+}
+
+// ─── News Feed (redesigned) ─────────────────────────────────────────────────
+let _newsItems = [];
+let _newsCat   = 'All';
+
+function setNewsCat(cat) {
+    _newsCat = cat;
+    document.querySelectorAll('.news-cat-btn').forEach(b => {
+        const active = b.textContent.trim() === cat;
+        b.className = active
+            ? 'news-cat-btn active text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500';
+    });
+    filterNewsItems();
+}
+
+function filterNewsItems() {
+    const query  = (document.getElementById('newsSearch')?.value || '').toLowerCase();
+    const el     = document.getElementById('dashNewsList');
+    if (!el) return;
+    const catMap = {
+        'Forex':         ['forex'],
+        'Economy':       ['macro','economy'],
+        'Central Banks': ['central-banks','central_banks','centralbanks','fed','boe','ecb','boj','rba'],
+        'Commodities':   ['commodities','gold','oil','crypto'],
+        'Geopolitical':  ['geopolitical'],
+        'Breaking':      ['breaking'],
+    };
+    const filtered = _newsItems.filter(n => {
+        const title = (n.title || '').toLowerCase();
+        const cat   = (n.category || '').toLowerCase();
+        const src   = (n.source || '').toLowerCase();
+        const matchQ = !query || title.includes(query) || src.includes(query);
+        let matchC = true;
+        if (_newsCat !== 'All') {
+            const keys = catMap[_newsCat] || [_newsCat.toLowerCase()];
+            matchC = keys.some(k => cat.includes(k) || title.includes(k));
+        }
+        return matchQ && matchC;
+    });
+    const cnt = document.getElementById('newsCount');
+    if (cnt) cnt.textContent = `${filtered.length} articles`;
+    renderNewsItems(filtered);
+}
+
+function getSentiment(n) {
+    const t = ((n.title||'')+(n.category||'')).toLowerCase();
+    if (t.match(/bull|rise|surge|rally|gain|high|above|beat|strong|boost/)) return 'bullish';
+    if (t.match(/bear|fall|drop|slide|loss|below|miss|weak|cut|fear/)) return 'bearish';
+    return 'neutral';
+}
+
+function getCatStyle(cat) {
+    cat = (cat||'').toLowerCase();
+    if (cat.includes('crypto')) return 'text-qi-gold';
+    if (cat.includes('forex') || cat.includes('central')) return 'text-qi-cyan';
+    if (cat.includes('commodi') || cat.includes('gold') || cat.includes('oil')) return 'text-yellow-400';
+    if (cat.includes('macro') || cat.includes('econom')) return 'text-qi-purple';
+    if (cat.includes('breaking')) return 'text-qi-red';
+    return 'text-slate-400';
+}
+
+function timeAgo(dt) {
+    if (!dt) return '';
+    const diff = (Date.now() - new Date(dt).getTime()) / 1000;
+    if (diff < 60)   return Math.round(diff) + 's ago';
+    if (diff < 3600) return Math.round(diff/60) + 'm ago';
+    if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+    return Math.round(diff/86400) + 'd ago';
+}
+
+function renderNewsItems(items) {
+    const el = document.getElementById('dashNewsList');
+    if (!el) return;
+    if (!items.length) { el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Tidak ada berita</div>'; return; }
+    el.innerHTML = items.map(n => {
+        const sent = getSentiment(n);
+        const sentHtml = `<span class="sent-${sent}">${sent === 'bullish' ? '→ bullish' : sent === 'bearish' ? '→ bearish' : '— neutral'}</span>`;
+        const catCls = getCatStyle(n.category);
+        const ago = timeAgo(n.published_at || n.date);
+        const url = n.url || n.link || '#';
+        return `<a href="${url}" target="_blank" rel="noopener"
+            class="flex items-start gap-3 px-4 py-3 hover:bg-white/[.025] transition-colors cursor-pointer news-item border-b border-qi-border/30"
+            data-title="${(n.title||'').replace(/"/g,'&quot;')}" data-cat="${n.category||''}">
+            <div class="flex-1 min-w-0">
+                <div class="text-[12px] text-slate-100 leading-snug line-clamp-2 font-medium mb-1">${n.title||'—'}</div>
+                <div class="text-[10px] text-slate-500 leading-tight mb-1.5 line-clamp-1">${n.summary||n.description||''}</div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    ${n.source?`<span class="text-[9px] font-mono text-slate-500">${n.source}</span>`:''}
+                    ${n.author?`<span class="text-[9px] text-slate-600">· ${n.author}</span>`:''}
+                    ${n.category?`<span class="text-[9px] font-mono font-semibold ${catCls}">${n.category}</span>`:''}
+                    ${sentHtml}
+                    ${ago?`<span class="text-[9px] text-slate-600 ml-auto">${ago}</span>`:''}
+                </div>
+            </div>
+            <span class="text-slate-600 text-xs mt-0.5 flex-shrink-0">↗</span>
+        </a>`;
+    }).join('');
+}
+
+// ─── Economic Calendar (redesigned) ────────────────────────────────────────
+let _calFilters  = { high:true, med:true, low:true };
+let _calWeekOff  = 0;
+
+function toggleCalFilter(type) {
+    _calFilters[type] = !_calFilters[type];
+    const btn = document.getElementById(`calFilter${type.charAt(0).toUpperCase()+type.slice(1)}`);
+    if (btn) btn.style.opacity = _calFilters[type] ? '1' : '0.35';
+    renderCalTable();
+}
+
+function calNavWeek(dir) {
+    _calWeekOff += dir;
+    const label = document.getElementById('calWeekLabel');
+    if (label) label.textContent = _calWeekOff === 0 ? 'This week' : _calWeekOff > 0 ? `+${_calWeekOff} week` : `${_calWeekOff} week`;
+    renderCalTable();
+}
+
+function renderCalTable() {
+    const body = document.getElementById('calTableBody');
+    if (!body || !_calEvents.length) return;
+    const cur = document.getElementById('calFilterCur')?.value || 'ALL';
+
+    const filtered = _calEvents.filter(e => {
+        const imp = (e.impact || '').toLowerCase();
+        if (imp === 'high' && !_calFilters.high) return false;
+        if (imp === 'medium' && !_calFilters.med) return false;
+        if (imp === 'low' && !_calFilters.low) return false;
+        if (cur !== 'ALL' && (e.currency||'').toUpperCase() !== cur) return false;
+        return true;
+    });
+
+    if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-600">Tidak ada event</td></tr>';
+        return;
+    }
+
+    const cntEl = document.getElementById('calEventCount');
+    if (cntEl) cntEl.textContent = `${filtered.length} events`;
+
+    let lastDay = '';
+    body.innerHTML = filtered.map(e => {
+        const impLvl = (e.impact||'').toLowerCase();
+        const impHtml = impLvl === 'high' ? '<span class="badge-high">High</span>'
+                      : impLvl === 'medium' ? '<span class="badge-med">Med</span>'
+                      : '<span class="badge-low">Low</span>';
+
+        const actual   = e.actual   ?? '—';
+        const forecast = e.forecast ?? '—';
+        const previous = e.previous ?? '—';
+
+        // Color actual vs forecast
+        let actualCls = 'text-slate-300';
+        if (actual !== '—' && forecast !== '—') {
+            const a = parseFloat(String(actual).replace(/[^0-9.\-]/g,''));
+            const f = parseFloat(String(forecast).replace(/[^0-9.\-]/g,''));
+            if (!isNaN(a) && !isNaN(f)) {
+                actualCls = a >= f ? 'text-qi-green font-bold' : 'text-qi-red font-bold';
+            }
+        } else if (actual !== '—') {
+            actualCls = 'text-white';
+        }
+
+        const eDate = (e.date || '').split('T')[0];
+        let dayHeader = '';
+        if (eDate !== lastDay) {
+            lastDay = eDate;
+            const d = new Date(eDate + 'T00:00:00');
+            const dayStr = isNaN(d) ? eDate : d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+            const evCount = filtered.filter(x=>(x.date||'').split('T')[0]===eDate).length;
+            dayHeader = `<tr class="bg-[#050A14]/80"><td colspan="7" class="px-4 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider font-heading">
+                ${dayStr} <span class="text-slate-600 font-normal">${evCount} events</span>
+            </td></tr>`;
+        }
+
+        const timeStr = e.date ? new Date(e.date).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '—';
+        const cur2    = (e.currency||'').toUpperCase();
+
+        return `${dayHeader}<tr class="border-b border-qi-border/30 hover:bg-white/[.015] transition-colors">
+            <td class="px-4 py-2.5 font-mono text-[10px] text-slate-400 whitespace-nowrap">${timeStr}</td>
+            <td class="px-3 py-2.5 text-center font-mono font-bold text-[11px] text-white">${cur2}</td>
+            <td class="px-3 py-2.5 text-center">${impHtml}</td>
+            <td class="px-4 py-2.5 text-[11px] text-slate-200">${e.title || e.event || '—'}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] ${actualCls}">${actual}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-400">${forecast}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-500">${previous}</td>
+        </tr>`;
+    }).join('');
 }
 
 // ─── TradingView Chart ─────────────────────────────────────────────────────
@@ -1799,18 +2511,27 @@ async function fetchOutlook() {
     if (upd) upd.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
 }
 
-// ─── Heatmap Panel (reuses calendar data) ─────────────────────────────────
+// ─── Heatmap Panel ─────────────────────────────────────────────────────────
 let _calSelected2 = null;
 function initHeatmapPanel() {
-    if (_calEvents.length) {
-        renderCalGrid2(_calEvents);
-        renderCalFullList(_calEvents);
-    } else {
-        fetch('api/calendar.php').then(r => r.json()).then(d => {
-            _calEvents = d.events || d.data || [];
-            renderCalGrid2(_calEvents);
-            renderCalFullList(_calEvents);
-        }).catch(() => {});
+    if (_calEvents.length) { renderCalTable(); return; }
+    const body = document.getElementById('calTableBody');
+    if (body) body.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-600">Memuat kalender…</td></tr>';
+    fetchCalendarData();
+}
+
+async function fetchCalendarData() {
+    try {
+        const res  = await fetch('api/calendar.php');
+        const data = await res.json();
+        _calEvents = (data.events || data.data || [])
+            .sort((a, b) => new Date(a.date||0) - new Date(b.date||0));
+        const cntEl = document.getElementById('calEventCount');
+        if (cntEl) cntEl.textContent = `${_calEvents.length} events`;
+        renderCalTable();
+    } catch(e) {
+        const body = document.getElementById('calTableBody');
+        if (body) body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Gagal memuat kalender</td></tr>';
     }
 }
 
@@ -1973,34 +2694,15 @@ async function fetchDashNews() {
     if (!el) return;
     el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Memuat berita…</div>';
     try {
-        const res  = await fetch('api/news.php?limit=30');
+        const res  = await fetch('api/news.php?limit=60');
         const data = await res.json();
         const items = data.items || data.news || data.articles || data.data || [];
-        if (!items.length) { el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Tidak ada berita</div>'; return; }
-        el.innerHTML = items.map(n => {
-            const title = n.title || n.headline || '—';
-            const src   = n.source || n.provider || '';
-            const cat   = n.category || '';
-            const dt    = n.published_at || n.date || n.time || '';
-            const dtStr = dt ? new Date(dt).toLocaleString('id-ID',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-            const url   = n.url || n.link || '#';
-            const catColors = {CRYPTO:'text-qi-gold',FOREX:'text-qi-cyan',GOLD:'text-yellow-400',MACRO:'text-qi-purple'};
-            const catCls = catColors[cat] || 'text-slate-500';
-            return `<a href="${url}" target="_blank" rel="noopener"
-                class="flex items-start gap-3 px-4 py-3 hover:bg-white/[.03] transition-colors cursor-pointer">
-                <div class="flex-1 min-w-0">
-                    <div class="text-[11px] text-slate-200 leading-snug line-clamp-2">${title}</div>
-                    <div class="flex items-center gap-2 mt-1">
-                        ${src ? `<span class="text-[9px] font-mono text-qi-cyan">${src}</span>` : ''}
-                        ${cat ? `<span class="text-[9px] font-mono font-bold ${catCls}">${cat}</span>` : ''}
-                        ${dtStr ? `<span class="text-[9px] text-slate-600">${dtStr}</span>` : ''}
-                    </div>
-                </div>
-                <span class="text-slate-600 text-xs mt-0.5 flex-shrink-0">↗</span>
-            </a>`;
-        }).join('');
+        _newsItems = items;
+        const updEl = document.getElementById('newsUpdated');
+        if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID');
+        filterNewsItems();
     } catch(e) {
-        el.innerHTML = '<div class="px-4 py-4 text-center text-slate-600 text-xs">Gagal memuat berita</div>';
+        el.innerHTML = '<div class="px-4 py-6 text-center text-slate-500 text-xs">Gagal memuat berita</div>';
     }
 }
 
