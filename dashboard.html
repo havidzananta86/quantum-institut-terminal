@@ -5468,10 +5468,10 @@ async function fetchFearGreed() {
 
 async function fetchIDRRates() {
     try {
-        // Get USD/IDR
-        const rateR = await fetch('https://api.frankfurter.app/latest?from=USD&to=IDR');
+        // Get USD/IDR via server-side proxy (avoids CSP + CORS)
+        const rateR = await fetch('api/crypto-futures.php?action=idr');
         const rateJ = await rateR.json();
-        const usdIdr = rateJ.rates?.IDR || 0;
+        const usdIdr = rateJ.rate || 0;
         document.getElementById('ctUSDIDR').textContent = usdIdr > 0 ? 'Rp ' + usdIdr.toLocaleString('id-ID', {maximumFractionDigits:0}) : '—';
 
         // Get crypto prices and convert
@@ -5506,35 +5506,17 @@ async function fetchLiquidations() {
     if (!body) return;
     body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-600 animate-pulse">Memuat data likuidasi…</td></tr>';
     try {
-        // Binance futures 24h ticker — top volume pairs (all public, no auth)
-        const [tickerRes, fundingRes] = await Promise.allSettled([
-            fetch('https://fapi.binance.com/fapi/v1/ticker/24hr'),
-            fetch('https://fapi.binance.com/fapi/v1/premiumIndex')
-        ]);
+        // Gunakan PHP proxy untuk menghindari CSP/CORS (server fetches dari Binance Futures)
+        const res = await fetch('api/crypto-futures.php?action=liquidation');
+        const j   = await res.json();
+        if (!j.ok || !j.data?.length) throw new Error('no data');
 
-        const TOP_SYMS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','LINKUSDT','AVAXUSDT','ADAUSDT','LTCUSDT'];
-        let tickers = [], funding = {};
-
-        if (tickerRes.status === 'fulfilled') {
-            const tj = await tickerRes.value.json();
-            tickers = tj.filter(t => TOP_SYMS.includes(t.symbol))
-                        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
-                        .slice(0, 8);
-        }
-        if (fundingRes.status === 'fulfilled') {
-            const fj = await fundingRes.value.json();
-            fj.forEach(f => { funding[f.symbol] = parseFloat(f.lastFundingRate) * 100; });
-        }
-
-        if (!tickers.length) throw new Error('no data');
-
-        body.innerHTML = tickers.map(t => {
-            const chg    = parseFloat(t.priceChangePercent);
-            const price  = parseFloat(t.lastPrice);
-            const vol    = parseFloat(t.quoteVolume);
-            const fr     = funding[t.symbol] || 0;
-            // Big drop → long liquidations; big pump → short liquidations
-            const liqSide = chg <= -3 ? 'LONG LIQ 🔴' : chg >= 3 ? 'SHORT LIQ 🟢' : chg <= -1.5 ? 'LONG SQUEEZE' : chg >= 1.5 ? 'SHORT SQUEEZE' : 'NETRAL';
+        body.innerHTML = j.data.map(t => {
+            const chg    = parseFloat(t.change);
+            const price  = parseFloat(t.price);
+            const vol    = parseFloat(t.volume);
+            const fr     = t.funding ?? 0;
+            const liqSide = t.liqSide === 'LONG' ? 'LONG LIQ 🔴' : t.liqSide === 'SHORT' ? 'SHORT LIQ 🟢' : chg <= -1.5 ? 'LONG SQUEEZE' : chg >= 1.5 ? 'SHORT SQUEEZE' : 'NETRAL';
             const liqColor = chg <= -1.5 ? 'text-red-400' : chg >= 1.5 ? 'text-green-400' : 'text-slate-400';
             const chgColor = chg >= 0 ? 'text-green-400' : 'text-red-400';
             const frColor  = fr > 0.01 ? 'text-green-400' : fr < -0.01 ? 'text-red-400' : 'text-slate-500';
