@@ -52,6 +52,10 @@ if (empty($tickers)) {
 
 $timeframes = ['15', '60', '240', '1D'];
 $columns = ['close', 'change', 'volume'];
+// Unsuffixed = default daily (works for Binance crypto where |1D returns null)
+$columns[] = 'Recommend.All';
+$columns[] = 'Recommend.MA';
+$columns[] = 'Recommend.Other';
 foreach ($timeframes as $tf) {
     $columns[] = "Recommend.All|$tf";
     $columns[] = "Recommend.MA|$tf";
@@ -134,6 +138,12 @@ foreach ($tvData['data'] as $item) {
         $rec    = $vals["Recommend.All|$tf"];
         $recMA  = $vals["Recommend.MA|$tf"];
         $recOsc = $vals["Recommend.Other|$tf"];
+        // Fallback: for crypto, |1D can be null but unsuffixed Recommend.All has the daily value
+        if ($tf === '1D' && $rec === null && $vals['Recommend.All'] !== null) {
+            $rec    = $vals['Recommend.All'];
+            $recMA  = $vals['Recommend.MA'];
+            $recOsc = $vals['Recommend.Other'];
+        }
         $tfSignals[$tf] = [
             'signal'     => $rec !== null ? tv_signal((float)$rec) : 'NO_DATA',
             'value'      => $rec    !== null ? round((float)$rec, 4)    : null,

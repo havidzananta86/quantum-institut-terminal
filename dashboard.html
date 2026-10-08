@@ -3519,7 +3519,7 @@ async function fetchCryptoStrength() {
         const items = CRYPTO_SYMS.map(sym => {
             const d = data[sym];
             if (!d) return null;
-            const chg = d.change != null ? d.change * 100 : 0;
+            const chg = d.change != null ? d.change : 0;
             const rec = d.timeframes?.['1D']?.value ?? 0;
             const score = Math.max(0, Math.min(100, Math.round(50 + rec * 50)));
             const name = sym.replace('USDT','');
@@ -3592,7 +3592,7 @@ async function fetchCommodityStrength() {
         const items = tvData.map(item => {
             const sym = tickerToSym[item.s] || item.s;
             const d = item.d || [];
-            const price = d[0], chg = d[1] != null ? d[1]*100 : 0;
+            const price = d[0], chg = d[1] != null ? d[1] : 0;
             const rec = d[2], rec4h = d[3];
             const score = rec != null ? Math.max(0, Math.min(100, Math.round(50 + rec * 50))) : 50;
             const sig = rec != null ? (rec >= 0.5 ? 'STRONG BUY' : rec >= 0.1 ? 'BUY' : rec <= -0.5 ? 'STRONG SELL' : rec <= -0.1 ? 'SELL' : 'NEUTRAL') : 'N/A';
