@@ -17,19 +17,50 @@ if (file_exists($apiKeysFile)) {
 
 $raw  = file_get_contents('php://input');
 $body = json_decode($raw, true);
-$message = trim($body['message'] ?? '');
-$history = array_slice((array)($body['history'] ?? []), -12);
+$message  = trim($body['message'] ?? '');
+$history  = array_slice((array)($body['history'] ?? []), -12);
+$context  = $body['context'] ?? [];  // real-time market data from dashboard
 
 if (!$message) { echo json_encode(['error'=>'Pesan kosong']); exit; }
 
-$systemPrompt = 'Kamu adalah AI Trading Assistant dari Quantum Institut. Kamu ahli dalam: analisa teknikal (RSI, MACD, EMA, Fibonacci, Ichimoku, pola candlestick, support/resistance, SMC, SNR, ICT), analisa fundamental forex dan kripto, psikologi trading, manajemen risiko, dan strategi trading. Jawab dalam Bahasa Indonesia yang profesional dan mudah dipahami. Gunakan format poin atau tabel jika membantu. PENTING: Jangan pernah memberikan rekomendasi spesifik buy/sell suatu instrumen karena trading memiliki risiko — berikan edukasi dan analisa konsep, bukan saran investasi langsung.';
+// Build market context block if provided
+$ctxBlock = '';
+if (!empty($context['prices']) && is_array($context['prices'])) {
+    $ctxBlock .= "\n\n=== DATA PASAR LIVE (dari TradingView Scanner) ===\n";
+    foreach ($context['prices'] as $sym => $d) {
+        $chg = isset($d['chgPct']) ? (float)$d['chgPct'] : 0;
+        $ctxBlock .= "{$sym}: " . ($d['price'] ?? '?') . " (" . ($chg >= 0 ? '+' : '') . number_format($chg, 2) . "%)\n";
+    }
+}
+if (!empty($context['signals']) && is_array($context['signals'])) {
+    $ctxBlock .= "\n=== SINYAL MTF (TradingView Scanner) ===\n";
+    foreach ($context['signals'] as $sym => $tfs) {
+        $line = "{$sym}: ";
+        foreach ($tfs as $tf => $s) { $line .= "{$tf}:{$s} "; }
+        $ctxBlock .= trim($line) . "\n";
+    }
+}
+
+$systemPrompt = 'Kamu adalah QUANTUM AI — asisten trading cerdas dari Quantum Institut. '
+    . 'Kamu memiliki akses ke data pasar live dan sinyal multi-timeframe dari TradingView Scanner. '
+    . 'Keahlianmu meliputi: analisa teknikal mendalam (RSI, MACD, EMA, Bollinger, Fibonacci, Ichimoku, '
+    . 'pola candlestick, support/resistance, SMC — Smart Money Concepts, SNR — Supply & Demand, '
+    . 'ICT — Inner Circle Trader, struktur pasar, order block, FVG, liquidity sweep), '
+    . 'analisa fundamental forex dan kripto, kalender ekonomi, sentimen pasar, '
+    . 'psikologi trading, manajemen risiko (position sizing, risk:reward, drawdown), '
+    . 'dan strategi trading (scalping, swing, position). '
+    . 'Ketika user bertanya tentang pair/instrumen tertentu, gunakan data pasar live yang tersedia untuk analisa kontekstual. '
+    . 'Format jawaban: gunakan markdown (bold, list, tabel) untuk kejelasan. '
+    . 'Selalu sertakan: kondisi teknikal saat ini, level kunci, bias directional, dan langkah analisa selanjutnya. '
+    . 'DISCLAIMER: Semua analisa bersifat edukatif — bukan saran investasi. Trading memiliki risiko, gunakan manajemen risiko yang ketat.'
+    . ($ctxBlock ? $ctxBlock : '');
 
 $messages = [['role'=>'system','content'=>$systemPrompt]];
 foreach ($history as $h) {
     $role = $h['role'] === 'assistant' ? 'assistant' : 'user';
-    $messages[] = ['role'=>$role,'content'=>mb_substr(trim($h['content']??''),0,1500)];
+    $messages[] = ['role'=>$role,'content'=>mb_substr(trim($h['content']??''),0,2000)];
 }
-$messages[] = ['role'=>'user','content'=>mb_substr($message,0,2000)];
+$messages[] = ['role'=>'user','content'=>mb_substr($message,0,3000)];
 
 if (!$groqKey) {
     // Fallback: simple educational responses without API key

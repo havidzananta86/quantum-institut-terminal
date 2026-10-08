@@ -185,9 +185,9 @@
     <script type="importmap">{"imports":{"lightweight-charts":"https://cdn.jsdelivr.net/npm/lightweight-charts@5/+esm"}}</script>
     <!-- Expose chart modules to window so inline scripts can use them -->
     <script type="module">
-        import { createChart, CandlestickSeries, LineStyle, CrosshairMode } from 'lightweight-charts';
+        import { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode } from 'lightweight-charts';
         import { DrawingManager } from 'https://cdn.jsdelivr.net/npm/lightweight-charts-drawing@0.5.1/dist/lightweight-charts-drawing.es.js';
-        window._lwModules = { createChart, CandlestickSeries, LineStyle, CrosshairMode, DrawingManager };
+        window._lwModules = { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode, DrawingManager };
         window.dispatchEvent(new CustomEvent('lc-modules-ready'));
     </script>
 </head>
@@ -840,6 +840,8 @@
             <div class="w-px h-4 bg-qi-border mx-0.5 shrink-0"></div>
             <button onclick="lwDeleteSelected()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-400 hover:border-red-500/40 hover:text-red-400 text-[11px] font-mono" title="Delete selected">✕</button>
             <button onclick="lwClearAll()" class="shrink-0 px-2 py-1 rounded border border-qi-border text-slate-500 hover:border-red-500/40 hover:text-red-400 text-[10px]" title="Clear all drawings">Clear</button>
+            <div class="w-px h-4 bg-qi-border mx-0.5 shrink-0"></div>
+            <button id="lwIndBtn" onclick="toggleIndicators()" class="shrink-0 px-2 py-1 rounded border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan text-[10px] font-mono" title="Toggle Auto Indicators (EMA20/50/200 · Ichimoku · S&R · Fib · GX)">Ind ✓</button>
             <span class="ml-auto text-[9px] text-slate-600 font-mono shrink-0" id="lwChartStatus">lightweight-charts</span>
         </div>
 
@@ -1796,7 +1798,8 @@ function updateSessionCard() {
 }
 
 // ─── Market Data ───────────────────────────────────────────────────────────
-let _lastPrices = {};
+let _lastPrices  = {};
+let _lastSignals = {};
 
 async function fetchMarketData() {
     try {
@@ -2856,7 +2859,14 @@ async function buildLwChart() {
 
     // Destroy existing instance
     if (_lwDrawings) { try { _lwDrawings.destroy(); } catch(e){} _lwDrawings = null; }
-    if (_lwChart)    { try { _lwChart.remove(); }     catch(e){} _lwChart = null; _lwSeries = null; }
+    if (_lwChart) {
+        // Clear indicator refs (series are removed with the chart)
+        _lwEma20 = _lwEma50 = _lwEma200 = null;
+        _lwIchiT = _lwIchiK = _lwIchiChi = _lwIchiSA = _lwIchiSB = null;
+        _lwPriceLines = [];
+        try { _lwChart.remove(); } catch(e){}
+        _lwChart = null; _lwSeries = null;
+    }
     container.innerHTML = '';
 
     _lwChart = createChart(container, {
@@ -2919,9 +2929,160 @@ async function lwFetchAndSetData() {
         _lwSeries.setData(candles);
         _lwChart.timeScale().fitContent();
         if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'}[_tvInterval]||_tvInterval) + ' · ' + candles.length + ' bar';
+        drawAutoIndicators(candles);
     } catch(e) {
         if (st) st.textContent = 'Error: ' + e.message;
     }
+}
+
+// ─── Auto Indicator State ────────────────────────────────────────────────────
+let _lwEma20 = null, _lwEma50 = null, _lwEma200 = null;
+let _lwIchiT = null, _lwIchiK = null, _lwIchiChi = null, _lwIchiSA = null, _lwIchiSB = null;
+let _lwPriceLines = [];
+let _indicatorsEnabled = true;
+
+// ─── Indicator Calculations ──────────────────────────────────────────────────
+function _calcEMA(candles, period) {
+    if (candles.length < period) return [];
+    const k = 2 / (period + 1);
+    let ema = candles.slice(0, period).reduce((s, c) => s + c.close, 0) / period;
+    const result = [{ time: candles[period - 1].time, value: ema }];
+    for (let i = period; i < candles.length; i++) {
+        ema = candles[i].close * k + ema * (1 - k);
+        result.push({ time: candles[i].time, value: ema });
+    }
+    return result;
+}
+
+function _calcIchimoku(candles) {
+    const tenkan = [], kijun = [], chikou = [];
+    const n = candles.length;
+    for (let i = 8; i < n; i++) {
+        const sl9 = candles.slice(i - 8, i + 1);
+        const hi9 = Math.max(...sl9.map(c => c.high)), lo9 = Math.min(...sl9.map(c => c.low));
+        tenkan.push({ time: candles[i].time, value: (hi9 + lo9) / 2 });
+    }
+    for (let i = 25; i < n; i++) {
+        const sl26 = candles.slice(i - 25, i + 1);
+        const hi26 = Math.max(...sl26.map(c => c.high)), lo26 = Math.min(...sl26.map(c => c.low));
+        kijun.push({ time: candles[i].time, value: (hi26 + lo26) / 2 });
+    }
+    for (let i = 26; i < n; i++) chikou.push({ time: candles[i - 26].time, value: candles[i].close });
+    return { tenkan, kijun, chikou };
+}
+
+function _calcSRLevels(candles, lookback) {
+    const recent = candles.slice(-lookback);
+    const cur = recent[recent.length - 1].close;
+    const pivotH = [], pivotL = [];
+    for (let i = 3; i < recent.length - 3; i++) {
+        if (recent[i].high > recent[i-1].high && recent[i].high > recent[i-2].high &&
+            recent[i].high > recent[i+1].high && recent[i].high > recent[i+2].high) pivotH.push(recent[i].high);
+        if (recent[i].low < recent[i-1].low && recent[i].low < recent[i-2].low &&
+            recent[i].low < recent[i+1].low && recent[i].low < recent[i+2].low) pivotL.push(recent[i].low);
+    }
+    const cluster = lvls => {
+        const out = []; lvls.sort((a,b) => a-b);
+        for (const l of lvls) {
+            const last = out[out.length - 1];
+            if (last && Math.abs(l - last) / last < 0.004) out[out.length-1] = (last+l)/2; else out.push(l);
+        }
+        return out;
+    };
+    return {
+        support:    cluster(pivotL.filter(l => l < cur)).slice(-4),
+        resistance: cluster(pivotH.filter(l => l > cur)).slice(0, 4)
+    };
+}
+
+function _calcFibLevels(candles, lookback) {
+    const recent = candles.slice(-lookback);
+    let high = -Infinity, low = Infinity;
+    recent.forEach(c => { high = Math.max(high, c.high); low = Math.min(low, c.low); });
+    return (high > low) ? { high, low } : null;
+}
+
+function _calcGoldenCross(candles) {
+    const ema20 = _calcEMA(candles, 20), ema50 = _calcEMA(candles, 50);
+    if (!ema50.length) return [];
+    const diff = ema50.length - ema20.length; // ema20 starts earlier
+    const markers = [];
+    for (let i = 1; i < ema50.length; i++) {
+        const i20 = i - diff;
+        if (i20 < 1) continue;
+        const p20 = ema20[i20-1]?.value, c20 = ema20[i20]?.value;
+        const p50 = ema50[i-1]?.value,  c50 = ema50[i]?.value;
+        if (!p20 || !c20 || !p50 || !c50) continue;
+        if (p20 <= p50 && c20 > c50) markers.push({ time: ema50[i].time, position: 'belowBar', color: '#00C853', shape: 'arrowUp', text: 'GX' });
+        else if (p20 >= p50 && c20 < c50) markers.push({ time: ema50[i].time, position: 'aboveBar', color: '#FF1744', shape: 'arrowDown', text: 'DX' });
+    }
+    return markers.slice(-15);
+}
+
+async function drawAutoIndicators(candles) {
+    if (!_lwChart || !_lwSeries || !candles.length || !window._lwModules) return;
+    const { LineSeries } = window._lwModules;
+    if (!LineSeries) return;
+    clearIndicators();
+    if (!_indicatorsEnabled) return;
+
+    const addLine = (data, color, width, title) => {
+        if (!data.length) return null;
+        try {
+            const s = _lwChart.addSeries(LineSeries, { color, lineWidth: width, title,
+                lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false });
+            s.setData(data);
+            return s;
+        } catch(e) { return null; }
+    };
+
+    _lwEma20  = addLine(_calcEMA(candles, 20),  '#F59E0B', 1, 'EMA20');
+    _lwEma50  = addLine(_calcEMA(candles, 50),  '#3B82F6', 1, 'EMA50');
+    _lwEma200 = addLine(_calcEMA(candles, 200), '#F97316', 2, 'EMA200');
+
+    const ichi = _calcIchimoku(candles);
+    _lwIchiT   = addLine(ichi.tenkan, '#EF4444BB', 1, 'Tenkan');
+    _lwIchiK   = addLine(ichi.kijun,  '#1D4ED8BB', 1, 'Kijun');
+    _lwIchiChi = addLine(ichi.chikou, '#6B728088', 1, 'Chikou');
+
+    const lb = Math.min(candles.length, 120);
+    const sr = _calcSRLevels(candles, lb);
+    sr.support.forEach(p => {
+        try { _lwPriceLines.push(_lwSeries.createPriceLine({ price: p, color: '#00C853BB', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'S' })); } catch(e){}
+    });
+    sr.resistance.forEach(p => {
+        try { _lwPriceLines.push(_lwSeries.createPriceLine({ price: p, color: '#FF1744BB', lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: 'R' })); } catch(e){}
+    });
+
+    const fib = _calcFibLevels(candles, Math.min(candles.length, 150));
+    if (fib) {
+        const range = fib.high - fib.low;
+        [[0,'0%'],[0.236,'23.6%'],[0.382,'38.2%'],[0.5,'50%'],[0.618,'61.8%'],[0.786,'78.6%'],[1,'100%']].forEach(([r, t]) => {
+            try { _lwPriceLines.push(_lwSeries.createPriceLine({ price: fib.low + range * r, color: '#FFD700AA', lineWidth: 1, lineStyle: 3, axisLabelVisible: true, title: `Fib ${t}` })); } catch(e){}
+        });
+    }
+
+    const crosses = _calcGoldenCross(candles);
+    if (crosses.length) { try { _lwSeries.setMarkers(crosses); } catch(e){} }
+}
+
+function clearIndicators() {
+    [_lwEma20, _lwEma50, _lwEma200, _lwIchiT, _lwIchiK, _lwIchiChi, _lwIchiSA, _lwIchiSB].forEach(s => {
+        if (s && _lwChart) { try { _lwChart.removeSeries(s); } catch(e){} }
+    });
+    _lwEma20 = _lwEma50 = _lwEma200 = _lwIchiT = _lwIchiK = _lwIchiChi = _lwIchiSA = _lwIchiSB = null;
+    _lwPriceLines.forEach(pl => { if (_lwSeries) { try { _lwSeries.removePriceLine(pl); } catch(e){} } });
+    _lwPriceLines = [];
+    if (_lwSeries) { try { _lwSeries.setMarkers([]); } catch(e){} }
+}
+
+function toggleIndicators() {
+    _indicatorsEnabled = !_indicatorsEnabled;
+    const btn = document.getElementById('lwIndBtn');
+    if (btn) btn.textContent = _indicatorsEnabled ? 'Ind ✓' : 'Ind';
+    if (btn) btn.className = 'shrink-0 px-2 py-1 rounded border text-[10px] font-mono ' +
+        (_indicatorsEnabled ? 'border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan' : 'border-qi-border text-slate-400');
+    if (_indicatorsEnabled) lwFetchAndSetData(); else clearIndicators();
 }
 
 function setChartTool(kind) {
@@ -3215,6 +3376,16 @@ async function fetchSignalMatrix() {
             else if (buyCount >= 2) { summary = 'BUY'; sumCls = 'text-qi-green'; }
             else if (sellCount >= 3) { summary = 'STRONG SELL'; sumCls = 'text-qi-red font-bold'; }
             else if (sellCount >= 2) { summary = 'SELL'; sumCls = 'text-qi-red'; }
+
+            // Store for AI context
+            _lastSignals[sym] = {
+                '15m': tfs['15']?.signal  || 'NO_DATA',
+                '1h':  tfs['60']?.signal  || 'NO_DATA',
+                '4h':  tfs['240']?.signal || 'NO_DATA',
+                '1D':  tfs['1D']?.signal  || 'NO_DATA',
+                summary,
+                rsi: ind.rsi != null ? ind.rsi.toFixed(1) : null
+            };
 
             const rsi    = ind.rsi != null ? ind.rsi.toFixed(1) : '—';
             const rsiCls = ind.rsi != null ? (ind.rsi > 65 ? 'text-qi-red' : ind.rsi < 35 ? 'text-[#3B82F6]' : 'text-slate-300') : 'text-slate-500';
@@ -4408,9 +4579,17 @@ async function sendAiMessage(preset) {
     chatEl.scrollTop = chatEl.scrollHeight;
 
     try {
+        const aiContext = {};
+        if (Object.keys(_lastPrices).length) {
+            aiContext.prices = Object.fromEntries(
+                Object.entries(_lastPrices).slice(0, 25).map(([k, v]) => [k, { price: v.price, chgPct: v.chgPct }])
+            );
+        }
+        if (Object.keys(_lastSignals).length) aiContext.signals = _lastSignals;
+
         const res  = await fetch('api/ai-chat.php', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, history: _aiHistory.slice(-12) })
+            body: JSON.stringify({ message: text, history: _aiHistory.slice(-12), context: aiContext })
         });
         const data = await res.json();
         const reply = data.reply || data.error || 'Maaf, terjadi kesalahan.';
