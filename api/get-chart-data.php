@@ -208,9 +208,8 @@ if (empty($candles) && $symbol === 'EURUSD') {
     }
 }
 
-// 1d. Forex majors lain (GBP/USD, USD/JPY, AUD/USD, USD/CAD, USD/CHF, NZD/USD)
-//     Twelve Data (free tier mendukung semua pair mayor) → biquote.io MT5 fallback.
-$forexMajors = ['GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
+// 1d. Forex majors + cross pairs → Twelve Data → biquote.io MT5 fallback.
+$forexMajors = ['GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'GBPJPY', 'EURJPY', 'EURGBP', 'AUDNZD', 'CHFJPY', 'CADJPY'];
 if (empty($candles) && in_array($symbol, $forexMajors, true)) {
     // Primary: Twelve Data — simbol diformat "XXX/YYY"
     $tdSymbol = substr($symbol, 0, 3) . '/' . substr($symbol, 3, 3);

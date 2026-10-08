@@ -119,10 +119,70 @@
             background: rgba(0,229,255,0.1) !important;
             color: #00E5FF !important;
         }
+
+        /* ── Panel fade-in animation (professional tab switch) ── */
+        @keyframes panelFadeIn {
+            from { opacity:0; transform:translateY(6px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .panel-fade-in { animation: panelFadeIn .22s cubic-bezier(.4,0,.2,1) forwards; }
+
+        /* ── Loading bar for panel switch ── */
+        #panelLoadBar {
+            position:fixed; top:0; left:0; height:2px; width:0%;
+            background:linear-gradient(90deg,#00E5FF,#7C4DFF);
+            transition:width .3s ease; z-index:9998; pointer-events:none;
+        }
+        #panelLoadBar.loading { width:80%; }
+        #panelLoadBar.done    { width:100%; opacity:0; transition:width .1s,opacity .3s .1s; }
+
+        /* ── Chart OHLC bar (fxterminal style) ── */
+        #chartOhlcBar { font-size:10px; letter-spacing:.02em; }
+        #chartOhlcBar span.ohlc-label { color:#475569; margin-right:2px; }
+
+        /* ── AI Trading Assistant chat ── */
+        #aiChatHistory { scrollbar-width: thin; }
+        .ai-bubble-ai  { max-width: min(380px, 80%); }
+        .ai-bubble-user{ max-width: min(340px, 75%); }
+        .typing-dots { display:inline-flex; gap:3px; }
+        .typing-dots span { width:5px; height:5px; background:#64748B; border-radius:50%;
+            animation:typingBounce .8s ease-in-out infinite; }
+        .typing-dots span:nth-child(2) { animation-delay:.15s; }
+        .typing-dots span:nth-child(3) { animation-delay:.3s; }
+        @keyframes typingBounce { 0%,80%,100%{transform:scale(1)} 40%{transform:scale(1.3)} }
+
+        /* ── Paper trading mini chart ── */
+        #ptMiniChart { background:#050A14; }
+
+        /* ── Signal matrix responsive scroll ── */
+        #signalMatrixWrap { overflow-x:auto; }
+
+        /* ── Responsive mobile improvements ── */
+        @media (max-width:767px) {
+            #panel-charts { height:calc(100vh - 96px); }
+            #chartWatchlist { display:none !important; }
+            #chartBottomPanel .overflow-y-auto { max-height:120px; }
+            .chart-tf-btn { padding:2px 6px; font-size:9px; }
+            #panel-signal .overflow-x-auto { max-height:60vh; }
+            .sm\:grid-cols-2 { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width:480px) {
+            #chartOhlcBar { flex-wrap:wrap; gap:4px 8px; }
+            #chartOhlcBar .ohlc-block { display:inline-flex; gap:2px; }
+        }
+
+        /* ── Outlook symbol buttons ── */
+        .outlook-sym.active {
+            border-color:rgba(0,229,255,.4)!important;
+            background:rgba(0,229,255,.1)!important;
+            color:#00E5FF!important;
+        }
     </style>
 </head>
 
 <body class="h-screen flex overflow-hidden text-slate-300 font-body">
+<!-- Panel load bar -->
+<div id="panelLoadBar"></div>
 
 <!-- ═══ ACCESS GATE (shown while checking / if not PRO) ═══ -->
 <div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -328,6 +388,11 @@
             </button>
             <button data-panel="panel-impact" onclick="switchPanel('panel-impact')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">⚡</span> News Impact
+            </button>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">AI Tools</div>
+            <button data-panel="panel-ai" onclick="switchPanel('panel-ai')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🤖</span> AI Assistant
+                <span class="ml-auto text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-1">FREE</span>
             </button>
         </div>
     </nav>
@@ -622,6 +687,18 @@
             <!-- Right: toggle watchlist button -->
             <button onclick="toggleChartWatchlist()" id="watchlistToggleBtn" title="Toggle Watchlist"
                 class="ml-auto text-slate-400 hover:text-qi-cyan text-xs border border-qi-border rounded px-2 py-0.5 font-mono">⊞ List</button>
+        </div>
+
+        <!-- OHLC info bar (fxterminal style) -->
+        <div id="chartOhlcBar" class="flex-shrink-0 flex items-center gap-3 px-3 py-1.5 bg-qi-bg/90 border-b border-qi-border/30 text-[10px] font-mono select-none overflow-x-auto whitespace-nowrap">
+            <span id="ohlcSym" class="font-semibold text-white/80 mr-1">XAU/USD</span>
+            <span id="ohlcTf" class="text-slate-600 mr-2">D1</span>
+            <span class="ohlc-block"><span class="ohlc-label">O</span><span id="ohlcO" class="text-slate-300">—</span></span>
+            <span class="ohlc-block"><span class="ohlc-label">H</span><span id="ohlcH" class="text-qi-green">—</span></span>
+            <span class="ohlc-block"><span class="ohlc-label">L</span><span id="ohlcL" class="text-qi-red">—</span></span>
+            <span class="ohlc-block"><span class="ohlc-label">C</span><span id="ohlcC" class="text-white font-semibold">—</span></span>
+            <span id="ohlcChgBadge" class="ml-2 text-slate-500">—</span>
+            <span class="ml-auto text-slate-700 font-mono text-[9px]" id="ohlcUpdated"></span>
         </div>
 
         <!-- Main body: chart + right watchlist -->
@@ -1118,6 +1195,21 @@
                 </div>
             </div>
         </div>
+        <!-- Mini Chart (TradingView) untuk uji strategi -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border flex items-center gap-3">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Chart Analisa</span>
+                <div class="flex gap-1 ml-2">
+                    <button onclick="setPtMiniTf('15')"  data-ptf="15"  class="pt-tf-btn active text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">M15</button>
+                    <button onclick="setPtMiniTf('60')"  data-ptf="60"  class="pt-tf-btn text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:border-slate-500">H1</button>
+                    <button onclick="setPtMiniTf('240')" data-ptf="240" class="pt-tf-btn text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:border-slate-500">H4</button>
+                    <button onclick="setPtMiniTf('D')"   data-ptf="D"   class="pt-tf-btn text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:border-slate-500">D1</button>
+                </div>
+                <span class="ml-auto text-[9px] text-slate-500 font-mono" id="ptMiniChartSym">XAU/USD</span>
+            </div>
+            <div id="ptMiniChart" style="height:260px;width:100%;"></div>
+        </div>
+
         <!-- Trade form -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
             <div class="px-4 py-3 border-b border-qi-border">
@@ -1405,6 +1497,51 @@
         </div>
     </div>
 
+    <!-- ══ PANEL: AI Trading Assistant ══ -->
+    <div id="panel-ai" class="panel-content hidden flex flex-col" style="height:calc(100vh - 112px);">
+        <div class="flex flex-col h-full max-w-3xl mx-auto w-full px-4 py-4 gap-3">
+            <div class="flex-shrink-0 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center font-heading font-bold text-white text-sm">AI</div>
+                <div>
+                    <div class="font-heading font-semibold text-white text-sm">AI Trading Assistant</div>
+                    <div class="text-[10px] text-slate-500">Powered by Llama 3.3 · 70B (Groq) — Gratis</div>
+                </div>
+                <div class="ml-auto flex gap-2">
+                    <span id="aiModelBadge" class="text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/20 rounded px-2 py-0.5 font-mono hidden">llama-3.3-70b</span>
+                    <button onclick="clearAiChat()" class="text-[10px] text-slate-500 hover:text-slate-300 border border-qi-border rounded-lg px-2.5 py-1 hover:border-slate-500 transition">↺ Reset</button>
+                </div>
+            </div>
+            <div id="aiChatHistory" class="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+                <div class="flex gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
+                    <div class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">
+                        Halo! Saya <strong class="text-white">AI Trading Assistant</strong> Quantum Institut.<br>
+                        Tanya apa saja — analisa teknikal, fundamental, strategi, atau edukasi trading. Apa yang ingin Anda pelajari hari ini?
+                    </div>
+                </div>
+            </div>
+            <div id="aiSuggestions" class="flex-shrink-0 flex flex-wrap gap-1.5">
+                <button onclick="sendAiMessage('Jelaskan RSI divergensi dan cara membaca sinyalnya')"   class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">📊 RSI Divergensi</button>
+                <button onclick="sendAiMessage('Apa itu EMA crossover dan kapan harus entry?')"          class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">📈 EMA Crossover</button>
+                <button onclick="sendAiMessage('Bagaimana cara menghitung lot size yang aman?')"         class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">🔢 Lot Size</button>
+                <button onclick="sendAiMessage('Jelaskan pola candlestick yang paling reliable')"        class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">🕯 Candlestick</button>
+                <button onclick="sendAiMessage('Apa itu Smart Money Concept (SMC) dalam trading forex?')" class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">💡 SMC / ICT</button>
+                <button onclick="sendAiMessage('Strategi manajemen risiko terbaik untuk trader pemula')"  class="text-[9px] border border-qi-border/60 text-slate-400 rounded-full px-2.5 py-1 hover:border-qi-cyan/40 hover:text-qi-cyan transition-colors">🛡 Risk Management</button>
+            </div>
+            <div class="flex-shrink-0 flex gap-2">
+                <input id="aiChatInput" type="text"
+                    placeholder="Tanya tentang trading, analisa, strategi, atau edukasi pasar…"
+                    class="flex-1 bg-qi-card border border-qi-border rounded-xl px-3.5 py-2.5 text-[11px] text-white placeholder-slate-600 outline-none focus:border-qi-cyan/40 transition-colors"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}">
+                <button onclick="sendAiMessage()"
+                    class="flex-shrink-0 px-4 py-2.5 bg-gradient-to-r from-qi-navy to-qi-purple/80 hover:from-qi-cyan/20 hover:to-qi-purple/60 border border-qi-navy hover:border-qi-cyan/40 rounded-xl text-qi-cyan text-[11px] font-semibold transition-all">
+                    Kirim ↵
+                </button>
+            </div>
+            <div class="text-[9px] text-slate-700 text-center flex-shrink-0">⚠ AI ini hanya untuk edukasi. Bukan saran investasi atau rekomendasi buy/sell spesifik.</div>
+        </div>
+    </div>
+
     </div><!-- /mainScroll -->
 
     <!-- ── Disclaimer Footer ───────────────────────────────────────── -->
@@ -1429,6 +1566,8 @@ const SYMBOL_LABELS = {
     XAUUSD:'XAU/USD', EURUSD:'EUR/USD', GBPUSD:'GBP/USD',
     USDJPY:'USD/JPY', AUDUSD:'AUD/USD', NZDUSD:'NZD/USD',
     USDCHF:'USD/CHF', USDCAD:'USD/CAD',
+    GBPJPY:'GBP/JPY', EURJPY:'EUR/JPY', EURGBP:'EUR/GBP',
+    AUDNZD:'AUD/NZD', CHFJPY:'CHF/JPY', CADJPY:'CAD/JPY',
     BTCUSDT:'BTC/USDT', ETHUSDT:'ETH/USDT', SOLUSDT:'SOL/USDT',
     BNBUSDT:'BNB/USDT', XRPUSDT:'XRP/USDT', DOGEUSDT:'DOGE/USDT',
 };
@@ -1865,6 +2004,7 @@ const PANEL_META = {
     'panel-strength':     { icon:'💪', title:'Currency Strength' },
     'panel-radar':        { icon:'⚡', title:'Quantum AI Radar' },
     'panel-paper':        { icon:'💼', title:'Paper Trading' },
+    'panel-ai':           { icon:'🤖', title:'AI Trading Assistant' },
     'panel-backtest':     { icon:'⏪', title:'Backtester' },
     'panel-track':        { icon:'🏆', title:'Track Record' },
     'panel-correlation':  { icon:'🔮', title:'Correlation Matrix' },
@@ -1875,12 +2015,28 @@ let _activePanel = 'panel-overview';
 let _panelInited = new Set(['panel-overview']);
 
 function switchPanel(id) {
-    if (_activePanel === id) return;
+    if (_activePanel === id) {
+        const sb = document.getElementById('sidebar');
+        const ovl = document.getElementById('sidebarOverlay');
+        if (sb?.classList.contains('open')) { sb.classList.remove('open'); ovl?.classList.add('hidden'); }
+        return;
+    }
+    // Loading bar animation
+    const bar = document.getElementById('panelLoadBar');
+    if (bar) { bar.className = 'loading'; bar.offsetWidth; }
+
     // Hide current
     document.querySelectorAll('.panel-content').forEach(p => p.classList.add('hidden'));
-    // Show new
+    // Show new with fade-in animation
     const el = document.getElementById(id);
-    if (el) el.classList.remove('hidden');
+    if (el) {
+        el.classList.remove('hidden');
+        el.classList.remove('panel-fade-in');
+        void el.offsetWidth; // force reflow
+        el.classList.add('panel-fade-in');
+    }
+    // Finish loading bar
+    if (bar) { setTimeout(() => { bar.className = 'done'; setTimeout(() => { bar.className = ''; }, 400); }, 200); }
     // Update nav active state
     document.querySelectorAll('#dashNav [data-panel]').forEach(btn => {
         const isActive = btn.dataset.panel === id;
@@ -1918,7 +2074,8 @@ function initPanel(id) {
     if (id === 'panel-news')        fetchDashNews();
     if (id === 'panel-strength')    fetchStrengthFull();
     if (id === 'panel-radar')       { runRadarScan(); renderRadarQuickScan(); }
-    if (id === 'panel-paper')       ptLoadFromServer();
+    if (id === 'panel-paper')       { ptLoadFromServer(); initPtMiniChart(); }
+    if (id === 'panel-ai')          { /* AI panel ready on demand */ }
     if (id === 'panel-track')       fetchTrackRecord();
     if (id === 'panel-correlation') fetchCorrelation();
     if (id === 'panel-cot')        fetchCot();
@@ -2589,6 +2746,12 @@ function updateChartHeader() {
     const ordSym  = document.getElementById('chartOrderSym');
     const ordPrc  = document.getElementById('chartOrderPrice');
     if (symEl) symEl.textContent = _tvSymLabel;
+    // Update OHLC bar
+    const ohlcSym = document.getElementById('ohlcSym');
+    const ohlcTf  = document.getElementById('ohlcTf');
+    if (ohlcSym) ohlcSym.textContent = _tvSymLabel;
+    if (ohlcTf)  ohlcTf.textContent  = {'1':'1m','5':'5m','15':'M15','60':'H1','240':'H4','D':'D1','W':'W1'}[_tvInterval] || _tvInterval;
+    updateOhlcBar();
     // find key for this tv symbol
     const allSyms = WL_GROUPS.flatMap(g => g.syms);
     const found   = allSyms.find(s => s.tv === _tvSymbol);
@@ -2773,7 +2936,11 @@ function updateWatchlistPrices() {
 }
 
 // ─── Signal Matrix ─────────────────────────────────────────────────────────
-const SIGNAL_SYMS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','BTCUSDT','ETHUSDT'];
+const SIGNAL_SYMS = [
+    'XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','USDCHF','USDCAD','NZDUSD',
+    'GBPJPY','EURJPY','EURGBP',
+    'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT',
+];
 const SIGNAL_TFS  = [
     { label:'M15', interval:'15' },
     { label:'H1',  interval:'60' },
@@ -3852,6 +4019,196 @@ async function fetchCorrelation() {
     }
 
     if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ─── OHLC Bar (fxterminal style) ───────────────────────────────────────────
+async function updateOhlcBar() {
+    const allSyms = WL_GROUPS.flatMap(g => g.syms);
+    const found   = allSyms.find(s => s.tv === _tvSymbol);
+    if (!found) return;
+    try {
+        const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
+        const data = await res.json();
+        const candles = data.candles || [];
+        if (!candles.length) return;
+        const last = candles[candles.length - 1];
+        const prev = candles.length > 1 ? candles[candles.length - 2] : null;
+        const dp   = DP[found.key] || 4;
+        const fmt  = v => parseFloat(v).toFixed(dp);
+        const chg  = prev ? ((last.close - prev.close) / prev.close * 100) : 0;
+        const oEl  = document.getElementById('ohlcO');
+        const hEl  = document.getElementById('ohlcH');
+        const lEl  = document.getElementById('ohlcL');
+        const cEl  = document.getElementById('ohlcC');
+        const bgEl = document.getElementById('ohlcChgBadge');
+        const upEl = document.getElementById('ohlcUpdated');
+        if (oEl) oEl.textContent = fmt(last.open);
+        if (hEl) hEl.textContent = fmt(last.high);
+        if (lEl) lEl.textContent = fmt(last.low);
+        if (cEl) { cEl.textContent = fmt(last.close); cEl.className = last.close >= last.open ? 'text-qi-green font-semibold' : 'text-qi-red font-semibold'; }
+        if (bgEl) { bgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%'; bgEl.className = 'ml-2 font-semibold ' + (chg >= 0 ? 'text-qi-green' : 'text-qi-red'); }
+        if (upEl) upEl.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    } catch(e) {}
+}
+setInterval(() => { if (_activePanel === 'panel-charts') updateOhlcBar(); }, 5000);
+
+// ─── Paper Trading Mini Chart ──────────────────────────────────────────────
+let _ptMiniTf = '15';
+let _ptMiniTvWidget = null;
+
+function setPtMiniTf(tf) {
+    _ptMiniTf = tf;
+    document.querySelectorAll('.pt-tf-btn').forEach(b => {
+        const active = b.dataset.ptf === tf;
+        b.className = active
+            ? 'pt-tf-btn active text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan'
+            : 'pt-tf-btn text-[9px] font-mono px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:border-slate-500';
+    });
+    renderPtMiniChart();
+}
+
+function initPtMiniChart() {
+    renderPtMiniChart();
+    // Update mini chart when symbol changes
+    const ptSym = document.getElementById('ptSymbol');
+    if (ptSym && !ptSym._miniChartBound) {
+        ptSym._miniChartBound = true;
+        ptSym.addEventListener('change', renderPtMiniChart);
+    }
+}
+
+function renderPtMiniChart() {
+    const symEl  = document.getElementById('ptSymbol');
+    const symKey = symEl ? symEl.value : 'XAUUSD';
+    const tvSym  = WL_GROUPS.flatMap(g => g.syms).find(s => s.key === symKey)?.tv
+                   || (symKey.endsWith('USDT') ? 'BINANCE:' + symKey : 'OANDA:' + symKey);
+    const tfMap  = {'1':'1','5':'5','15':'15','60':'60','240':'240','D':'D','W':'W'};
+    const tvTf   = {'15':'15','60':'60','240':'240','D':'D'}[_ptMiniTf] || '60';
+
+    const wrap = document.getElementById('ptMiniChart');
+    if (!wrap) return;
+
+    const label = SYMBOL_LABELS[symKey] || symKey;
+    const lblEl = document.getElementById('ptMiniChartSym');
+    if (lblEl) lblEl.textContent = label;
+
+    wrap.innerHTML = '<div class="tradingview-widget-container" style="height:100%;width:100%;"><div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div></div>';
+
+    const config = {
+        autosize: true, symbol: tvSym, interval: tvTf,
+        timezone: 'Asia/Jakarta', theme: 'dark', style: '1', locale: 'id',
+        toolbar_bg: '#050A14', hide_top_toolbar: true, hide_side_toolbar: true,
+        save_image: false, allow_symbol_change: false,
+        studies: ['RSI@tv-basicstudies'],
+    };
+
+    if (window.TradingView) {
+        const innerId = 'pt_mini_' + Date.now();
+        const inner = document.createElement('div');
+        inner.id = innerId; inner.style.cssText = 'width:100%;height:100%;';
+        wrap.innerHTML = '';
+        wrap.appendChild(inner);
+        config.container_id = innerId;
+        _ptMiniTvWidget = new TradingView.widget(config);
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.onload = renderPtMiniChart;
+        document.head.appendChild(script);
+    }
+}
+
+// ─── AI Trading Assistant ──────────────────────────────────────────────────
+let _aiHistory = [];
+
+async function sendAiMessage(preset) {
+    const input = document.getElementById('aiChatInput');
+    const text  = preset || (input ? input.value.trim() : '');
+    if (!text) return;
+    if (input && !preset) input.value = '';
+
+    // Hide suggestions after first real user message
+    const sugg = document.getElementById('aiSuggestions');
+    if (sugg && sugg.style.display !== 'none') sugg.style.display = 'none';
+
+    const chatEl = document.getElementById('aiChatHistory');
+    if (!chatEl) return;
+
+    // Add user bubble
+    chatEl.insertAdjacentHTML('beforeend', `
+        <div class="flex gap-2.5 justify-end">
+            <div class="ai-bubble-user bg-qi-navy/40 border border-qi-navy/60 rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-[11px] text-white leading-relaxed">${text.replace(/</g,'&lt;')}</div>
+            <div class="w-7 h-7 rounded-full bg-qi-navy/80 border border-qi-border flex items-center justify-center text-[10px] font-bold text-qi-cyan flex-shrink-0 mt-0.5">U</div>
+        </div>`);
+    _aiHistory.push({ role: 'user', content: text });
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    // Typing indicator
+    const tid = 'ai_t_' + Date.now();
+    chatEl.insertAdjacentHTML('beforeend', `
+        <div id="${tid}" class="flex gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
+            <div class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5">
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+            </div>
+        </div>`);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    try {
+        const res  = await fetch('api/ai-chat.php', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, history: _aiHistory.slice(-12) })
+        });
+        const data = await res.json();
+        const reply = data.reply || data.error || 'Maaf, terjadi kesalahan.';
+
+        document.getElementById(tid)?.remove();
+
+        // Show model badge
+        if (data.model && !data.fallback) {
+            const badge = document.getElementById('aiModelBadge');
+            if (badge) { badge.textContent = data.model; badge.classList.remove('hidden'); }
+        }
+
+        const safe = reply
+            .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\*\*(.*?)\*\*/g,'<strong class="text-white">$1</strong>')
+            .replace(/\n/g,'<br>');
+
+        chatEl.insertAdjacentHTML('beforeend', `
+            <div class="flex gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
+                <div class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">${safe}</div>
+            </div>`);
+        _aiHistory.push({ role: 'assistant', content: reply });
+        chatEl.scrollTop = chatEl.scrollHeight;
+    } catch(err) {
+        document.getElementById(tid)?.remove();
+        chatEl.insertAdjacentHTML('beforeend', `
+            <div class="flex gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-qi-red/20 flex items-center justify-center text-[10px] text-qi-red flex-shrink-0 mt-0.5">!</div>
+                <div class="ai-bubble-ai bg-qi-red/5 border border-qi-red/20 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-qi-red">
+                    Koneksi ke AI gagal. Pastikan api/ai-chat.php tersedia dan GROQ_API_KEY dikonfigurasi.
+                </div>
+            </div>`);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+}
+
+function clearAiChat() {
+    _aiHistory = [];
+    const chatEl = document.getElementById('aiChatHistory');
+    if (chatEl) chatEl.innerHTML = `
+        <div class="flex gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
+            <div class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">
+                Chat direset. Ada yang ingin Anda tanyakan?
+            </div>
+        </div>`;
+    const sugg = document.getElementById('aiSuggestions');
+    if (sugg) sugg.style.display = '';
+    const badge = document.getElementById('aiModelBadge');
+    if (badge) badge.classList.add('hidden');
 }
 </script>
 
