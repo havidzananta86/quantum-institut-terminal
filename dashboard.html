@@ -92,11 +92,20 @@
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:#1E293B; border-radius:2px; }
 
-        /* ── Sidebar collapse on mobile ── */
+        /* ── Sidebar collapse ── */
         @media (max-width:1023px) {
             #sidebar { transform: translateX(-100%); transition: transform .25s; }
             #sidebar.open { transform: translateX(0); }
         }
+        @media (min-width:1024px) {
+            #sidebar { transition: width .25s ease, min-width .25s ease; overflow: hidden; }
+            #sidebar.sidebar-collapsed { width: 0 !important; min-width: 0 !important; border-right: none; }
+        }
+        #sbToggleBtn { position:fixed; bottom:20px; left:12px; z-index:50; width:28px; height:28px;
+            background:#050A14; border:1px solid #0F1A2E; border-radius:50%; display:flex;
+            align-items:center; justify-content:center; cursor:pointer; color:#64748b;
+            font-size:14px; transition:all .2s; }
+        #sbToggleBtn:hover { border-color:rgba(0,229,255,.4); color:#00E5FF; }
 
         /* ── Panel system ── */
         #mainScroll { position:relative; }
@@ -524,7 +533,7 @@
             </button>
             <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Live Data</div>
             <button data-panel="panel-sessions" onclick="switchPanel('panel-sessions')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">🌍</span> Sesi Market
+                <span class="text-base">🕸️</span> Market Galaxy
             </button>
             <button data-panel="panel-crypto" onclick="switchPanel('panel-crypto')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🐋</span> Crypto Terminal
@@ -1856,72 +1865,42 @@
         </div>
     </div>
 
-    <!-- ══ PANEL: Sesi Market ══ -->
+    <!-- ══ PANEL: Market Galaxy — Network Map ══ -->
     <div id="panel-sessions" class="panel-content hidden p-4 space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
             <div>
-                <div class="flex items-center gap-2"><span class="text-base">🌍</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Sesi Market Global</span><span id="sessLiveTag" class="text-[9px] bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded px-2 py-0.5">LIVE</span></div>
-                <p class="text-[10px] text-slate-500 mt-0.5">Monitor sesi Sydney → Tokyo → London → New York & jam overlap paling likuid</p>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🕸️</span>
+                    <span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Market Galaxy</span>
+                    <span class="text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-2 py-0.5">LIVE</span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Visualisasi korelasi antar aset crypto — ukuran node = volume, warna = arah 24h</p>
             </div>
-            <span id="sessCurrentTime" class="text-qi-cyan font-mono text-sm font-bold"></span>
-        </div>
-
-        <!-- 3D Globe + Session cards side by side -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <!-- 3D Globe -->
-            <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden flex flex-col items-center justify-center" style="min-height:280px">
-                <canvas id="globeCanvas" style="width:100%;height:280px;display:block;cursor:grab"></canvas>
-                <div id="globeOverlapLabel" class="absolute text-[10px] text-qi-cyan font-mono hidden"></div>
-            </div>
-            <!-- Session status cards -->
-            <div class="flex flex-col gap-3">
-                <div class="rounded-xl border p-3 flex items-center gap-3 transition-all" id="sessCardSydney">
-                    <span class="text-2xl">🇦🇺</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-white text-[12px]">Sydney</span>
-                            <span class="text-[9px] font-mono" id="sessSydStatus">—</span>
-                        </div>
-                        <div class="text-[9px] text-slate-500 font-mono">04:00–13:00 WIB · AUD NZD JPY</div>
-                    </div>
-                </div>
-                <div class="rounded-xl border p-3 flex items-center gap-3 transition-all" id="sessCardTokyo">
-                    <span class="text-2xl">🇯🇵</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-white text-[12px]">Tokyo</span>
-                            <span class="text-[9px] font-mono" id="sessTokyoStatus">—</span>
-                        </div>
-                        <div class="text-[9px] text-slate-500 font-mono">06:00–15:00 WIB · JPY AUD NZD</div>
-                    </div>
-                </div>
-                <div class="rounded-xl border p-3 flex items-center gap-3 transition-all" id="sessCardLondon">
-                    <span class="text-2xl">🇬🇧</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-white text-[12px]">London</span>
-                            <span class="text-[9px] font-mono" id="sessLondonStatus">—</span>
-                        </div>
-                        <div class="text-[9px] text-slate-500 font-mono">14:00–23:00 WIB · GBP EUR CHF</div>
-                    </div>
-                </div>
-                <div class="rounded-xl border p-3 flex items-center gap-3 transition-all" id="sessCardNY">
-                    <span class="text-2xl">🇺🇸</span>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-white text-[12px]">New York</span>
-                            <span class="text-[9px] font-mono" id="sessNYStatus">—</span>
-                        </div>
-                        <div class="text-[9px] text-slate-500 font-mono">19:00–04:00 WIB · USD CAD XAU</div>
-                    </div>
-                </div>
+            <div class="flex items-center gap-2">
+                <span id="galaxyLastUpdate" class="text-[10px] text-slate-500 font-mono">Memuat…</span>
+                <button onclick="refreshGalaxy()" class="px-3 py-1.5 rounded-lg border border-qi-cyan/40 text-qi-cyan text-[10px] font-semibold hover:bg-qi-cyan/10 transition-all">↻ Refresh</button>
             </div>
         </div>
 
-        <!-- Overlap alert -->
-        <div id="sessOverlapBanner" class="hidden rounded-xl border border-qi-cyan/40 bg-qi-cyan/5 px-4 py-3 text-[11px] text-qi-cyan font-semibold text-center"></div>
+        <!-- Network graph canvas -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden relative" style="height:400px">
+            <canvas id="galaxyCanvas" style="width:100%;height:100%;display:block"></canvas>
+            <div id="galaxyTooltip" class="absolute hidden bg-qi-panel border border-qi-cyan/30 rounded-xl px-3 py-2 text-[11px] font-mono pointer-events-none z-10 shadow-lg"></div>
+            <div class="absolute bottom-3 left-3 flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10B981"></span> Naik</div>
+                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF4444"></span> Turun</div>
+                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#64748B"></span> Flat</div>
+                <div class="flex items-center gap-1 ml-2 text-slate-600">Garis = korelasi kuat</div>
+            </div>
+            <div class="absolute top-3 right-3 text-[9px] text-slate-600 font-mono">drag tidak tersedia · hover untuk info</div>
+        </div>
 
-        <!-- Best hours -->
+        <!-- Asset data cards -->
+        <div id="galaxyDataTable" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+            <div class="col-span-full text-center py-4 text-slate-600 text-sm animate-pulse">Memuat data pasar…</div>
+        </div>
+
+        <!-- Best trading hours -->
         <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
             <div class="text-[10px] text-slate-500 font-semibold uppercase mb-3">🔥 Best Trading Hours (WIB)</div>
             <div class="space-y-2 text-[10px]">
@@ -2365,9 +2344,19 @@ function loadUserInfo() {
 function toggleSidebar() {
     const sb  = document.getElementById('sidebar');
     const ovl = document.getElementById('sidebarOverlay');
-    const open = sb.classList.toggle('open');
-    ovl.classList.toggle('hidden', !open);
+    const icon = document.getElementById('sbToggleIcon');
+    const isDesktop = window.innerWidth >= 1024;
+    if (isDesktop) {
+        const collapsed = sb.classList.toggle('sidebar-collapsed');
+        if (icon) icon.textContent = collapsed ? '›' : '‹';
+        try { localStorage.setItem('qi_sb_collapsed', collapsed ? '1' : '0'); } catch(e){}
+    } else {
+        const open = sb.classList.toggle('open');
+        ovl.classList.toggle('hidden', !open);
+    }
 }
+// Restore sidebar collapse state on load
+(function(){ try { if (localStorage.getItem('qi_sb_collapsed')==='1' && window.innerWidth>=1024) { document.getElementById('sidebar')?.classList.add('sidebar-collapsed'); const i=document.getElementById('sbToggleIcon'); if(i) i.textContent='›'; } } catch(e){} })();
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 updateClocks();
@@ -2469,7 +2458,7 @@ const PANEL_META = {
     'panel-cot':          { icon:'📋', title:'COT Analysis' },
     'panel-impact':       { icon:'⚡', title:'News Impact' },
     'panel-autosignal':   { icon:'🎯', title:'Auto Signal' },
-    'panel-sessions':     { icon:'🌍', title:'Sesi Market Global' },
+    'panel-sessions':     { icon:'🕸️', title:'Market Galaxy — Network Map' },
     'panel-crypto':       { icon:'🐋', title:'Crypto Terminal' },
 };
 let _activePanel = 'panel-overview';
@@ -2542,7 +2531,7 @@ function initPanel(id) {
     if (id === 'panel-cot')         fetchCot();
     if (id === 'panel-impact')      fetchNewsImpact();
     if (id === 'panel-autosignal')  refreshAutoSignals();
-    if (id === 'panel-sessions')    initSessions();
+    if (id === 'panel-sessions')    initNetworkGalaxy();
     if (id === 'panel-crypto')      initCryptoTerminal();
 }
 
@@ -5287,11 +5276,226 @@ function _asLogSignal(sym, dir, entry, tp, sl) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MARKET SESSIONS PANEL
+// MARKET GALAXY — NETWORK MAP PANEL
 // ═══════════════════════════════════════════════════════════
-// ─── 3D Globe ────────────────────────────────────────────────────────────────
-let _globeRAF = null, _globeRot = 0, _globeDragging = false, _globeDragX = 0;
+let _galaxyRAF = null;
 
+const GALAXY_NODES = [
+    { id:'BTC',  sym:'BTCUSDT',  label:'BTC',  color:'#F7931A', r:22, x:0, y:0, vx:0, vy:0 },
+    { id:'ETH',  sym:'ETHUSDT',  label:'ETH',  color:'#627EEA', r:18, x:0, y:0, vx:0, vy:0 },
+    { id:'SOL',  sym:'SOLUSDT',  label:'SOL',  color:'#9945FF', r:14, x:0, y:0, vx:0, vy:0 },
+    { id:'BNB',  sym:'BNBUSDT',  label:'BNB',  color:'#F3BA2F', r:13, x:0, y:0, vx:0, vy:0 },
+    { id:'XRP',  sym:'XRPUSDT',  label:'XRP',  color:'#00AAE4', r:12, x:0, y:0, vx:0, vy:0 },
+    { id:'DOGE', sym:'DOGEUSDT', label:'DOGE', color:'#C3A634', r:10, x:0, y:0, vx:0, vy:0 },
+    { id:'ADA',  sym:'ADAUSDT',  label:'ADA',  color:'#3CC8C8', r:10, x:0, y:0, vx:0, vy:0 },
+    { id:'LINK', sym:'LINKUSDT', label:'LINK', color:'#2A5ADA', r:9,  x:0, y:0, vx:0, vy:0 },
+];
+
+const GALAXY_EDGES = [
+    { a:'BTC', b:'ETH',  strength:0.9 },
+    { a:'BTC', b:'BNB',  strength:0.7 },
+    { a:'BTC', b:'SOL',  strength:0.75 },
+    { a:'ETH', b:'SOL',  strength:0.8 },
+    { a:'ETH', b:'LINK', strength:0.7 },
+    { a:'ETH', b:'ADA',  strength:0.65 },
+    { a:'BNB', b:'XRP',  strength:0.5 },
+    { a:'SOL', b:'ADA',  strength:0.6 },
+    { a:'XRP', b:'DOGE', strength:0.45 },
+    { a:'LINK', b:'ADA', strength:0.55 },
+];
+
+function initNetworkGalaxy() {
+    const canvas = document.getElementById('galaxyCanvas');
+    if (!canvas || canvas._inited) return;
+    canvas._inited = true;
+
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('galaxyTooltip');
+    const nodes = GALAXY_NODES.map(n => ({ ...n }));
+
+    function resetPositions() {
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H / 2;
+        const rr = Math.min(W, H) * 0.30;
+        nodes.forEach((n, i) => {
+            const angle = (i / nodes.length) * Math.PI * 2;
+            n.x = cx + rr * Math.cos(angle);
+            n.y = cy + rr * Math.sin(angle);
+            n.vx = 0; n.vy = 0;
+        });
+    }
+
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width  = rect.width  || 600;
+        canvas.height = rect.height || 380;
+        resetPositions();
+    }
+    resize();
+    new ResizeObserver(resize).observe(canvas.parentElement);
+
+    async function fetchGalaxyData() {
+        try {
+            const syms = nodes.map(n => n.sym);
+            const url = `https://data-api.binance.vision/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`;
+            const res = await fetch(url);
+            const arr = await res.json();
+            const map = {};
+            arr.forEach(t => { map[t.symbol] = t; });
+            nodes.forEach(n => {
+                const t = map[n.sym];
+                if (!t) return;
+                n.price = parseFloat(t.lastPrice);
+                n.chg   = parseFloat(t.priceChangePercent);
+                n.vol   = parseFloat(t.quoteVolume);
+                n.ringColor = n.chg >= 0 ? '#00C853' : '#FF1744';
+            });
+            const el = document.getElementById('galaxyDataTable');
+            if (el) {
+                const sorted = [...nodes].sort((a, b) => (b.vol || 0) - (a.vol || 0));
+                el.innerHTML = sorted.map(n => {
+                    const chgColor = (n.chg || 0) >= 0 ? 'text-green-400' : 'text-red-400';
+                    const sign = (n.chg || 0) >= 0 ? '+' : '';
+                    const price = n.price
+                        ? (n.price >= 1000 ? n.price.toLocaleString('en', {maximumFractionDigits:0})
+                            : n.price >= 1 ? n.price.toFixed(3) : n.price.toFixed(5))
+                        : '—';
+                    return `<div class="rounded-xl border border-qi-border bg-qi-card px-3 py-2 flex flex-col gap-0.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold font-mono" style="color:${n.color}">${n.label}</span>
+                            <span class="text-[10px] font-mono ${chgColor}">${sign}${(n.chg||0).toFixed(2)}%</span>
+                        </div>
+                        <div class="text-[12px] font-mono text-qi-text">${price}</div>
+                    </div>`;
+                }).join('');
+            }
+        } catch(e) {}
+    }
+    fetchGalaxyData();
+    setInterval(fetchGalaxyData, 30000);
+
+    let hoveredNode = null;
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        hoveredNode = null;
+        for (const n of nodes) {
+            const dx = mx - n.x, dy = my - n.y;
+            if (Math.sqrt(dx*dx + dy*dy) <= n.r + 5) { hoveredNode = n; break; }
+        }
+        if (hoveredNode && tooltip) {
+            const sign = (hoveredNode.chg || 0) >= 0 ? '+' : '';
+            const ps = hoveredNode.price
+                ? `$${hoveredNode.price >= 1000 ? hoveredNode.price.toLocaleString('en',{maximumFractionDigits:0}) : hoveredNode.price.toFixed(4)}`
+                : 'Loading…';
+            tooltip.innerHTML = `<span class="font-bold">${hoveredNode.label}</span><br>${ps}<br><span class="${(hoveredNode.chg||0)>=0?'text-green-400':'text-red-400'}">${sign}${(hoveredNode.chg||0).toFixed(2)}%</span>`;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (mx + 14) + 'px';
+            tooltip.style.top  = (my - 36) + 'px';
+        } else if (tooltip) {
+            tooltip.style.display = 'none';
+        }
+        canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
+    });
+    canvas.addEventListener('mouseleave', () => {
+        hoveredNode = null;
+        if (tooltip) tooltip.style.display = 'none';
+    });
+
+    const REPULSION = 2400, SPRING_K = 0.012, GRAVITY = 0.016, DAMPING = 0.85;
+    function idxOf(id) { return nodes.findIndex(n => n.id === id); }
+
+    function simulate() {
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H / 2;
+        nodes.forEach(n => { n.fx = 0; n.fy = 0; });
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i], b = nodes[j];
+                let dx = b.x - a.x, dy = b.y - a.y;
+                const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+                const f = REPULSION / (d * d);
+                const fx = f * dx / d, fy = f * dy / d;
+                a.fx -= fx; a.fy -= fy;
+                b.fx += fx; b.fy += fy;
+            }
+        }
+        GALAXY_EDGES.forEach(e => {
+            const ai = idxOf(e.a), bi = idxOf(e.b);
+            if (ai < 0 || bi < 0) return;
+            const a = nodes[ai], b = nodes[bi];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
+            const restLen = 75 + (1 - e.strength) * 55;
+            const f = SPRING_K * (d - restLen) * e.strength;
+            const fx = f * dx / d, fy = f * dy / d;
+            a.fx += fx; a.fy += fy;
+            b.fx -= fx; b.fy -= fy;
+        });
+        nodes.forEach(n => {
+            n.fx += (cx - n.x) * GRAVITY;
+            n.fy += (cy - n.y) * GRAVITY;
+            n.vx = (n.vx + n.fx) * DAMPING;
+            n.vy = (n.vy + n.fy) * DAMPING;
+            n.x += n.vx; n.y += n.vy;
+            const m = n.r + 10;
+            n.x = Math.max(m, Math.min(W - m, n.x));
+            n.y = Math.max(m, Math.min(H - m, n.y));
+        });
+    }
+
+    function draw() {
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        GALAXY_EDGES.forEach(e => {
+            const ai = idxOf(e.a), bi = idxOf(e.b);
+            if (ai < 0 || bi < 0) return;
+            const a = nodes[ai], b = nodes[bi];
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(0,229,255,${e.strength * 0.22})`;
+            ctx.lineWidth = e.strength * 1.5;
+            ctx.stroke();
+        });
+        nodes.forEach(n => {
+            const ringColor = n.ringColor || n.color;
+            const isHov = hoveredNode === n;
+            const glowR = n.r + (isHov ? 16 : 9);
+            const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+            grd.addColorStop(0, n.color + '44'); grd.addColorStop(1, 'transparent');
+            ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI*2);
+            ctx.fillStyle = grd; ctx.fill();
+            ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3, 0, Math.PI*2);
+            ctx.strokeStyle = ringColor + 'BB'; ctx.lineWidth = isHov ? 2.5 : 1.5; ctx.stroke();
+            ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+            ctx.fillStyle = n.color + 'CC'; ctx.fill();
+            ctx.strokeStyle = n.color; ctx.lineWidth = 1; ctx.stroke();
+            ctx.font = `bold ${Math.max(8, Math.round(n.r * 0.60))}px 'Space Grotesk',monospace`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff'; ctx.shadowColor = n.color; ctx.shadowBlur = 6;
+            ctx.fillText(n.label, n.x, n.y); ctx.shadowBlur = 0;
+            if (n.chg !== undefined) {
+                const sign = n.chg >= 0 ? '+' : '';
+                ctx.font = `${Math.max(7, Math.round(n.r * 0.48))}px monospace`;
+                ctx.fillStyle = n.chg >= 0 ? '#00C853' : '#FF1744';
+                ctx.fillText(`${sign}${n.chg.toFixed(1)}%`, n.x, n.y + n.r + 9);
+            }
+        });
+    }
+
+    function loop() { simulate(); draw(); _galaxyRAF = requestAnimationFrame(loop); }
+    if (_galaxyRAF) cancelAnimationFrame(_galaxyRAF);
+    loop();
+}
+
+function refreshGalaxy() {
+    const canvas = document.getElementById('galaxyCanvas');
+    if (canvas) canvas._inited = false;
+    if (_galaxyRAF) { cancelAnimationFrame(_galaxyRAF); _galaxyRAF = null; }
+    initNetworkGalaxy();
+}
+
+// Legacy stubs kept to avoid reference errors if called elsewhere
 function initGlobe() {
     const canvas = document.getElementById('globeCanvas');
     if (!canvas || canvas._inited) return;
@@ -5625,6 +5829,10 @@ async function fetchCryptoAIOutlook() {
 }
 </script>
 
+<!-- Sidebar toggle floating button -->
+<button id="sbToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">
+    <span id="sbToggleIcon">‹</span>
+</button>
 
 </body>
 </html>
