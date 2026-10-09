@@ -751,15 +751,18 @@ class QuantumRealtimeTerminalManager {
                 document.head.appendChild(s2);
             }
 
+            if (this._chartRetryTimer) return;
             let attempts = 0;
-            const checkTimer = setInterval(() => {
+            this._chartRetryTimer = setInterval(() => {
                 attempts++;
                 if (typeof LightweightCharts !== 'undefined') {
-                    clearInterval(checkTimer);
+                    clearInterval(this._chartRetryTimer);
+                    this._chartRetryTimer = null;
                     console.log('[QI] LightweightCharts siap setelah', attempts * 200, 'ms');
                     this.initChart();
                 } else if (attempts >= 40) { // 8 detik timeout
-                    clearInterval(checkTimer);
+                    clearInterval(this._chartRetryTimer);
+                    this._chartRetryTimer = null;
                     this._showError('Gagal memuat library chart. Silakan cek koneksi internet.');
                 }
             }, 200);
@@ -838,10 +841,14 @@ class QuantumRealtimeTerminalManager {
         setTimeout(forceResize, 700);
         setTimeout(forceResize, 1200);
 
+        if (this._resizeObserver) { try { this._resizeObserver.disconnect(); } catch(e) {} }
+        if (this._resizeHandler) { window.removeEventListener('resize', this._resizeHandler); this._resizeHandler = null; }
         try {
-            new ResizeObserver(forceResize).observe(container);
+            this._resizeObserver = new ResizeObserver(forceResize);
+            this._resizeObserver.observe(container);
         } catch(e) {
-            window.addEventListener('resize', forceResize);
+            this._resizeHandler = forceResize;
+            window.addEventListener('resize', this._resizeHandler);
         }
 
         // iOS Standalone app visibility resume listener

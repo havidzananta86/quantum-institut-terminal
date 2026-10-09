@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(30, 60);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

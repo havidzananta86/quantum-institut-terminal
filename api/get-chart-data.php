@@ -1,7 +1,10 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/_middleware.php';
-qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
+// When included by signals.php, headers and rate limiting are handled by the caller.
+if (!defined('QI_INCLUDED_BY_SIGNALS')) {
+    header('Content-Type: application/json; charset=utf-8');
+    require_once __DIR__ . '/_middleware.php';
+    qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
+}
 $_apiKeysFile = __DIR__ . '/../config/api_keys.php';
 if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
 if (!defined('TWELVE_DATA_KEY')) define('TWELVE_DATA_KEY', '');

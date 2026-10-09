@@ -19,7 +19,8 @@ function load_candles(string $sym, string $interval): array {
         $d = json_decode(file_get_contents($cacheFile), true);
         return $d['candles'] ?? [];
     }
-    // Call get-chart-data.php directly
+    // Call get-chart-data.php directly (define constant so it skips header/rate-limit)
+    if (!defined('QI_INCLUDED_BY_SIGNALS')) define('QI_INCLUDED_BY_SIGNALS', true);
     ob_start();
     $_GET['symbol']   = $sym;
     $_GET['interval'] = $interval;

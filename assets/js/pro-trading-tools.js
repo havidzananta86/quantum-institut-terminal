@@ -244,6 +244,7 @@
         _timer: null,
         _consecutiveFails: 0,
         _interval: 3000,
+        _polling: false,
 
         start() {
             this.poll();
@@ -251,6 +252,8 @@
         },
 
         async poll() {
+            if (this._polling) return;
+            this._polling = true;
             try {
                 const res = await fetch(`api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -295,6 +298,8 @@
             } catch(e) {
                 this._consecutiveFails++;
                 if (this._consecutiveFails >= 3) this._updateStatusUI('DELAYED');
+            } finally {
+                this._polling = false;
             }
         },
 
@@ -664,6 +669,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 navigator.clipboard.writeText(textPlan).then(() => {
                     if (window.showQuantumToast) window.showQuantumToast('📋 Trade Plan Disalin ke Clipboard!', 'success');
                     QuantumAudio.playChime('success');
+                }).catch(() => {
+                    if (window.showQuantumToast) window.showQuantumToast('Clipboard tidak tersedia', 'warning');
                 });
             }
         },
@@ -673,9 +680,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 modal.classList.remove('hidden');
                 if (window.quantumTerminalManager && window.quantumTerminalManager.lastClosePrice) {
                     const p = window.quantumTerminalManager.lastClosePrice;
-                    document.getElementById('rrEntryInput').value = p;
-                    document.getElementById('rrSLInput').value = +(p * 0.992).toFixed(2);
-                    document.getElementById('rrTPInput').value = +(p * 1.022).toFixed(2);
+                    const entryEl = document.getElementById('rrEntryInput');
+                    const slEl    = document.getElementById('rrSLInput');
+                    const tpEl    = document.getElementById('rrTPInput');
+                    if (entryEl) entryEl.value = p;
+                    if (slEl)    slEl.value    = +(p * 0.992).toFixed(2);
+                    if (tpEl)    tpEl.value    = +(p * 1.022).toFixed(2);
                 }
                 this.calculate();
             }
@@ -693,9 +703,11 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        ========================================================================== */
     const QuantumSessionEngine = {
         currentTz: 'WIB',
+        _timer: null,
         init() {
+            if (this._timer) clearInterval(this._timer);
             this.update();
-            setInterval(() => this.update(), 1000);
+            this._timer = setInterval(() => this.update(), 1000);
         },
         setTimezone(tz) {
             this.currentTz = tz;
@@ -792,8 +804,10 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        7. CANDLE COUNTDOWN TIMER & HEIKIN ASHI SWITCHER (TIER A - FITUR 8 & 17)
        ========================================================================== */
     const QuantumCandleTimer = {
+        _timer: null,
         init() {
-            setInterval(() => this.tick(), 1000);
+            if (this._timer) clearInterval(this._timer);
+            this._timer = setInterval(() => this.tick(), 1000);
         },
         tick() {
             const el = document.getElementById('candleCountdownTimer');
@@ -842,11 +856,13 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         positions: [],
         history: [],
         lastBacktestResult: null,
+        _floatingPnLTimer: null,
         init() {
             this.loadState();            // localStorage dulu → render instan
             this.render();
             this._startPriceTracker();
-            setInterval(() => this.updateFloatingPnL(), 1000);
+            if (this._floatingPnLTimer) clearInterval(this._floatingPnLTimer);
+            this._floatingPnLTimer = setInterval(() => this.updateFloatingPnL(), 1000);
             // Kalau user login, tarik snapshot dari server (override localStorage)
             if (this._authToken()) this._loadFromServer();
         },
@@ -2207,7 +2223,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         timerId: null,
         init() {
             this.fetchCalendarData();
-            setInterval(() => this.fetchCalendarData(), 300000); // refresh every 5 min
+            this.timerId = setInterval(() => this.fetchCalendarData(), 300000); // refresh every 5 min
         },
         async fetchCalendarData() {
             const banner = document.getElementById('newsHoldBanner');

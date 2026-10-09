@@ -15,8 +15,8 @@ if (file_exists($apiKeysFile)) {
     $groqKey = defined('GROQ_API_KEY') ? GROQ_API_KEY : '';
 }
 
-$raw  = file_get_contents('php://input');
-$body = json_decode($raw, true);
+$body = qi_get_json_body();
+if (!$body) { http_response_code(400); echo json_encode(['error'=>'Invalid JSON']); exit; }
 $message  = trim($body['message'] ?? '');
 $history  = array_slice((array)($body['history'] ?? []), -12);
 $context  = $body['context'] ?? [];  // real-time market data from dashboard
