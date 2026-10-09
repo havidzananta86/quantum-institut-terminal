@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark scroll-smooth">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,6 +53,10 @@
     }
     </script>
 
+    <!-- Design tokens + theme (must load before Tailwind) -->
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <script src="assets/js/theme-toggle.js"></script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,13 +83,13 @@
                 },
                 extend: {
                     colors: {
-                        'quantum-dark': '#050A1A',
-                        'quantum-navy': '#0A1128',
-                        'quantum-card': '#0D1836',
-                        'quantum-cyan': '#00E5FF',
-                        'quantum-purple': '#7C4DFF',
-                        'quantum-green': '#00E676',
-                        'quantum-amber': '#FFAB00',
+                        'quantum-dark': 'var(--qi-bg)',
+                        'quantum-navy': 'var(--qi-surface)',
+                        'quantum-card': 'var(--qi-card)',
+                        'quantum-cyan': 'var(--qi-cyan)',
+                        'quantum-purple': 'var(--qi-purple)',
+                        'quantum-green': 'var(--qi-green)',
+                        'quantum-amber': 'var(--qi-gold)',
                     },
                     fontFamily: {
                         heading: ['Space Grotesk', 'sans-serif'],
@@ -132,7 +136,7 @@
         .thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(0,229,255,0.25) transparent; }
     </style>
 </head>
-<body class="relative bg-[#050A1A] text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
+<body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
 
     <!-- PROFESSIONAL LOADING SCREEN -->
     <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020509]" style="transition:opacity 0.6s ease">
@@ -209,6 +213,9 @@
 
             <!-- Tombol Kanan Desktop & Tablet -->
             <div class="hidden md:flex items-center gap-3 lg:gap-4 shrink-0">
+                <button onclick="toggleQITheme()" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-700 hover:border-cyan-500/30 text-slate-400 hover:text-white transition-colors" title="Toggle theme" aria-label="Toggle light/dark theme">
+                    <span data-theme-icon>☀</span>
+                </button>
                 <a href="login.html" class="min-h-[44px] px-3.5 py-2 flex items-center text-xs lg:text-sm font-medium text-slate-300 hover:text-white border border-transparent hover:border-cyan-500/30 rounded-lg transition-all">
                     Masuk
                 </a>
@@ -218,6 +225,10 @@
                 </a>
             </div>
 
+            <!-- Mobile theme toggle (<768px) -->
+            <button onclick="toggleQITheme()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-white" title="Toggle theme" aria-label="Toggle light/dark theme">
+                <span data-theme-icon>☀</span>
+            </button>
             <!-- Hamburger Button Mobile (<768px) -->
             <button id="mobileMenuBtn" class="md:hidden min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-white flex items-center justify-center focus:outline-none" aria-label="Toggle Menu">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,7 +239,7 @@
         </div>
 
         <!-- Mobile Menu Drawer (<768px) -->
-        <div id="mobileMenu" class="hidden md:hidden bg-[#0A1128]/95 border-b border-cyan-500/20 px-4 sm:px-6 py-6 space-y-4">
+        <div id="mobileMenu" class="hidden md:hidden bg-quantum-navy/95 border-b border-cyan-500/20 px-4 sm:px-6 py-6 space-y-4">
             <a href="#mesin-kuantum" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Mesin Kuantum</a>
             <a href="#terminal" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Terminal</a>
             <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>

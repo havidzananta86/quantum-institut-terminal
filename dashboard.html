@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full">
+<html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Command Center | Quantum Institut Market Terminal</title>
     <meta name="description" content="Dashboard intelijen pasar real-time: harga live, kekuatan mata uang, kalender ekonomi, dan sembilan mesin analisa Quantum Institut.">
-    <meta name="theme-color" content="#050A1A">
+    <meta name="theme-color" content="#0B1220">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Design tokens + theme (must load before Tailwind) -->
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <script src="assets/js/theme-toggle.js"></script>
 
     <!-- Error Tracker — load first to catch all JS errors -->
     <script src="assets/js/error-tracker.js"></script>
@@ -22,16 +26,16 @@
             theme: {
                 extend: {
                     colors: {
-                        'qi-bg':     '#000000',
-                        'qi-panel':  '#050A14',
-                        'qi-card':   '#080E1C',
-                        'qi-border': '#0F1A2E',
-                        'qi-navy':   '#0A4FA6',
-                        'qi-cyan':   '#00E5FF',
-                        'qi-purple': '#7C4DFF',
-                        'qi-green':  '#10B981',
-                        'qi-red':    '#EF4444',
-                        'qi-gold':   '#F59E0B',
+                        'qi-bg':     'var(--qi-bg)',
+                        'qi-panel':  'var(--qi-surface)',
+                        'qi-card':   'var(--qi-card)',
+                        'qi-border': 'var(--qi-border)',
+                        'qi-navy':   'var(--qi-navy)',
+                        'qi-cyan':   'var(--qi-cyan)',
+                        'qi-purple': 'var(--qi-purple)',
+                        'qi-green':  'var(--qi-green)',
+                        'qi-red':    'var(--qi-red)',
+                        'qi-gold':   'var(--qi-gold)',
                     },
                     fontFamily: {
                         heading: ['Space Grotesk', 'sans-serif'],
@@ -44,7 +48,7 @@
     </script>
 
     <style>
-        body { background:#000000; font-family:'Inter',sans-serif; }
+        body { font-family:'Inter',sans-serif; }
 
         /* ── Scrolling ticker ── */
         @keyframes ticker-scroll {
@@ -206,7 +210,7 @@
     </script>
 </head>
 
-<body class="h-screen flex overflow-hidden text-slate-300 font-body">
+<body class="h-screen flex overflow-hidden font-body">
 
 <!-- ═══ 3D LOADING SCREEN ═══ -->
 <div id="qiLoadScreen" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center" style="background:#030810;">
@@ -618,6 +622,9 @@
                 <div class="font-mono text-sm font-semibold text-white" id="clockSYD">--:--:--</div>
             </div>
             <div class="text-[10px] text-slate-600 font-mono" id="headerDateStr"></div>
+            <button onclick="toggleQITheme()" class="ml-3 w-8 h-8 flex items-center justify-center rounded-lg border border-qi-border hover:border-qi-cyan text-sm transition-colors" title="Toggle theme" aria-label="Toggle light/dark theme">
+                <span data-theme-icon>☀</span>
+            </button>
         </div>
     </div>
 

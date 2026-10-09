@@ -8,15 +8,10 @@
    CSS Custom Properties (Design Tokens)
 ------------------------------------------------------- */
 :root {
-    --qi-dark:     #050A1A;
-    --qi-navy:     #0A1128;
-    --qi-card:     #0D1836;
-    --qi-border:   rgba(0, 229, 255, 0.12);
-    --qi-cyan:     #00E5FF;
-    --qi-purple:   #7C4DFF;
-    --qi-green:    #00E676;
-    --qi-red:      #FF5252;
-    --qi-amber:    #FFAB00;
+    --qi-dark:     var(--qi-bg, #050A1A);
+    --qi-navy-legacy: var(--qi-surface, #0A1128);
+    --qi-card-legacy: var(--qi-card, #0D1836);
+    --qi-border-legacy: var(--qi-border, rgba(0, 229, 255, 0.12));
 
     /* Glow shadows */
     --glow-cyan:   0 0 24px rgba(0, 229, 255, 0.25);
@@ -41,8 +36,8 @@ html, body {
 }
 
 body {
-    background-color: var(--qi-dark);
-    color: #E2E8F0;
+    background-color: var(--qi-bg, #050A1A);
+    color: var(--qi-text, #E2E8F0);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -154,15 +149,24 @@ section[id] { scroll-margin-top: 80px; }
 /* -------------------------------------------------------
    Light Theme Override
 ------------------------------------------------------- */
-html.light-theme {
-    --qi-dark:  #F8FAFC;
-    --qi-navy:  #F1F5F9;
-    --qi-card:  #FFFFFF;
-    --qi-border: rgba(100, 116, 139, 0.20);
+:root[data-theme="light"] {
+    --qi-dark:  var(--qi-bg);
+    --qi-navy-legacy:  var(--qi-surface);
+    --qi-card-legacy:  var(--qi-card);
+    --qi-border-legacy: var(--qi-border);
 }
-html.light-theme body  { background-color: #F8FAFC !important; color: #0F172A !important; }
-html.light-theme header { background-color: #FFFFFF !important; border-color: #CBD5E1 !important; }
-html.light-theme .glass-card { background: rgba(248,250,252,0.92) !important; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --qi-dark:  var(--qi-bg);
+    --qi-navy-legacy:  var(--qi-surface);
+    --qi-card-legacy:  var(--qi-card);
+    --qi-border-legacy: var(--qi-border);
+  }
+}
+:root[data-theme="light"] .glass-card { background: rgba(248,250,252,0.92); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .glass-card { background: rgba(248,250,252,0.92); }
+}
 
 /* -------------------------------------------------------
    Responsive Breakpoint Helpers
