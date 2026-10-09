@@ -89,6 +89,21 @@
         .thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.25); border-radius: 99px; }
         .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(0,229,255,0.25) transparent; }
+
+        @keyframes borderGlow {
+            0%, 100% { border-color: rgba(0,229,255,0.3); box-shadow: 0 0 20px rgba(0,229,255,0.05); }
+            50% { border-color: rgba(0,229,255,0.6); box-shadow: 0 0 30px rgba(0,229,255,0.1), 0 0 60px rgba(124,77,255,0.05); }
+        }
+        .signal-card-glow {
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @media (min-width: 768px) {
+            .hero-float { animation: float 6s ease-in-out infinite; }
+        }
     </style>
 </head>
 <body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
@@ -259,8 +274,8 @@
                 </div>
 
                 <!-- Card Hologram Kanan Hero / Panduan Signal -->
-                <div id="panduan" class="relative mt-8 md:mt-0 reveal">
-                    <div class="glass-card rounded-2xl p-4 sm:p-6 border border-cyan-500/30 overflow-hidden">
+                <div id="panduan" class="relative mt-8 md:mt-0 reveal hero-float">
+                    <div class="glass-card signal-card-glow rounded-2xl p-4 sm:p-6 border border-cyan-500/30 overflow-hidden">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-cyan-500/20 font-mono text-xs">
                             <span class="text-cyan-400 font-bold flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> LIVE SIGNAL READOUT
@@ -323,17 +338,17 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
                 <!-- Stat 1 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300" id="statSignals">1,247</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300" data-count-to="1247" data-count-suffix="" data-count-format="true">0</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Sinyal Bulan Ini</div>
                 </div>
                 <!-- Stat 2 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">78%</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400" data-count-to="78" data-count-suffix="%">0%</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Akurasi Rata-rata</div>
                 </div>
                 <!-- Stat 3 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">9</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" data-count-to="9" data-count-suffix="">0</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Mesin Analisa Aktif</div>
                 </div>
                 <!-- Stat 4 -->
@@ -1342,6 +1357,34 @@
         }
         refreshTicker();
         setInterval(refreshTicker, 30000);
+    })();
+    </script>
+    <!-- Animated stat counters -->
+    <script>
+    (function() {
+        const counters = document.querySelectorAll('[data-count-to]');
+        if (!counters.length) return;
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting || entry.target._counted) return;
+                entry.target._counted = true;
+                const el = entry.target;
+                const target = parseInt(el.dataset.countTo, 10);
+                const suffix = el.dataset.countSuffix || '';
+                const fmt = el.dataset.countFormat === 'true';
+                const dur = Math.min(1800, 400 + target * 1.2);
+                const start = performance.now();
+                function step(now) {
+                    const t = Math.min((now - start) / dur, 1);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    const val = Math.round(ease * target);
+                    el.textContent = (fmt ? val.toLocaleString('en-US') : val) + suffix;
+                    if (t < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+        }, { threshold: 0.3 });
+        counters.forEach(c => io.observe(c));
     })();
     </script>
     <!-- PWA Install Prompt + Service Worker -->

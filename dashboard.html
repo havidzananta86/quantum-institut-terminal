@@ -646,9 +646,9 @@ document.addEventListener('keydown', e => {
 
     <!-- ── TOP TICKER BAR ── -->
     <div class="h-8 bg-qi-panel border-b border-qi-border flex items-center overflow-hidden relative">
-        <div class="flex-shrink-0 px-3 flex items-center gap-1.5 border-r border-qi-border h-full bg-qi-panel z-10">
-            <span class="w-1.5 h-1.5 rounded-full bg-qi-green session-dot"></span>
-            <span class="text-[10px] font-semibold text-qi-green tracking-wider">LIVE</span>
+        <div id="liveStatusBadge" class="flex-shrink-0 px-3 flex items-center gap-1.5 border-r border-qi-border h-full bg-qi-panel z-10">
+            <span id="liveStatusDot" class="w-1.5 h-1.5 rounded-full bg-qi-green session-dot"></span>
+            <span id="liveStatusText" class="text-[10px] font-semibold text-qi-green tracking-wider">LIVE</span>
         </div>
         <div class="flex-1 overflow-hidden">
             <div id="tickerTrack" class="ticker-track flex items-center gap-0 whitespace-nowrap h-8">
@@ -5949,6 +5949,27 @@ async function fetchCryptoAIOutlook() {
     <span id="sbToggleIcon">‹</span>
 </button>
 
+<script>
+(function(){
+    var dot = document.getElementById('liveStatusDot');
+    var txt = document.getElementById('liveStatusText');
+    function setOnline(on) {
+        if (!dot || !txt) return;
+        if (on) {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-qi-green session-dot';
+            txt.className = 'text-[10px] font-semibold text-qi-green tracking-wider';
+            txt.textContent = 'LIVE';
+        } else {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
+            txt.className = 'text-[10px] font-semibold text-rose-400 tracking-wider';
+            txt.textContent = 'OFFLINE';
+        }
+    }
+    window.addEventListener('online', function(){ setOnline(true); if(window.showQuantumToast) showQuantumToast('Koneksi kembali aktif','success',2000); });
+    window.addEventListener('offline', function(){ setOnline(false); if(window.showQuantumToast) showQuantumToast('Koneksi terputus — data tidak diperbarui','warning',4000); });
+    if (!navigator.onLine) setOnline(false);
+})();
+</script>
 <script src="assets/js/main.js" defer></script>
 <script src="assets/js/cookie-consent.js" defer></script>
 </body>
