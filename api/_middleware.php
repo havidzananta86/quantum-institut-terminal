@@ -330,7 +330,38 @@ function createSession($pdo, $userId) {
 }
 
 // =============================================
-// 4. TERAPKAN RATE LIMIT OTOMATIS
+// 4. STRUCTURED LOGGING + REQUEST ID (#121)
+// =============================================
+if (!defined('QI_REQUEST_ID')) {
+    define('QI_REQUEST_ID', bin2hex(random_bytes(8)));
+}
+
+function qi_log(string $level, string $message, array $context = []): void {
+    $logDir = __DIR__ . '/../cache/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $entry = json_encode([
+        'time'       => gmdate('Y-m-d\TH:i:s\Z'),
+        'request_id' => QI_REQUEST_ID,
+        'level'      => $level,
+        'endpoint'   => basename($_SERVER['SCRIPT_NAME'] ?? ''),
+        'method'     => $_SERVER['REQUEST_METHOD'] ?? '',
+        'ip'         => $_SERVER['REMOTE_ADDR'] ?? '',
+        'message'    => $message,
+        'context'    => $context ?: null,
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    @file_put_contents(
+        $logDir . '/app-' . date('Y-m-d') . '.jsonl',
+        $entry . "\n",
+        FILE_APPEND | LOCK_EX
+    );
+}
+
+header('X-Request-ID: ' . QI_REQUEST_ID);
+
+// =============================================
+// 5. TERAPKAN RATE LIMIT OTOMATIS
 // =============================================
 // Setiap endpoint yang include file ini otomatis dibatasi
 qi_rate_limit(60, 60); // 60 request per menit per IP

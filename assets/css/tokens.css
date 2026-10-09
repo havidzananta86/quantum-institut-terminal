@@ -176,3 +176,16 @@ body {
   background: rgba(0, 229, 255, 0.07);
   color: #fff;
 }
+
+/* ── Reduced motion (#52) ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse, .animate-spin, .animate-bounce, .animate-ping {
+    animation: none !important;
+  }
+}
