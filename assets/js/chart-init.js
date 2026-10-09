@@ -896,7 +896,7 @@ class QuantumRealtimeTerminalManager {
         const sym      = this.currentSymbol;
         const interval = this.currentInterval;
         try {
-            const url  = `/webapp/api/get-chart-data.php?symbol=${sym}&interval=${interval}`;
+            const url  = `api/get-chart-data.php?symbol=${sym}&interval=${interval}`;
             const res  = await fetch(url, { signal: AbortSignal.timeout(8000), cache: 'no-store' });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();

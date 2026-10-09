@@ -1,8 +1,10 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
-require_once __DIR__ . '/../config/api_keys.php';
 qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
+$_apiKeysFile = __DIR__ . '/../config/api_keys.php';
+if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
+if (!defined('TWELVE_DATA_KEY')) define('TWELVE_DATA_KEY', '');
 
 $symbol   = isset($_GET['symbol'])   ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
 $interval = isset($_GET['interval']) ? qi_sanitize_string($_GET['interval'], 5)            : '60';
@@ -34,6 +36,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
 /**
  * Ambil URL dengan curl (cepat) atau fallback file_get_contents.
  */
+if (!function_exists('qi_http_get')) :
 function qi_http_get($url, $timeout = 4) {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
@@ -53,6 +56,7 @@ function qi_http_get($url, $timeout = 4) {
     $ctx = stream_context_create(['http' => ['method' => 'GET', 'timeout' => $timeout, 'header' => "User-Agent: Mozilla/5.0\r\n"]]);
     return @file_get_contents($url, false, $ctx);
 }
+endif;
 
 $candles = [];
 

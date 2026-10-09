@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="assets/css/tailwind.css">
 
     <style>
-        body { font-family:'Inter',sans-serif; }
+        body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
 
         /* ── Scrolling ticker ── */
         @keyframes ticker-scroll {
@@ -243,7 +243,7 @@
 
 <!-- ═══ ACCESS GATE (shown while checking / if not PRO) ═══ -->
 <div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-     style="background:#070C1A;">
+     style="background:rgba(7,12,26,0.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);">
 
     <!-- Loading state (default) -->
     <div id="gateLoading" class="text-center">

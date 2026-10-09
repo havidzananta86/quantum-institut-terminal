@@ -45,7 +45,7 @@
     <link rel="stylesheet" href="assets/css/responsive.css">
 
     <style>
-        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--qi-bg, #050A1A); color: var(--qi-text, #E2E8F0); font-family: 'Inter', sans-serif; }
         
         /* ATURAN CHART TERMINAL RESPONSIF:
            - Mobile (<768px): height 250px
@@ -1098,7 +1098,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
         async function fetchCandlesForEngine(symbol, interval) {
             try {
-                const res = await fetch(`/webapp/api/get-chart-data.php?symbol=${symbol}&interval=${interval}`, { cache: 'no-store' });
+                const res = await fetch(`api/get-chart-data.php?symbol=${symbol}&interval=${interval}`, { cache: 'no-store' });
                 const json = await res.json();
                 if (json.candles && json.candles.length > 0) {
                     window._cachedCandles = json.candles;
@@ -1723,7 +1723,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
             // api/news.php = feed RSS real (cache server 5 menit). Folder cache/
             // diblok .htaccess, jadi langsung ke endpoint.
-            tryFetch('/webapp/api/news.php')
+            tryFetch('api/news.php')
                 .catch(() => tryFetch('api/news.php'))
                 .then(res => {
                     if (res && res.data && res.data.length > 0) {

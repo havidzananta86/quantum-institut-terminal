@@ -252,7 +252,7 @@
 
         async poll() {
             try {
-                const res = await fetch(`/webapp/api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
+                const res = await fetch(`api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
                 if (json.status !== 'success' || !json.prices) throw new Error('bad response');
@@ -265,6 +265,7 @@
 
                 // Update _livePrices for all symbols
                 for (const [sym, data] of Object.entries(prices)) {
+                    if (!data || data.price == null || isNaN(data.price)) continue;
                     if (window._livePrices) window._livePrices[sym] = data.price;
                     // Update ticker bar items
                     document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
@@ -379,7 +380,7 @@
 
             const fetchDepth = async () => {
                 try {
-                    const res = await fetch(`/webapp/api/orderbook.php?symbol=${sym}&limit=20`, { cache: 'no-store' });
+                    const res = await fetch(`api/orderbook.php?symbol=${sym}&limit=20`, { cache: 'no-store' });
                     const d = await res.json();
                     if (!d.bids || d.bids.length === 0) throw new Error('empty');
 
@@ -392,7 +393,7 @@
                         cumAsk += +q;
                         return { price: +p, qty: +q, total: +cumAsk.toFixed(4) };
                     });
-                    this._midPrice = this.bids.length ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
+                    this._midPrice = (this.bids.length && this.asks.length) ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
 
                     // Simulate time-and-sales from bid/ask spread
                     const midP = this._midPrice;
@@ -862,7 +863,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const token = this._authToken();
             if (!token) return;
             try {
-                const res = await fetch('/webapp/api/paper-trading.php', {
+                const res = await fetch('api/paper-trading.php', {
                     headers: { 'Authorization': `Bearer ${token}` },
                     cache: 'no-store'
                 });
@@ -882,7 +883,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             if (!token) return;
             clearTimeout(this._syncTimer);
             this._syncTimer = setTimeout(() => {
-                fetch('/webapp/api/paper-trading.php', {
+                fetch('api/paper-trading.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
