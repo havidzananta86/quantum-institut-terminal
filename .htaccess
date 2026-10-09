@@ -51,5 +51,46 @@ RewriteRule \.bak$ - [F,L]
     Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://data-api.binance.vision https://api.binance.us https://fapi.binance.com wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app https://api.twelvedata.com https://biquote.io https://accounts.google.com https://api.alternative.me https://api.frankfurter.app https://api.coingecko.com; frame-src https://s3.tradingview.com https://*.tradingview.com https://www.tradingview-widget.com https://accounts.google.com;"
 </IfModule>
 
+# =============================================
+# CACHE CONTROL — Aset statis immutable
+# =============================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    # Fonts — jarang berubah
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff  "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    # CSS & JS
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    # Images
+    ExpiresByType image/png  "access plus 6 months"
+    ExpiresByType image/jpeg "access plus 6 months"
+    ExpiresByType image/webp "access plus 6 months"
+    ExpiresByType image/svg+xml "access plus 6 months"
+    ExpiresByType image/x-icon "access plus 1 year"
+    # JSON cache files — pendek
+    ExpiresByType application/json "access plus 5 minutes"
+    # HTML — jangan cache lama
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+<IfModule mod_headers.c>
+    # Immutable untuk file di /assets/
+    <FilesMatch "\.(css|js|woff2?|png|jpe?g|webp|svg|ico)$">
+        Header set Cache-Control "public, max-age=2592000, stale-while-revalidate=86400"
+    </FilesMatch>
+    # HTML dan PHP — no-cache (selalu fresh)
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# =============================================
+# GZIP / DEFLATE COMPRESSION
+# =============================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/xml image/svg+xml
+</IfModule>
+
 # Custom 404 Error Document
 ErrorDocument 404 /404.html
