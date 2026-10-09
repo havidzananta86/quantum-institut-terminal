@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full">
+<html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="assets/js/auth.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'qi-bg':     '#070C1A',
-                        'qi-panel':  '#0C1220',
-                        'qi-card':   '#111827',
-                        'qi-border': '#1E293B',
-                        'qi-cyan':   '#00E5FF',
-                        'qi-purple': '#7C4DFF',
-                        'qi-green':  '#10B981',
-                        'qi-red':    '#EF4444',
-                        'qi-gold':   '#F59E0B',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk','sans-serif'],
-                        body:    ['Inter','sans-serif'],
-                        mono:    ['JetBrains Mono','monospace'],
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <script src="assets/js/theme-toggle.js"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css">
     <style>
         body { background:#070C1A; font-family:'Inter',sans-serif; }
 

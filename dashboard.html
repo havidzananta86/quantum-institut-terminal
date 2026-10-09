@@ -17,35 +17,10 @@
 
     <!-- Error Tracker — load first to catch all JS errors -->
     <script src="assets/js/error-tracker.js"></script>
-    <!-- Auth must load before Tailwind so gate check fires immediately -->
+    <!-- Auth must load before page renders so gate check fires immediately -->
     <script src="assets/js/auth.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'qi-bg':     'var(--qi-bg)',
-                        'qi-panel':  'var(--qi-surface)',
-                        'qi-card':   'var(--qi-card)',
-                        'qi-border': 'var(--qi-border)',
-                        'qi-navy':   'var(--qi-navy)',
-                        'qi-cyan':   'var(--qi-cyan)',
-                        'qi-purple': 'var(--qi-purple)',
-                        'qi-green':  'var(--qi-green)',
-                        'qi-red':    'var(--qi-red)',
-                        'qi-gold':   'var(--qi-gold)',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body:    ['Inter', 'sans-serif'],
-                        mono:    ['JetBrains Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Tailwind (pre-built) -->
+    <link rel="stylesheet" href="assets/css/tailwind.css">
 
     <style>
         body { font-family:'Inter',sans-serif; }

@@ -62,63 +62,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind (pre-built) -->
+    <link rel="stylesheet" href="assets/css/tailwind.css">
 
     <!-- TradingView Lightweight Charts CDN -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
-    <!-- Tailwind CSS Custom Configuration with Breakpoints -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                screens: {
-                    'xs': '480px',   // HP Kecil
-                    'sm': '640px',   // HP Besar / Landscape
-                    'md': '768px',   // Tablet Portrait
-                    'lg': '1024px',  // Laptop
-                    'xl': '1280px',  // Desktop
-                    '2xl': '1536px', // Desktop Besar / 4K
-                },
-                extend: {
-                    colors: {
-                        'quantum-dark': 'var(--qi-bg)',
-                        'quantum-navy': 'var(--qi-surface)',
-                        'quantum-card': 'var(--qi-card)',
-                        'quantum-cyan': 'var(--qi-cyan)',
-                        'quantum-purple': 'var(--qi-purple)',
-                        'quantum-green': 'var(--qi-green)',
-                        'quantum-amber': 'var(--qi-gold)',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    boxShadow: {
-                        'cyan-glow': '0 0 25px rgba(0, 229, 255, 0.25)',
-                        'purple-glow': '0 0 25px rgba(124, 77, 255, 0.25)',
-                        'card-glow': '0 10px 30px -10px rgba(0, 229, 255, 0.15)',
-                    },
-                    animation: {
-                        'ticker': 'ticker 35s linear infinite',
-                        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        ticker: {
-                            '0%': { transform: 'translateX(0)' },
-                            '100%': { transform: 'translateX(-50%)' }
-                        },
-                        pulseGlow: {
-                            '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' },
-                            '50%': { opacity: '0.9', filter: 'drop-shadow(0 0 25px rgba(124, 77, 255, 0.8))' }
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/responsive.css">

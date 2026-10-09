@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full">
+<html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,39 +20,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                screens: {
-                    'xs': '480px',   // HP Kecil
-                    'sm': '640px',   // HP Besar / Landscape
-                    'md': '768px',   // Tablet Portrait
-                    'lg': '1024px',  // Laptop
-                    'xl': '1280px',  // Desktop
-                    '2xl': '1536px', // Desktop Besar / 4K
-                },
-                extend: {
-                    colors: {
-                        'quantum-dark': '#050A1A',
-                        'quantum-navy': '#0A1128',
-                        'quantum-card': '#0D1836',
-                        'quantum-cyan': '#00E5FF',
-                        'quantum-purple': '#7C4DFF',
-                        'quantum-green': '#00E676',
-                        'quantum-red': '#FF5252',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <script src="assets/js/theme-toggle.js"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css">
 
     <!-- TRADINGVIEW OFFICIAL ADVANCED CHARTING API (REALTIME DATA) -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
