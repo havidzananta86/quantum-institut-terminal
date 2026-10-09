@@ -101,6 +101,8 @@
             #sidebar { transition: width .25s ease, min-width .25s ease; overflow: hidden; }
             #sidebar.sidebar-collapsed { width: 0 !important; min-width: 0 !important; border-right: none; }
         }
+        /* Desktop-only sidebar collapse button */
+        @media (max-width:1023px) { #sbToggleBtn { display:none !important; } }
         #sbToggleBtn { position:fixed; bottom:20px; left:12px; z-index:50; width:28px; height:28px;
             background:#050A14; border:1px solid #0F1A2E; border-radius:50%; display:flex;
             align-items:center; justify-content:center; cursor:pointer; color:#64748b;
@@ -168,7 +170,8 @@
 
         /* ── Responsive mobile improvements ── */
         @media (max-width:767px) {
-            #panel-charts { height:calc(100vh - 96px); }
+            #panel-charts { height:calc(100vh - 96px); min-height:400px; }
+            #panel-ai { height:calc(100vh - 96px) !important; }
             #chartWatchlist { display:none !important; }
             #chartBottomPanel .overflow-y-auto { max-height:120px; }
             .chart-tf-btn { padding:2px 6px; font-size:9px; }
@@ -491,9 +494,6 @@
             </button>
             <button data-panel="panel-news" onclick="switchPanel('panel-news')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">📰</span> News Feed
-            </button>
-            <button data-panel="panel-heatmap" onclick="switchPanel('panel-heatmap')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">📅</span> Economic Calendar
             </button>
             <button data-panel="panel-overview" onclick="switchPanel('panel-overview')" class="nav-item active w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md">
                 <span class="text-base">🌐</span> Market Overview
@@ -5350,6 +5350,8 @@ function initNetworkGalaxy() {
                 n.vol   = parseFloat(t.quoteVolume);
                 n.ringColor = n.chg >= 0 ? '#00C853' : '#FF1744';
             });
+            const lu = document.getElementById('galaxyLastUpdate');
+            if (lu) lu.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
             const el = document.getElementById('galaxyDataTable');
             if (el) {
                 const sorted = [...nodes].sort((a, b) => (b.vol || 0) - (a.vol || 0));
