@@ -21,6 +21,13 @@
     <meta name="twitter:description" content="Sembilan mesin kuantum membaca pasar. Terminal analisa multi-pasar 24/7.">
     <meta name="twitter:image" content="https://quantuminstitut.market/og-image.png">
 
+    <!-- PWA / Mobile -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00E5FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+
     <!-- Canonical URL -->
     <link rel="canonical" href="https://quantuminstitut.market/">
 
@@ -67,9 +74,6 @@
 
     <!-- Tailwind (pre-built) -->
     <link rel="stylesheet" href="assets/css/tailwind.css">
-
-    <!-- TradingView Lightweight Charts CDN -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
@@ -158,6 +162,10 @@
                     Quantum+ <span class="px-1.5 py-0.5 text-[9px] font-mono bg-purple-500/20 text-purple-300 rounded border border-purple-500/40">PRO</span>
                 </a>
                 <a href="#belajar" class="hover:text-cyan-400 transition-colors py-1">Belajar</a>
+                <a href="#download" class="hover:text-emerald-400 transition-colors py-1 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                </a>
             </nav>
 
             <!-- Tombol Kanan Desktop & Tablet -->
@@ -194,6 +202,10 @@
             <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>
             <a href="#quantum-plus" class="mobile-nav-link block py-2 text-purple-300 hover:text-purple-400 font-medium">Quantum+ (PRO)</a>
             <a href="#belajar" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Belajar</a>
+            <a href="#download" class="mobile-nav-link block py-2 text-emerald-300 hover:text-emerald-400 font-medium flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download Aplikasi
+            </a>
             <div class="pt-4 border-t border-slate-800 flex flex-col gap-3">
                 <a href="login.html" class="w-full min-h-[44px] py-3 text-center text-sm font-medium text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center">Masuk</a>
                 <a href="terminal.html" class="mobile-nav-link w-full min-h-[44px] py-3 text-center text-sm font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center">Buka Terminal Pro</a>
@@ -972,6 +984,54 @@
     </script>
 
 
+    <!-- DOWNLOAD APLIKASI SECTION -->
+    <section id="download" class="py-12 md:py-16 lg:py-20 relative z-10 bg-gradient-to-b from-[#050A1A] to-[#070D22] border-t border-cyan-500/10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 text-center">
+
+            <div class="space-y-3 mb-10 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                    DOWNLOAD APLIKASI
+                </div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+                    Install di <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">Android & iOS</span>
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto">Akses terminal langsung dari home screen — tanpa perlu App Store atau Play Store. Cukup install sekali, buka kapan saja.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 reveal">
+                <div class="glass-card rounded-2xl p-5 border border-emerald-500/20 text-center">
+                    <div class="text-3xl mb-3">📱</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">Android</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Chrome → Menu → "Add to Home Screen"</div>
+                    <button id="btnInstallAndroid" onclick="triggerPWAInstall()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download Android
+                    </button>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-700/40 text-center">
+                    <div class="text-3xl mb-3">🍎</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">iOS / iPhone</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Safari → Share → "Add to Home Screen"</div>
+                    <a href="pwa.html" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2">
+                        Lihat Panduan iOS
+                    </a>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-700/40 text-center">
+                    <div class="text-3xl mb-3">💻</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">Desktop / PC</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Chrome → Klik icon install di address bar</div>
+                    <a href="pwa.html" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2">
+                        Lihat Panduan Desktop
+                    </a>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-slate-600 font-mono">Tidak membutuhkan akun Play Store / App Store. Aplikasi berjalan dari browser dan terupdate otomatis.</p>
+
+        </div>
+    </section>
+
+
     <!-- DISCLAIMER & COPYRIGHT PANEL -->
     <section id="disclaimer" class="py-10 md:py-14 relative z-10 bg-[#030810] border-t border-slate-800/60">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
@@ -1048,6 +1108,8 @@
                     <div><a href="#mesin-kuantum" class="hover:text-cyan-400">Mesin Kuantum</a></div>
                     <div><a href="terminal.html" class="hover:text-cyan-400">Terminal Pro</a></div>
                     <div><a href="pricing.html" class="hover:text-purple-400">Quantum+</a></div>
+                    <div><a href="#download" class="hover:text-emerald-400">Download Aplikasi</a></div>
+                    <div><a href="status.html" class="hover:text-cyan-400">Status API</a></div>
                 </div>
 
                 <!-- Kolom 3 Legal -->
@@ -1281,6 +1343,42 @@
         refreshTicker();
         setInterval(refreshTicker, 30000);
     })();
+    </script>
+    <!-- PWA Install Prompt + Service Worker -->
+    <script>
+    let _deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _deferredInstallPrompt = e;
+        const btn = document.getElementById('btnInstallAndroid');
+        if (btn) {
+            btn.classList.add('animate-pulse');
+            btn.textContent = 'Install Sekarang';
+        }
+    });
+    function triggerPWAInstall() {
+        if (_deferredInstallPrompt) {
+            _deferredInstallPrompt.prompt();
+            _deferredInstallPrompt.userChoice.then(result => {
+                if (result.outcome === 'accepted') {
+                    if (window.showQuantumToast) showQuantumToast('Aplikasi berhasil diinstall!', 'success');
+                }
+                _deferredInstallPrompt = null;
+            });
+        } else {
+            window.location.href = 'pwa.html';
+        }
+    }
+    window.addEventListener('appinstalled', () => {
+        if (window.showQuantumToast) showQuantumToast('Quantum Terminal terinstall di perangkat Anda!', 'success');
+    });
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('[SW] Registered:', reg.scope))
+                .catch(() => {});
+        });
+    }
     </script>
     <script src="assets/js/cookie-consent.js" defer></script>
 </body>

@@ -2,12 +2,12 @@
   "name": "Quantum Institut Market Terminal",
   "short_name": "QuantumTerminal",
   "description": "Terminal Analisa Pasar Kuantum Realtime 9 Mesin & TradingView Chart",
-  "start_url": "/terminal.html",
-  "scope": "/",
+  "start_url": "./terminal.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#050A1A",
-  "theme_color": "#050A1A",
+  "theme_color": "#00E5FF",
   "categories": ["finance", "utilities"],
   "icons": [
     {

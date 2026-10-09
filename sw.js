@@ -4,15 +4,18 @@
  * Fungsi: Enable PWA install prompt + offline fallback caching
  */
 
-const CACHE_NAME = 'quantum-terminal-v1.2.0';
+const CACHE_NAME = 'quantum-terminal-v1.3.0';
 
-// File inti yang di-cache untuk offline
+// File inti yang di-cache untuk offline (relative to SW scope)
 const CORE_ASSETS = [
-    '/terminal.html',
-    '/manifest.json',
-    '/assets/img/icon-192.png',
-    '/assets/img/icon-512.png',
-    '/assets/audio/bgm.mp3',
+    'terminal.html',
+    'index.html',
+    'manifest.json',
+    'assets/img/icon-192.png',
+    'assets/img/icon-512.png',
+    'assets/css/tokens.css',
+    'assets/css/tailwind.css',
+    'assets/js/main.js',
 ];
 
 // ── Install: cache core assets ────────────────────────────────
@@ -90,7 +93,7 @@ self.addEventListener('fetch', (event) => {
                     }
                     // Ultimate fallback for navigation requests
                     if (request.mode === 'navigate') {
-                        return caches.match('/terminal.html');
+                        return caches.match('terminal.html');
                     }
                     return new Response('Network Error', { status: 503 });
                 });
@@ -104,8 +107,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     self.registration.showNotification(data.title || 'Quantum Signal', {
         body: data.body || 'Sinyal baru dari Quantum Institut Terminal',
-        icon: '/assets/img/icon-192.png',
-        badge: '/assets/img/icon-192.png',
+        icon: 'assets/img/icon-192.png',
+        badge: 'assets/img/icon-192.png',
         tag: 'quantum-signal',
         requireInteraction: false,
     });
