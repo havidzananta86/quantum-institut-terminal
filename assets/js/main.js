@@ -30,7 +30,14 @@ function showQuantumToast(message, type = 'info', duration = 3500) {
     const icon = icons[type] || 'ℹ️';
 
     toast.className = `pointer-events-auto p-3.5 rounded-xl border backdrop-blur-xl shadow-xl font-mono text-xs flex items-center gap-3 transition-all duration-300 opacity-0 translate-y-3 ${styleClass}`;
-    toast.innerHTML = `<span class="text-base">${icon}</span><span class="flex-1 leading-relaxed">${message}</span>`;
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'text-base';
+    iconSpan.textContent = icon;
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'flex-1 leading-relaxed';
+    msgSpan.textContent = message;
+    toast.appendChild(iconSpan);
+    toast.appendChild(msgSpan);
 
     container.appendChild(toast);
 

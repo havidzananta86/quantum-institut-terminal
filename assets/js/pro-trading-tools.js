@@ -148,84 +148,7 @@
         status: 'LIVE', // 'LIVE' | 'DELAYED' | 'OFFLINE'
         lastUpdated: new Date(),
         connectLiveWS() {
-            // WebSocket Binance diblok di beberapa region — gunakan QuantumPricePoller sebagai gantinya
-            // Poller sudah diinisialisasi di atas dan mengupdate ticker + _livePrices
-            return;
-            /* eslint-disable no-unreachable */
-            const cryptoStreams = ['btcusdt@miniTicker', 'ethusdt@miniTicker', 'solusdt@miniTicker', 'bnbusdt@miniTicker', 'xrpusdt@miniTicker', 'dogeusdt@miniTicker'];
-            const streamUrls = [
-                `wss://stream.binance.vision/ws/${cryptoStreams.join('/')}`,
-                `wss://stream.binance.com:9443/ws/${cryptoStreams.join('/')}`
-            ];
-
-            let index = 0;
-            const updateStatusUI = (st) => {
-                this.status = st;
-                const statusEl = document.getElementById('tickerFeedStatus');
-                const textEl = document.getElementById('tickerFeedText');
-                const timeEl = document.getElementById('tickerLastTime');
-                
-                if (textEl) textEl.textContent = st;
-                if (timeEl) timeEl.textContent = this.lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                if (statusEl) {
-                    if (st === 'LIVE') {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-emerald-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Feed Realtime Aktif (Binance WebSocket & xaus.com)';
-                    } else if (st === 'DELAYED') {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-amber-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Feed Delayed / Fallback REST Polling';
-                    } else {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-rose-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Koneksi Network Terputus (Offline)';
-                    }
-                }
-            };
-
-            const tryStream = () => {
-                if (index >= streamUrls.length) {
-                    updateStatusUI('DELAYED');
-                    return;
-                }
-                try {
-                    this.ws = new WebSocket(streamUrls[index]);
-                    this.ws.onopen = () => {
-                        updateStatusUI('LIVE');
-                    };
-                    this.ws.onmessage = (e) => {
-                        const data = JSON.parse(e.data);
-                        if (!data.s || !data.c) return;
-                        const sym = data.s.toUpperCase();
-                        const closePrice = parseFloat(data.c);
-                        const openPrice = parseFloat(data.o);
-                        const chg = ((closePrice - openPrice) / openPrice) * 100;
-
-                        const target = this.data.find(d => d.sym === sym);
-                        if (target) {
-                            target.price = closePrice;
-                            target.chg = chg;
-                        }
-                        this.lastUpdated = new Date();
-                        updateStatusUI('LIVE');
-
-                        const formatted = closePrice >= 100 ? closePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : closePrice.toFixed(4);
-                        document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
-                            el.textContent = formatted;
-                        });
-                    };
-                    this.ws.onerror = () => {
-                        index++;
-                        updateStatusUI('DELAYED');
-                        tryStream();
-                    };
-                    this.ws.onclose = () => {
-                        updateStatusUI('OFFLINE');
-                    };
-                } catch (err) {
-                    updateStatusUI('DELAYED');
-                }
-            };
-            tryStream();
+            // WebSocket Binance diblok di beberapa region — QuantumPricePoller digunakan sebagai gantinya
         }
     };
     window.QuantumTickerEngine = QuantumTickerEngine;
@@ -420,8 +343,19 @@
             };
 
             fetchDepth();
-            // Poll every 1.5 seconds for pseudo-realtime depth
             this._pollTimer = setInterval(fetchDepth, 1500);
+
+            if (!this._visHandler) {
+                this._visHandler = () => {
+                    if (document.hidden && this._pollTimer) {
+                        clearInterval(this._pollTimer);
+                        this._pollTimer = null;
+                    } else if (!document.hidden && !this._pollTimer && this.symbol) {
+                        this._pollTimer = setInterval(fetchDepth, 1500);
+                    }
+                };
+                document.addEventListener('visibilitychange', this._visHandler);
+            }
         },
         _generateEstimatedBook(midPrice) {
             const spread = midPrice * 0.0003;

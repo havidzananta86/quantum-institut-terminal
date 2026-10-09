@@ -2659,7 +2659,7 @@ async function fetchCot() {
         }
         renderCot(data);
     } catch(e) {
-        if (biasCard) biasCard.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">COT data tidak tersedia: ${e.message}</div>`;
+        if (biasCard) biasCard.innerHTML = `<div class="py-6 text-center text-slate-500 text-xs">COT data tidak tersedia: ${(e.message||'').replace(/</g,'&lt;')}</div>`;
     }
 }
 
@@ -2938,7 +2938,7 @@ async function fetchNewsImpact() {
             </tr>`;
         }).join('');
     } catch(e) {
-        body.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-slate-500">Error: ${e.message}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-slate-500">Error: ${(e.message||'').replace(/</g,'&lt;')}</td></tr>`;
     }
 }
 
@@ -5183,7 +5183,7 @@ async function sendAiMessage(preset) {
     // Add user bubble
     chatEl.insertAdjacentHTML('beforeend', `
         <div class="flex gap-2.5 justify-end">
-            <div class="ai-bubble-user bg-qi-navy/40 border border-qi-navy/60 rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-[11px] text-white leading-relaxed">${text.replace(/</g,'&lt;')}</div>
+            <div class="ai-bubble-user bg-qi-navy/40 border border-qi-navy/60 rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-[11px] text-white leading-relaxed">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
             <div class="w-7 h-7 rounded-full bg-qi-navy/80 border border-qi-border flex items-center justify-center text-[10px] font-bold text-qi-cyan flex-shrink-0 mt-0.5">U</div>
         </div>`);
     _aiHistory.push({ role: 'user', content: text });

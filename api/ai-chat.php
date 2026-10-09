@@ -27,16 +27,23 @@ if (!$message) { echo json_encode(['error'=>'Pesan kosong']); exit; }
 $ctxBlock = '';
 if (!empty($context['prices']) && is_array($context['prices'])) {
     $ctxBlock .= "\n\n=== DATA PASAR LIVE (dari TradingView Scanner) ===\n";
-    foreach ($context['prices'] as $sym => $d) {
+    foreach (array_slice($context['prices'], 0, 25) as $sym => $d) {
+        if (!is_string($sym) || !preg_match('/^[A-Za-z0-9\/_.:-]{1,30}$/', $sym)) continue;
+        $price = isset($d['price']) ? (float)$d['price'] : 0;
         $chg = isset($d['chgPct']) ? (float)$d['chgPct'] : 0;
-        $ctxBlock .= "{$sym}: " . ($d['price'] ?? '?') . " (" . ($chg >= 0 ? '+' : '') . number_format($chg, 2) . "%)\n";
+        $ctxBlock .= "{$sym}: " . number_format($price, 4) . " (" . ($chg >= 0 ? '+' : '') . number_format($chg, 2) . "%)\n";
     }
 }
 if (!empty($context['signals']) && is_array($context['signals'])) {
     $ctxBlock .= "\n=== SINYAL MTF (TradingView Scanner) ===\n";
-    foreach ($context['signals'] as $sym => $tfs) {
+    foreach (array_slice($context['signals'], 0, 25) as $sym => $tfs) {
+        if (!is_string($sym) || !preg_match('/^[A-Za-z0-9\/_.:-]{1,30}$/', $sym)) continue;
+        if (!is_array($tfs)) continue;
         $line = "{$sym}: ";
-        foreach ($tfs as $tf => $s) { $line .= "{$tf}:{$s} "; }
+        foreach ($tfs as $tf => $s) {
+            if (!preg_match('/^[A-Za-z0-9]{1,10}$/', $tf)) continue;
+            $line .= "{$tf}:" . preg_replace('/[^A-Za-z0-9_ -]/', '', (string)$s) . " ";
+        }
         $ctxBlock .= trim($line) . "\n";
     }
 }

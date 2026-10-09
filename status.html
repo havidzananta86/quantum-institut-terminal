@@ -75,48 +75,38 @@
         </div>`;
     }
 
+    async function checkOne(ep) {
+        try {
+            const opts = { cache: 'no-store', signal: AbortSignal.timeout(8000) };
+            if (ep.name.includes('AI Assistant')) {
+                opts.method = 'POST';
+                opts.headers = { 'Content-Type': 'application/json' };
+                opts.body = JSON.stringify({ message: 'ping' });
+            }
+            const res = await fetch(ep.url, opts);
+            if (ep.expect === 'post_only') {
+                return (res.status >= 200 && res.status < 500) ? 'ok' : 'error';
+            } else if (ep.expect === 'array') {
+                if (res.ok) { const data = await res.json(); return Array.isArray(data) ? 'ok' : 'warn'; }
+            } else if (ep.key && typeof ep.expect === 'string') {
+                if (res.ok) { const data = await res.json(); return data[ep.key] === ep.expect ? 'ok' : 'warn'; }
+            } else if (ep.key && typeof ep.expect === 'function') {
+                if (res.ok) { const data = await res.json(); return ep.expect(data[ep.key]) ? 'ok' : 'warn'; }
+            }
+        } catch(e) {}
+        return 'error';
+    }
+
     async function checkAll() {
         const list = document.getElementById('statusList');
         list.innerHTML = ENDPOINTS.map(ep => renderRow(ep, 'pending')).join('');
 
-        const results = [];
-        for (let i = 0; i < ENDPOINTS.length; i++) {
-            const ep = ENDPOINTS[i];
-            let state = 'error';
-            try {
-                const opts = { cache: 'no-store', signal: AbortSignal.timeout(8000) };
-                if (ep.name.includes('AI Assistant')) {
-                    opts.method = 'POST';
-                    opts.headers = { 'Content-Type': 'application/json' };
-                    opts.body = JSON.stringify({ message: 'ping' });
-                }
-                const res = await fetch(ep.url, opts);
-                if (ep.expect === 'post_only') {
-                    state = (res.status >= 200 && res.status < 500) ? 'ok' : 'error';
-                } else if (ep.expect === 'array') {
-                    if (res.ok) {
-                        const data = await res.json();
-                        state = Array.isArray(data) ? 'ok' : 'warn';
-                    }
-                } else if (ep.key && typeof ep.expect === 'string') {
-                    if (res.ok) {
-                        const data = await res.json();
-                        state = data[ep.key] === ep.expect ? 'ok' : 'warn';
-                    }
-                } else if (ep.key && typeof ep.expect === 'function') {
-                    if (res.ok) {
-                        const data = await res.json();
-                        state = ep.expect(data[ep.key]) ? 'ok' : 'warn';
-                    }
-                }
-            } catch(e) {
-                state = 'error';
-            }
-            results.push(state);
-            // Update that row
+        const results = await Promise.all(ENDPOINTS.map(async (ep, i) => {
+            const state = await checkOne(ep);
             const rows = list.querySelectorAll(':scope > div');
             if (rows[i]) rows[i].outerHTML = renderRow(ep, state);
-        }
+            return state;
+        }));
 
         // Global badge
         const badge = document.getElementById('globalBadge');

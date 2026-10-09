@@ -33,7 +33,9 @@
     <script src="assets/js/lightweight-charts.standalone.production.js"></script>
     <script>
         if (typeof LightweightCharts === 'undefined') {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"><\/script>');
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+            document.head.appendChild(s);
         }
     </script>
 
@@ -919,6 +921,8 @@ document.addEventListener('keydown', e => {
                 <!-- TAB 5: AI RADAR & SIGNALS SCANNER (TIER C - FITUR 29) -->
                 <div id="panelAIScanner" class="space-y-2 hidden">
                     <div class="text-center py-4 text-slate-500 font-mono text-xs">Memuat Radar AI...</div>
+                </div>
+
                 <!-- TAB 6: TRACK RECORD & SIGNAL AUDIT TRAIL (TAHAP 2 - FITUR 3) -->
                 <div id="panelTrackRecord" class="space-y-3 hidden">
                     <div id="trackRecordContainer" class="space-y-2">
@@ -1742,11 +1746,11 @@ document.addEventListener('keydown', e => {
         function renderRealtimeNewsFallback() {
             if (!allNewsItems || allNewsItems.length === 0) {
                 allNewsItems = [
-                    { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Surges Above $68,500 as Institutional Inflows Hit 3-Month High', sentiment: 'bullish', url: 'https://www.coindesk.com' },
-                    { category: 'FOREX/MACRO', source: 'Reuters Finance', title: 'US Dollar Index Holds Firm Ahead of Critical Inflation CPI Report', sentiment: 'neutral', url: 'https://www.reuters.com' },
-                    { category: 'GOLD', source: 'Bloomberg Gold', title: 'Gold (XAU/USD) Rebounds Near $2,655 On Safe-Haven Demand & Rate Cut Expectations', sentiment: 'bullish', url: 'https://www.bloomberg.com' },
-                    { category: 'CRYPTO', source: 'CoinTelegraph', title: 'Ethereum Staking Rewards Yield Surges Ahead of Upcoming Network Upgrade', sentiment: 'bullish', url: 'https://cointelegraph.com' },
-                    { category: 'MACRO', source: 'Financial Times', title: 'Federal Reserve Officials Signal Data-Dependent Approach For Upcoming Rate Decision', sentiment: 'neutral', url: 'https://www.ft.com' }
+                    { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Melanjutkan Konsolidasi di Atas $68,000 Menjelang Rilis Data Inflasi AS', sentiment: 'bullish', url: '#' },
+                    { category: 'GOLD', source: 'Reuters', title: 'Harga Emas Menguji Rekor Tertinggi Baru di Tengah Ketidakpastian Makroekonomi Global', sentiment: 'bullish', url: '#' },
+                    { category: 'FOREX/MACRO', source: 'Reuters Finance', title: 'Dolar AS Menguat Moderat Terhadap Mata Uang Utama Menunggu Pidato Pejabat The Fed', sentiment: 'neutral', url: '#' },
+                    { category: 'CRYPTO', source: 'CoinTelegraph', title: 'Ethereum Staking Rewards Meningkat Menjelang Upgrade Jaringan Mendatang', sentiment: 'bullish', url: '#' },
+                    { category: 'MACRO', source: 'Financial Times', title: 'Pejabat Fed Sinyal Pendekatan Berbasis Data untuk Keputusan Suku Bunga', sentiment: 'neutral', url: '#' }
                 ];
             }
             renderRealtimeNews();
@@ -1820,15 +1824,6 @@ document.addEventListener('keydown', e => {
                 `;
                 container.appendChild(itemDiv);
             });
-        }
-
-        function renderRealtimeNewsFallback() {
-            allNewsItems = [
-                { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Melanjutkan Konsolidasi di Atas $68,000 Menjelang Rilis Data Inflasi AS', sentiment: 'bullish', url: '#' },
-                { category: 'GOLD', source: 'Reuters', title: 'Harga Emas Menguji Rekor Tertinggi Baru di Tengah Ketidakpastian Makroekonomi Global', sentiment: 'bullish', url: '#' },
-                { category: 'FOREX', source: 'Bloomberg', title: 'Dolar AS Menguat Moderat Terhadap Mata Uang Utama Menunggu Pidato Pejabat The Fed', sentiment: 'neutral', url: '#' }
-            ];
-            renderRealtimeNews();
         }
 
         const commandItems = [
