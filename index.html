@@ -87,7 +87,7 @@
 <body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
 
     <!-- PROFESSIONAL LOADING SCREEN -->
-    <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020509]" style="transition:opacity 0.6s ease">
+    <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020509]" style="transition:opacity 0.3s ease">
         <div style="position:relative;width:72px;height:72px;margin-bottom:24px">
             <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,229,255,0.15)"></div>
             <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#00E5FF;animation:qiSpin 1s linear infinite"></div>
@@ -111,20 +111,18 @@
         const msgs = ['INITIALIZING','LOADING ENGINES','SCANNING MARKETS','READY'];
         let p = 0, mi = 0;
         const iv = setInterval(() => {
-            p = Math.min(p + (mi < 3 ? 12 : 4), 100);
+            p = Math.min(p + (mi < 3 ? 18 : 8), 100);
             bar.style.width = p + '%';
             if (p >= 30 && mi === 0) { mi=1; txt.textContent = msgs[1]; }
             if (p >= 60 && mi === 1) { mi=2; txt.textContent = msgs[2]; }
             if (p >= 85 && mi === 2) { mi=3; txt.textContent = msgs[3]; }
             if (p >= 100) clearInterval(iv);
-        }, 60);
+        }, 40);
         window.addEventListener('load', () => {
             bar.style.width = '100%';
-            setTimeout(() => {
-                const l = document.getElementById('qiLoader');
-                l.style.opacity = '0';
-                setTimeout(() => l.style.display = 'none', 600);
-            }, 300);
+            const l = document.getElementById('qiLoader');
+            l.style.opacity = '0';
+            setTimeout(() => l.style.display = 'none', 300);
         });
     })();
     </script>

@@ -408,6 +408,10 @@
 
     // Client says PRO — verify server-side async, show dashboard now (optimistic)
     document.getElementById('qiAccessGate').style.display = 'none';
+    // Show first-run onboarding guide for new PRO users
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof showQiOnboarding === 'function') showQiOnboarding();
+    });
 
     // Async server verify (quietly revoke if token is forged)
     fetch('api/auth.php', {
@@ -426,6 +430,83 @@
         // Network issue — keep optimistic access (local says PRO)
     });
 })();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIRST-RUN ONBOARDING OVERLAY
+     Only shown once — dismissed with localStorage key qi_dashboard_onboarded
+═══════════════════════════════════════════════════════════ -->
+<div id="qiOnboarding" class="hidden fixed inset-0 z-[8000] flex items-center justify-center p-4" style="background:rgba(5,10,26,0.88);backdrop-filter:blur(8px)">
+    <div class="w-full max-w-lg rounded-2xl border border-cyan-500/25 bg-[#0B1220] shadow-2xl overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 pt-6 pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-slate-950 text-sm shrink-0">Q</div>
+                <div>
+                    <div class="text-white font-heading font-bold text-sm leading-tight">Selamat datang di Command Center!</div>
+                    <div class="text-slate-500 text-[11px] mt-0.5">Panduan cepat untuk memulai — bisa dilewati kapan saja</div>
+                </div>
+                <button onclick="dismissQiOnboarding()" class="ml-auto text-slate-600 hover:text-slate-300 transition-colors text-lg leading-none p-1">✕</button>
+            </div>
+        </div>
+
+        <!-- Panel suggestions -->
+        <div class="px-6 py-4">
+            <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-3 font-mono">Mulai dari panel ini:</div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <button onclick="dismissQiOnboarding();switchPanel('panel-overview')" class="text-left p-3 rounded-xl border border-slate-800 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all group">
+                    <div class="text-base mb-1.5">🌐</div>
+                    <div class="text-white text-xs font-semibold group-hover:text-cyan-300 transition-colors">Market Overview</div>
+                    <div class="text-slate-500 text-[10px] mt-0.5 leading-snug">Ringkasan semua pasar dalam satu tampilan</div>
+                </button>
+                <button onclick="dismissQiOnboarding();switchPanel('panel-signal')" class="text-left p-3 rounded-xl border border-slate-800 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all group">
+                    <div class="text-base mb-1.5">📡</div>
+                    <div class="text-white text-xs font-semibold group-hover:text-cyan-300 transition-colors">Signal Matrix</div>
+                    <div class="text-slate-500 text-[10px] mt-0.5 leading-snug">Semua sinyal aktif dari 9 mesin kuantum</div>
+                </button>
+                <button onclick="dismissQiOnboarding();switchPanel('panel-charts')" class="text-left p-3 rounded-xl border border-slate-800 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all group">
+                    <div class="text-base mb-1.5">📈</div>
+                    <div class="text-white text-xs font-semibold group-hover:text-cyan-300 transition-colors">Charts</div>
+                    <div class="text-slate-500 text-[10px] mt-0.5 leading-snug">Analisa chart TradingView realtime</div>
+                </button>
+                <button onclick="dismissQiOnboarding();switchPanel('panel-ai')" class="text-left p-3 rounded-xl border border-slate-800 hover:border-cyan-500/40 hover:bg-cyan-500/5 transition-all group">
+                    <div class="text-base mb-1.5">🤖</div>
+                    <div class="text-white text-xs font-semibold group-hover:text-cyan-300 transition-colors">AI Assistant</div>
+                    <div class="text-slate-500 text-[10px] mt-0.5 leading-snug">Tanya AI untuk analisa pasar instan</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 pb-5 flex items-center gap-3">
+            <button onclick="dismissQiOnboarding();switchPanel('panel-overview')"
+                class="flex-1 py-2.5 rounded-xl font-heading font-bold text-sm text-slate-950 transition-all"
+                style="background:linear-gradient(135deg,#00E5FF,#3B82F6)">
+                Mulai Eksplorasi →
+            </button>
+            <label class="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-500 hover:text-slate-300 transition-colors shrink-0">
+                <input type="checkbox" id="qiOnboardingSkipAlways" class="accent-cyan-500 w-3 h-3">
+                Jangan tampilkan lagi
+            </label>
+        </div>
+    </div>
+</div>
+<script>
+function showQiOnboarding() {
+    try {
+        if (localStorage.getItem('qi_dashboard_onboarded') === '1') return;
+    } catch(e) {}
+    const el = document.getElementById('qiOnboarding');
+    if (el) { el.classList.remove('hidden'); }
+}
+function dismissQiOnboarding() {
+    const el = document.getElementById('qiOnboarding');
+    if (el) el.classList.add('hidden');
+    try {
+        const skipAlways = document.getElementById('qiOnboardingSkipAlways');
+        if (skipAlways && skipAlways.checked) localStorage.setItem('qi_dashboard_onboarded', '1');
+    } catch(e) {}
+}
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
