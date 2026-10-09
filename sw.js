@@ -1,15 +1,17 @@
 /**
  * Quantum Institut Market Terminal — Service Worker
- * Versi: 1.2.0
+ * Versi: 1.4.0
  * Fungsi: Enable PWA install prompt + offline fallback caching
  */
 
-const CACHE_NAME = 'quantum-terminal-v1.3.0';
+const CACHE_NAME = 'quantum-terminal-v1.4.0';
 
 // File inti yang di-cache untuk offline (relative to SW scope)
 const CORE_ASSETS = [
     'terminal.html',
     'index.html',
+    'dashboard.html',
+    'status.html',
     'manifest.json',
     'assets/img/icon-192.png',
     'assets/img/icon-512.png',
