@@ -284,7 +284,33 @@
 <script>
 function qiOpenSidebar()  { document.getElementById('qiNavSidebar').classList.replace('-translate-x-full','translate-x-0'); document.getElementById('qiNavOverlay').classList.remove('hidden'); }
 function qiCloseSidebar() { document.getElementById('qiNavSidebar').classList.replace('translate-x-0','-translate-x-full'); document.getElementById('qiNavOverlay').classList.add('hidden'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSidebar(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        // Close modals first, then sidebar
+        const modals = ['posCalculatorModal','rrToolModal','aiAnalystModal'];
+        let closed = false;
+        for (const id of modals) {
+            const m = document.getElementById(id);
+            if (m && !m.classList.contains('hidden')) {
+                if (id === 'posCalculatorModal' && window.QuantumPositionCalculator) QuantumPositionCalculator.closeModal();
+                else if (id === 'rrToolModal' && window.QuantumRRTool) QuantumRRTool.closeModal();
+                else if (id === 'aiAnalystModal' && window.QuantumAIEngine) QuantumAIEngine.closeModal();
+                closed = true; break;
+            }
+        }
+        if (!closed) qiCloseSidebar();
+        return;
+    }
+    // Number keys 1-6: switch bottom tabs (not when typing in inputs)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const tabKeys = { '1':'analysis','2':'papertrading','3':'orderbook','4':'economicCalendar','5':'news','6':'confluence' };
+    if (tabKeys[e.key] && typeof switchBottomTab === 'function') {
+        e.preventDefault();
+        const tab = tabKeys[e.key];
+        if (typeof switchBottomTabGated === 'function') switchBottomTabGated(tab);
+        else switchBottomTab(tab);
+    }
+});
 </script>
 <!-- ══════════ END SIDEBAR ══════════ -->
 

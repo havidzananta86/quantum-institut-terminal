@@ -507,6 +507,12 @@ function dismissQiOnboarding() {
         if (skipAlways && skipAlways.checked) localStorage.setItem('qi_dashboard_onboarded', '1');
     } catch(e) {}
 }
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        const ob = document.getElementById('qiOnboarding');
+        if (ob && !ob.classList.contains('hidden')) dismissQiOnboarding();
+    }
+});
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════

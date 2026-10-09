@@ -374,26 +374,26 @@
     <div class="w-full py-2.5 sm:py-3 bg-[#0A1128]/90 border-y border-cyan-500/15 overflow-x-auto whitespace-nowrap z-20 no-scrollbar">
         <div class="inline-flex animate-ticker font-mono text-xs sm:text-sm">
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
             </div>
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
             </div>
         </div>
     </div>
@@ -1175,6 +1175,37 @@
     }
     fetchLiveSignal();
     setInterval(fetchLiveSignal, 60000);
+
+    // ── LIVE TICKER BAR — updates both copies via data-ticker-sym ────────────
+    (function() {
+        const FMT = {
+            BTCUSDT: { dec: 0, prefix: '$' }, XAUUSD: { dec: 2, prefix: '$' },
+            ETHUSDT: { dec: 2, prefix: '$' }, EURUSD: { dec: 5, prefix: ''  },
+            SOLUSDT: { dec: 2, prefix: '$' },
+        };
+        async function refreshTicker() {
+            try {
+                const res = await fetch('api/live-price.php?symbols=BTCUSDT,XAUUSD,ETHUSDT,EURUSD,SOLUSDT', { cache: 'no-store' });
+                if (!res.ok) return;
+                const json = await res.json();
+                if (!json.prices) return;
+                for (const [sym, data] of Object.entries(json.prices)) {
+                    if (!data || data.price == null || isNaN(data.price)) continue;
+                    const cfg = FMT[sym]; if (!cfg) continue;
+                    const price = data.price.toLocaleString('en-US', { minimumFractionDigits: cfg.dec, maximumFractionDigits: cfg.dec });
+                    const chg = data.chgPct ?? 0;
+                    const sign = chg >= 0 ? '+' : '';
+                    const cls = chg >= 0 ? 'ticker-price text-emerald-400' : 'ticker-price text-rose-400';
+                    document.querySelectorAll(`[data-ticker-sym="${sym}"] .ticker-price`).forEach(el => {
+                        el.textContent = `${cfg.prefix}${price} (${sign}${chg.toFixed(2)}%)`;
+                        el.className = cls;
+                    });
+                }
+            } catch(e) {}
+        }
+        refreshTicker();
+        setInterval(refreshTicker, 30000);
+    })();
     </script>
     <script src="assets/js/cookie-consent.js" defer></script>
 </body>
