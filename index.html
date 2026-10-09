@@ -733,7 +733,7 @@
                 <p class="text-slate-400 text-xs sm:text-sm">Analisa teknikal dari mesin kuantum — diperbarui setiap penutupan candle harian.</p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
+            <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
 
                 <!-- Idea Card 1 — BUY BTC -->
                 <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
@@ -1175,6 +1175,81 @@
     }
     fetchLiveSignal();
     setInterval(fetchLiveSignal, 60000);
+
+    // ── LIVE TRADE IDEAS — fetch real signals from API ─────────────────────
+    (function() {
+        const IDEAS_CFG = [
+            { sym: 'BTCUSDT', label: 'BTC/USDT', idx: 0 },
+            { sym: 'XAUUSD',  label: 'XAU/USD',  idx: 1 },
+            { sym: 'ETHUSDT', label: 'ETH/USDT', idx: 2 },
+            { sym: 'EURUSD',  label: 'EUR/USD',  idx: 3 },
+            { sym: 'SOLUSDT', label: 'SOL/USDT', idx: 4 },
+        ];
+        async function refreshIdeas() {
+            const grid = document.getElementById('tradeIdeasGrid');
+            if (!grid) return;
+            const cards = grid.querySelectorAll(':scope > div');
+            for (const cfg of IDEAS_CFG) {
+                try {
+                    const res = await fetch(`api/signals.php?symbol=${cfg.sym}&timeframe=H1&engine=MULTI`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (!data.signal || !cards[cfg.idx]) continue;
+                    const sig = data.signal;
+                    const dir = sig.direction || 'WAIT';
+                    const titleEl = cards[cfg.idx].querySelector('.font-heading.font-bold.text-base');
+                    const descEl  = cards[cfg.idx].querySelector('p.text-slate-400');
+                    const badgeEl = cards[cfg.idx].querySelector('span[class*="font-mono font-bold"]');
+                    const timeEl  = cards[cfg.idx].querySelector('span[class*="text-slate-500"]:last-of-type');
+                    if (titleEl) titleEl.textContent = `${cfg.label} — ${sig.label || dir}`;
+                    if (descEl)  descEl.textContent  = sig.reason || sig.summary || descEl.textContent;
+                    if (badgeEl) {
+                        if (dir === 'BUY' || dir === 'STRONG_BUY') {
+                            badgeEl.textContent = '▲ LONG'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded';
+                        } else if (dir === 'SELL' || dir === 'STRONG_SELL') {
+                            badgeEl.textContent = '▼ SHORT'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 rounded';
+                        } else {
+                            badgeEl.textContent = '◆ WAIT'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded';
+                        }
+                    }
+                    if (timeEl && data.timestamp) {
+                        const ago = Math.round((Date.now() / 1000 - new Date(data.timestamp).getTime() / 1000) / 60);
+                        timeEl.textContent = `H1 · ${ago < 60 ? ago + ' mnt lalu' : Math.round(ago / 60) + ' jam lalu'}`;
+                    }
+                } catch(e) {}
+            }
+        }
+        refreshIdeas();
+        setInterval(refreshIdeas, 120000);
+    })();
+
+    // ── STATS COUNT-UP ANIMATION (#3) ───────────────────────────────────────
+    (function() {
+        function animateCount(el, target, suffix, duration) {
+            if (!el) return;
+            const start = 0;
+            const startTime = performance.now();
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const val = Math.round(start + (target - start) * eased);
+                el.textContent = val.toLocaleString('id-ID') + (suffix || '');
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    animateCount(document.getElementById('idxTotalWins'), 1847, '', 1800);
+                    obs.disconnect();
+                }
+            });
+        }, { threshold: 0.3 });
+        const el = document.getElementById('idxTotalWins');
+        if (el) obs.observe(el);
+    })();
 
     // ── LIVE TICKER BAR — updates both copies via data-ticker-sym ────────────
     (function() {

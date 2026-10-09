@@ -21,9 +21,9 @@ function showQuantumToast(message, type = 'info', duration = 3500) {
     };
     const icons = {
         success: '✓',
-        error:   '⚠️',
-        warning: '⚡',
-        info:    'ℹ️'
+        error:   '✕',
+        warning: '⚠',
+        info:    'ℹ'
     };
 
     const styleClass = typeStyles[type] || typeStyles.info;

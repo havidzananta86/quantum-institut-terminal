@@ -136,7 +136,9 @@
         /* ── AI Trading Assistant chat ── */
         #aiChatHistory { scrollbar-width: thin; }
         .ai-bubble-ai  { max-width: min(380px, 80%); }
+        .ai-bubble-ai pre { max-width: 100%; }
         .ai-bubble-user{ max-width: min(340px, 75%); }
+        .ai-msg-wrap:hover .ai-copy-btn { opacity: 1; }
         .typing-dots { display:inline-flex; gap:3px; }
         .typing-dots span { width:5px; height:5px; background:#64748B; border-radius:50%;
             animation:typingBounce .8s ease-in-out infinite; }
@@ -5127,6 +5129,42 @@ async function renderPtMiniChart() {
 // ─── AI Trading Assistant ──────────────────────────────────────────────────
 let _aiHistory = [];
 
+function _renderAiMarkdown(text) {
+    // Escape HTML first
+    let s = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Fenced code blocks ```lang\n...\n```
+    s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) =>
+        `<pre class="bg-slate-900 border border-slate-700 rounded-lg p-3 my-2 overflow-x-auto text-[10px] text-cyan-300 font-mono whitespace-pre">${code.trim()}</pre>`);
+    // Inline code `code`
+    s = s.replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1 rounded text-cyan-300 font-mono text-[10px]">$1</code>');
+    // Bold **text**
+    s = s.replace(/\*\*(.*?)\*\*/g,'<strong class="text-white font-semibold">$1</strong>');
+    // Italic *text*
+    s = s.replace(/\*([^*\n]+)\*/g,'<em class="text-slate-200">$1</em>');
+    // Headers ## and ###
+    s = s.replace(/^### (.+)$/gm,'<div class="font-bold text-cyan-300 mt-2 mb-0.5 text-[11px]">$1</div>');
+    s = s.replace(/^## (.+)$/gm,'<div class="font-bold text-white mt-2.5 mb-1 text-xs">$1</div>');
+    // Bullet lists: lines starting with - or *
+    s = s.replace(/^[*-] (.+)$/gm,'<li class="ml-3 list-disc list-inside text-slate-300">$1</li>');
+    s = s.replace(/(<li[\s\S]+?<\/li>)/g,'<ul class="my-1 space-y-0.5">$1</ul>');
+    // Numbered lists: 1. item
+    s = s.replace(/^\d+\. (.+)$/gm,'<li class="ml-3 list-decimal list-inside text-slate-300">$1</li>');
+    // Line breaks
+    s = s.replace(/\n/g,'<br>');
+    return s;
+}
+
+function _copyAiMsg(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = el.innerText || el.textContent;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.showQuantumToast) showQuantumToast('Balasan disalin', 'success', 1500);
+        }).catch(() => {});
+    }
+}
+
 async function sendAiMessage(preset) {
     const input = document.getElementById('aiChatInput');
     const text  = preset || (input ? input.value.trim() : '');
@@ -5184,15 +5222,16 @@ async function sendAiMessage(preset) {
             if (badge) { badge.textContent = data.model; badge.classList.remove('hidden'); }
         }
 
-        const safe = reply
-            .replace(/</g,'&lt;').replace(/>/g,'&gt;')
-            .replace(/\*\*(.*?)\*\*/g,'<strong class="text-white">$1</strong>')
-            .replace(/\n/g,'<br>');
+        const safe = _renderAiMarkdown(reply);
+        const msgId = 'aim_' + Date.now();
 
         chatEl.insertAdjacentHTML('beforeend', `
-            <div class="flex gap-2.5">
+            <div class="flex gap-2.5 ai-msg-wrap">
                 <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
-                <div class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">${safe}</div>
+                <div class="relative flex-1 min-w-0">
+                    <div id="${msgId}" class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">${safe}</div>
+                    <button onclick="_copyAiMsg('${msgId}')" title="Salin balasan" class="ai-copy-btn absolute top-1.5 right-1.5 opacity-0 transition-opacity p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-800 text-[10px]">⎘</button>
+                </div>
             </div>`);
         _aiHistory.push({ role: 'assistant', content: reply });
         chatEl.scrollTop = chatEl.scrollHeight;
@@ -5908,6 +5947,7 @@ async function fetchCryptoAIOutlook() {
     <span id="sbToggleIcon">‹</span>
 </button>
 
+<script src="assets/js/main.js" defer></script>
 <script src="assets/js/cookie-consent.js" defer></script>
 </body>
 </html>
