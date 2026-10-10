@@ -2,7 +2,7 @@
 <html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="canonical" href="https://quantum-institut.com/dashboard.html">
     <title>Quantum Command Center | Quantum Institut Market Terminal</title>
     <meta name="description" content="Dashboard intelijen pasar real-time: harga live, kekuatan mata uang, kalender ekonomi, dan sembilan mesin analisa Quantum Institut.">
@@ -139,8 +139,8 @@
         /* ── Mobile bottom nav (#37) ── */
         @media (max-width:767px) {
             #mobileBottomNav { display:flex!important; }
-            #floatingTicker { bottom:48px; }
-            footer.flex-shrink-0 { margin-bottom:75px; }
+            #floatingTicker { bottom:calc(48px + env(safe-area-inset-bottom, 0px)); }
+            footer.flex-shrink-0 { margin-bottom:calc(75px + env(safe-area-inset-bottom, 0px)); }
         }
         @media (min-width:768px) {
             #mobileBottomNav { display:none!important; }
@@ -241,7 +241,7 @@
 
         /* ── #47 Toast position fix mobile ── */
         @media (max-width:767px) {
-            #qiToastContainer { top:auto; bottom:60px; right:8px; left:8px; }
+            #qiToastContainer { top:auto; bottom:calc(60px + env(safe-area-inset-bottom, 0px)); right:8px; left:8px; }
             .qi-toast { font-size:11px; }
         }
 
@@ -2600,14 +2600,29 @@ document.addEventListener('keydown', e => {
         </div>
     </div>
 
-    <!-- ══ MOBILE BOTTOM NAV (#37) ══ -->
-    <div id="mobileBottomNav" class="fixed bottom-0 left-0 right-0 z-50 h-12 bg-qi-panel/95 backdrop-blur-sm border-t border-qi-border hidden items-center justify-around px-2">
-        <button onclick="switchPanel('panel-overview')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400 active" data-mob-panel="panel-overview"><span class="text-base">🌐</span><span class="text-[8px]">Overview</span></button>
-        <button onclick="switchPanel('panel-charts')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-charts"><span class="text-base">📈</span><span class="text-[8px]">Charts</span></button>
-        <button onclick="switchPanel('panel-signal')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-signal"><span class="text-base">📡</span><span class="text-[8px]">Signals</span></button>
-        <button onclick="switchPanel('panel-ai')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-ai"><span class="text-base">🤖</span><span class="text-[8px]">AI</span></button>
-        <button onclick="toggleSidebar()" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400"><span class="text-base">☰</span><span class="text-[8px]">Menu</span></button>
-    </div>
+    <!-- ══ MOBILE BOTTOM NAV ══ -->
+    <nav id="mobileBottomNav" class="mobile-bottom-nav md:hidden" aria-label="Navigasi bawah">
+        <button onclick="switchPanel('panel-overview')" class="mobile-bottom-nav-item active" data-mob-panel="panel-overview" title="Market Overview">
+            <span class="nav-icon">🌐</span>
+            <span>Overview</span>
+        </button>
+        <button onclick="switchPanel('panel-charts')" class="mobile-bottom-nav-item" data-mob-panel="panel-charts" title="Charts">
+            <span class="nav-icon">📈</span>
+            <span>Charts</span>
+        </button>
+        <button onclick="switchPanel('panel-signal')" class="mobile-bottom-nav-item" data-mob-panel="panel-signal" title="Signal Matrix">
+            <span class="nav-icon">📡</span>
+            <span>Signals</span>
+        </button>
+        <button onclick="switchPanel('panel-ai')" class="mobile-bottom-nav-item" data-mob-panel="panel-ai" title="AI Assistant">
+            <span class="nav-icon">🤖</span>
+            <span>AI</span>
+        </button>
+        <button onclick="toggleSidebar()" class="mobile-bottom-nav-item" title="Menu">
+            <span class="nav-icon">☰</span>
+            <span>Menu</span>
+        </button>
+    </nav>
 
     <!-- ── Disclaimer Footer ───────────────────────────────────────── -->
     <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-2 px-4 text-center flex-shrink-0 mb-7">
@@ -3138,6 +3153,10 @@ function switchPanel(id) {
         btn.classList.toggle('active', isActive);
         if (!isActive) btn.classList.add('text-slate-400');
         else btn.classList.remove('text-slate-400');
+    });
+    // Update mobile bottom nav active state
+    document.querySelectorAll('#mobileBottomNav [data-mob-panel]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mobPanel === id);
     });
     // Update title bar
     const meta = PANEL_META[id] || { icon:'●', title: id };

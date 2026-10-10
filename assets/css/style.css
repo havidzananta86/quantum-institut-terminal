@@ -285,7 +285,10 @@ section[id] { scroll-margin-top: 80px; }
         display: flex;
         align-items: center;
         justify-content: space-around;
-        padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+        padding-top: 6px;
+        padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        padding-left: 0;
+        padding-right: 0;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
     }
@@ -317,5 +320,5 @@ section[id] { scroll-margin-top: 80px; }
 
 /* Ensure terminal main content doesn't get hidden behind bottom nav on mobile */
 @media (max-width: 767px) {
-    .terminal-main-scroll { padding-bottom: 68px; }
+    .terminal-main-scroll { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
 }
