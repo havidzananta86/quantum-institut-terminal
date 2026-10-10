@@ -65,7 +65,7 @@
 
     <!-- Design tokens + theme (must load before Tailwind) -->
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
-    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -186,7 +186,7 @@
             <!-- Tombol Kanan Desktop & Tablet -->
             <div class="hidden md:flex items-center gap-3 lg:gap-4 shrink-0">
                 <button onclick="toggleQITheme()" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-700 hover:border-cyan-500/30 text-slate-400 hover:text-white transition-colors" title="Toggle theme" aria-label="Toggle light/dark theme">
-                    <span data-theme-icon>☀</span>
+                    <span data-theme-icon><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
                 </button>
                 <a href="login.html" class="min-h-[44px] px-3.5 py-2 flex items-center text-xs lg:text-sm font-medium text-slate-300 hover:text-white border border-transparent hover:border-cyan-500/30 rounded-lg transition-all">
                     Masuk
@@ -199,7 +199,7 @@
 
             <!-- Mobile theme toggle (<768px) -->
             <button onclick="toggleQITheme()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-white" title="Toggle theme" aria-label="Toggle light/dark theme">
-                <span data-theme-icon>☀</span>
+                <span data-theme-icon><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
             </button>
             <!-- Hamburger Button Mobile (<768px) -->
             <button id="mobileMenuBtn" class="md:hidden min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-white flex items-center justify-center focus:outline-none" aria-label="Toggle Menu">
