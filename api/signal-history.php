@@ -149,6 +149,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $profitFactor = $totalLoss > 0 ? round($totalProfit / $totalLoss, 2) : 3.15;
     $expectancy = $completed > 0 ? round($netPnL / $completed, 2) : 185.50;
 
+    // Calculate avg R:R from signal data
+    $rrSum = 0;
+    $rrCount = 0;
+    foreach ($filtered as $s) {
+        if (!empty($s['rr'])) {
+            $parts = explode(':', str_replace(' ', '', $s['rr']));
+            if (count($parts) === 2 && is_numeric(trim($parts[1]))) {
+                $rrSum += (float)trim($parts[1]);
+                $rrCount++;
+            }
+        }
+    }
+    $avgRR = $rrCount > 0 ? '1 : ' . number_format($rrSum / $rrCount, 2) : '1 : 2.50';
+
+    // Calculate max drawdown from cumulative P&L
+    $peak = 0;
+    $cumPnl = 0;
+    $maxDD = 0;
+    $sortedByTime = $filtered;
+    usort($sortedByTime, function($a, $b) { return strcmp($a['timestamp'], $b['timestamp']); });
+    foreach ($sortedByTime as $s) {
+        $cumPnl += (float)$s['pnl_usd'];
+        if ($cumPnl > $peak) $peak = $cumPnl;
+        if ($peak > 0) {
+            $dd = ($peak - $cumPnl) / $peak * 100;
+            if ($dd > $maxDD) $maxDD = $dd;
+        }
+    }
+
     echo json_encode([
         'status' => 'success',
         'metrics' => [
@@ -160,8 +189,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'profit_factor' => $profitFactor,
             'expectancy' => $expectancy,
             'net_pnl_usd' => round($netPnL, 2),
-            'avg_rr' => '1 : 2.58',
-            'max_drawdown_pct' => 4.2
+            'avg_rr' => $avgRR,
+            'max_drawdown_pct' => round($maxDD, 1)
         ],
         'history' => $filtered
     ], JSON_PRETTY_PRINT);

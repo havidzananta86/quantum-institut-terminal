@@ -965,36 +965,66 @@
     </section>
     <script>
     (function(){
-        try {
-            const recs = JSON.parse(localStorage.getItem('qi_signal_records') || '[]');
-            if (!recs.length) return;
-            const closed = recs.filter(r => r.result === 'TP' || r.result === 'SL');
-            if (!closed.length) return;
-            const tp = closed.filter(r => r.result === 'TP').length;
-            const wr = (tp / closed.length * 100).toFixed(1);
-            const el = document.getElementById('idxWinrate');
-            if (el) el.textContent = wr + '%';
-            const elW = document.getElementById('idxTotalWins');
-            if (elW) elW.textContent = tp.toLocaleString();
-            // Best pair
-            const byPair = {};
-            closed.forEach(r => {
-                if (!byPair[r.pair]) byPair[r.pair] = {tp:0,tot:0};
-                byPair[r.pair].tot++;
-                if (r.result==='TP') byPair[r.pair].tp++;
+        var COLORS = ['amber','emerald','cyan','purple','blue','rose','indigo','teal'];
+        function formatSym(s) {
+            if (!s) return s;
+            s = s.replace(/USDT$/,'');
+            return s.replace(/([A-Z]{3})([A-Z]{3})/, '$1/$2');
+        }
+        function renderBars(pairs) {
+            var container = document.getElementById('idxWinrateByPair');
+            if (!container || !pairs.length) return;
+            container.innerHTML = '';
+            pairs.forEach(function(p, i) {
+                var c = COLORS[i % COLORS.length];
+                var row = document.createElement('div');
+                row.className = 'flex items-center gap-3';
+                row.innerHTML = '<span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">' + formatSym(p.symbol) + '</span>'
+                    + '<div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-' + c + '-400 to-' + c + '-500 rounded-full" style="width:' + Math.round(p.wr) + '%"></div></div>'
+                    + '<span class="w-10 text-right text-[11px] font-mono text-' + c + '-400">' + Math.round(p.wr) + '%</span>';
+                container.appendChild(row);
             });
-            let best = null, bestWr = 0;
-            Object.entries(byPair).forEach(([p,v]) => {
-                const w = v.tp/v.tot;
-                if (w > bestWr) { best = p; bestWr = w; }
-            });
-            if (best) {
-                const elB = document.getElementById('idxBestPair');
-                if (elB) elB.textContent = best;
-                const elBW = document.getElementById('idxBestPairWr');
-                if (elBW) elBW.textContent = (bestWr*100).toFixed(1) + '% WR';
-            }
-        } catch(e) {}
+        }
+        fetch('api/signal-history.php', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || data.status !== 'success') return;
+                var m = data.metrics || {};
+                var el;
+                el = document.getElementById('idxWinrate');
+                if (el) el.textContent = (m.win_rate || 0) + '%';
+                el = document.getElementById('idxTotalWins');
+                if (el) el.textContent = (m.wins || 0).toLocaleString();
+                el = document.getElementById('idxAvgRR');
+                if (el) el.textContent = m.avg_rr || '1:2.5';
+                // Stats counter section
+                var cntSignals = document.querySelector('[data-count-to="1247"]');
+                if (cntSignals && m.total_signals) cntSignals.setAttribute('data-count-to', m.total_signals);
+                var cntAcc = document.querySelector('[data-count-to="78"]');
+                if (cntAcc && m.win_rate) cntAcc.setAttribute('data-count-to', Math.round(m.win_rate));
+                // Per-symbol winrate
+                var hist = data.history || [];
+                var byPair = {};
+                hist.forEach(function(s) {
+                    var isTP = (s.status || '').indexOf('HIT TP') !== -1;
+                    var isSL = (s.status || '').indexOf('HIT SL') !== -1;
+                    if (!isTP && !isSL) return;
+                    if (!byPair[s.symbol]) byPair[s.symbol] = { tp: 0, tot: 0 };
+                    byPair[s.symbol].tot++;
+                    if (isTP) byPair[s.symbol].tp++;
+                });
+                var pairs = Object.entries(byPair).map(function(e) {
+                    return { symbol: e[0], wr: e[1].tp / e[1].tot * 100, tot: e[1].tot };
+                }).sort(function(a, b) { return b.wr - a.wr; }).slice(0, 6);
+                if (pairs.length) {
+                    renderBars(pairs);
+                    var best = pairs[0];
+                    el = document.getElementById('idxBestPair');
+                    if (el) el.textContent = formatSym(best.symbol);
+                    el = document.getElementById('idxBestPairWr');
+                    if (el) el.textContent = best.wr.toFixed(1) + '% WR';
+                }
+            }).catch(function() {});
     })();
     </script>
 
@@ -1319,7 +1349,9 @@
         const obs = new IntersectionObserver((entries) => {
             entries.forEach(e => {
                 if (e.isIntersecting) {
-                    animateCount(document.getElementById('idxTotalWins'), 1847, '', 1800);
+                    const el2 = document.getElementById('idxTotalWins');
+                    const val = el2 ? parseInt(el2.textContent.replace(/\D/g,''),10) || 0 : 0;
+                    if (val > 0) animateCount(el2, val, '', 1800);
                     obs.disconnect();
                 }
             });

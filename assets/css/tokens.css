@@ -1,67 +1,96 @@
 /*
  * Quantum Institut — Design Tokens
- * Single source of truth: semua warna brand + tema.
- * Import file ini SEBELUM Tailwind di setiap halaman.
+ * 3 themes: oled-white, oled-black, navy (default)
  *
- * Palet wajib:
- *   Light — bg #FFFFFF, surface #F8FAFC, border #E2E8F0, text #0F172A, navy #1E3A8A, accent #3B82F6
- *   Dark  — bg #0B1220, surface #111C33, border #1E293B, text #E2E8F0, navy #3B82F6, accent #60A5FA
+ * Themes:
+ *   oled-white — bg #FFFFFF, surface #F5F5F5, text #111111 (pure white OLED)
+ *   oled-black — bg #000000, surface #0A0A0A, text #F0F0F0 (pure black OLED)
+ *   navy       — bg #0B1220, surface #111C33, text #E2E8F0 (default dark navy)
  */
 
+/* ── Default: Navy (dark) ── */
 :root {
-  /* ── Structural ── */
-  --qi-bg: #FFFFFF;
-  --qi-surface: #F8FAFC;
-  --qi-card: #F1F5F9;
-  --qi-border: #E2E8F0;
+  --qi-bg: #0B1220;
+  --qi-surface: #111C33;
+  --qi-card: #162040;
+  --qi-panel: #0D1629;
+  --qi-border: #1E293B;
+  --qi-text: #E2E8F0;
+  --qi-text-muted: #94A3B8;
+  --qi-text-inv: #0F172A;
+  --qi-navy: #3B82F6;
+  --qi-accent: #60A5FA;
+  --qi-accent-soft: #1E3A5F;
 
-  /* ── Text ── */
-  --qi-text: #0F172A;
-  --qi-text-muted: #475569;
-  --qi-text-inv: #F8FAFC;
-
-  /* ── Brand ── */
-  --qi-navy: #1E3A8A;
-  --qi-accent: #3B82F6;
-  --qi-accent-soft: #DBEAFE;
-
-  /* ── Semantic (stabil di kedua mode) ── */
   --qi-cyan: #00E5FF;
   --qi-purple: #7C4DFF;
   --qi-green: #10B981;
   --qi-red: #EF4444;
   --qi-gold: #F59E0B;
 
-  /* ── Scrollbar ── */
-  --qi-scrollbar: #CBD5E1;
+  --qi-scrollbar: #1E293B;
+  --qi-chart-bg: #0B1220;
+  --qi-chart-grid: #0F1A2E;
+  --qi-chart-text: #64748B;
+  --qi-chart-crosshair: #00E5FF55;
 
-  /* ── Transitions ── */
-  --qi-theme-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  --qi-theme-transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  color-scheme: dark;
 }
 
-/* ── Dark: System preference ── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --qi-bg: #0B1220;
-    --qi-surface: #111C33;
-    --qi-card: #162040;
-    --qi-border: #1E293B;
-    --qi-text: #E2E8F0;
-    --qi-text-muted: #94A3B8;
-    --qi-text-inv: #0F172A;
-    --qi-navy: #3B82F6;
-    --qi-accent: #60A5FA;
-    --qi-accent-soft: #1E3A5F;
-    --qi-scrollbar: #1E293B;
-    color-scheme: dark;
-  }
+/* ── OLED Black theme ── */
+:root[data-theme="oled-black"] {
+  --qi-bg: #000000;
+  --qi-surface: #0A0A0A;
+  --qi-card: #111111;
+  --qi-panel: #050505;
+  --qi-border: #1A1A1A;
+  --qi-text: #F0F0F0;
+  --qi-text-muted: #888888;
+  --qi-text-inv: #000000;
+  --qi-navy: #4A90D9;
+  --qi-accent: #60A5FA;
+  --qi-accent-soft: #1A2A4A;
+  --qi-scrollbar: #222222;
+  --qi-chart-bg: #000000;
+  --qi-chart-grid: #111111;
+  --qi-chart-text: #666666;
+  --qi-chart-crosshair: #00E5FF55;
+  color-scheme: dark;
 }
 
-/* ── Dark: Explicit toggle ── */
-:root[data-theme="dark"] {
+/* ── OLED White theme ── */
+:root[data-theme="oled-white"] {
+  --qi-bg: #FFFFFF;
+  --qi-surface: #F5F5F5;
+  --qi-card: #EEEEEE;
+  --qi-panel: #FAFAFA;
+  --qi-border: #D4D4D4;
+  --qi-text: #111111;
+  --qi-text-muted: #555555;
+  --qi-text-inv: #FFFFFF;
+  --qi-navy: #1E3A8A;
+  --qi-accent: #2563EB;
+  --qi-accent-soft: #DBEAFE;
+  --qi-scrollbar: #CCCCCC;
+  --qi-chart-bg: #FFFFFF;
+  --qi-chart-grid: #E8E8E8;
+  --qi-chart-text: #555555;
+  --qi-chart-crosshair: #2563EB55;
+  --qi-cyan: #0891B2;
+  --qi-purple: #6D28D9;
+  --qi-green: #059669;
+  --qi-red: #DC2626;
+  --qi-gold: #D97706;
+  color-scheme: light;
+}
+
+/* ── Navy (explicit toggle, same as default) ── */
+:root[data-theme="navy"] {
   --qi-bg: #0B1220;
   --qi-surface: #111C33;
   --qi-card: #162040;
+  --qi-panel: #0D1629;
   --qi-border: #1E293B;
   --qi-text: #E2E8F0;
   --qi-text-muted: #94A3B8;
@@ -70,6 +99,10 @@
   --qi-accent: #60A5FA;
   --qi-accent-soft: #1E3A5F;
   --qi-scrollbar: #1E293B;
+  --qi-chart-bg: #0B1220;
+  --qi-chart-grid: #0F1A2E;
+  --qi-chart-text: #64748B;
+  --qi-chart-crosshair: #00E5FF55;
   color-scheme: dark;
 }
 
@@ -84,100 +117,177 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--qi-scrollbar) !important; }
 *  { scrollbar-color: var(--qi-scrollbar) transparent; }
 
-/* ── Light-mode overrides for hardcoded dark-only classes ── */
-:root[data-theme="light"] .text-white,
-:root[data-theme="light"] .text-slate-200,
-:root[data-theme="light"] .text-slate-100 {
+/* ── Light-mode overrides for hardcoded dark-only Tailwind classes ── */
+:root[data-theme="oled-white"] .text-white,
+:root[data-theme="oled-white"] .text-slate-200,
+:root[data-theme="oled-white"] .text-slate-100 {
   color: var(--qi-text);
 }
-:root[data-theme="light"] .text-slate-300,
-:root[data-theme="light"] .text-slate-400 {
+:root[data-theme="oled-white"] .text-slate-300,
+:root[data-theme="oled-white"] .text-slate-400 {
   color: var(--qi-text-muted);
 }
-:root[data-theme="light"] .text-slate-500,
-:root[data-theme="light"] .text-slate-600 {
+:root[data-theme="oled-white"] .text-slate-500,
+:root[data-theme="oled-white"] .text-slate-600 {
   color: #64748B;
 }
-:root[data-theme="light"] .border-slate-700,
-:root[data-theme="light"] .border-slate-800 {
+:root[data-theme="oled-white"] .border-slate-700,
+:root[data-theme="oled-white"] .border-slate-800 {
   border-color: var(--qi-border);
 }
-:root[data-theme="light"] .bg-slate-800,
-:root[data-theme="light"] .bg-slate-900 {
+:root[data-theme="oled-white"] .bg-slate-800,
+:root[data-theme="oled-white"] .bg-slate-900,
+:root[data-theme="oled-white"] .bg-slate-950 {
   background-color: var(--qi-surface);
 }
+:root[data-theme="oled-white"] .bg-\[\#050A1A\],
+:root[data-theme="oled-white"] .bg-\[\#040810\],
+:root[data-theme="oled-white"] .bg-\[\#070D22\],
+:root[data-theme="oled-white"] .bg-\[\#0B1220\] {
+  background-color: var(--qi-bg) !important;
+}
+:root[data-theme="oled-white"] .border-cyan-500\/10,
+:root[data-theme="oled-white"] .border-cyan-500\/20 {
+  border-color: var(--qi-border);
+}
 
-/* Same overrides for system-detected light (no data-theme set) */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .text-white,
-  :root:not([data-theme="dark"]) .text-slate-200,
-  :root:not([data-theme="dark"]) .text-slate-100 {
-    color: var(--qi-text);
-  }
-  :root:not([data-theme="dark"]) .text-slate-300,
-  :root:not([data-theme="dark"]) .text-slate-400 {
-    color: var(--qi-text-muted);
-  }
-  :root:not([data-theme="dark"]) .text-slate-500,
-  :root:not([data-theme="dark"]) .text-slate-600 {
-    color: #64748B;
-  }
-  :root:not([data-theme="dark"]) .border-slate-700,
-  :root:not([data-theme="dark"]) .border-slate-800 {
-    border-color: var(--qi-border);
-  }
-  :root:not([data-theme="dark"]) .bg-slate-800,
-  :root:not([data-theme="dark"]) .bg-slate-900 {
-    background-color: var(--qi-surface);
-  }
+/* OLED Black overrides for hardcoded navy backgrounds */
+:root[data-theme="oled-black"] .bg-\[\#050A1A\],
+:root[data-theme="oled-black"] .bg-\[\#040810\],
+:root[data-theme="oled-black"] .bg-\[\#070D22\],
+:root[data-theme="oled-black"] .bg-\[\#0B1220\] {
+  background-color: var(--qi-bg) !important;
 }
 
 /* ── Nav items ── */
-:root[data-theme="light"] .nav-item.active {
+:root[data-theme="oled-white"] .nav-item.active {
   background: rgba(30, 58, 138, 0.08);
   color: var(--qi-navy);
   border-left-color: var(--qi-navy);
 }
-:root[data-theme="light"] .nav-item:hover {
+:root[data-theme="oled-white"] .nav-item:hover {
   background: rgba(30, 58, 138, 0.05);
   color: var(--qi-text);
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .nav-item.active {
-    background: rgba(30, 58, 138, 0.08);
-    color: var(--qi-navy);
-    border-left-color: var(--qi-navy);
-  }
-  :root:not([data-theme="dark"]) .nav-item:hover {
-    background: rgba(30, 58, 138, 0.05);
-    color: var(--qi-text);
-  }
-}
 
-/* Dark nav (system preference) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .nav-item.active {
-    background: rgba(0, 229, 255, 0.12);
-    color: #00E5FF;
-    border-left-color: #00E5FF;
-  }
-  :root:not([data-theme="light"]) .nav-item:hover {
-    background: rgba(0, 229, 255, 0.07);
-    color: #fff;
-  }
-}
-/* Dark nav (explicit toggle) */
-:root[data-theme="dark"] .nav-item.active {
+:root[data-theme="navy"] .nav-item.active,
+:root[data-theme="oled-black"] .nav-item.active {
   background: rgba(0, 229, 255, 0.12);
   color: #00E5FF;
   border-left-color: #00E5FF;
 }
-:root[data-theme="dark"] .nav-item:hover {
+:root[data-theme="navy"] .nav-item:hover,
+:root[data-theme="oled-black"] .nav-item:hover {
   background: rgba(0, 229, 255, 0.07);
   color: #fff;
 }
 
-/* ── Reduced motion (#52) ── */
+/* ── glass-card theming ── */
+:root[data-theme="oled-white"] .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: var(--qi-border);
+}
+:root[data-theme="oled-black"] .glass-card {
+  background: rgba(10, 10, 10, 0.9);
+  border-color: var(--qi-border);
+}
+
+/* ── Missing utility classes for pre-built Tailwind ── */
+/* Base utilities not in pre-built CSS */
+.bg-qi-surface    { background-color: var(--qi-surface); }
+.bg-qi-navy       { background-color: var(--qi-navy); }
+.text-qi-text     { color: var(--qi-text); }
+.border-qi-gold   { border-color: var(--qi-gold); }
+.border-qi-green  { border-color: var(--qi-green); }
+.border-qi-purple { border-color: var(--qi-purple); }
+.border-qi-red    { border-color: var(--qi-red); }
+
+/* Background opacity variants */
+.bg-qi-bg\/90       { background-color: color-mix(in srgb, var(--qi-bg) 90%, transparent); }
+.bg-qi-card\/60     { background-color: color-mix(in srgb, var(--qi-card) 60%, transparent); }
+.bg-qi-panel\/40    { background-color: color-mix(in srgb, var(--qi-panel) 40%, transparent); }
+.bg-qi-panel\/60    { background-color: color-mix(in srgb, var(--qi-panel) 60%, transparent); }
+.bg-qi-panel\/80    { background-color: color-mix(in srgb, var(--qi-panel) 80%, transparent); }
+.bg-qi-navy\/40     { background-color: color-mix(in srgb, var(--qi-navy) 40%, transparent); }
+.bg-qi-navy\/80     { background-color: color-mix(in srgb, var(--qi-navy) 80%, transparent); }
+.bg-qi-cyan\/5      { background-color: color-mix(in srgb, var(--qi-cyan) 5%, transparent); }
+.bg-qi-cyan\/10     { background-color: color-mix(in srgb, var(--qi-cyan) 10%, transparent); }
+.bg-qi-cyan\/15     { background-color: color-mix(in srgb, var(--qi-cyan) 15%, transparent); }
+.bg-qi-cyan\/20     { background-color: color-mix(in srgb, var(--qi-cyan) 20%, transparent); }
+.bg-qi-cyan\/80     { background-color: color-mix(in srgb, var(--qi-cyan) 80%, transparent); }
+.bg-qi-green\/5     { background-color: color-mix(in srgb, var(--qi-green) 5%, transparent); }
+.bg-qi-green\/8     { background-color: color-mix(in srgb, var(--qi-green) 8%, transparent); }
+.bg-qi-green\/10    { background-color: color-mix(in srgb, var(--qi-green) 10%, transparent); }
+.bg-qi-green\/15    { background-color: color-mix(in srgb, var(--qi-green) 15%, transparent); }
+.bg-qi-green\/20    { background-color: color-mix(in srgb, var(--qi-green) 20%, transparent); }
+.bg-qi-red\/5       { background-color: color-mix(in srgb, var(--qi-red) 5%, transparent); }
+.bg-qi-red\/8       { background-color: color-mix(in srgb, var(--qi-red) 8%, transparent); }
+.bg-qi-red\/10      { background-color: color-mix(in srgb, var(--qi-red) 10%, transparent); }
+.bg-qi-red\/15      { background-color: color-mix(in srgb, var(--qi-red) 15%, transparent); }
+.bg-qi-red\/20      { background-color: color-mix(in srgb, var(--qi-red) 20%, transparent); }
+.bg-qi-red\/30      { background-color: color-mix(in srgb, var(--qi-red) 30%, transparent); }
+.bg-qi-gold\/5      { background-color: color-mix(in srgb, var(--qi-gold) 5%, transparent); }
+.bg-qi-gold\/15     { background-color: color-mix(in srgb, var(--qi-gold) 15%, transparent); }
+.bg-qi-gold\/25     { background-color: color-mix(in srgb, var(--qi-gold) 25%, transparent); }
+.bg-qi-purple\/5    { background-color: color-mix(in srgb, var(--qi-purple) 5%, transparent); }
+
+/* Border opacity variants */
+.border-qi-border\/20 { border-color: color-mix(in srgb, var(--qi-border) 20%, transparent); }
+.border-qi-border\/30 { border-color: color-mix(in srgb, var(--qi-border) 30%, transparent); }
+.border-qi-border\/40 { border-color: color-mix(in srgb, var(--qi-border) 40%, transparent); }
+.border-qi-border\/50 { border-color: color-mix(in srgb, var(--qi-border) 50%, transparent); }
+.border-qi-border\/60 { border-color: color-mix(in srgb, var(--qi-border) 60%, transparent); }
+.border-qi-cyan\/20   { border-color: color-mix(in srgb, var(--qi-cyan) 20%, transparent); }
+.border-qi-cyan\/30   { border-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }
+.border-qi-cyan\/40   { border-color: color-mix(in srgb, var(--qi-cyan) 40%, transparent); }
+.border-qi-cyan\/50   { border-color: color-mix(in srgb, var(--qi-cyan) 50%, transparent); }
+.border-qi-navy\/60   { border-color: color-mix(in srgb, var(--qi-navy) 60%, transparent); }
+.border-qi-green\/20  { border-color: color-mix(in srgb, var(--qi-green) 20%, transparent); }
+.border-qi-green\/30  { border-color: color-mix(in srgb, var(--qi-green) 30%, transparent); }
+.border-qi-green\/40  { border-color: color-mix(in srgb, var(--qi-green) 40%, transparent); }
+.border-qi-gold\/30   { border-color: color-mix(in srgb, var(--qi-gold) 30%, transparent); }
+.border-qi-gold\/40   { border-color: color-mix(in srgb, var(--qi-gold) 40%, transparent); }
+.border-qi-purple\/30 { border-color: color-mix(in srgb, var(--qi-purple) 30%, transparent); }
+.border-qi-purple\/40 { border-color: color-mix(in srgb, var(--qi-purple) 40%, transparent); }
+.border-qi-red\/20    { border-color: color-mix(in srgb, var(--qi-red) 20%, transparent); }
+.border-qi-red\/30    { border-color: color-mix(in srgb, var(--qi-red) 30%, transparent); }
+.border-qi-red\/40    { border-color: color-mix(in srgb, var(--qi-red) 40%, transparent); }
+
+/* Text opacity variants */
+.text-qi-green\/60  { color: color-mix(in srgb, var(--qi-green) 60%, transparent); }
+.text-qi-green\/70  { color: color-mix(in srgb, var(--qi-green) 70%, transparent); }
+.text-qi-red\/60    { color: color-mix(in srgb, var(--qi-red) 60%, transparent); }
+.text-qi-red\/70    { color: color-mix(in srgb, var(--qi-red) 70%, transparent); }
+
+/* Gradient stops */
+.to-qi-purple\/60   { --tw-gradient-to: color-mix(in srgb, var(--qi-purple) 60%, transparent); }
+.to-qi-purple\/80   { --tw-gradient-to: color-mix(in srgb, var(--qi-purple) 80%, transparent); }
+.from-qi-cyan\/20   { --tw-gradient-from: color-mix(in srgb, var(--qi-cyan) 20%, transparent); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent); }
+
+/* Hover variants */
+.hover\:bg-qi-surface:hover      { background-color: var(--qi-surface); }
+.hover\:bg-qi-cyan\/5:hover      { background-color: color-mix(in srgb, var(--qi-cyan) 5%, transparent); }
+.hover\:bg-qi-cyan\/10:hover     { background-color: color-mix(in srgb, var(--qi-cyan) 10%, transparent); }
+.hover\:bg-qi-cyan\/20:hover     { background-color: color-mix(in srgb, var(--qi-cyan) 20%, transparent); }
+.hover\:bg-qi-green\/5:hover     { background-color: color-mix(in srgb, var(--qi-green) 5%, transparent); }
+.hover\:bg-qi-green\/20:hover    { background-color: color-mix(in srgb, var(--qi-green) 20%, transparent); }
+.hover\:bg-qi-gold\/5:hover      { background-color: color-mix(in srgb, var(--qi-gold) 5%, transparent); }
+.hover\:bg-qi-gold\/25:hover     { background-color: color-mix(in srgb, var(--qi-gold) 25%, transparent); }
+.hover\:bg-qi-purple\/5:hover    { background-color: color-mix(in srgb, var(--qi-purple) 5%, transparent); }
+.hover\:bg-qi-red\/30:hover      { background-color: color-mix(in srgb, var(--qi-red) 30%, transparent); }
+.hover\:border-qi-cyan:hover     { border-color: var(--qi-cyan); }
+.hover\:border-qi-cyan\/30:hover { border-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }
+.hover\:border-qi-cyan\/40:hover { border-color: color-mix(in srgb, var(--qi-cyan) 40%, transparent); }
+.hover\:border-qi-green\/40:hover{ border-color: color-mix(in srgb, var(--qi-green) 40%, transparent); }
+.hover\:border-qi-gold\/30:hover { border-color: color-mix(in srgb, var(--qi-gold) 30%, transparent); }
+.hover\:border-qi-gold\/40:hover { border-color: color-mix(in srgb, var(--qi-gold) 40%, transparent); }
+.hover\:border-qi-purple\/30:hover{ border-color: color-mix(in srgb, var(--qi-purple) 30%, transparent); }
+.hover\:border-qi-purple\/40:hover{ border-color: color-mix(in srgb, var(--qi-purple) 40%, transparent); }
+.hover\:text-qi-cyan:hover       { color: var(--qi-cyan); }
+.hover\:from-qi-cyan\/20:hover   { --tw-gradient-from: color-mix(in srgb, var(--qi-cyan) 20%, transparent); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent); }
+.hover\:to-qi-purple\/60:hover   { --tw-gradient-to: color-mix(in srgb, var(--qi-purple) 60%, transparent); }
+
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
