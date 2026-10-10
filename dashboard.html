@@ -698,10 +698,10 @@ document.addEventListener('keydown', e => {
                 <button onclick="document.getElementById('themeDropdown').classList.toggle('hidden')" class="w-8 h-8 flex items-center justify-center rounded-lg border border-qi-border hover:border-qi-cyan text-sm transition-colors" title="Ganti tema" aria-label="Pilih tema warna">
                     <span data-theme-icon>🌊</span>
                 </button>
-                <div id="themeDropdown" class="hidden absolute right-0 top-10 w-36 rounded-xl shadow-2xl overflow-hidden z-50" style="background:var(--qi-card);border:1px solid var(--qi-border)">
-                    <button onclick="setQITheme('navy');document.getElementById('themeDropdown').classList.add('hidden')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🌊</span><span class="font-semibold">Navy</span></button>
-                    <button onclick="setQITheme('oled-black');document.getElementById('themeDropdown').classList.add('hidden')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🖤</span><span class="font-semibold">OLED Black</span></button>
-                    <button onclick="setQITheme('oled-white');document.getElementById('themeDropdown').classList.add('hidden')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>☀</span><span class="font-semibold">OLED White</span></button>
+                <div id="themeDropdown" class="hidden absolute right-0 top-10 w-36 rounded-xl shadow-2xl overflow-hidden z-50" style="background:var(--qi-card);border:1px solid var(--qi-border)" onclick="event.stopPropagation()">
+                    <button onclick="applyThemeChoice('navy')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🌊</span><span class="font-semibold">Navy</span></button>
+                    <button onclick="applyThemeChoice('oled-black')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🖤</span><span class="font-semibold">OLED Black</span></button>
+                    <button onclick="applyThemeChoice('oled-white')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>☀</span><span class="font-semibold">OLED White</span></button>
                 </div>
             </div>
         </div>
@@ -6041,11 +6041,22 @@ async function fetchCryptoAIOutlook() {
 </script>
 <script src="assets/js/main.js?v=1.4.0" defer></script>
 <script>
-// Theme change: re-init chart + close dropdown on outside click
+// Apply theme choice: close dropdown first, then change theme after DOM settles
+window.applyThemeChoice = function(theme) {
+    var dd = document.getElementById('themeDropdown');
+    if (dd) dd.classList.add('hidden');
+    setTimeout(function() {
+        if (typeof setQITheme === 'function') setQITheme(theme);
+    }, 10);
+};
+// Theme change: re-init chart after theme applies
 window.addEventListener('qi-theme-change', function(e) {
-    if (typeof initLwChart === 'function') initLwChart();
-    if (typeof loadTvTaWidget === 'function' && typeof _outlookSym !== 'undefined') loadTvTaWidget(_outlookSym);
+    setTimeout(function() {
+        if (typeof initLwChart === 'function') initLwChart();
+        if (typeof loadTvTaWidget === 'function' && typeof _outlookSym !== 'undefined') loadTvTaWidget(_outlookSym);
+    }, 50);
 });
+// Close dropdown on outside click
 document.addEventListener('click', function(e) {
     var wrap = document.getElementById('themeMenuWrap');
     var dd = document.getElementById('themeDropdown');
