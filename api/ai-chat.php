@@ -105,12 +105,24 @@ curl_setopt_array($ch, [
         'temperature' => 0.65,
     ]),
 ]);
-$result = curl_exec($ch);
-$http   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlErr = curl_error($ch);
+$result  = curl_exec($ch);
+$http    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 if (!$result || $http !== 200) {
-    echo json_encode(['reply'=>'AI tidak tersedia saat ini, coba beberapa saat lagi.','error'=>true]);
+    $errBody = $result ? substr($result, 0, 300) : '';
+    error_log('[AI Chat] Groq error http=' . $http . ' curl=' . $curlErr . ' body=' . $errBody);
+    if ($http === 429) {
+        $reply = 'Batas request AI tercapai, coba lagi dalam beberapa menit.';
+    } elseif ($http === 401) {
+        $reply = 'GROQ_API_KEY tidak valid. Periksa config/api_keys.php di server.';
+    } elseif ($curlErr) {
+        $reply = 'Koneksi ke AI gagal. Coba lagi nanti.';
+    } else {
+        $reply = 'AI tidak tersedia saat ini (HTTP ' . $http . '), coba beberapa saat lagi.';
+    }
+    echo json_encode(['reply' => $reply, 'error' => true]);
     exit;
 }
 
