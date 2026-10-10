@@ -45,7 +45,7 @@
   if (saved && THEMES.indexOf(saved) !== -1) {
     apply(saved);
   } else {
-    apply('navy');
+    apply('oled-black');
   }
 
   // Global cycle function — cycles: navy → oled-black → oled-white → navy
