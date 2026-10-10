@@ -8,6 +8,8 @@ Disallow: /database/
 Disallow: /.claude/
 Disallow: /node_modules/
 Disallow: /tests/
+Disallow: /admin.html
+Disallow: /profile.html
 
 User-agent: AhrefsBot
 Crawl-delay: 10

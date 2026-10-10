@@ -55,6 +55,12 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://quantuminstitut.market/status.html</loc>
+    <lastmod>2026-10-10</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://quantuminstitut.market/pwa.html</loc>
     <lastmod>2026-10-09</lastmod>
     <changefreq>monthly</changefreq>

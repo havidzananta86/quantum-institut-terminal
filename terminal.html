@@ -21,10 +21,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="assets/css/tokens.css">
-    <script src="assets/js/theme-toggle.js"></script>
-    <link rel="stylesheet" href="assets/css/tailwind.css">
-    <script src="assets/js/error-tracker.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- TRADINGVIEW OFFICIAL ADVANCED CHARTING API (REALTIME DATA) -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -42,9 +42,9 @@
     <!-- MICROSOFT SIGNALR CLIENT (FOR BIQUOTE REALTIME FEED) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
     <link rel="stylesheet" href="assets/css/terminal.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.0">
 
     <style>
         body { background-color: var(--qi-bg, #050A1A); color: var(--qi-text, #E2E8F0); font-family: 'Inter', sans-serif; }
@@ -1087,9 +1087,9 @@ document.addEventListener('keydown', e => {
     </div>
 
     <!-- JS Core & Script Chart Sync Manager -->
-    <script src="assets/js/auth.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/ticker.js"></script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/ticker.js?v=1.4.0"></script>
     <script src="assets/js/chart-init.js"></script>
     <script>
         // Check / init Auth Session State — shows registration gate if not logged in
@@ -2388,7 +2388,7 @@ document.addEventListener('keydown', e => {
     </div>
 
     <!-- PRO TRADING TOOLS SCRIPT SUITE -->
-    <script src="assets/js/pro-trading-tools.js"></script>
+    <script src="assets/js/pro-trading-tools.js?v=1.4.0"></script>
     <script>
         // ── TikTok Audio Playlist State ──────────────────────────────
         const _bgmPlaylist = [
@@ -2573,7 +2573,6 @@ document.addEventListener('keydown', e => {
                     e.preventDefault();
                     _pwaInstallPrompt = e;
                     if (installBtn) installBtn.classList.remove('hidden');
-                    console.log('[PWA] Install prompt captured ✅');
                 });
 
                 // Also listen for successful install
@@ -2583,7 +2582,6 @@ document.addEventListener('keydown', e => {
                     if (window.showQuantumToast) {
                         window.showQuantumToast('📲 Quantum Terminal berhasil diinstall!', 'success');
                     }
-                    console.log('[PWA] App installed successfully ✅');
                 });
             }
         })();
@@ -2624,8 +2622,6 @@ document.addEventListener('keydown', e => {
 
             try {
                 const result = await _pwaInstallPrompt.prompt();
-                console.log('[PWA] User choice:', result.outcome);
-
                 if (result.outcome === 'accepted') {
                     _pwaInstallPrompt = null;
                     closePwaInstallModal();
@@ -2663,9 +2659,7 @@ document.addEventListener('keydown', e => {
         // ── Service Worker Registration ───────────────────────────
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('[SW] Registered:', reg.scope))
-                    .catch(err => console.log('[SW] Registration failed (optional):', err));
+                navigator.serviceWorker.register('sw.js').catch(() => {});
             });
         }
     </script>
@@ -2740,7 +2734,7 @@ document.addEventListener('keydown', e => {
 })();
 </script>
 
-<script src="assets/js/cookie-consent.js" defer></script>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>
 

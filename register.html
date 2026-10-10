@@ -8,12 +8,12 @@
     <meta name="description" content="Daftar akun Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#050A1A">
-    <link rel="stylesheet" href="assets/css/tokens.css">
-    <script src="assets/js/theme-toggle.js"></script>
-    <link rel="stylesheet" href="assets/css/tailwind.css">
-    <script src="assets/js/error-tracker.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
     <style>
         .input-quantum {
             background: rgba(5, 10, 26, 0.8);
@@ -102,7 +102,7 @@
         © 2026 Quantum Institut Market Terminal.
     </footer>
 
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
     <script>
         function toggleRegPassword() {
             const el = document.getElementById('regPassword');
@@ -143,6 +143,7 @@
 
             // Validasi klien
             if (!name || !email) { showQuantumToast('Nama dan email wajib diisi.', 'error'); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showQuantumToast('Format email tidak valid.', 'error'); return; }
             if (password.length < 8) {
                 pwInput.classList.add('invalid');
                 showQuantumToast('Kata sandi minimal 8 karakter.', 'error');
@@ -185,6 +186,6 @@
             showQuantumToast(msg, 'error');
         }
     </script>
-    <script src="assets/js/cookie-consent.js" defer></script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

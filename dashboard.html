@@ -15,15 +15,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <!-- Design tokens + theme (must load before Tailwind) -->
-    <link rel="stylesheet" href="assets/css/tokens.css">
-    <script src="assets/js/theme-toggle.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
 
     <!-- Error Tracker — load first to catch all JS errors -->
-    <script src="assets/js/error-tracker.js"></script>
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <!-- Auth must load before page renders so gate check fires immediately -->
-    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -1074,8 +1074,9 @@ document.addEventListener('keydown', e => {
                             class="chart-tab-btn text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-slate-400 hover:text-white">
                             Riwayat
                         </button>
+                        <!-- Jurnal tab tersembunyi sampai fitur siap -->
                         <button onclick="setChartTab('journal')" data-ctab="journal"
-                            class="chart-tab-btn text-[10px] font-semibold px-4 py-2 text-slate-400 hover:text-white">
+                            class="chart-tab-btn text-[10px] font-semibold px-4 py-2 text-slate-400 hover:text-white hidden">
                             Jurnal
                         </button>
                         <div class="ml-auto px-3 flex items-center gap-3">
@@ -3575,7 +3576,7 @@ async function chartScreenshot() {
             imageData = canvas.toDataURL('image/png');
         } catch(e) {}
     }
-    if (!imageData) { alert('Chart screenshot tidak tersedia.'); return; }
+    if (!imageData) { showQuantumToast('Chart screenshot tidak tersedia.', 'warning'); return; }
 
     // Show preview modal + AI analysis
     const modal = document.createElement('div');
@@ -3817,10 +3818,10 @@ function chartQuickOrder(side) {
     // Determine key from current TV symbol
     const allSyms = WL_GROUPS.flatMap(g => g.syms);
     const found   = allSyms.find(s => s.tv === _tvSymbol);
-    if (!found) { alert('Simbol tidak dikenali untuk paper trading'); return; }
+    if (!found) { showQuantumToast('Simbol tidak dikenali untuk paper trading.', 'warning'); return; }
     const lots = parseFloat(document.getElementById('chartOrderLots')?.value || '0.1');
     const cur  = _lastPrices[found.key];
-    if (!cur) { alert('Harga belum tersedia, tunggu sebentar'); return; }
+    if (!cur) { showQuantumToast('Harga belum tersedia, tunggu sebentar.', 'warning'); return; }
     const price = parseFloat(cur.price);
     const newPos = {
         id: 'pt_' + Date.now(),
@@ -4771,7 +4772,7 @@ function ptOpenPosition() {
     if (!sym || !side || lots <= 0) return;
     const cur = _lastPrices[sym];
     const entryPrice = epRaw ? parseFloat(epRaw) : (cur ? parseFloat(cur.price) : null);
-    if (!entryPrice) { alert('Tunggu harga live termuat'); return; }
+    if (!entryPrice) { showQuantumToast('Tunggu harga live termuat.', 'warning'); return; }
 
     const pos = {
         id: 'PT-' + Date.now(),
@@ -5384,7 +5385,7 @@ function _asLogSignal(sym, dir, entry, tp, sl) {
     const now = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
     const rec = { pair: sym, side: dir, entry: entry.toFixed(sym.endsWith('USDT')||sym==='XAUUSD'?2:5), result: 'OPEN', pl: 0, time: now };
     _asSaveRecord(rec);
-    alert(`✅ Sinyal ${dir} ${sym} dicatat!\nEntry: ${rec.entry}\nTP: ${tp.toFixed(2)}\nSL: ${sl.toFixed(2)}\n\nHasil akan diupdate di Riwayat & Rekap.`);
+    showQuantumToast(`Sinyal ${dir} ${sym} dicatat — Entry: ${rec.entry}, TP: ${tp.toFixed(2)}, SL: ${sl.toFixed(2)}`, 'success');
     _asRenderRecords();
 }
 
@@ -5970,7 +5971,7 @@ async function fetchCryptoAIOutlook() {
     if (!navigator.onLine) setOnline(false);
 })();
 </script>
-<script src="assets/js/main.js" defer></script>
-<script src="assets/js/cookie-consent.js" defer></script>
+<script src="assets/js/main.js?v=1.4.0" defer></script>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

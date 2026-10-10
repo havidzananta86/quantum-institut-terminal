@@ -58,47 +58,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Default: 60 request per 60 detik per IP
 function qi_rate_limit($maxRequests = 60, $windowSeconds = 60) {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    // Bucket terpisah per konfigurasi limit + endpoint, supaya limit global (60/60)
-    // dan limit ketat (mis. 5/900) tidak saling menimpa/reset file yang sama
     $bucket = $maxRequests . '_' . $windowSeconds . '_' . basename($_SERVER['SCRIPT_NAME'] ?? '');
-    $ipHash = md5($ip . '|' . $bucket); // Hash IP untuk nama file yang aman
+    $ipHash = md5($ip . '|' . $bucket);
 
     $rateLimitDir = __DIR__ . '/../cache/ratelimit';
     if (!is_dir($rateLimitDir)) {
         @mkdir($rateLimitDir, 0755, true);
     }
 
-    $rateLimitFile = $rateLimitDir . '/' . $ipHash . '.json';
+    // Cleanup stale files ~1% of requests (probabilistic, low overhead)
+    if (mt_rand(1, 100) === 1) {
+        qi_ratelimit_cleanup($rateLimitDir, $windowSeconds);
+    }
 
+    $rateLimitFile = $rateLimitDir . '/' . $ipHash . '.json';
     $data = ['count' => 0, 'window_start' => time()];
 
-    if (file_exists($rateLimitFile)) {
-        $raw = @file_get_contents($rateLimitFile);
+    // flock() untuk mencegah race condition pada concurrent requests
+    $fp = @fopen($rateLimitFile, 'c+');
+    if (!$fp) {
+        return; // Gagal buka file, lewati rate limit daripada blokir request
+    }
+    flock($fp, LOCK_EX);
+
+    $raw = stream_get_contents($fp);
+    if ($raw) {
         $saved = json_decode($raw, true);
         if ($saved && isset($saved['window_start']) && isset($saved['count'])) {
-            // Cek apakah masih dalam window yang sama
             if (time() - $saved['window_start'] < $windowSeconds) {
                 $data = $saved;
             }
-            // Kalau window sudah lewat, reset otomatis (data tetap default)
         }
     }
 
     $data['count']++;
 
-    // Simpan state
-    @file_put_contents($rateLimitFile, json_encode($data), LOCK_EX);
+    // Tulis ulang dari awal file
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($data));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
 
-    // Hitung sisa
     $remaining = max(0, $maxRequests - $data['count']);
     $resetTime = $data['window_start'] + $windowSeconds;
 
-    // Set header rate limit (standar IETF draft)
     header('X-RateLimit-Limit: ' . $maxRequests);
     header('X-RateLimit-Remaining: ' . $remaining);
     header('X-RateLimit-Reset: ' . $resetTime);
 
-    // Blokir jika melebihi batas
     if ($data['count'] > $maxRequests) {
         http_response_code(429);
         header('Retry-After: ' . ($resetTime - time()));
@@ -108,6 +117,19 @@ function qi_rate_limit($maxRequests = 60, $windowSeconds = 60) {
             'retry_after' => $resetTime - time()
         ]);
         exit();
+    }
+}
+
+function qi_ratelimit_cleanup($dir, $maxAge = 3600) {
+    $files = @glob($dir . '/*.json');
+    if (!$files) return;
+    $now = time();
+    $cleaned = 0;
+    foreach ($files as $f) {
+        if ($now - filemtime($f) > $maxAge && $cleaned < 200) {
+            @unlink($f);
+            $cleaned++;
+        }
     }
 }
 

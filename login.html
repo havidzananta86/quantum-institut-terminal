@@ -18,10 +18,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="assets/css/tokens.css">
-    <script src="assets/js/theme-toggle.js"></script>
-    <link rel="stylesheet" href="assets/css/tailwind.css">
-    <script src="assets/js/error-tracker.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- Custom CSS -->
     <style>
@@ -180,7 +180,7 @@
                     <div>
                         <label for="passwordInput" class="block text-xs font-mono text-slate-300 font-semibold mb-2 flex justify-between">
                             <span>KATA SANDI</span>
-                            <a href="#" onclick="showQuantumToast('Instruksi pemulihan kata sandi telah dikirim ke email Anda.', 'info'); return false;" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
+                            <a href="#" onclick="showQuantumToast('Untuk reset kata sandi, hubungi admin via Telegram @QuantumInstitut atau email admin@quantuminstitut.market', 'info'); return false;" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
                         </label>
                         <div class="relative">
                             <input type="password" id="passwordInput" placeholder="••••••••••••" required
@@ -198,11 +198,11 @@
                 </form>
 
                 <!-- ALTERNATIVE AUTH METHOD (GOOGLE) -->
-                <div class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-4">
-                    <div class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ATAU OTENTIKASI LISENSI CEPAT</div>
-                    
-                    <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, fallback jujur jika belum -->
-                    <div class="font-mono text-xs">
+                <div id="googleAuthSection" class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-4">
+                    <div id="googleDividerLabel" class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ATAU OTENTIKASI LISENSI CEPAT</div>
+
+                    <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, tersembunyi jika belum -->
+                    <div id="googleBtnWrap" class="font-mono text-xs">
                         <button id="btnGoogleFallback" type="button" onclick="handleGoogleClick()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
                             <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.58 3.3-3.23 5.485-6.887 5.485-4.14 0-7.5-3.36-7.5-7.5s3.36-7.5 7.5-7.5c1.86 0 3.55.69 4.86 1.83l2.36-2.36C17.5 1.7 15.02 1 12.24 1 6.13 1 1.18 5.95 1.18 12s4.95 11 11.06 11c6.34 0 10.55-4.46 10.55-10.74 0-.72-.08-1.42-.2-2.115H12.24z"/></svg>
                             <span id="googleBtnLabel">Masuk Dengan Google Account</span>
@@ -236,8 +236,8 @@
 
 
     <!-- JAVASCRIPT AUTH LOGIC -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
     <script>
         // --- 1. PARTICLES BACKGROUND ---
         const canvas = document.getElementById('particleCanvas');
@@ -440,11 +440,11 @@
                     _googleClientId = json.data.google_client_id;
                     loadGoogleGsi();
                 } else {
-                    // Belum dikonfigurasi → tandai tombol dengan jujur
-                    const label = document.getElementById('googleBtnLabel');
-                    if (label) label.textContent = 'Masuk Dengan Google (Segera Hadir)';
-                    const btn = document.getElementById('btnGoogleFallback');
-                    if (btn) btn.classList.add('opacity-60');
+                    // Belum dikonfigurasi → sembunyikan tombol Google dan divider-nya
+                    const wrap = document.getElementById('googleBtnWrap');
+                    const divider = document.getElementById('googleDividerLabel');
+                    if (wrap) wrap.style.display = 'none';
+                    if (divider) divider.style.display = 'none';
                 }
             } catch (e) { /* endpoint tak terjangkau → tombol tetap fallback */ }
         })();
@@ -505,6 +505,6 @@
             }
         }
     </script>
-    <script src="assets/js/cookie-consent.js" defer></script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

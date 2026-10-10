@@ -22,37 +22,23 @@ const CORE_ASSETS = [
 
 // ── Install: cache core assets ────────────────────────────────
 self.addEventListener('install', (event) => {
-    console.log('[SW] Installing Quantum Terminal Service Worker...');
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(CORE_ASSETS).catch(err => {
-                // Non-fatal: beberapa file mungkin belum ada
-                console.warn('[SW] Some assets failed to cache (non-fatal):', err);
-            });
-        }).then(() => {
-            console.log('[SW] Install complete ✅');
-            return self.skipWaiting();
-        })
+            return cache.addAll(CORE_ASSETS).catch(() => {});
+        }).then(() => self.skipWaiting())
     );
 });
 
 // ── Activate: cleanup old caches ─────────────────────────────
 self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating...');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
                     .filter(name => name !== CACHE_NAME)
-                    .map(name => {
-                        console.log('[SW] Deleting old cache:', name);
-                        return caches.delete(name);
-                    })
+                    .map(name => caches.delete(name))
             );
-        }).then(() => {
-            console.log('[SW] Activate complete ✅');
-            return self.clients.claim();
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
@@ -89,10 +75,7 @@ self.addEventListener('fetch', (event) => {
             .catch(() => {
                 // Network failed — try cache
                 return caches.match(request).then(cached => {
-                    if (cached) {
-                        console.log('[SW] Serving from cache (offline):', request.url);
-                        return cached;
-                    }
+                    if (cached) return cached;
                     // Ultimate fallback for navigation requests
                     if (request.mode === 'navigate') {
                         return caches.match('terminal.html');

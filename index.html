@@ -64,8 +64,8 @@
     </script>
 
     <!-- Design tokens + theme (must load before Tailwind) -->
-    <link rel="stylesheet" href="assets/css/tokens.css">
-    <script src="assets/js/theme-toggle.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,13 +73,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
 
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.0">
 
     <!-- Error Tracker — load first to catch all JS errors -->
-    <script src="assets/js/error-tracker.js"></script>
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- SCROLLBAR OVERRIDE: Hapus scrollbar native tanpa menghilangkan fungsi scroll -->
     <style>
@@ -1154,8 +1154,8 @@
     </footer>
 
     <!-- JS Core -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/ticker.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/ticker.js?v=1.4.0"></script>
 
     <script>
     // ── WIB LIVE CLOCK (UTC+7) ────────────────────────────────────────────────
@@ -1417,12 +1417,10 @@
     });
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('[SW] Registered:', reg.scope))
-                .catch(() => {});
+            navigator.serviceWorker.register('sw.js').catch(() => {});
         });
     }
     </script>
-    <script src="assets/js/cookie-consent.js" defer></script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>
