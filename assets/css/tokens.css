@@ -230,6 +230,17 @@ body {
 .bg-qi-gold\/15     { background-color: color-mix(in srgb, var(--qi-gold) 15%, transparent); }
 .bg-qi-gold\/25     { background-color: color-mix(in srgb, var(--qi-gold) 25%, transparent); }
 .bg-qi-purple\/5    { background-color: color-mix(in srgb, var(--qi-purple) 5%, transparent); }
+.bg-qi-purple\/10   { background-color: color-mix(in srgb, var(--qi-purple) 10%, transparent); }
+.bg-qi-purple\/20   { background-color: color-mix(in srgb, var(--qi-purple) 20%, transparent); }
+.bg-qi-gold\/10     { background-color: color-mix(in srgb, var(--qi-gold) 10%, transparent); }
+.bg-qi-gold\/20     { background-color: color-mix(in srgb, var(--qi-gold) 20%, transparent); }
+.bg-qi-gold\/30     { background-color: color-mix(in srgb, var(--qi-gold) 30%, transparent); }
+.bg-qi-gold\/40     { background-color: color-mix(in srgb, var(--qi-gold) 40%, transparent); }
+.bg-qi-green\/30    { background-color: color-mix(in srgb, var(--qi-green) 30%, transparent); }
+.bg-qi-green\/40    { background-color: color-mix(in srgb, var(--qi-green) 40%, transparent); }
+.bg-qi-green\/80    { background-color: color-mix(in srgb, var(--qi-green) 80%, transparent); }
+.bg-qi-red\/40      { background-color: color-mix(in srgb, var(--qi-red) 40%, transparent); }
+.bg-qi-red\/80      { background-color: color-mix(in srgb, var(--qi-red) 80%, transparent); }
 
 /* Border opacity variants */
 .border-qi-border\/20 { border-color: color-mix(in srgb, var(--qi-border) 20%, transparent); }
@@ -247,6 +258,7 @@ body {
 .border-qi-green\/40  { border-color: color-mix(in srgb, var(--qi-green) 40%, transparent); }
 .border-qi-gold\/30   { border-color: color-mix(in srgb, var(--qi-gold) 30%, transparent); }
 .border-qi-gold\/40   { border-color: color-mix(in srgb, var(--qi-gold) 40%, transparent); }
+.border-qi-purple\/20 { border-color: color-mix(in srgb, var(--qi-purple) 20%, transparent); }
 .border-qi-purple\/30 { border-color: color-mix(in srgb, var(--qi-purple) 30%, transparent); }
 .border-qi-purple\/40 { border-color: color-mix(in srgb, var(--qi-purple) 40%, transparent); }
 .border-qi-red\/20    { border-color: color-mix(in srgb, var(--qi-red) 20%, transparent); }
@@ -274,6 +286,10 @@ body {
 .hover\:bg-qi-gold\/5:hover      { background-color: color-mix(in srgb, var(--qi-gold) 5%, transparent); }
 .hover\:bg-qi-gold\/25:hover     { background-color: color-mix(in srgb, var(--qi-gold) 25%, transparent); }
 .hover\:bg-qi-purple\/5:hover    { background-color: color-mix(in srgb, var(--qi-purple) 5%, transparent); }
+.hover\:bg-qi-purple\/30:hover   { background-color: color-mix(in srgb, var(--qi-purple) 30%, transparent); }
+.hover\:bg-qi-gold\/30:hover     { background-color: color-mix(in srgb, var(--qi-gold) 30%, transparent); }
+.hover\:bg-qi-green\/30:hover    { background-color: color-mix(in srgb, var(--qi-green) 30%, transparent); }
+.hover\:bg-qi-cyan\/30:hover     { background-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }
 .hover\:bg-qi-red\/30:hover      { background-color: color-mix(in srgb, var(--qi-red) 30%, transparent); }
 .hover\:border-qi-cyan:hover     { border-color: var(--qi-cyan); }
 .hover\:border-qi-cyan\/30:hover { border-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }

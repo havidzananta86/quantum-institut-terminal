@@ -616,6 +616,26 @@ document.addEventListener('keydown', e => {
             <button data-panel="panel-crypto" onclick="switchPanel('panel-crypto')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🐋</span> Crypto Terminal
             </button>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Pro Tools</div>
+            <button data-panel="panel-risk" onclick="switchPanel('panel-risk')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🧮</span> Risk Calculator
+            </button>
+            <button data-panel="panel-alerts" onclick="switchPanel('panel-alerts')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🔔</span> Price Alerts
+            </button>
+            <button data-panel="panel-journal" onclick="switchPanel('panel-journal')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">📔</span> Trade Journal
+            </button>
+            <button data-panel="panel-screener" onclick="switchPanel('panel-screener')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🔍</span> Market Screener
+                <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
+            </button>
+            <button data-panel="panel-volatility" onclick="switchPanel('panel-volatility')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">📊</span> Volatility & Spread
+            </button>
+            <button data-panel="panel-sentiment" onclick="switchPanel('panel-sentiment')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🌡</span> Sentiment & Clocks
+            </button>
         </div>
     </nav>
 
@@ -2070,8 +2090,285 @@ document.addEventListener('keydown', e => {
         </div>
     </div>
 
+    <!-- ══ PANEL: Risk Calculator (#1 + #18) ══ -->
+    <div id="panel-risk" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">🧮</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Risk & Position Size Calculator</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Hitung lot size optimal berdasarkan balance, risk %, entry & stop loss</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Position Size Calculator</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                        <select id="rcSymbol" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="XAUUSD">XAU/USD</option><option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
+                            <option value="USDJPY">USD/JPY</option><option value="AUDUSD">AUD/USD</option><option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option><option value="NZDUSD">NZD/USD</option><option value="USDCHF">USD/CHF</option>
+                        </select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Balance ($)</label>
+                        <input id="rcBalance" type="number" value="10000" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Risk (%)</label>
+                        <input id="rcRiskPct" type="number" value="1" step="0.5" min="0.1" max="10" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Entry Price</label>
+                        <input id="rcEntry" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none" placeholder="2650.00"></div>
+                    <div class="col-span-2"><label class="text-[10px] text-slate-500 block mb-1">Stop Loss</label>
+                        <input id="rcSL" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none" placeholder="2640.00"></div>
+                </div>
+                <button onclick="calcPositionSize()" class="w-full py-2.5 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30 transition-colors">Hitung Position Size</button>
+                <div id="rcResult"><div class="text-center text-slate-600 text-xs py-4">Isi form lalu klik Hitung</div></div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Pip Value Calculator</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                        <select id="pipSym" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option><option value="XAUUSD">XAU/USD</option>
+                            <option value="USDJPY">USD/JPY</option><option value="BTCUSDT">BTC/USDT</option><option value="AUDUSD">AUD/USD</option>
+                        </select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Lot Size</label>
+                        <input id="pipLots" type="number" value="1" step="0.01" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                </div>
+                <button onclick="calcPipValue()" class="w-full py-2.5 rounded-xl bg-qi-gold/20 border border-qi-gold/40 text-qi-gold text-xs font-semibold hover:bg-qi-gold/30 transition-colors">Hitung Pip Value</button>
+                <div id="pipResult"><div class="text-center text-slate-600 text-xs py-4">Pilih pair & lot size</div></div>
+                <div class="border-t border-qi-border pt-3 mt-3">
+                    <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Pivot Points</div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[10px] text-slate-500 block mb-1">High</label>
+                            <input id="pvHigh" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-2 py-1.5 text-[10px] text-white font-mono focus:border-qi-cyan outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500 block mb-1">Low</label>
+                            <input id="pvLow" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-2 py-1.5 text-[10px] text-white font-mono focus:border-qi-cyan outline-none"></div>
+                        <div><label class="text-[10px] text-slate-500 block mb-1">Close</label>
+                            <input id="pvClose" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-2 py-1.5 text-[10px] text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    </div>
+                    <div class="mt-2"><select id="pvMethod" class="w-full bg-qi-panel border border-qi-border rounded-lg px-2 py-1.5 text-[10px] text-white font-mono focus:border-qi-cyan outline-none">
+                        <option value="classic">Classic</option><option value="camarilla">Camarilla</option><option value="woodie">Woodie</option></select></div>
+                    <button onclick="calcPivotPoints()" class="w-full mt-2 py-2 rounded-xl bg-qi-purple/20 border border-qi-purple/40 text-qi-purple text-[10px] font-semibold hover:bg-qi-purple/30 transition-colors">Hitung Pivot</button>
+                    <div id="pvResult" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Price Alerts (#2) ══ -->
+    <div id="panel-alerts" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">🔔</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Price Alerts</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Set harga target — dapatkan notifikasi browser + suara saat tercapai</p>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                    <select id="alertSym" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                        <option value="XAUUSD">XAU/USD</option><option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
+                        <option value="USDJPY">USD/JPY</option><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option>
+                    </select></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Target Price</label>
+                    <input id="alertPrice" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none" placeholder="2700.00"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Kondisi</label>
+                    <select id="alertDir" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                        <option value="above">Di Atas (≥)</option><option value="below">Di Bawah (≤)</option>
+                    </select></div>
+                <div class="flex items-end"><button onclick="addPriceAlert()" class="w-full py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30 transition-colors">+ Tambah Alert</button></div>
+            </div>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Alert Aktif</div>
+            <div id="alertList" class="space-y-2">
+                <div class="text-center text-slate-600 text-xs py-6">Belum ada price alert aktif</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Trade Journal (#13) ══ -->
+    <div id="panel-journal" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">📔</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Trade Journal</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Catat, evaluasi, dan review setiap trade — data tersimpan lokal di browser</p>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                    <input id="jnlSymbol" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none" placeholder="XAUUSD"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Side</label>
+                    <select id="jnlSide" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none">
+                        <option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Entry</label>
+                    <input id="jnlEntry" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">SL</label>
+                    <input id="jnlSL" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">TP</label>
+                    <input id="jnlTP" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Result</label>
+                    <select id="jnlResult" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none">
+                        <option value="">Pending</option><option value="WIN">WIN</option><option value="LOSS">LOSS</option><option value="BE">Break Even</option></select></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">P&L ($)</label>
+                    <input id="jnlPnl" type="number" step="any" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-white font-mono focus:border-qi-cyan outline-none" placeholder="0.00"></div>
+                <div class="flex items-end"><button onclick="addJournalEntry()" class="w-full py-2 rounded-xl bg-qi-green/20 border border-qi-green/40 text-qi-green text-xs font-semibold hover:bg-qi-green/30 transition-colors">+ Simpan</button></div>
+            </div>
+            <div class="mt-2"><label class="text-[10px] text-slate-500 block mb-1">Notes / Catatan</label>
+                <textarea id="jnlNotes" rows="2" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white focus:border-qi-cyan outline-none resize-none" placeholder="Setup, alasan entry, pelajaran..."></textarea></div>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border flex items-center justify-between">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Riwayat Journal</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-2 py-2 text-left">Tanggal</th><th class="px-2 py-2 text-left">Pair</th>
+                        <th class="px-2 py-2 text-left">Side</th><th class="px-2 py-2 text-left">Entry</th>
+                        <th class="px-2 py-2 text-left">Result</th><th class="px-2 py-2 text-right">P&L</th><th class="px-2 py-2"></th>
+                    </tr></thead>
+                    <tbody id="journalBody"><tr><td colspan="7" class="px-4 py-6 text-center text-slate-600 text-xs">Belum ada catatan trading</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Market Screener (#16) ══ -->
+    <div id="panel-screener" class="panel-content hidden p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2"><span class="text-base">🔍</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Market Screener</span></div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Filter pair berdasarkan trend, RSI, posisi EMA, dan volatilitas</p>
+            </div>
+            <button onclick="runScreener()" class="px-3 py-1.5 rounded-lg bg-qi-cyan/10 border border-qi-cyan/30 text-qi-cyan text-[10px] font-semibold hover:bg-qi-cyan/20 transition-colors">↻ Scan Ulang</button>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-left">Trend</th>
+                        <th class="px-3 py-2 text-right">RSI(14)</th><th class="px-3 py-2 text-right">EMA 200</th>
+                        <th class="px-3 py-2 text-center">Volatilitas</th><th class="px-3 py-2 text-right">Aksi</th>
+                    </tr></thead>
+                    <tbody id="screenerBody"><tr><td colspan="6" class="text-center py-4 text-slate-600 text-xs">Klik Scan untuk mulai</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Volatility + Spread + Swap (#8 #17 #19) ══ -->
+    <div id="panel-volatility" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">📊</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Volatility Dashboard</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">ATR, spread realtime, swap rate, dan sesi terbaik per instrumen</p>
+        </div>
+        <!-- DXY Tracker inline (#11) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
+                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Dollar Index (DXY)</div>
+                <div id="dxyValue" class="text-3xl font-mono font-bold text-white">104.25</div>
+                <div id="dxyChange" class="text-xs font-mono text-qi-green">+0.12%</div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
+                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Avg Market Volatility</div>
+                <div class="text-3xl font-mono font-bold text-qi-gold">2.4%</div>
+                <div class="text-[10px] text-slate-500">ATR-normalized (14 pairs)</div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
+                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Best Time to Trade</div>
+                <div class="text-lg font-mono font-bold text-qi-cyan">14:00 - 18:00 WIB</div>
+                <div class="text-[10px] text-slate-500">London–NY Overlap</div>
+            </div>
+        </div>
+        <!-- ATR Table -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border"><span class="font-heading font-semibold text-white text-xs uppercase">ATR & Volatility per Pair</span></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-right">ATR(14)</th>
+                        <th class="px-3 py-2 text-right">ATR %</th><th class="px-3 py-2 text-right">Spread</th>
+                        <th class="px-3 py-2 text-right">Best Session</th>
+                    </tr></thead>
+                    <tbody id="volBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Spread Monitor -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border"><span class="font-heading font-semibold text-white text-xs uppercase">Spread Monitor</span></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-right">Current</th>
+                        <th class="px-3 py-2 text-right">Avg (30d)</th><th class="px-3 py-2 text-center">Status</th>
+                    </tr></thead>
+                    <tbody id="spreadBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Swap Rates -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border"><span class="font-heading font-semibold text-white text-xs uppercase">Swap / Rollover Rates</span></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-right">Swap Long</th>
+                        <th class="px-3 py-2 text-right">Swap Short</th>
+                    </tr></thead>
+                    <tbody id="swapBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Sentiment Gauge (#7) ══ -->
+    <div id="panel-sentiment" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">📈</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Retail Sentiment</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Persentase posisi Long vs Short dari retail trader — gunakan sebagai kontrarian indicator</p>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Long vs Short (Retail)</div>
+            <div id="sentimentGauge" class="space-y-2.5"></div>
+            <div class="mt-4 p-3 rounded-xl bg-qi-panel border border-qi-border">
+                <div class="text-[10px] text-qi-gold font-semibold mb-1">💡 Tips Penggunaan</div>
+                <p class="text-[10px] text-slate-500 leading-relaxed">Retail trader umumnya salah di market trending. Jika >70% retail long, pertimbangkan sell. Jika >70% retail short, pertimbangkan buy. Gunakan sebagai konfirmasi, bukan sinyal utama.</p>
+            </div>
+        </div>
+        <!-- Session Clocks (#20) -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Market Session Clock</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div id="scTokyo" class="bg-qi-panel border border-qi-border rounded-xl p-3"></div>
+                <div id="scLondon" class="bg-qi-panel border border-qi-border rounded-xl p-3"></div>
+                <div id="scNY" class="bg-qi-panel border border-qi-border rounded-xl p-3"></div>
+                <div id="scSydney" class="bg-qi-panel border border-qi-border rounded-xl p-3"></div>
+            </div>
+        </div>
+        <!-- Monthly P&L Calendar (#6) -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Monthly P&L Calendar</div>
+            <div id="monthlyCalendar"><div class="text-center text-slate-600 text-xs py-4">Loading...</div></div>
+        </div>
+    </div>
+
+    <!-- ══ COMMAND PALETTE OVERLAY (#3) ══ -->
+    <div id="cmdPalette" class="hidden fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]" onclick="if(event.target===this)closeCommandPalette()">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-lg mx-4 bg-qi-card border border-qi-border rounded-2xl shadow-2xl overflow-hidden" style="animation:panelFadeIn .15s ease">
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-qi-border">
+                <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input id="cmdInput" type="text" placeholder="Cari panel, pair, atau aksi... (Ctrl+K)" oninput="filterCmdPalette(this.value)"
+                    class="flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 outline-none">
+                <kbd class="text-[9px] bg-qi-panel border border-qi-border rounded px-1.5 py-0.5 text-slate-500 font-mono">ESC</kbd>
+            </div>
+            <div id="cmdList" class="max-h-[50vh] overflow-y-auto py-1"></div>
+        </div>
+    </div>
+
+    <!-- ══ FLOATING TICKER BAR (#5) ══ -->
+    <div id="floatingTicker" class="fixed bottom-0 left-0 right-0 z-40 h-7 bg-qi-panel/95 backdrop-blur-sm border-t border-qi-border flex items-center justify-center gap-1 overflow-hidden">
+        <div id="floatingTickerContent" class="flex items-center gap-1 text-[10px]">
+            <span class="text-slate-500 px-3">Loading prices...</span>
+        </div>
+    </div>
+
     <!-- ── Disclaimer Footer ───────────────────────────────────────── -->
-    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-2 px-4 text-center flex-shrink-0">
+    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-2 px-4 text-center flex-shrink-0 mb-7">
         <p class="text-[10px] text-slate-600 leading-relaxed max-w-4xl mx-auto">
             ⚠ <strong class="text-slate-500">Bukan Nasihat Keuangan.</strong>
             Platform ini untuk edukasi. Keputusan trading adalah tanggung jawab penuh pengguna.
@@ -2197,6 +2494,11 @@ async function fetchMarketData() {
         renderStatCards(_lastPrices);
         document.getElementById('tapeUpdated').textContent = new Date().toLocaleTimeString('id-ID');
         updateWatchlistPrices();
+        // Pro features: floating ticker + price alerts
+        var flatPrices = {};
+        Object.entries(_lastPrices).forEach(function(e) { flatPrices[e[0]] = parseFloat(e[1].price); });
+        if (typeof updateFloatingTicker === 'function') updateFloatingTicker(flatPrices);
+        if (typeof checkPriceAlerts === 'function') checkPriceAlerts(flatPrices);
     } catch(e) {}
 }
 
@@ -2549,6 +2851,12 @@ const PANEL_META = {
     'panel-autosignal':   { icon:'🎯', title:'Auto Signal' },
     'panel-sessions':     { icon:'🕸️', title:'Market Galaxy — Network Map' },
     'panel-crypto':       { icon:'🐋', title:'Crypto Terminal' },
+    'panel-risk':         { icon:'🧮', title:'Risk Calculator' },
+    'panel-alerts':       { icon:'🔔', title:'Price Alerts' },
+    'panel-journal':      { icon:'📔', title:'Trade Journal' },
+    'panel-screener':     { icon:'🔍', title:'Market Screener' },
+    'panel-volatility':   { icon:'📊', title:'Volatility Dashboard' },
+    'panel-sentiment':    { icon:'🌡', title:'Sentiment & Sessions' },
 };
 let _activePanel = 'panel-overview';
 let _panelInited = new Set(['panel-overview']);
@@ -2622,6 +2930,7 @@ function initPanel(id) {
     if (id === 'panel-autosignal')  refreshAutoSignals();
     if (id === 'panel-sessions')    initNetworkGalaxy();
     if (id === 'panel-crypto')      initCryptoTerminal();
+    if (typeof initProPanel === 'function') initProPanel(id);
 }
 
 // ─── COT Analysis ──────────────────────────────────────────────────────────
@@ -4898,6 +5207,8 @@ async function fetchTrackRecord() {
         if (!hist.length) { body.innerHTML = '<tr><td colspan="10" class="px-4 py-8 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
 
         const STATUS_CLS = { 'HIT TP 🎯': 'text-qi-green', 'HIT SL 🛑': 'text-qi-red', 'AKTIF': 'text-qi-cyan', 'EXPIRED': 'text-slate-500' };
+        if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar(hist);
+
         body.innerHTML = hist.map(s => {
             const stCls = Object.entries(STATUS_CLS).find(([k]) => s.status?.includes(k.split(' ')[0]))?.[1] || 'text-slate-400';
             const sideCls = s.side === 'BUY' ? 'text-qi-green' : 'text-qi-red';
@@ -6039,6 +6350,7 @@ async function fetchCryptoAIOutlook() {
     if (!navigator.onLine) setOnline(false);
 })();
 </script>
+<script src="assets/js/pro-features.js?v=2.1.0"></script>
 <script src="assets/js/main.js?v=1.4.0" defer></script>
 <script>
 // Apply theme choice: close dropdown first, then change theme after DOM settles
