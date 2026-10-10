@@ -676,6 +676,28 @@ document.addEventListener('keydown', e => {
             <button data-panel="panel-sentiment" onclick="switchPanel('panel-sentiment')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🌡</span> Sentiment & Clocks
             </button>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Advanced</div>
+            <button data-panel="panel-watchlist" onclick="switchPanel('panel-watchlist')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">⭐</span> Custom Watchlist
+                <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
+            </button>
+            <button data-panel="panel-performance" onclick="switchPanel('panel-performance')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">📊</span> Performance
+                <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
+            </button>
+            <button data-panel="panel-mtf" onclick="switchPanel('panel-mtf')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🔄</span> Multi-Timeframe
+                <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
+            </button>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Social</div>
+            <button data-panel="panel-leaderboard" onclick="switchPanel('panel-leaderboard')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">🏅</span> Leaderboard
+                <span class="ml-auto text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-1">NEW</span>
+            </button>
+            <button data-panel="panel-community" onclick="switchPanel('panel-community')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+                <span class="text-base">💬</span> Community
+                <span class="ml-auto text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-1">NEW</span>
+            </button>
         </div>
     </nav>
 
@@ -1430,6 +1452,11 @@ document.addEventListener('keydown', e => {
             <div id="cotGoldCard" class="bg-qi-card border border-qi-border rounded-xl p-4">
                 <div class="text-center text-slate-600 text-xs py-4">Memuat data Gold COT…</div>
             </div>
+        </div>
+        <!-- COT Chart Visualization -->
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Commercial Position — 12 Week Chart</div>
+            <canvas id="cotChartCanvas"></canvas>
         </div>
     </div>
 
@@ -2227,6 +2254,10 @@ document.addEventListener('keydown', e => {
                 <div class="text-center text-slate-600 text-xs py-6">Belum ada price alert aktif</div>
             </div>
         </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-qi-border"><span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Riwayat Alert Terpicu</span></div>
+            <div id="alertHistoryList"><div class="text-center text-slate-600 text-xs py-4">Belum ada riwayat alert</div></div>
+        </div>
     </div>
 
     <!-- ══ PANEL: Trade Journal (#13) ══ -->
@@ -2235,6 +2266,7 @@ document.addEventListener('keydown', e => {
             <div class="flex items-center gap-2"><span class="text-base">📔</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Trade Journal</span></div>
             <p class="text-[10px] text-slate-500 mt-0.5">Catat, evaluasi, dan review setiap trade — data tersimpan lokal di browser</p>
         </div>
+        <div id="journalStatsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
         <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
@@ -2273,6 +2305,7 @@ document.addEventListener('keydown', e => {
                 </table>
             </div>
         </div>
+        <button onclick="QIExport.journal()" class="w-full bg-qi-panel border border-qi-border rounded-xl px-3 py-2 text-[10px] text-slate-400 hover:text-white hover:border-qi-cyan/50 transition">📥 Export Journal ke CSV</button>
     </div>
 
     <!-- ══ PANEL: Market Screener (#16) ══ -->
@@ -2392,6 +2425,117 @@ document.addEventListener('keydown', e => {
         <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
             <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Monthly P&L Calendar</div>
             <div id="monthlyCalendar"><div class="text-center text-slate-600 text-xs py-4">Loading...</div></div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Custom Watchlist (B6) ══ -->
+    <div id="panel-watchlist" class="panel-content hidden p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2"><span class="text-base">⭐</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Custom Watchlist</span></div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Pantau pair favorit Anda — klik baris untuk buka chart</p>
+            </div>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="flex items-center gap-2 mb-3">
+                <select id="wlAddSym" class="flex-1 bg-qi-panel border border-qi-border rounded-lg text-[11px] text-white px-3 py-1.5 outline-none">
+                    <option value="XAUUSD">XAU/USD (Gold)</option><option value="EURUSD">EUR/USD</option>
+                    <option value="GBPUSD">GBP/USD</option><option value="USDJPY">USD/JPY</option>
+                    <option value="AUDUSD">AUD/USD</option><option value="NZDUSD">NZD/USD</option>
+                    <option value="USDCHF">USD/CHF</option><option value="USDCAD">USD/CAD</option>
+                    <option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option><option value="BNBUSDT">BNB/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option><option value="DOGEUSDT">DOGE/USDT</option>
+                </select>
+                <button onclick="addToWatchlist()" class="bg-qi-cyan/20 text-qi-cyan border border-qi-cyan/30 rounded-lg px-3 py-1.5 text-[11px] font-semibold hover:bg-qi-cyan/30 transition">+ Add</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-left">Symbol</th>
+                        <th class="px-3 py-2 text-right">Price</th><th class="px-3 py-2 text-right">Change</th>
+                        <th class="px-3 py-2 text-right"></th>
+                    </tr></thead>
+                    <tbody id="watchlistBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Performance Analytics (C11) ══ -->
+    <div id="panel-performance" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">📊</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Performance Analytics</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Equity curve, drawdown, monthly breakdown, dan statistik trading Anda</p>
+        </div>
+        <div id="perfStats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Equity Curve</div>
+            <canvas id="equityCurveCanvas"></canvas>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Monthly P&L Breakdown</div>
+            <div id="monthlyBreakdown" class="space-y-2"></div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="QIExport.journal()" class="flex-1 bg-qi-panel border border-qi-border rounded-xl px-3 py-2 text-[10px] text-slate-400 hover:text-white hover:border-qi-cyan/50 transition">📥 Export Journal CSV</button>
+            <button onclick="QIExport.paperTrades()" class="flex-1 bg-qi-panel border border-qi-border rounded-xl px-3 py-2 text-[10px] text-slate-400 hover:text-white hover:border-qi-cyan/50 transition">📥 Export Paper Trades CSV</button>
+            <button onclick="QIExport.signals()" class="flex-1 bg-qi-panel border border-qi-border rounded-xl px-3 py-2 text-[10px] text-slate-400 hover:text-white hover:border-qi-cyan/50 transition">📥 Export Signals CSV</button>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Multi-Timeframe View (C14) ══ -->
+    <div id="panel-mtf" class="panel-content hidden p-4 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2"><span class="text-base">🔄</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Multi-Timeframe Analysis</span></div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Analisis M5, M15, H1, H4, D1 dalam satu tampilan — temukan confluence</p>
+            </div>
+            <select id="mtfSymbol" onchange="renderMTFView()" class="bg-qi-panel border border-qi-border rounded-lg text-[11px] text-white px-3 py-1.5 outline-none">
+                <option value="XAUUSD">XAU/USD</option><option value="EURUSD">EUR/USD</option>
+                <option value="BTCUSDT">BTC/USDT</option><option value="GBPUSD">GBP/USD</option>
+            </select>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Overall Bias</div>
+            <div id="mtfBias"></div>
+        </div>
+        <div id="mtfGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+    </div>
+
+    <!-- ══ PANEL: Leaderboard (D16) ══ -->
+    <div id="panel-leaderboard" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">🏅</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Trading Leaderboard</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Top 10 trader berdasarkan P&L paper trading — posisi Anda otomatis muncul</p>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-[10px] font-mono">
+                    <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
+                        <th class="px-3 py-2 text-center">Rank</th><th class="px-3 py-2 text-left">Trader</th>
+                        <th class="px-3 py-2 text-right">Win Rate</th><th class="px-3 py-2 text-right">Net P&L</th>
+                        <th class="px-3 py-2 text-right">Trades</th>
+                    </tr></thead>
+                    <tbody id="leaderboardBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ PANEL: Community Chat (D18) ══ -->
+    <div id="panel-community" class="panel-content hidden p-4 space-y-4">
+        <div>
+            <div class="flex items-center gap-2"><span class="text-base">💬</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Quantum Community</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Diskusi, share analisa, dan belajar bersama trader lainnya</p>
+        </div>
+        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden flex flex-col" style="height:calc(100vh - 200px);min-height:300px">
+            <div id="chatMessages" class="flex-1 overflow-y-auto py-2"></div>
+            <div class="border-t border-qi-border p-3 flex gap-2">
+                <input id="chatInput" type="text" maxlength="500" placeholder="Tulis pesan..." onkeydown="if(event.key==='Enter')sendChatMsg()"
+                    class="flex-1 bg-qi-panel border border-qi-border rounded-lg text-[11px] text-white px-3 py-2 outline-none placeholder:text-slate-600">
+                <button onclick="sendChatMsg()" class="bg-qi-cyan/20 text-qi-cyan border border-qi-cyan/30 rounded-lg px-4 py-2 text-[11px] font-semibold hover:bg-qi-cyan/30 transition">Kirim</button>
+            </div>
         </div>
     </div>
 
@@ -2915,6 +3059,11 @@ const PANEL_META = {
     'panel-screener':     { icon:'🔍', title:'Market Screener' },
     'panel-volatility':   { icon:'📊', title:'Volatility Dashboard' },
     'panel-sentiment':    { icon:'🌡', title:'Sentiment & Sessions' },
+    'panel-watchlist':    { icon:'⭐', title:'Custom Watchlist' },
+    'panel-performance':  { icon:'📊', title:'Performance Analytics' },
+    'panel-mtf':          { icon:'🔄', title:'Multi-Timeframe' },
+    'panel-leaderboard':  { icon:'🏅', title:'Trading Leaderboard' },
+    'panel-community':    { icon:'💬', title:'Community Chat' },
 };
 let _activePanel = 'panel-overview';
 let _panelInited = new Set(['panel-overview']);
@@ -6409,6 +6558,8 @@ async function fetchCryptoAIOutlook() {
 })();
 </script>
 <script src="assets/js/pro-features.js?v=2.1.0"></script>
+<script src="assets/js/pro-trading-tools.js?v=2.1.0"></script>
+<script src="assets/js/advanced-trading.js?v=3.0.0"></script>
 <script src="assets/js/perf-upgrades.js?v=2.1.0"></script>
 <script src="assets/js/main.js?v=1.4.0" defer></script>
 <script>

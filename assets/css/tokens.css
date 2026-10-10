@@ -308,6 +308,11 @@ body {
 .hover\:from-qi-cyan\/20:hover   { --tw-gradient-from: color-mix(in srgb, var(--qi-cyan) 20%, transparent); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent); }
 .hover\:to-qi-purple\/60:hover   { --tw-gradient-to: color-mix(in srgb, var(--qi-purple) 60%, transparent); }
 
+/* ── Sentiment badges ── */
+.sent-bull { color: var(--qi-green); background: color-mix(in srgb, var(--qi-green) 10%, transparent); border: 1px solid color-mix(in srgb, var(--qi-green) 30%, transparent); }
+.sent-bear { color: var(--qi-red); background: color-mix(in srgb, var(--qi-red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--qi-red) 30%, transparent); }
+.sent-neut { color: var(--qi-gold); background: color-mix(in srgb, var(--qi-gold) 10%, transparent); border: 1px solid color-mix(in srgb, var(--qi-gold) 30%, transparent); }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
