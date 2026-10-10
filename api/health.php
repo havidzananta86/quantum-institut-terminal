@@ -37,6 +37,24 @@ if ($free !== false && $total !== false && $total > 0) {
 
 $checks['cache_writable'] = is_writable(__DIR__ . '/../cache');
 
+$cfgPath = __DIR__ . '/../config/api_keys.php';
+if (file_exists($cfgPath)) {
+    require_once $cfgPath;
+    $checks['api_keys'] = true;
+    $missing = [];
+    if (!defined('TELEGRAM_BOT_TOKEN') || TELEGRAM_BOT_TOKEN === '') $missing[] = 'telegram';
+    if (!defined('GOOGLE_CLIENT_ID') || GOOGLE_CLIENT_ID === '') $missing[] = 'google';
+    if (!defined('TWELVEDATA_API_KEY') || TWELVEDATA_API_KEY === '') $missing[] = 'twelvedata';
+    if ($missing) {
+        $checks['api_keys_missing'] = $missing;
+        $status = 'degraded';
+    }
+} else {
+    $checks['api_keys'] = false;
+    $checks['api_keys_missing'] = ['file_not_found'];
+    $status = 'degraded';
+}
+
 if (!$checks['db'] || !$checks['disk'] || !$checks['cache_writable']) {
     $status = 'degraded';
 }

@@ -4,7 +4,8 @@
  * Based on public research of forex market event reactions (2021-2026)
  */
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(30, 60);
 
 $window   = $_GET['window']   ?? '1h';
 $groupBy  = $_GET['group_by'] ?? 'event_pair';

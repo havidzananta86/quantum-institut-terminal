@@ -105,6 +105,20 @@ input:focus { border-color:rgba(0,229,255,.4) !important; }
         </div>
     </div>
 
+    <!-- Change Password Card -->
+    <div class="bg-qi-card border border-qi-border rounded-xl p-5 mb-4">
+        <div class="section-title">Ubah Kata Sandi</div>
+        <form id="changePwForm" onsubmit="handleChangePassword(event)" class="space-y-3">
+            <input type="password" id="cpCurrent" placeholder="Kata sandi saat ini" autocomplete="current-password"
+                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none transition-colors">
+            <input type="password" id="cpNew" placeholder="Kata sandi baru (min. 8 karakter)" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none transition-colors">
+            <input type="password" id="cpConfirm" placeholder="Konfirmasi kata sandi baru" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none transition-colors">
+            <button type="submit" id="btnChangePw" class="px-5 py-2.5 bg-qi-cyan text-slate-950 font-bold rounded-lg text-sm hover:bg-qi-cyan/80 transition-colors">Ubah Sandi</button>
+        </form>
+    </div>
+
     <!-- Danger Zone -->
     <div class="bg-qi-card border border-red-900/30 rounded-xl p-5">
         <div class="section-title text-red-800">Zona Berbahaya</div>
@@ -114,6 +128,18 @@ input:focus { border-color:rgba(0,229,255,.4) !important; }
                 <div class="text-[11px] text-slate-500">Menghapus sesi login ini</div>
             </div>
             <button onclick="handleLogout()" class="px-4 py-2 border border-qi-red/40 text-qi-red hover:bg-qi-red/10 rounded-lg text-sm font-semibold transition-colors">Logout</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="text-white font-semibold mb-2" id="confirmTitle">Konfirmasi</div>
+            <div class="text-sm text-slate-400 mb-5" id="confirmMessage"></div>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeConfirm()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm hover:bg-slate-700 transition-colors">Batal</button>
+                <button id="confirmOkBtn" class="px-4 py-2 bg-qi-red text-white font-semibold rounded-lg text-sm hover:bg-red-600 transition-colors">Ya</button>
+            </div>
         </div>
     </div>
 
@@ -211,10 +237,11 @@ function deleteAlert(id) {
 }
 
 function clearAllAlerts() {
-    if (!confirm('Hapus semua alert aktif?')) return;
-    localStorage.removeItem('qi_alerts');
-    loadAlerts();
-    showToast('Semua alert dihapus');
+    showConfirm('Hapus Semua Alert', 'Yakin ingin menghapus semua alert aktif?', () => {
+        localStorage.removeItem('qi_alerts');
+        loadAlerts();
+        showToast('Semua alert dihapus');
+    });
 }
 
 function saveTgChatId() {
@@ -250,11 +277,67 @@ async function testTelegram() {
 }
 
 function handleLogout() {
-    if (!confirm('Yakin ingin logout?')) return;
-    if (typeof QuantumAuth !== 'undefined' && QuantumAuth.logout) { QuantumAuth.logout(); return; }
-    localStorage.removeItem('qi_token'); localStorage.removeItem('qi_user');
-    sessionStorage.removeItem('qi_token'); sessionStorage.removeItem('qi_user');
-    window.location.href = 'login.html';
+    showConfirm('Logout', 'Yakin ingin keluar dari akun ini?', () => {
+        if (typeof QuantumAuth !== 'undefined' && QuantumAuth.logout) { QuantumAuth.logout(); return; }
+        localStorage.removeItem('qi_token'); localStorage.removeItem('qi_user');
+        sessionStorage.removeItem('qi_token'); sessionStorage.removeItem('qi_user');
+        window.location.href = 'login.html';
+    });
+}
+
+let _confirmCb = null;
+function showConfirm(title, message, onOk) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    _confirmCb = onOk;
+    const modal = document.getElementById('confirmModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+function closeConfirm() {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    _confirmCb = null;
+}
+document.getElementById('confirmOkBtn').addEventListener('click', () => {
+    const cb = _confirmCb;
+    closeConfirm();
+    if (cb) cb();
+});
+
+async function handleChangePassword(e) {
+    e.preventDefault();
+    const cur = document.getElementById('cpCurrent').value;
+    const np  = document.getElementById('cpNew').value;
+    const nc  = document.getElementById('cpConfirm').value;
+    const btn = document.getElementById('btnChangePw');
+
+    if (!cur || !np) { showToast('Isi semua kolom kata sandi', false); return; }
+    if (np.length < 8) { showToast('Kata sandi baru minimal 8 karakter', false); return; }
+    if (np !== nc) { showToast('Konfirmasi kata sandi tidak cocok', false); return; }
+
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Menyimpan…';
+
+    try {
+        const res = await fetch('api/change-password.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify({ current_password: cur, new_password: np }),
+            signal: AbortSignal.timeout(8000)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('Kata sandi berhasil diubah');
+            document.getElementById('changePwForm').reset();
+        } else {
+            showToast(data.message || 'Gagal mengubah kata sandi', false);
+        }
+    } catch (err) {
+        showToast('Tidak dapat terhubung ke server', false);
+    }
+    btn.disabled = false; btn.textContent = orig;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

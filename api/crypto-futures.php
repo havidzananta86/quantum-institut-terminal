@@ -2,7 +2,8 @@
 // Proxy untuk Binance Futures public API + Frankfurter IDR rates
 // Tidak butuh auth — semua endpoint ini public
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(30, 60);
 header('Cache-Control: public, max-age=60'); // cache 60 detik
 
 $_qi_dev = in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true);

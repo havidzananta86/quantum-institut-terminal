@@ -3,7 +3,8 @@
  * COT Analysis — CFTC Commitment of Traders (public data)
  */
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(30, 60);
 
 $cacheFile = __DIR__ . '/../cache/cot_data.json';
 $cacheTTL  = 10800;
