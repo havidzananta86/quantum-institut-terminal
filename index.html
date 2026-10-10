@@ -295,35 +295,15 @@
 
                     <!-- CTA Buttons Stack (Mobile vertikal, Tablet & Desktop horizontal) -->
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 sm:gap-4 pt-2">
-                        <!-- Buka Terminal Dropdown -->
-                        <div class="relative" id="heroCtaWrap">
-                            <button onclick="document.getElementById('heroCtaDrop').classList.toggle('hidden')" class="min-h-[44px] px-6 py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-cyan-glow transition-all flex items-center justify-center gap-2 w-full">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>Buka Terminal</span>
-                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                            </button>
-                            <div id="heroCtaDrop" class="hidden absolute left-0 top-full mt-2 w-64 rounded-xl shadow-2xl z-50" style="background:#0f0f0f;border:1px solid #222">
-                                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3.5 rounded-t-xl transition-colors hover:bg-white/5">
-                                    <span class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3)">
-                                        <svg class="w-5 h-5" style="color:#7C4DFF" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
-                                    </span>
-                                    <div>
-                                        <div class="text-sm font-bold text-white">Command Center</div>
-                                        <div class="text-xs text-slate-400">Dashboard & AI Auto-Trade</div>
-                                    </div>
-                                </a>
-                                <div style="border-top:1px solid #1a1a1a"></div>
-                                <a href="terminal.html" class="flex items-center gap-3 px-4 py-3.5 rounded-b-xl transition-colors hover:bg-white/5">
-                                    <span class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.25)">
-                                        <svg class="w-5 h-5" style="color:#00E5FF" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    </span>
-                                    <div>
-                                        <div class="text-sm font-bold text-white">Terminal</div>
-                                        <div class="text-xs text-slate-400">Chart & Signal Scanner</div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
+                        <!-- Hero CTA: 2 tombol langsung (no dropdown) -->
+                        <a href="terminal.html" class="min-h-[44px] px-6 py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-cyan-glow transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Buka Terminal
+                        </a>
+                        <a href="dashboard.html" class="min-h-[44px] px-6 py-3.5 rounded-xl font-heading font-bold text-sm lg:text-base transition-all flex items-center justify-center gap-2 text-white" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.4)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#7C4DFF"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
+                            Command Center
+                        </a>
                         
                         <a href="#mesin-kuantum" class="min-h-[44px] px-6 py-3.5 rounded-xl bg-slate-900/80 hover:bg-purple-950/50 text-slate-200 border border-purple-500/30 font-heading font-medium text-sm lg:text-base transition-all flex items-center justify-center gap-2">
                             <span>Lihat Sembilan Mesin →</span>
@@ -1604,11 +1584,9 @@
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
     <script>
     document.addEventListener('click', function(e) {
-        ['heroCtaWrap','navCtaWrap'].forEach(function(id) {
-            var wrap = document.getElementById(id);
-            var drop = document.getElementById(id.replace('Wrap','Drop'));
-            if (wrap && drop && !wrap.contains(e.target)) drop.classList.add('hidden');
-        });
+        var wrap = document.getElementById('navCtaWrap');
+        var drop = document.getElementById('navCtaDrop');
+        if (wrap && drop && !wrap.contains(e.target)) drop.classList.add('hidden');
     });
     </script>
 </body>
