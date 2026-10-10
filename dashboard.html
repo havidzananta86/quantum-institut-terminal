@@ -87,7 +87,7 @@
             #sidebar.open { transform: translateX(0); }
         }
         @media (min-width:1024px) {
-            #sidebar { transition: width .25s ease, min-width .25s ease; overflow: hidden; }
+            #sidebar { transition: width .25s ease, min-width .25s ease; overflow-x: hidden; overflow-y: auto; }
             #sidebar.sidebar-collapsed { width: 0 !important; min-width: 0 !important; border-right: none; }
         }
         /* Desktop-only sidebar collapse button */
