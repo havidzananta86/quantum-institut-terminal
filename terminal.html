@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full">
+<html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/terminal.html">
     <title>Quantum Terminal Pro | Live Realtime TradingView & 9 Mesin Kuantum</title>
     <meta name="description" content="Terminal Analisa Pasar Kuantum Realtime 9 Mesin. Data TradingView Realtime, Live Orderbook, & Quantum Calculations.">
+    <meta property="og:title" content="Quantum Terminal Pro | Live Realtime Trading">
+    <meta property="og:description" content="Terminal Analisa Pasar Kuantum Realtime 9 Mesin. Data TradingView Realtime, Live Orderbook, & Quantum Calculations.">
+    <meta property="og:image" content="https://quantuminstitut.market/assets/img/icon-512.png">
+    <meta property="og:url" content="https://quantuminstitut.market/terminal.html">
+    <meta property="og:type" content="website">
 
     <!-- iOS WebApp PWA Compatibility Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,39 +26,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                screens: {
-                    'xs': '480px',   // HP Kecil
-                    'sm': '640px',   // HP Besar / Landscape
-                    'md': '768px',   // Tablet Portrait
-                    'lg': '1024px',  // Laptop
-                    'xl': '1280px',  // Desktop
-                    '2xl': '1536px', // Desktop Besar / 4K
-                },
-                extend: {
-                    colors: {
-                        'quantum-dark': '#050A1A',
-                        'quantum-navy': '#0A1128',
-                        'quantum-card': '#0D1836',
-                        'quantum-cyan': '#00E5FF',
-                        'quantum-purple': '#7C4DFF',
-                        'quantum-green': '#00E676',
-                        'quantum-red': '#FF5252',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- TRADINGVIEW OFFICIAL ADVANCED CHARTING API (REALTIME DATA) -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -61,19 +38,21 @@
     <script src="assets/js/lightweight-charts.standalone.production.js"></script>
     <script>
         if (typeof LightweightCharts === 'undefined') {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"><\/script>');
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+            document.head.appendChild(s);
         }
     </script>
 
     <!-- MICROSOFT SIGNALR CLIENT (FOR BIQUOTE REALTIME FEED) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
 
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
     <link rel="stylesheet" href="assets/css/terminal.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.0">
 
     <style>
-        body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--qi-bg, #050A1A); color: var(--qi-text, #E2E8F0); font-family: 'Inter', sans-serif; }
         
         /* ATURAN CHART TERMINAL RESPONSIF:
            - Mobile (<768px): height 250px
@@ -156,6 +135,112 @@
 </head>
 <body class="flex flex-col min-h-screen lg:h-screen text-slate-200 antialiased selection:bg-cyan-500/30 overflow-x-hidden min-w-[320px]">
 
+<!-- ═══ 3D Loading Screen ═══ -->
+<div id="qiLoadScreen" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center" style="background:#030810;">
+    <style>
+        @keyframes qiCubeRotate { 0%{transform:rotateX(-20deg) rotateY(0deg)} 100%{transform:rotateX(-20deg) rotateY(360deg)} }
+        @keyframes qiPulseRing  { 0%{transform:scale(.6);opacity:.8} 50%{transform:scale(1);opacity:.3} 100%{transform:scale(.6);opacity:.8} }
+        @keyframes qiBarLoad    { 0%{width:0} 100%{width:100%} }
+        @keyframes qiFadeOut    { to{opacity:0;visibility:hidden} }
+        .qi-cube-wrap { perspective:400px; width:60px; height:60px; }
+        .qi-cube { width:60px; height:60px; position:relative; transform-style:preserve-3d; animation:qiCubeRotate 2s linear infinite; }
+        .qi-cube-face { position:absolute; width:60px; height:60px; border:1.5px solid rgba(0,229,255,.35); background:rgba(0,229,255,.04); backdrop-filter:blur(2px); }
+        .qi-cube-face:nth-child(1){transform:translateZ(30px)}
+        .qi-cube-face:nth-child(2){transform:rotateY(180deg) translateZ(30px)}
+        .qi-cube-face:nth-child(3){transform:rotateY(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(4){transform:rotateY(-90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(5){transform:rotateX(90deg) translateZ(30px)}
+        .qi-cube-face:nth-child(6){transform:rotateX(-90deg) translateZ(30px)}
+        .qi-ring { width:90px; height:90px; border:1px solid rgba(124,77,255,.2); border-radius:50%; position:absolute; animation:qiPulseRing 2s ease-in-out infinite; }
+        .qi-ring:nth-child(2){animation-delay:.5s;border-color:rgba(0,229,255,.15);}
+        #qiLoadScreen.done { animation:qiFadeOut .5s .1s forwards; }
+    </style>
+    <div class="relative flex items-center justify-center mb-6">
+        <div class="qi-ring"></div><div class="qi-ring"></div>
+        <div class="qi-cube-wrap"><div class="qi-cube">
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
+        </div></div>
+    </div>
+    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-3">Quantum Institut</div>
+    <div class="text-[9px] font-mono text-slate-600 mb-4" id="qiLoadStatus">Initializing Quantum Terminal…</div>
+    <div class="w-48 h-[2px] bg-[#0F1A2E] rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#00E5FF] to-[#7C4DFF]" style="animation:qiBarLoad 2s ease-out forwards;"></div>
+    </div>
+</div>
+<script>
+(function(){
+    var msgs = ['Connecting to market data…','Loading trading engines…','Calibrating quantum models…','Terminal ready…'];
+    var el = document.getElementById('qiLoadStatus'), idx = 0;
+    var iv = setInterval(function(){ if(el && idx < msgs.length) el.textContent = msgs[idx++]; }, 500);
+    window.addEventListener('load', function(){
+        clearInterval(iv);
+        if(el) el.textContent = 'Ready';
+        setTimeout(function(){
+            var ls = document.getElementById('qiLoadScreen');
+            if(ls) ls.classList.add('done');
+            setTimeout(function(){ if(ls) ls.remove(); }, 700);
+        }, 300);
+    });
+})();
+</script>
+
+<!-- ══════════ REGISTRATION GATE OVERLAY ══════════ -->
+<div id="qiRegGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+     style="background:rgba(3,8,16,0.97);backdrop-filter:blur(12px);display:none!important;">
+    <div class="w-full max-w-md rounded-2xl border border-cyan-500/30 overflow-hidden shadow-2xl"
+         style="background:linear-gradient(135deg,#080E1C 0%,#050A14 100%);">
+        <!-- Header gradient strip -->
+        <div class="h-1 w-full" style="background:linear-gradient(90deg,#00E5FF,#7C4DFF)"></div>
+        <div class="p-6 sm:p-8 text-center">
+            <!-- Logo -->
+            <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-14 w-14 rounded-xl object-cover mx-auto mb-4 border border-cyan-500/30">
+            <div class="text-xs font-mono text-cyan-400/70 uppercase tracking-widest mb-1">Quantum Institut</div>
+            <h2 class="text-xl font-bold text-white mb-2" style="font-family:'Space Grotesk',sans-serif;">Akses Terminal Pro</h2>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                Daftar gratis untuk mengakses semua fitur terminal — signal real-time, kalender ekonomi, order book, AI analisa, dan lebih banyak lagi.
+            </p>
+
+            <!-- Perks list -->
+            <div class="rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 mb-6 text-left space-y-2">
+                <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                    <span class="text-cyan-400 text-base leading-none">✓</span> 9 Mesin Analisa Kuantum (SNR, SMC, Ichimoku, Fibonacci, dll)
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                    <span class="text-cyan-400 text-base leading-none">✓</span> Signal Matrix Multi-Timeframe Real-time
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                    <span class="text-cyan-400 text-base leading-none">✓</span> Kalender Ekonomi + News Feed
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                    <span class="text-cyan-400 text-base leading-none">✓</span> Order Book Live + Paper Trading
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-300">
+                    <span class="text-cyan-400 text-base leading-none">✓</span> QUANTUM AI Trading Assistant
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col gap-3">
+                <a href="register.html" class="w-full py-3.5 rounded-xl font-bold text-sm text-slate-950 text-center flex items-center justify-center gap-2 transition-all"
+                   style="background:#00E5FF;box-shadow:0 0 20px rgba(0,229,255,0.3);"
+                   onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                    Daftar Gratis Sekarang
+                </a>
+                <a href="login.html" class="w-full py-3 rounded-xl font-medium text-sm text-slate-200 text-center border border-slate-700 hover:border-cyan-500/40 hover:text-cyan-400 transition-all">
+                    Sudah punya akun? Masuk →
+                </a>
+            </div>
+
+            <p class="mt-4 text-[10px] text-slate-600 font-mono">
+                Gratis selamanya · Tanpa kartu kredit · Data aman
+            </p>
+        </div>
+    </div>
+</div>
+<!-- END REGISTRATION GATE -->
+
 <!-- ══════════ NAVIGATION SIDEBAR (slide-in overlay) ══════════ -->
 <aside id="qiNavSidebar"
        class="fixed top-0 left-0 h-full w-56 z-50 bg-[#0C1220] border-r border-slate-800
@@ -178,24 +263,22 @@
     <nav class="flex-1 px-2 py-3 space-y-4 text-xs">
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market Intelligence</div>
-            <a href="#radar"   onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>⚡</span> Quantum AI Radar<span class="ml-auto text-[9px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded px-1">PRO</span></a>
-            <a href="#signals" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📡</span> Signal Matrix</a>
-            <a href="#analysis" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🔬</span> Technical Outlook</a>
-            <a href="#calendar" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🗓</span> Economic Calendar</a>
+            <a href="#" onclick="switchBottomTabGated('aiscanner');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>⚡</span> Quantum AI Radar<span class="ml-auto text-[9px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded px-1">PRO</span></a>
+            <a href="#" onclick="switchBottomTab('analysis');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📡</span> Signal Matrix</a>
+            <a href="#" onclick="switchBottomTab('economicCalendar');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🗓</span> Economic Calendar</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
-            <a href="dashboard.html" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🌐</span> Command Center</a>
-            <a href="#chart"    onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400"><span>📈</span> Charts</a>
-            <a href="#news"     onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📰</span> News Feed</a>
-            <a href="#orderbook" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📊</span> Order Book</a>
+            <a href="dashboard.html" id="termSidebarDashLink" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🌐</span> Command Center</a>
+            <a href="#" onclick="document.getElementById('chartEngineWrapper')?.scrollIntoView({behavior:'smooth',block:'start'});qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400"><span>📈</span> Charts</a>
+            <a href="#" onclick="switchBottomTab('news');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📰</span> News Feed</a>
+            <a href="#" onclick="switchBottomTab('orderbook');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>📊</span> Order Book</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
-            <a href="#trading"  onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>💼</span> Paper Trading</a>
-            <a href="#backtest" onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>⏪</span> Backtester</a>
-            <a href="#track"    onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🏆</span> Track Record</a>
-            <a href="#matrix"   onclick="qiCloseSidebar()" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🔮</span> Correlation Matrix</a>
+            <a href="#" onclick="switchBottomTabGated('papertrading');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>💼</span> Paper Trading<span class="ml-auto text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded px-1">PRO</span></a>
+            <a href="#" onclick="switchBottomTabGated('trackrecord');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🏆</span> Track Record<span class="ml-auto text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded px-1">PRO</span></a>
+            <a href="#" onclick="switchBottomTabGated('correlation');qiCloseSidebar();return false;" class="qi-nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-cyan-500/10 transition-all"><span>🔮</span> Correlation Matrix<span class="ml-auto text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded px-1">PRO</span></a>
         </div>
     </nav>
     <div class="px-4 py-3 border-t border-slate-800 text-[10px] text-slate-600">Quantum Institut v2.0</div>
@@ -206,7 +289,33 @@
 <script>
 function qiOpenSidebar()  { document.getElementById('qiNavSidebar').classList.replace('-translate-x-full','translate-x-0'); document.getElementById('qiNavOverlay').classList.remove('hidden'); }
 function qiCloseSidebar() { document.getElementById('qiNavSidebar').classList.replace('translate-x-0','-translate-x-full'); document.getElementById('qiNavOverlay').classList.add('hidden'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSidebar(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        // Close modals first, then sidebar
+        const modals = ['posCalculatorModal','rrToolModal','aiAnalystModal'];
+        let closed = false;
+        for (const id of modals) {
+            const m = document.getElementById(id);
+            if (m && !m.classList.contains('hidden')) {
+                if (id === 'posCalculatorModal' && window.QuantumPositionCalculator) QuantumPositionCalculator.closeModal();
+                else if (id === 'rrToolModal' && window.QuantumRRTool) QuantumRRTool.closeModal();
+                else if (id === 'aiAnalystModal' && window.QuantumAIEngine) QuantumAIEngine.closeModal();
+                closed = true; break;
+            }
+        }
+        if (!closed) qiCloseSidebar();
+        return;
+    }
+    // Number keys 1-6: switch bottom tabs (not when typing in inputs)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    const tabKeys = { '1':'analysis','2':'papertrading','3':'orderbook','4':'economicCalendar','5':'news','6':'confluence' };
+    if (tabKeys[e.key] && typeof switchBottomTab === 'function') {
+        e.preventDefault();
+        const tab = tabKeys[e.key];
+        if (typeof switchBottomTabGated === 'function') switchBottomTabGated(tab);
+        else switchBottomTab(tab);
+    }
+});
 </script>
 <!-- ══════════ END SIDEBAR ══════════ -->
 
@@ -216,18 +325,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         <!-- ZONE KRI: Logo Brand & Symbol Tabs -->
         <div class="flex items-center gap-2 lg:gap-3 shrink-0">
             <a href="index.html" class="flex items-center gap-2 group shrink-0" title="Kembali ke Landing Page (Quantum Institut)">
-                <div class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400 group-hover:rotate-180 transition-transform duration-500">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="#00E5FF"/>
-                    </svg>
-                </div>
+                <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="w-8 h-8 rounded-lg object-cover border border-cyan-500/40 group-hover:border-cyan-400 transition-all">
                 <span class="font-heading font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">
                     Quantum<span class="text-cyan-400">Terminal</span>
                 </span>
             </a>
 
             <!-- Dashboard link -->
-            <a href="dashboard.html" title="Quantum Command Center"
+            <a href="dashboard.html" id="termHeaderDashLink" title="Quantum Command Center"
                class="hidden xs:flex items-center gap-1 px-2 py-1 rounded-md text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all text-[10px] font-semibold shrink-0">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
                 <span>Dashboard</span>
@@ -585,10 +690,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
             <!-- ECONOMIC CALENDAR, ORDER BOOK, PAPER TRADING & PRO SUITE DRAWER -->
             <div class="w-full rounded-xl border border-cyan-500/20 bg-[#070D22] p-3 font-mono text-xs space-y-3">
-                
-                <!-- Main Panel Tabs: 5 Pro Trading Modules -->
+
+                <!-- Main Panel Tabs -->
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
                     <div class="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5">
+                        <!-- ── AREA GRATIS ── -->
+                        <span class="text-[9px] text-cyan-500/60 font-mono px-1 hidden sm:inline">GRATIS:</span>
                         <button onclick="switchBottomTab('calendar')" id="tab-calendar" class="px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs">
                             <span>📅 KALENDER</span>
                         </button>
@@ -598,18 +705,23 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                         <button onclick="switchBottomTab('orderbook')" id="tab-orderbook" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1 text-xs">
                             <span>📖 ORDER BOOK</span>
                         </button>
-                        <button onclick="switchBottomTab('papertrading')" id="tab-papertrading" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs">
-                            <span>💼 PAPER TRADING</span>
-                        </button>
-                        <button onclick="switchBottomTab('confluence')" id="tab-confluence" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 transition-all flex items-center gap-1 text-xs" title="Multi-Timeframe Confluence Matrix & Liquidity Heatmap">
-                            <span>📊 MATRIX</span>
-                        </button>
-                        <button onclick="switchBottomTab('trackrecord')" id="tab-trackrecord" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 transition-all flex items-center gap-1 text-xs" title="Riwayat Audit Sinyal Realtime & Kredibilitas Performance">
-                            <span>📈 TRACK RECORD</span>
-                        </button>
-                        <button onclick="switchBottomTab('aiscanner')" id="tab-aiscanner" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-purple-300 transition-all flex items-center gap-1 text-xs">
-                            <span>🤖 AI RADAR</span>
-                        </button>
+
+                        <!-- ── AREA PRO (dropdown) ── -->
+                        <div class="relative" id="proTabDropdownWrap">
+                            <button id="proTabDropdownBtn" onclick="toggleProTabDropdown()" class="px-2.5 py-1.5 rounded-lg text-purple-300 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/10 transition-all flex items-center gap-1 text-xs font-medium">
+                                <span class="text-[9px] bg-purple-500/20 text-purple-300 rounded px-1 py-0.5 font-mono">PRO</span>
+                                <span class="hidden sm:inline">More</span> ▾
+                            </button>
+                            <!-- Dropdown panel -->
+                            <div id="proTabDropdown" class="hidden absolute bottom-full mb-1 left-0 z-50 min-w-[180px] rounded-xl border border-purple-500/30 bg-[#070D22] shadow-2xl py-1.5 text-xs font-mono">
+                                <div class="px-3 py-1 text-[9px] text-purple-400/70 uppercase tracking-widest border-b border-slate-800 mb-1">Quantum+ PRO</div>
+                                <button onclick="switchBottomTabGated('papertrading');closeProTabDropdown()" id="tab-papertrading" class="w-full text-left px-3 py-2 text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/5 transition-all flex items-center gap-2">💼 Paper Trading</button>
+                                <button onclick="switchBottomTabGated('confluence');closeProTabDropdown()" id="tab-confluence" class="w-full text-left px-3 py-2 text-slate-300 hover:text-amber-300 hover:bg-amber-500/5 transition-all flex items-center gap-2">📊 Confluence Matrix</button>
+                                <button onclick="switchBottomTabGated('trackrecord');closeProTabDropdown()" id="tab-trackrecord" class="w-full text-left px-3 py-2 text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/5 transition-all flex items-center gap-2">📈 Track Record</button>
+                                <button onclick="switchBottomTabGated('aiscanner');closeProTabDropdown()" id="tab-aiscanner" class="w-full text-left px-3 py-2 text-slate-300 hover:text-purple-300 hover:bg-purple-500/5 transition-all flex items-center gap-2">🤖 AI Radar</button>
+                                <button onclick="switchBottomTabGated('correlation');closeProTabDropdown()" id="tab-correlation" class="w-full text-left px-3 py-2 text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/5 transition-all flex items-center gap-2">🔮 Korelasi Matrix</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Live Update Indicator -->
@@ -806,9 +918,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                 <!-- TAB 5: MULTI-TIMEFRAME CONFLUENCE MATRIX & LIQUIDITY HEATMAP -->
                 <div id="panelConfluenceMatrix" class="space-y-3 hidden"></div>
 
+                <!-- CORRELATION MATRIX (Pearson antar instrumen) -->
+                <div id="panelCorrelation" class="space-y-2 hidden">
+                    <div class="text-center py-4 text-slate-500 font-mono text-xs">Memuat matriks korelasi…</div>
+                </div>
+
                 <!-- TAB 5: AI RADAR & SIGNALS SCANNER (TIER C - FITUR 29) -->
                 <div id="panelAIScanner" class="space-y-2 hidden">
                     <div class="text-center py-4 text-slate-500 font-mono text-xs">Memuat Radar AI...</div>
+                </div>
+
                 <!-- TAB 6: TRACK RECORD & SIGNAL AUDIT TRAIL (TAHAP 2 - FITUR 3) -->
                 <div id="panelTrackRecord" class="space-y-3 hidden">
                     <div id="trackRecordContainer" class="space-y-2">
@@ -973,19 +1092,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
     </div>
 
     <!-- JS Core & Script Chart Sync Manager -->
-    <script src="assets/js/auth.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/ticker.js"></script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/ticker.js?v=1.4.0"></script>
     <script src="assets/js/chart-init.js"></script>
     <script>
-        // Check / init Auth Session State
+        // Check / init Auth Session State — shows registration gate if not logged in
         (function checkTerminalAccess() {
             const token = window.QuantumAuth ? window.QuantumAuth.getToken() : localStorage.getItem('qi_token');
             const profileBadge = document.getElementById('profileBadge');
             const logoutBtn = document.getElementById('logoutBtn');
             const user = window.QuantumAuth ? window.QuantumAuth.getUserData() : null;
+            const gate = document.getElementById('qiRegGate');
 
             if (token) {
+                // Logged in — hide gate, show active session
+                if (gate) gate.style.setProperty('display', 'none', 'important');
                 if (profileBadge) {
                     const label = (user && (user.role === 'pro' || user.role === 'admin' || user.plan)) ? 'PRO AKTIF' : 'AKTIF';
                     profileBadge.href = '#';
@@ -995,7 +1117,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                 }
                 if (logoutBtn) logoutBtn.classList.replace('hidden', 'flex');
             } else {
-                // Tetap dengan default badge "LOGIN" (amber) dari HTML; sembunyikan logout
+                // Not logged in — show registration gate
+                if (gate) gate.style.setProperty('display', 'flex', 'important');
                 if (logoutBtn) logoutBtn.classList.add('hidden');
             }
         })();
@@ -1008,7 +1131,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
         async function fetchCandlesForEngine(symbol, interval) {
             try {
-                const res = await fetch(`/webapp/api/get-chart-data.php?symbol=${symbol}&interval=${interval}`, { cache: 'no-store' });
+                const res = await fetch(`api/get-chart-data.php?symbol=${symbol}&interval=${interval}`, { cache: 'no-store' });
                 const json = await res.json();
                 if (json.candles && json.candles.length > 0) {
                     window._cachedCandles = json.candles;
@@ -1270,6 +1393,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                 );
             }
 
+            // Landscape hint on mobile
+            if (_chartIsFullscreen && window.innerWidth < 768 && window.innerHeight > window.innerWidth) {
+                showQuantumToast('📱 Putar HP ke landscape untuk tampilan chart optimal', 'info', 3000);
+            }
+
             // Beritahu chart engine untuk resize
             setTimeout(() => {
                 if (window.quantumTerminalManager && quantumTerminalManager.chart) {
@@ -1279,6 +1407,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                 }
             }, 100);
         }
+
+        // Resize chart on orientation change (mobile fullscreen)
+        window.addEventListener('orientationchange', () => {
+            if (_chartIsFullscreen && window.quantumTerminalManager?.chart) {
+                setTimeout(() => {
+                    const c = document.getElementById('chartEngineWrapper');
+                    if (c) quantumTerminalManager.chart.resize(c.clientWidth, c.clientHeight);
+                }, 200);
+            }
+        });
 
         function resetChartZoom() {
             if (window.quantumTerminalManager && quantumTerminalManager.chart) {
@@ -1314,29 +1452,126 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         let selectedCalendarCurrency = 'ALL';
         let selectedCalendarImpact = 'ALL';
 
+        // --- Helpers: role detection ---
+        const PRO_TABS = new Set(['papertrading', 'confluence', 'trackrecord', 'aiscanner', 'correlation']);
+        function _isProUser() {
+            try {
+                const u = JSON.parse(localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user') || 'null');
+                return u && (u.role === 'pro' || u.role === 'admin');
+            } catch (e) { return false; }
+        }
+
+        // PRO tab dropdown toggle
+        function toggleProTabDropdown() {
+            const d = document.getElementById('proTabDropdown');
+            if (!d) return;
+            d.classList.toggle('hidden');
+            if (!d.classList.contains('hidden')) {
+                setTimeout(() => document.addEventListener('click', _closeProDropdownOnOutside, { once: true }), 0);
+            }
+        }
+        function closeProTabDropdown() {
+            const d = document.getElementById('proTabDropdown');
+            if (d) d.classList.add('hidden');
+        }
+        function _closeProDropdownOnOutside(e) {
+            const wrap = document.getElementById('proTabDropdownWrap');
+            if (wrap && !wrap.contains(e.target)) closeProTabDropdown();
+        }
+
+        // Gated entry point for PRO tabs — shows upgrade modal for non-PRO
+        function switchBottomTabGated(tabName) {
+            if (PRO_TABS.has(tabName) && !_isProUser()) {
+                showProUpgradeModal(tabName);
+                return;
+            }
+            switchBottomTab(tabName);
+        }
+
+        // PRO upgrade modal
+        function showProUpgradeModal(fromTab) {
+            const labels = { papertrading: 'Paper Trading', confluence: 'Confluence Matrix',
+                             trackrecord: 'Track Record', aiscanner: 'AI Radar', correlation: 'Correlation Matrix' };
+            const label = labels[fromTab] || fromTab;
+            const existing = document.getElementById('proUpgradeModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'proUpgradeModal';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
+            modal.style.background = 'rgba(5,10,26,0.92)';
+            modal.style.backdropFilter = 'blur(8px)';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = `
+                <div class="w-full max-w-sm glass-card rounded-2xl p-6 sm:p-8 border border-purple-500/40 shadow-2xl text-center space-y-4 font-mono" style="background:linear-gradient(135deg,rgba(13,24,54,0.95),rgba(10,17,40,0.98))">
+                    <div class="text-3xl">🔒</div>
+                    <div>
+                        <div class="text-[10px] text-purple-400 uppercase tracking-widest mb-1">Fitur Quantum+ PRO</div>
+                        <div class="font-heading font-bold text-white text-lg leading-tight">${label}</div>
+                        <div class="text-slate-400 text-xs mt-2 leading-relaxed">Fitur ini eksklusif untuk pengguna <span class="text-purple-300 font-bold">Quantum+ PRO</span>. Upgrade sekarang untuk akses penuh.</div>
+                    </div>
+                    <div class="space-y-2 pt-2">
+                        <a href="pricing.html" class="block py-3 rounded-xl font-heading font-bold text-sm text-slate-950 transition-all" style="background:linear-gradient(135deg,#A78BFA,#7C4DFF)">⚡ Lihat Paket PRO →</a>
+                        <button onclick="document.getElementById('proUpgradeModal')?.remove()" class="block w-full py-2.5 rounded-xl text-xs text-slate-400 border border-slate-800 hover:border-slate-600 hover:text-white transition-all">Nanti Saja</button>
+                    </div>
+                    <div class="text-[10px] text-slate-600 border-t border-slate-800 pt-3">Mulai dari Rp55.000 / bulan · Aktif instan</div>
+                </div>`;
+            document.body.appendChild(modal);
+            document.addEventListener('keydown', function escClose(e) {
+                if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escClose); }
+            });
+        }
+
         function switchBottomTab(tabName) {
-            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner'];
+            const tabs = ['calendar', 'news', 'orderbook', 'papertrading', 'confluence', 'trackrecord', 'aiscanner', 'correlation'];
+            const panelIdMap = { orderbook: 'panelOrderBook', papertrading: 'panelPaperTrading',
+                                 aiscanner: 'panelAIScanner', confluence: 'panelConfluenceMatrix',
+                                 trackrecord: 'panelTrackRecord', correlation: 'panelCorrelation' };
+            const proTabLabels = { papertrading:'💼 Paper Trading', confluence:'📊 Confluence Matrix',
+                                   trackrecord:'📈 Track Record', aiscanner:'🤖 AI Radar', correlation:'🔮 Korelasi Matrix' };
+
+            const activeIsProTab = PRO_TABS.has(tabName);
+
             tabs.forEach(t => {
-                const panel = document.getElementById(`panel${t.charAt(0).toUpperCase() + t.slice(1)}`) || 
-                              document.getElementById(`panel${t === 'orderbook' ? 'OrderBook' : t === 'papertrading' ? 'PaperTrading' : t === 'aiscanner' ? 'AIScanner' : t === 'confluence' ? 'ConfluenceMatrix' : t === 'trackrecord' ? 'TrackRecord' : ''}`);
-                const tabBtn = document.getElementById(`tab-${t}`);
+                const panelId = panelIdMap[t] || ('panel' + t.charAt(0).toUpperCase() + t.slice(1));
+                const panel = document.getElementById(panelId);
+                if (panel) panel.classList.toggle('hidden', t !== tabName);
 
-                if (panel) {
-                    if (t === tabName) {
-                        panel.classList.remove('hidden');
-                    } else {
-                        panel.classList.add('hidden');
+                const isPro = PRO_TABS.has(t);
+                if (isPro) {
+                    // PRO tabs live inside the dropdown — only adjust highlight style
+                    const tabBtn = document.getElementById(`tab-${t}`);
+                    if (tabBtn) {
+                        if (t === tabName) {
+                            tabBtn.className = "w-full text-left px-3 py-2 transition-all flex items-center gap-2 bg-purple-500/10 text-purple-300 font-bold";
+                        } else {
+                            tabBtn.className = "w-full text-left px-3 py-2 text-slate-300 hover:text-purple-300 hover:bg-purple-500/5 transition-all flex items-center gap-2";
+                        }
                     }
-                }
-
-                if (tabBtn) {
+                } else {
+                    const tabBtn = document.getElementById(`tab-${t}`);
+                    if (!tabBtn) return;
+                    const icons = { calendar:'📅 KALENDER', news:'📰 BERITA', orderbook:'📖 ORDER BOOK' };
                     if (t === tabName) {
                         tabBtn.className = "px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs";
                     } else {
                         tabBtn.className = "px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1 text-xs";
                     }
+                    tabBtn.innerHTML = `<span>${icons[t] || t}</span>`;
                 }
             });
+
+            // Update the "More PRO ▾" dropdown trigger button appearance
+            const dropBtn = document.getElementById('proTabDropdownBtn');
+            if (dropBtn) {
+                if (activeIsProTab) {
+                    dropBtn.className = "px-2.5 py-1.5 rounded-lg active-tab font-bold border transition-all flex items-center gap-1 text-xs";
+                    dropBtn.innerHTML = `<span>${proTabLabels[tabName] || tabName}</span> ▴`;
+                } else {
+                    dropBtn.className = "px-2.5 py-1.5 rounded-lg text-purple-300 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/10 transition-all flex items-center gap-1 text-xs font-medium";
+                    dropBtn.innerHTML = `<span class="text-[9px] bg-purple-500/20 text-purple-300 rounded px-1 py-0.5 font-mono">PRO</span><span class="hidden sm:inline">More</span> ▾`;
+                }
+            }
 
             if (tabName === 'news') fetchRealtimeNews();
             if (tabName === 'orderbook' && window.QuantumOrderBook) window.QuantumOrderBook.render();
@@ -1344,6 +1579,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
             if (tabName === 'confluence' && window.QuantumConfluenceEngine) window.QuantumConfluenceEngine.render();
             if (tabName === 'trackrecord' && window.QuantumTrackRecord) window.QuantumTrackRecord.render();
             if (tabName === 'aiscanner' && window.QuantumAIRadar) window.QuantumAIRadar.render();
+            if (tabName === 'correlation' && window.QuantumCorrelation) window.QuantumCorrelation.render();
         }
 
         function filterCalendarCurrency(curr) {
@@ -1515,11 +1751,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         function renderRealtimeNewsFallback() {
             if (!allNewsItems || allNewsItems.length === 0) {
                 allNewsItems = [
-                    { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Surges Above $68,500 as Institutional Inflows Hit 3-Month High', sentiment: 'bullish', url: 'https://www.coindesk.com' },
-                    { category: 'FOREX/MACRO', source: 'Reuters Finance', title: 'US Dollar Index Holds Firm Ahead of Critical Inflation CPI Report', sentiment: 'neutral', url: 'https://www.reuters.com' },
-                    { category: 'GOLD', source: 'Bloomberg Gold', title: 'Gold (XAU/USD) Rebounds Near $2,655 On Safe-Haven Demand & Rate Cut Expectations', sentiment: 'bullish', url: 'https://www.bloomberg.com' },
-                    { category: 'CRYPTO', source: 'CoinTelegraph', title: 'Ethereum Staking Rewards Yield Surges Ahead of Upcoming Network Upgrade', sentiment: 'bullish', url: 'https://cointelegraph.com' },
-                    { category: 'MACRO', source: 'Financial Times', title: 'Federal Reserve Officials Signal Data-Dependent Approach For Upcoming Rate Decision', sentiment: 'neutral', url: 'https://www.ft.com' }
+                    { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Melanjutkan Konsolidasi di Atas $68,000 Menjelang Rilis Data Inflasi AS', sentiment: 'bullish', url: '#' },
+                    { category: 'GOLD', source: 'Reuters', title: 'Harga Emas Menguji Rekor Tertinggi Baru di Tengah Ketidakpastian Makroekonomi Global', sentiment: 'bullish', url: '#' },
+                    { category: 'FOREX/MACRO', source: 'Reuters Finance', title: 'Dolar AS Menguat Moderat Terhadap Mata Uang Utama Menunggu Pidato Pejabat The Fed', sentiment: 'neutral', url: '#' },
+                    { category: 'CRYPTO', source: 'CoinTelegraph', title: 'Ethereum Staking Rewards Meningkat Menjelang Upgrade Jaringan Mendatang', sentiment: 'bullish', url: '#' },
+                    { category: 'MACRO', source: 'Financial Times', title: 'Pejabat Fed Sinyal Pendekatan Berbasis Data untuk Keputusan Suku Bunga', sentiment: 'neutral', url: '#' }
                 ];
             }
             renderRealtimeNews();
@@ -1535,7 +1771,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
             // api/news.php = feed RSS real (cache server 5 menit). Folder cache/
             // diblok .htaccess, jadi langsung ke endpoint.
-            tryFetch('/webapp/api/news.php')
+            tryFetch('api/news.php')
                 .catch(() => tryFetch('api/news.php'))
                 .then(res => {
                     if (res && res.data && res.data.length > 0) {
@@ -1593,15 +1829,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                 `;
                 container.appendChild(itemDiv);
             });
-        }
-
-        function renderRealtimeNewsFallback() {
-            allNewsItems = [
-                { category: 'CRYPTO', source: 'CoinDesk', title: 'Bitcoin Melanjutkan Konsolidasi di Atas $68,000 Menjelang Rilis Data Inflasi AS', sentiment: 'bullish', url: '#' },
-                { category: 'GOLD', source: 'Reuters', title: 'Harga Emas Menguji Rekor Tertinggi Baru di Tengah Ketidakpastian Makroekonomi Global', sentiment: 'bullish', url: '#' },
-                { category: 'FOREX', source: 'Bloomberg', title: 'Dolar AS Menguat Moderat Terhadap Mata Uang Utama Menunggu Pidato Pejabat The Fed', sentiment: 'neutral', url: '#' }
-            ];
-            renderRealtimeNews();
         }
 
         const commandItems = [
@@ -2166,7 +2393,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
     </div>
 
     <!-- PRO TRADING TOOLS SCRIPT SUITE -->
-    <script src="assets/js/pro-trading-tools.js"></script>
+    <script src="assets/js/pro-trading-tools.js?v=1.4.0"></script>
     <script>
         // ── TikTok Audio Playlist State ──────────────────────────────
         const _bgmPlaylist = [
@@ -2351,7 +2578,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                     e.preventDefault();
                     _pwaInstallPrompt = e;
                     if (installBtn) installBtn.classList.remove('hidden');
-                    console.log('[PWA] Install prompt captured ✅');
                 });
 
                 // Also listen for successful install
@@ -2361,7 +2587,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
                     if (window.showQuantumToast) {
                         window.showQuantumToast('📲 Quantum Terminal berhasil diinstall!', 'success');
                     }
-                    console.log('[PWA] App installed successfully ✅');
                 });
             }
         })();
@@ -2402,8 +2627,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
 
             try {
                 const result = await _pwaInstallPrompt.prompt();
-                console.log('[PWA] User choice:', result.outcome);
-
                 if (result.outcome === 'accepted') {
                     _pwaInstallPrompt = null;
                     closePwaInstallModal();
@@ -2441,13 +2664,82 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') qiCloseSideb
         // ── Service Worker Registration ───────────────────────────
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('[SW] Registered:', reg.scope))
-                    .catch(err => console.log('[SW] Registration failed (optional):', err));
+                navigator.serviceWorker.register('sw.js').catch(() => {});
             });
         }
     </script>
 
+    <!-- ── Disclaimer Footer (desktop only — mobile uses bottom nav) ── -->
+    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 backdrop-blur-sm py-3 px-4 text-center hidden md:block">
+        <p class="text-[10px] text-slate-500 leading-relaxed max-w-4xl mx-auto">
+            ⚠ <strong class="text-slate-400">Bukan Nasihat Keuangan.</strong>
+            Platform ini untuk tujuan edukasi. Semua keputusan trading adalah tanggung jawab penuh pengguna.
+            Kinerja masa lalu tidak menjamin hasil di masa mendatang.
+        </p>
+        <p class="text-[9px] text-slate-600 mt-1">© 2026 Quantum Institut</p>
+    </footer>
+
+    <!-- ── Mobile Bottom Nav (md and below only) ─────────────────────── -->
+    <nav class="mobile-bottom-nav md:hidden" id="mobileBottomNav" aria-label="Navigasi bawah">
+        <a href="dashboard.html" id="termMobileDashLink" class="mobile-bottom-nav-item" title="Command Center">
+            <span class="nav-icon">🌐</span>
+            <span>Dashboard</span>
+        </a>
+        <button onclick="switchBottomTabGated('calendar')" class="mobile-bottom-nav-item" id="mbnCalendar" title="Kalender Ekonomi">
+            <span class="nav-icon">📅</span>
+            <span>Kalender</span>
+        </button>
+        <button onclick="switchBottomTabGated('news')" class="mobile-bottom-nav-item" id="mbnNews" title="Berita">
+            <span class="nav-icon">📰</span>
+            <span>Berita</span>
+        </button>
+        <button onclick="switchBottomTabGated('aiscanner')" class="mobile-bottom-nav-item" id="mbnAI" title="AI Radar PRO">
+            <span class="nav-icon">🤖</span>
+            <span>AI Radar</span>
+        </button>
+        <a href="profile.html" class="mobile-bottom-nav-item" title="Profil">
+            <span class="nav-icon">👤</span>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+<!-- PRO-gate dashboard links: hide for free users -->
+<script>
+(function(){
+    var isPro = false;
+    try {
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        var u = raw ? JSON.parse(raw) : null;
+        isPro = u && (u.role === 'pro' || u.role === 'admin');
+    } catch(e){}
+
+    if (isPro) return; // PRO users see everything normally
+
+    // Sidebar: replace with locked upgrade link
+    var sidebar = document.getElementById('termSidebarDashLink');
+    if (sidebar) {
+        sidebar.href = 'pricing.html';
+        sidebar.title = 'Quantum+ PRO Required';
+        sidebar.innerHTML = '<span class="opacity-40">🌐</span><span class="text-slate-600">Command Center</span><span class="ml-auto text-[8px] font-mono px-1 py-0.5 rounded border border-slate-700 text-slate-600 shrink-0">🔒 PRO</span>';
+        sidebar.classList.remove('text-slate-400','hover:text-white','hover:bg-cyan-500/10');
+        sidebar.classList.add('cursor-pointer','opacity-70');
+    }
+
+    // Header: hide entirely for free users
+    var header = document.getElementById('termHeaderDashLink');
+    if (header) header.style.display = 'none';
+
+    // Mobile bottom nav: replace with pricing link
+    var mobile = document.getElementById('termMobileDashLink');
+    if (mobile) {
+        mobile.href = 'pricing.html';
+        mobile.title = 'Upgrade PRO';
+        mobile.innerHTML = '<span class="nav-icon opacity-50">🔒</span><span class="text-slate-600">PRO</span>';
+    }
+})();
+</script>
+
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>
 

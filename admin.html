@@ -1,30 +1,15 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="canonical" href="https://quantuminstitut.market/admin.html">
 <title>Admin Panel — Quantum Institut</title>
-<script src="assets/js/auth.js"></script>
-<script src="https://cdn.tailwindcss.com/3.4.1"></script>
-<script>
-tailwind.config = {
-    darkMode: 'class',
-    theme: { extend: {
-        colors: {
-            'qi-bg':     '#050A1A',
-            'qi-panel':  '#080F1E',
-            'qi-card':   '#0C1525',
-            'qi-border': '#1E293B',
-            'qi-cyan':   '#00E5FF',
-            'qi-purple': '#7C4DFF',
-            'qi-green':  '#10B981',
-            'qi-red':    '#EF4444',
-            'qi-gold':   '#F59E0B',
-        },
-        fontFamily: { heading: ['Rajdhani','sans-serif'] }
-    }}
-};
-</script>
+<script src="assets/js/auth.js?v=1.4.0"></script>
+<link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+<script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+<link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+<script src="assets/js/error-tracker.js?v=1.4.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
 body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
@@ -139,6 +124,49 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
                         class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 rounded text-xs transition-colors">← Prev</button>
                 <button id="btnNext" onclick="changePage(1)" disabled
                         class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 rounded text-xs transition-colors">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- #50 Analytics Dashboard -->
+    <div class="bg-qi-card border border-qi-border rounded-xl p-5 mt-6 mb-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Analytics Dashboard</h2>
+            <button onclick="loadAnalytics()" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div class="bg-slate-900/60 rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-qi-cyan" id="anActiveSessions">—</div>
+                <div class="text-[10px] text-slate-500 mt-1">Sesi Aktif</div>
+            </div>
+            <div class="bg-slate-900/60 rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-qi-green" id="anSignals7d">—</div>
+                <div class="text-[10px] text-slate-500 mt-1">Sinyal 7 Hari</div>
+            </div>
+            <div class="bg-slate-900/60 rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-qi-gold" id="anApiKeys">—</div>
+                <div class="text-[10px] text-slate-500 mt-1">API Keys</div>
+            </div>
+            <div class="bg-slate-900/60 rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-qi-purple" id="anReferrals">—</div>
+                <div class="text-[10px] text-slate-500 mt-1">Total Referral</div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Login Terbaru</div>
+                <div id="anRecentLogins" class="space-y-1 text-xs">
+                    <div class="text-slate-600">Memuat…</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Sistem</div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">PHP Version</span><span class="text-white" id="anPhpVer">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Cache Files</span><span class="text-white" id="anCacheFiles">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Error Log (24h)</span><span class="text-white" id="anErrors24">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Uptime</span><span class="text-qi-green" id="anUptime">—</span></div>
+                </div>
             </div>
         </div>
     </div>
@@ -274,15 +302,46 @@ function escHtml(s) {
 
 document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadUsers(0); });
 
+async function loadAnalytics() {
+    try {
+        const res = await fetch('api/admin-analytics.php', { headers: authHeaders() });
+        const d = await res.json();
+        if (d.status !== 'success') return;
+        const a = d.analytics || {};
+        document.getElementById('anActiveSessions').textContent = a.active_sessions ?? '—';
+        document.getElementById('anSignals7d').textContent = a.signals_7d ?? '—';
+        document.getElementById('anApiKeys').textContent = a.total_api_keys ?? '—';
+        document.getElementById('anReferrals').textContent = a.total_referrals ?? '—';
+        document.getElementById('anPhpVer').textContent = a.php_version ?? '—';
+        document.getElementById('anCacheFiles').textContent = a.cache_files ?? '—';
+        document.getElementById('anErrors24').textContent = a.errors_24h ?? '0';
+        document.getElementById('anUptime').textContent = a.uptime ?? '—';
+
+        const logins = a.recent_logins || [];
+        const el = document.getElementById('anRecentLogins');
+        if (!logins.length) {
+            el.innerHTML = '<div class="text-slate-600">Tidak ada data</div>';
+        } else {
+            el.innerHTML = logins.map(l => {
+                const t = l.time ? new Date(l.time).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+                return `<div class="flex justify-between bg-slate-900/60 rounded px-2 py-1.5">
+                    <span class="text-white">${escHtml(l.email || '—')}</span>
+                    <span class="text-slate-500">${t}</span>
+                </div>`;
+            }).join('');
+        }
+    } catch(e) {}
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const gate = document.getElementById('qiAdminGate');
-    if (gate && gate.style.display === 'none') loadUsers(0);
-    // Wait up to 1s for gate to clear (async verify)
+    if (gate && gate.style.display === 'none') { loadUsers(0); loadAnalytics(); }
     const interval = setInterval(() => {
-        if (gate && gate.style.display === 'none') { clearInterval(interval); loadUsers(0); }
+        if (gate && gate.style.display === 'none') { clearInterval(interval); loadUsers(0); loadAnalytics(); }
     }, 100);
     setTimeout(() => clearInterval(interval), 1500);
 });
 </script>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

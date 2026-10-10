@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="id" class="dark h-full">
+<html lang="id" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/economic-calendar.html">
     <title>Economic Calendar | Quantum Institut Market Terminal</title>
     <meta name="description" content="Kalender ekonomi real-time: event high impact, countdown, forecast vs actual, filter mata uang.">
     <meta name="theme-color" content="#050A1A">
@@ -10,33 +11,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="assets/js/auth.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'qi-bg':     '#070C1A',
-                        'qi-panel':  '#0C1220',
-                        'qi-card':   '#111827',
-                        'qi-border': '#1E293B',
-                        'qi-cyan':   '#00E5FF',
-                        'qi-purple': '#7C4DFF',
-                        'qi-green':  '#10B981',
-                        'qi-red':    '#EF4444',
-                        'qi-gold':   '#F59E0B',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk','sans-serif'],
-                        body:    ['Inter','sans-serif'],
-                        mono:    ['JetBrains Mono','monospace'],
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <style>
         body { background:#070C1A; font-family:'Inter',sans-serif; }
 
@@ -177,8 +156,8 @@
             <a href="terminal.html#orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📊</span> Order Book</a>
             <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📰</span> News Feed</a>
             <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>📅</span> Economic Calendar</a>
-            <a href="dashboard.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
-            <a href="dashboard.html#strength" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
+            <a href="dashboard.html" id="ecSidebarDash1" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
+            <a href="dashboard.html#strength" id="ecSidebarDash2" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
@@ -214,7 +193,7 @@
             <button onclick="refreshCalendar()" id="refreshBtn" title="Refresh" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-qi-cyan hover:border-qi-cyan/30 transition-all text-[11px]">
                 <span id="refreshIcon">↻</span> Refresh
             </button>
-            <a href="dashboard.html" class="px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-white transition-all text-[11px]">Dashboard →</a>
+            <a href="dashboard.html" id="ecHeaderDash" class="px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-white transition-all text-[11px]">Dashboard →</a>
         </div>
     </div>
 
@@ -565,5 +544,34 @@ fetchCalendar();
 setInterval(() => fetchCalendar(true), 300000); // refresh every 5 min
 setInterval(updateUpdatedAgo, 10000);
 </script>
+
+<!-- PRO-gate dashboard links -->
+<script>
+(function(){
+    var isPro = false;
+    try {
+        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
+        var u = raw ? JSON.parse(raw) : null;
+        isPro = u && (u.role === 'pro' || u.role === 'admin');
+    } catch(e){}
+
+    if (isPro) return;
+
+    var lockStyle = function(el, label) {
+        el.href = 'pricing.html';
+        el.title = 'Quantum+ PRO Required';
+        el.innerHTML = el.innerHTML.replace(label, label) + ' <span style="font-size:8px;padding:1px 4px;border-radius:4px;border:1px solid #334155;color:#475569">🔒</span>';
+        el.style.opacity = '0.55';
+    };
+
+    var d1 = document.getElementById('ecSidebarDash1');
+    var d2 = document.getElementById('ecSidebarDash2');
+    var dh = document.getElementById('ecHeaderDash');
+    if (d1) lockStyle(d1, 'Market Overview');
+    if (d2) lockStyle(d2, 'Currency Strength');
+    if (dh) { dh.href = 'pricing.html'; dh.textContent = '🔒 PRO →'; dh.style.opacity = '0.6'; }
+})();
+</script>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

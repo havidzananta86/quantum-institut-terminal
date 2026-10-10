@@ -3,5 +3,21 @@ Allow: /
 Disallow: /api/
 Disallow: /config/
 Disallow: /engine/
+Disallow: /cache/
+Disallow: /database/
+Disallow: /.claude/
+Disallow: /node_modules/
+Disallow: /tests/
+Disallow: /admin.html
+Disallow: /profile.html
+
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 30
 
 Sitemap: https://quantuminstitut.market/sitemap.xml

@@ -148,84 +148,7 @@
         status: 'LIVE', // 'LIVE' | 'DELAYED' | 'OFFLINE'
         lastUpdated: new Date(),
         connectLiveWS() {
-            // WebSocket Binance diblok di beberapa region — gunakan QuantumPricePoller sebagai gantinya
-            // Poller sudah diinisialisasi di atas dan mengupdate ticker + _livePrices
-            return;
-            /* eslint-disable no-unreachable */
-            const cryptoStreams = ['btcusdt@miniTicker', 'ethusdt@miniTicker', 'solusdt@miniTicker', 'bnbusdt@miniTicker', 'xrpusdt@miniTicker', 'dogeusdt@miniTicker'];
-            const streamUrls = [
-                `wss://stream.binance.vision/ws/${cryptoStreams.join('/')}`,
-                `wss://stream.binance.com:9443/ws/${cryptoStreams.join('/')}`
-            ];
-
-            let index = 0;
-            const updateStatusUI = (st) => {
-                this.status = st;
-                const statusEl = document.getElementById('tickerFeedStatus');
-                const textEl = document.getElementById('tickerFeedText');
-                const timeEl = document.getElementById('tickerLastTime');
-                
-                if (textEl) textEl.textContent = st;
-                if (timeEl) timeEl.textContent = this.lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                if (statusEl) {
-                    if (st === 'LIVE') {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-emerald-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Feed Realtime Aktif (Binance WebSocket & xaus.com)';
-                    } else if (st === 'DELAYED') {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-amber-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Feed Delayed / Fallback REST Polling';
-                    } else {
-                        statusEl.className = 'flex items-center gap-1.5 shrink-0 px-2 font-mono text-[10px] text-rose-400 font-bold border-r border-slate-800 z-10 bg-[#060B1E]';
-                        statusEl.title = 'Koneksi Network Terputus (Offline)';
-                    }
-                }
-            };
-
-            const tryStream = () => {
-                if (index >= streamUrls.length) {
-                    updateStatusUI('DELAYED');
-                    return;
-                }
-                try {
-                    this.ws = new WebSocket(streamUrls[index]);
-                    this.ws.onopen = () => {
-                        updateStatusUI('LIVE');
-                    };
-                    this.ws.onmessage = (e) => {
-                        const data = JSON.parse(e.data);
-                        if (!data.s || !data.c) return;
-                        const sym = data.s.toUpperCase();
-                        const closePrice = parseFloat(data.c);
-                        const openPrice = parseFloat(data.o);
-                        const chg = ((closePrice - openPrice) / openPrice) * 100;
-
-                        const target = this.data.find(d => d.sym === sym);
-                        if (target) {
-                            target.price = closePrice;
-                            target.chg = chg;
-                        }
-                        this.lastUpdated = new Date();
-                        updateStatusUI('LIVE');
-
-                        const formatted = closePrice >= 100 ? closePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : closePrice.toFixed(4);
-                        document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
-                            el.textContent = formatted;
-                        });
-                    };
-                    this.ws.onerror = () => {
-                        index++;
-                        updateStatusUI('DELAYED');
-                        tryStream();
-                    };
-                    this.ws.onclose = () => {
-                        updateStatusUI('OFFLINE');
-                    };
-                } catch (err) {
-                    updateStatusUI('DELAYED');
-                }
-            };
-            tryStream();
+            // WebSocket Binance diblok di beberapa region — QuantumPricePoller digunakan sebagai gantinya
         }
     };
     window.QuantumTickerEngine = QuantumTickerEngine;
@@ -244,6 +167,7 @@
         _timer: null,
         _consecutiveFails: 0,
         _interval: 3000,
+        _polling: false,
 
         start() {
             this.poll();
@@ -251,8 +175,10 @@
         },
 
         async poll() {
+            if (this._polling) return;
+            this._polling = true;
             try {
-                const res = await fetch(`/webapp/api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
+                const res = await fetch(`api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
                 if (json.status !== 'success' || !json.prices) throw new Error('bad response');
@@ -265,6 +191,7 @@
 
                 // Update _livePrices for all symbols
                 for (const [sym, data] of Object.entries(prices)) {
+                    if (!data || data.price == null || isNaN(data.price)) continue;
                     if (window._livePrices) window._livePrices[sym] = data.price;
                     // Update ticker bar items
                     document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
@@ -294,6 +221,8 @@
             } catch(e) {
                 this._consecutiveFails++;
                 if (this._consecutiveFails >= 3) this._updateStatusUI('DELAYED');
+            } finally {
+                this._polling = false;
             }
         },
 
@@ -379,7 +308,7 @@
 
             const fetchDepth = async () => {
                 try {
-                    const res = await fetch(`/webapp/api/orderbook.php?symbol=${sym}&limit=20`, { cache: 'no-store' });
+                    const res = await fetch(`api/orderbook.php?symbol=${sym}&limit=20`, { cache: 'no-store' });
                     const d = await res.json();
                     if (!d.bids || d.bids.length === 0) throw new Error('empty');
 
@@ -392,7 +321,7 @@
                         cumAsk += +q;
                         return { price: +p, qty: +q, total: +cumAsk.toFixed(4) };
                     });
-                    this._midPrice = this.bids.length ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
+                    this._midPrice = (this.bids.length && this.asks.length) ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
 
                     // Simulate time-and-sales from bid/ask spread
                     const midP = this._midPrice;
@@ -414,8 +343,19 @@
             };
 
             fetchDepth();
-            // Poll every 1.5 seconds for pseudo-realtime depth
             this._pollTimer = setInterval(fetchDepth, 1500);
+
+            if (!this._visHandler) {
+                this._visHandler = () => {
+                    if (document.hidden && this._pollTimer) {
+                        clearInterval(this._pollTimer);
+                        this._pollTimer = null;
+                    } else if (!document.hidden && !this._pollTimer && this.symbol) {
+                        this._pollTimer = setInterval(fetchDepth, 1500);
+                    }
+                };
+                document.addEventListener('visibilitychange', this._visHandler);
+            }
         },
         _generateEstimatedBook(midPrice) {
             const spread = midPrice * 0.0003;
@@ -663,6 +603,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 navigator.clipboard.writeText(textPlan).then(() => {
                     if (window.showQuantumToast) window.showQuantumToast('📋 Trade Plan Disalin ke Clipboard!', 'success');
                     QuantumAudio.playChime('success');
+                }).catch(() => {
+                    if (window.showQuantumToast) window.showQuantumToast('Clipboard tidak tersedia', 'warning');
                 });
             }
         },
@@ -672,9 +614,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 modal.classList.remove('hidden');
                 if (window.quantumTerminalManager && window.quantumTerminalManager.lastClosePrice) {
                     const p = window.quantumTerminalManager.lastClosePrice;
-                    document.getElementById('rrEntryInput').value = p;
-                    document.getElementById('rrSLInput').value = +(p * 0.992).toFixed(2);
-                    document.getElementById('rrTPInput').value = +(p * 1.022).toFixed(2);
+                    const entryEl = document.getElementById('rrEntryInput');
+                    const slEl    = document.getElementById('rrSLInput');
+                    const tpEl    = document.getElementById('rrTPInput');
+                    if (entryEl) entryEl.value = p;
+                    if (slEl)    slEl.value    = +(p * 0.992).toFixed(2);
+                    if (tpEl)    tpEl.value    = +(p * 1.022).toFixed(2);
                 }
                 this.calculate();
             }
@@ -692,9 +637,11 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        ========================================================================== */
     const QuantumSessionEngine = {
         currentTz: 'WIB',
+        _timer: null,
         init() {
+            if (this._timer) clearInterval(this._timer);
             this.update();
-            setInterval(() => this.update(), 1000);
+            this._timer = setInterval(() => this.update(), 1000);
         },
         setTimezone(tz) {
             this.currentTz = tz;
@@ -791,8 +738,10 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        7. CANDLE COUNTDOWN TIMER & HEIKIN ASHI SWITCHER (TIER A - FITUR 8 & 17)
        ========================================================================== */
     const QuantumCandleTimer = {
+        _timer: null,
         init() {
-            setInterval(() => this.tick(), 1000);
+            if (this._timer) clearInterval(this._timer);
+            this._timer = setInterval(() => this.tick(), 1000);
         },
         tick() {
             const el = document.getElementById('candleCountdownTimer');
@@ -841,11 +790,13 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         positions: [],
         history: [],
         lastBacktestResult: null,
+        _floatingPnLTimer: null,
         init() {
             this.loadState();            // localStorage dulu → render instan
             this.render();
             this._startPriceTracker();
-            setInterval(() => this.updateFloatingPnL(), 1000);
+            if (this._floatingPnLTimer) clearInterval(this._floatingPnLTimer);
+            this._floatingPnLTimer = setInterval(() => this.updateFloatingPnL(), 1000);
             // Kalau user login, tarik snapshot dari server (override localStorage)
             if (this._authToken()) this._loadFromServer();
         },
@@ -862,7 +813,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             const token = this._authToken();
             if (!token) return;
             try {
-                const res = await fetch('/webapp/api/paper-trading.php', {
+                const res = await fetch('api/paper-trading.php', {
                     headers: { 'Authorization': `Bearer ${token}` },
                     cache: 'no-store'
                 });
@@ -882,7 +833,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
             if (!token) return;
             clearTimeout(this._syncTimer);
             this._syncTimer = setTimeout(() => {
-                fetch('/webapp/api/paper-trading.php', {
+                fetch('api/paper-trading.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -1963,6 +1914,241 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
 
     /* ==========================================================================
+       11B. CORRELATION MATRIX — Pearson antar instrumen (return harian nyata)
+       Data: api/get-chart-data.php (interval D). Window 20/50/100 bisa dipilih.
+       Fungsi matematika murni (logReturns/pearson/buildMatrix) bisa di-unit-test.
+       ========================================================================== */
+    const QuantumCorrelation = {
+        PAIRS: [
+            { sym: 'EURUSD',  label: 'EUR/USD'  },
+            { sym: 'GBPUSD',  label: 'GBP/USD'  },
+            { sym: 'USDJPY',  label: 'USD/JPY'  },
+            { sym: 'AUDUSD',  label: 'AUD/USD'  },
+            { sym: 'USDCAD',  label: 'USD/CAD'  },
+            { sym: 'USDCHF',  label: 'USD/CHF'  },
+            { sym: 'NZDUSD',  label: 'NZD/USD'  },
+            { sym: 'XAUUSD',  label: 'XAU/USD'  },
+            { sym: 'BTCUSDT', label: 'BTC/USDT' },
+            { sym: 'ETHUSDT', label: 'ETH/USDT' },
+        ],
+        window: 50,
+        _busy: false,
+
+        // ---- PURE MATH (unit-testable) ----
+        logReturns(closes) {
+            const r = [];
+            for (let i = 1; i < closes.length; i++) {
+                const p0 = closes[i - 1], p1 = closes[i];
+                if (p0 > 0 && p1 > 0) r.push(Math.log(p1 / p0));
+            }
+            return r;
+        },
+        pearson(a, b) {
+            const n = Math.min(a.length, b.length);
+            if (n < 2) return NaN;
+            let sa = 0, sb = 0;
+            for (let i = 0; i < n; i++) { sa += a[i]; sb += b[i]; }
+            const ma = sa / n, mb = sb / n;
+            let cov = 0, va = 0, vb = 0;
+            for (let i = 0; i < n; i++) {
+                const da = a[i] - ma, db = b[i] - mb;
+                cov += da * db; va += da * da; vb += db * db;
+            }
+            if (va === 0 || vb === 0) return NaN;
+            return cov / Math.sqrt(va * vb);
+        },
+        buildMatrix(returnsBySym, syms) {
+            return syms.map(s1 => syms.map(s2 =>
+                s1 === s2 ? 1 : this.pearson(returnsBySym[s1] || [], returnsBySym[s2] || [])
+            ));
+        },
+        cellColor(v) {
+            if (v == null || Number.isNaN(v)) return 'background:#1e293b;color:#64748b';
+            const a = Math.min(1, Math.abs(v));
+            return v >= 0
+                ? `background:rgba(239,68,68,${(0.12 + a * 0.62).toFixed(3)});color:#fff`
+                : `background:rgba(59,130,246,${(0.12 + a * 0.62).toFixed(3)});color:#fff`;
+        },
+
+        _label(sym) { return (this.PAIRS.find(p => p.sym === sym) || {}).label || sym; },
+
+        // ---- DATE ALIGNMENT (unit-testable) ----
+        // Different providers return daily bars with different epoch offsets, so
+        // array-position pairing compares mismatched dates. Bucket by UTC day and
+        // correlate only on days present in EVERY instrument.
+        dayKey(epochSec) { return Math.floor(epochSec / 86400); },
+
+        // seriesBySym: { sym: [{d:dayKey, c:close}, ...] (sorted asc, 1 per day) }
+        // -> { days:[...last `need` shared days], closesBySym:{ sym:[closes @ days] } }
+        alignByDay(seriesBySym, syms, need) {
+            const maps = {};
+            syms.forEach(s => {
+                const m = new Map();
+                (seriesBySym[s] || []).forEach(pt => m.set(pt.d, pt.c)); // last close of a day wins
+                maps[s] = m;
+            });
+            let common = null;
+            syms.forEach(s => {
+                const keys = new Set(maps[s].keys());
+                common = common === null ? keys : new Set([...common].filter(k => keys.has(k)));
+            });
+            const days = [...(common || [])].sort((a, b) => a - b).slice(-need);
+            const closesBySym = {};
+            syms.forEach(s => { closesBySym[s] = days.map(d => maps[s].get(d)); });
+            return { days, closesBySym };
+        },
+
+        // Cold cache = live provider calls behind PHP; abort rather than hang the panel.
+        timeoutMs: 20000,
+        async _fetchSeries(sym) {
+            const ctl = new AbortController();
+            const timer = setTimeout(() => ctl.abort(), this.timeoutMs);
+            try {
+                const res = await fetch(`api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&interval=D`, { signal: ctl.signal });
+                if (!res.ok) return { series: [], simulated: true, failed: true };
+                const d = await res.json();
+                if (d.status !== 'success' || !Array.isArray(d.candles)) return { series: [], simulated: true, failed: true };
+                const byDay = new Map();
+                d.candles.forEach(c => {
+                    const close = +c.close, t = +c.time;
+                    if (close > 0 && t > 0) byDay.set(this.dayKey(t), close);
+                });
+                const series = [...byDay.entries()].map(([d, c]) => ({ d, c })).sort((a, b) => a.d - b.d);
+                return { series, simulated: d.simulated === true, failed: false };
+            } catch (e) {
+                return { series: [], simulated: true, failed: true, aborted: e.name === 'AbortError' };
+            } finally { clearTimeout(timer); }
+        },
+
+        _shell(inner) {
+            const btns = [20, 50, 100].map(w =>
+                `<button data-corrwin="${w}" class="px-2 py-0.5 rounded ${this.window === w
+                    ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-500/50'
+                    : 'text-slate-400 border border-slate-700 hover:text-cyan-300'}">${w}</button>`).join('');
+            return `
+                <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between flex-wrap gap-2">
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> MATRIKS KORELASI · Pearson (return harian)</span>
+                    <span class="flex items-center gap-1">
+                        <span class="text-[9px] text-slate-500 mr-1">WINDOW:</span>${btns}
+                        <button onclick="QuantumCorrelation.render()" class="ml-1 text-cyan-300 font-bold hover:text-cyan-200" title="Refresh">↻</button>
+                    </span>
+                </div>
+                <div class="mt-2">${inner}</div>`;
+        },
+        _bindControls() {
+            document.querySelectorAll('#panelCorrelation [data-corrwin]').forEach(b => {
+                b.onclick = () => { if (this._busy) return; this.window = +b.getAttribute('data-corrwin'); this.render(); };
+            });
+        },
+        _tableHtml(syms, matrix) {
+            const head = `<th class="p-1"></th>` + syms.map(s =>
+                `<th class="p-1 text-[9px] font-mono text-slate-400 whitespace-nowrap">${this._label(s).replace('/', '')}</th>`).join('');
+            const rows = syms.map((s1, i) => {
+                const cells = syms.map((s2, j) => {
+                    const v = matrix[i][j];
+                    const txt = (v == null || Number.isNaN(v)) ? '–' : v.toFixed(2);
+                    return `<td class="p-1 text-center text-[10px] font-mono tabular-nums" style="${this.cellColor(v)}" title="${this._label(s1)} vs ${this._label(s2)}: ${txt}">${txt}</td>`;
+                }).join('');
+                return `<tr><td class="p-1 text-[9px] font-mono text-slate-300 text-right whitespace-nowrap pr-1.5">${this._label(s1)}</td>${cells}</tr>`;
+            }).join('');
+            return `<div class="overflow-x-auto"><table class="border-collapse mx-auto"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+                <div class="text-[9px] text-slate-600 text-center mt-1.5">🔴 positif · 🔵 negatif · window ${this.window}h · ${this._lastN || 0} titik return (hari beririsan) · ${new Date().toLocaleTimeString('id-ID')}</div>`;
+        },
+        _warningHtml(syms, matrix) {
+            const hi = [];
+            for (let i = 0; i < syms.length; i++)
+                for (let j = i + 1; j < syms.length; j++) {
+                    const v = matrix[i][j];
+                    if (v != null && !Number.isNaN(v) && Math.abs(v) >= 0.8)
+                        hi.push(`${this._label(syms[i])}↔${this._label(syms[j])} (${v.toFixed(2)})`);
+                }
+            if (!hi.length) return '';
+            return `<div class="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300">
+                <strong>⚠ Risiko konsentrasi</strong> — pasangan dengan |korelasi| ≥ 0.80, hindari posisi searah ganda: ${hi.join(' · ')}</div>`;
+        },
+        _demoHtml(demo) {
+            if (!demo || !demo.length) return '';
+            const labels = demo.map(s => this._label(s)).join(', ');
+            return `<div class="mt-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700 text-[10px] text-slate-400">
+                <span class="px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[9px] mr-1">DEMO</span>
+                Dikecualikan (data simulasi, bukan harga nyata): <span class="text-slate-300">${labels}</span>.
+                Provider gratis belum menyediakan candle asli untuk instrumen ini — korelasinya tidak bermakna. Aktifkan provider berbayar untuk matriks penuh.</div>`;
+        },
+
+        // Fetch error / timeout is a transient condition, not a data limitation — say so
+        // separately from DEMO so the user knows a retry is worth it.
+        _failedHtml(failed) {
+            if (!failed || !failed.length) return '';
+            const labels = failed.map(s => this._label(s)).join(', ');
+            return `<div class="mt-2 p-2 rounded-lg bg-rose-500/5 border border-rose-500/30 text-[10px] text-slate-400">
+                <span class="px-1 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[9px] mr-1">GAGAL</span>
+                Gagal diambil (timeout/jaringan): <span class="text-slate-300">${labels}</span>.
+                <button onclick="QuantumCorrelation.render()" class="ml-1 px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button></div>`;
+        },
+
+        async render() {
+            const panel = document.getElementById('panelCorrelation');
+            if (!panel) return;
+            this._busy = true;
+            const total = this.PAIRS.length;
+            const paintProgress = (done) => {
+                const bar = Math.round((done / total) * 100);
+                panel.innerHTML = this._shell(
+                    `<div class="text-center py-6 text-slate-500 font-mono text-xs">
+                        <span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin align-middle mr-2"></span>
+                        Mengambil candle &amp; menghitung korelasi… <span class="text-cyan-300">${done}/${total}</span>
+                        <div class="mx-auto mt-2 h-1 w-40 rounded bg-slate-800 overflow-hidden">
+                            <div class="h-full bg-cyan-400 transition-all" style="width:${bar}%"></div>
+                        </div>
+                        <div class="text-[10px] text-slate-600 mt-1">Panggilan pertama memakai data live provider, bisa sampai ~20s.</div>
+                    </div>`);
+                this._bindControls();
+            };
+            paintProgress(0);
+            try {
+                const need = this.window + 1;
+                let done = 0;
+                const results = await Promise.all(this.PAIRS.map(p =>
+                    this._fetchSeries(p.sym).then(r => { paintProgress(++done); return r; })));
+                const seriesBySym = {};
+                const demo = [];
+                const failed = [];
+                this.PAIRS.forEach((p, i) => {
+                    seriesBySym[p.sym] = results[i].series;
+                    if (results[i].failed) failed.push(p.sym);
+                    else if (results[i].simulated) demo.push(p.sym);
+                });
+                // Exclude both demo and failed from the matrix, but report them differently:
+                // `failed` is worth retrying, `demo` is a provider limitation.
+                const excluded = demo.concat(failed);
+                // Only REAL instruments (not simulated) with enough history enter the matrix.
+                // Correlating random-walk demo series would be meaningless noise.
+                const syms = this.PAIRS
+                    .filter(p => !excluded.includes(p.sym) && (seriesBySym[p.sym] || []).length >= 10)
+                    .map(p => p.sym);
+                if (syms.length < 2) throw new Error('Butuh ≥2 instrumen dengan data nyata (provider gratis hanya menyediakan sebagian)');
+                const { days, closesBySym } = this.alignByDay(seriesBySym, syms, need);
+                if (days.length < 10) throw new Error('Tanggal beririsan antar instrumen terlalu sedikit (' + days.length + ')');
+                this._lastN = days.length - 1;
+                const returnsBySym = {};
+                syms.forEach(s => { returnsBySym[s] = this.logReturns(closesBySym[s]); });
+                const matrix = this.buildMatrix(returnsBySym, syms);
+                panel.innerHTML = this._shell(this._tableHtml(syms, matrix) + this._warningHtml(syms, matrix) + this._demoHtml(demo) + this._failedHtml(failed));
+            } catch (e) {
+                panel.innerHTML = this._shell(
+                    `<div class="text-center py-6 text-rose-400 font-mono text-xs">⚠ Gagal menghitung korelasi: ${e.message}
+                        <br><button onclick="QuantumCorrelation.render()" class="mt-2 px-3 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button>
+                        <div class="text-[10px] text-slate-600 mt-1">${new Date().toLocaleTimeString('id-ID')}</div></div>`);
+            } finally {
+                this._busy = false;
+                this._bindControls();
+            }
+        }
+    };
+    window.QuantumCorrelation = QuantumCorrelation;
+
+
+    /* ==========================================================================
        12. DYNAMIC NEWS ALERT & CALENDAR ENGINE (REAL DATA & ACCURATE COUNTDOWN)
        ========================================================================== */
     const QuantumNewsAlertEngine = {
@@ -1971,7 +2157,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
         timerId: null,
         init() {
             this.fetchCalendarData();
-            setInterval(() => this.fetchCalendarData(), 300000); // refresh every 5 min
+            this.timerId = setInterval(() => this.fetchCalendarData(), 300000); // refresh every 5 min
         },
         async fetchCalendarData() {
             const banner = document.getElementById('newsHoldBanner');
@@ -2057,6 +2243,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
        ========================================================================== */
     const QuantumTrackRecord = {
         data: null,
+        MIN_SAMPLE: 30,   // below this the performance metrics are statistically meaningless
         async render() {
             const container = document.getElementById('panelTrackRecord');
             const innerContainer = document.getElementById('trackRecordContainer');
@@ -2071,6 +2258,17 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
 
                 const m = json.metrics;
                 const history = json.history;
+
+                // A win rate off a handful of trades is noise, not an edge. Say so plainly
+                // rather than letting "100% win rate" stand next to a VERIFIED badge.
+                const nSample = Number(m.completed_trades) || 0;
+                const smallSampleNote = nSample >= this.MIN_SAMPLE ? '' : `
+                        <div class="p-2 rounded-lg bg-amber-500/5 border border-amber-500/30 text-[10px] text-amber-200/90 leading-relaxed">
+                            <strong class="text-amber-300">⚠ Sampel terlalu kecil (N=${nSample}).</strong>
+                            Win rate, profit factor, dan expectancy di atas <em>belum</em> signifikan secara statistik
+                            dan tidak bisa dipakai memproyeksikan hasil ke depan. Dibutuhkan minimal
+                            ${this.MIN_SAMPLE} trade selesai sebelum angka ini layak dinilai.
+                        </div>`;
 
                 innerContainer.innerHTML = `
                     <div class="space-y-3 font-mono text-xs">
@@ -2097,9 +2295,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                                 <span class="text-[9px] text-slate-500 block">Risk Controlled</span>
                             </div>
                             <div class="col-span-2 sm:col-span-1 flex items-center justify-end">
-                                <span class="px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">VERIFIED AUDIT TRAIL</span>
+                                ${nSample >= this.MIN_SAMPLE
+                                    ? '<span class="px-2.5 py-1 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">VERIFIED AUDIT TRAIL</span>'
+                                    : '<span class="px-2.5 py-1 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[10px] font-bold">SAMPEL AWAL</span>'}
                             </div>
                         </div>
+                        ${smallSampleNote}
 
                         <!-- Signals Audit Trail Table -->
                         <div class="space-y-1.5 max-h-60 overflow-y-auto thin-scrollbar">

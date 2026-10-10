@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/pwa.html">
+    <title>Cara Install Aplikasi | Quantum Institut Market Terminal</title>
+    <meta name="description" content="Panduan install Quantum Institut Market Terminal sebagai Progressive Web App di Android, iOS, dan PC.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
+    <style>
+        .step-card { background: #080E1C; border: 1px solid #0F1A2E; border-radius: 1rem; padding: 1.25rem; }
+        .step-num { width: 2rem; height: 2rem; border-radius: 50%; background: rgba(0,229,255,0.12); border: 1px solid rgba(0,229,255,0.3); color: #00E5FF; font-weight: 700; font-size: 0.875rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .platform-tab { padding: 0.625rem 1rem; border-radius: 0.625rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1px solid #0F1A2E; color: #64748b; }
+        .platform-tab.active { background: rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.4); color: #00E5FF; }
+        .platform-content { display: none; }
+        .platform-content.active { display: block; }
+        .icon-img { font-size: 1.5rem; }
+    </style>
+</head>
+<body class="bg-qi-bg text-slate-300 font-body min-h-screen">
+    <!-- Nav -->
+    <header class="sticky top-0 z-50 bg-qi-panel/80 backdrop-blur-md border-b border-qi-border px-4 sm:px-8 py-4 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2.5 group">
+            <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-8 w-8 rounded-lg object-cover border border-qi-cyan/30">
+            <span class="font-heading font-bold text-white text-sm">Quantum<span class="text-cyan-400">Institut</span></span>
+        </a>
+        <a href="index.html" class="text-[11px] text-slate-400 hover:text-white border border-qi-border rounded-lg px-3 py-1.5 hover:border-slate-500 transition-all">← Kembali</a>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-10">
+
+        <!-- Header -->
+        <div>
+            <div class="inline-block px-3 py-1 rounded-full border border-qi-cyan/30 text-qi-cyan text-[10px] font-mono uppercase tracking-wider mb-4">Tutorial PWA</div>
+            <h1 class="font-heading font-bold text-white text-3xl sm:text-4xl mb-3">Cara Install Aplikasi</h1>
+            <p class="text-slate-400 text-sm leading-relaxed">Quantum Institut Market Terminal dapat diinstall sebagai <strong class="text-white">Progressive Web App (PWA)</strong> di perangkat Anda — tampilan seperti aplikasi native, tanpa perlu Google Play atau App Store.</p>
+        </div>
+
+        <!-- Benefits -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">⚡</div>
+                <div class="text-[11px] font-semibold text-white mb-0.5">Cepat</div>
+                <div class="text-[10px] text-slate-500">Cache lokal, akses instan</div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">📴</div>
+                <div class="text-[11px] font-semibold text-white mb-0.5">Offline</div>
+                <div class="text-[10px] text-slate-500">Tetap buka tanpa internet</div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">🏠</div>
+                <div class="text-[11px] font-semibold text-white mb-0.5">Home Screen</div>
+                <div class="text-[10px] text-slate-500">Icon di layar utama</div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-xl p-4 text-center">
+                <div class="text-2xl mb-2">🔔</div>
+                <div class="text-[11px] font-semibold text-white mb-0.5">Notifikasi</div>
+                <div class="text-[10px] text-slate-500">Push alert sinyal AI</div>
+            </div>
+        </div>
+
+        <!-- Platform Tabs -->
+        <div>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="showPlatform('android')" id="tab-android" class="platform-tab active">🤖 Android</button>
+                <button onclick="showPlatform('ios')" id="tab-ios" class="platform-tab">🍎 iPhone / iPad</button>
+                <button onclick="showPlatform('pc')" id="tab-pc" class="platform-tab">🖥️ PC / Laptop</button>
+            </div>
+
+            <!-- Android Steps -->
+            <div id="content-android" class="platform-content active space-y-4">
+                <div class="bg-qi-card border border-emerald-500/20 rounded-xl p-4 mb-4">
+                    <p class="text-[12px] text-emerald-300"><strong>Browser yang didukung:</strong> Chrome, Edge, Samsung Internet, Brave</p>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">1</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Buka di Chrome Android</div>
+                        <p class="text-[12px] text-slate-400">Akses <code class="bg-slate-800 px-1 py-0.5 rounded text-qi-cyan text-[11px]">quantuminstitut.market</code> menggunakan Google Chrome di HP Android Anda.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">2</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Ketuk tombol menu (⋮)</div>
+                        <p class="text-[12px] text-slate-400">Tap ikon tiga titik vertikal <strong class="text-white">⋮</strong> di pojok kanan atas browser Chrome.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">3</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Pilih "Add to Home Screen"</div>
+                        <p class="text-[12px] text-slate-400">Pilih opsi <strong class="text-white">"Tambahkan ke layar utama"</strong> atau <strong class="text-white">"Add to Home Screen"</strong> dari menu dropdown.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">4</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Konfirmasi nama aplikasi</div>
+                        <p class="text-[12px] text-slate-400">Sebuah popup akan muncul menampilkan nama "Quantum Institut". Ketuk <strong class="text-white">Add / Tambah</strong> untuk mengkonfirmasi.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">5</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Selesai! Icon muncul di Home Screen</div>
+                        <p class="text-[12px] text-slate-400">Ikon Quantum Institut akan muncul di layar utama HP Anda. Ketuk untuk membuka seperti aplikasi biasa — tanpa address bar browser.</p>
+                    </div>
+                </div>
+                <div class="bg-qi-panel border border-qi-border rounded-xl p-4">
+                    <div class="text-[11px] text-slate-400 flex gap-2">
+                        <span class="text-qi-cyan shrink-0">💡</span>
+                        <span>Beberapa Android menampilkan banner instalasi otomatis di bagian bawah browser jika Anda sering mengunjungi situs ini. Ketuk banner tersebut untuk proses yang lebih cepat.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- iOS Steps -->
+            <div id="content-ios" class="platform-content space-y-4">
+                <div class="bg-qi-card border border-blue-500/20 rounded-xl p-4 mb-4">
+                    <p class="text-[12px] text-blue-300"><strong>Browser yang didukung:</strong> Safari (wajib — Chrome iOS tidak mendukung PWA install)</p>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">1</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Buka Safari</div>
+                        <p class="text-[12px] text-slate-400">Akses <code class="bg-slate-800 px-1 py-0.5 rounded text-qi-cyan text-[11px]">quantuminstitut.market</code> menggunakan <strong class="text-white">Safari</strong> di iPhone atau iPad Anda. Chrome iOS tidak bisa install PWA.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">2</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Ketuk ikon Share (□↑)</div>
+                        <p class="text-[12px] text-slate-400">Tap ikon <strong class="text-white">Share</strong> (kotak dengan panah ke atas □↑) yang ada di toolbar bawah Safari.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">3</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Scroll dan pilih "Add to Home Screen"</div>
+                        <p class="text-[12px] text-slate-400">Dari menu Share yang muncul, scroll ke bawah dan ketuk <strong class="text-white">"Add to Home Screen"</strong> atau <strong class="text-white">"Tambah ke Layar Utama"</strong>.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">4</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Beri nama dan ketuk "Add"</div>
+                        <p class="text-[12px] text-slate-400">Edit nama jika diinginkan, lalu ketuk <strong class="text-white">Add</strong> di pojok kanan atas. Ikon akan ditambahkan ke Home Screen Anda.</p>
+                    </div>
+                </div>
+                <div class="bg-qi-panel border border-qi-border rounded-xl p-4">
+                    <div class="text-[11px] text-slate-400 flex gap-2">
+                        <span class="text-amber-400 shrink-0">⚠</span>
+                        <span>iOS 16.4+ diperlukan untuk push notifications. Jika menggunakan iOS lebih lama, fitur dasar PWA tetap berjalan tetapi notifikasi tidak tersedia.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PC Steps -->
+            <div id="content-pc" class="platform-content space-y-4">
+                <div class="bg-qi-card border border-purple-500/20 rounded-xl p-4 mb-4">
+                    <p class="text-[12px] text-purple-300"><strong>Browser yang didukung:</strong> Chrome, Edge (Chromium). Firefox tidak mendukung install PWA di desktop.</p>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">1</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Buka di Chrome atau Edge</div>
+                        <p class="text-[12px] text-slate-400">Akses <code class="bg-slate-800 px-1 py-0.5 rounded text-qi-cyan text-[11px]">quantuminstitut.market</code> di browser Chrome atau Microsoft Edge di komputer Anda.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">2</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Cari ikon install di address bar</div>
+                        <p class="text-[12px] text-slate-400">Perhatikan address bar — ada ikon <strong class="text-white">⊕ (install)</strong> atau ikon komputer kecil di sisi kanan. Klik ikon tersebut.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">3</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Klik "Install"</div>
+                        <p class="text-[12px] text-slate-400">Sebuah dialog akan muncul. Klik tombol <strong class="text-white">Install</strong> untuk mengkonfirmasi. Aplikasi akan dibuat shortcut-nya di Desktop dan Start Menu.</p>
+                    </div>
+                </div>
+                <div class="step-card flex gap-3">
+                    <div class="step-num">4</div>
+                    <div>
+                        <div class="font-semibold text-white text-sm mb-1">Buka dari Desktop / Start Menu</div>
+                        <p class="text-[12px] text-slate-400">Setelah install, Quantum Institut akan muncul sebagai aplikasi terpisah di taskbar. Jalankan seperti aplikasi biasa — tanpa Chrome/Edge UI yang mengganggu.</p>
+                    </div>
+                </div>
+
+                <!-- Chrome alternative path -->
+                <div class="bg-qi-panel border border-qi-border rounded-xl p-4 space-y-2">
+                    <div class="text-[11px] font-semibold text-white mb-1">Cara alternatif (Chrome menu):</div>
+                    <div class="text-[11px] text-slate-400 space-y-1">
+                        <div class="flex gap-2"><span class="text-qi-cyan shrink-0">1.</span> Klik menu ⋮ di pojok kanan atas Chrome</div>
+                        <div class="flex gap-2"><span class="text-qi-cyan shrink-0">2.</span> Pilih <strong class="text-white">Save and share</strong> → <strong class="text-white">Create shortcut...</strong></div>
+                        <div class="flex gap-2"><span class="text-qi-cyan shrink-0">3.</span> Centang <strong class="text-white">"Open as window"</strong> lalu klik Create</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="space-y-4">
+            <h2 class="font-heading font-bold text-white text-lg">Pertanyaan Umum</h2>
+            <div class="space-y-3">
+                <details class="bg-qi-card border border-qi-border rounded-xl group">
+                    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-[12px] font-semibold text-slate-300 hover:text-white transition-colors list-none">
+                        Apakah ini aman? Apakah ada akses ke kamera/mikrofon?
+                        <span class="text-slate-500 text-xs group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="px-4 pb-4 text-[11px] text-slate-400 leading-relaxed border-t border-qi-border pt-3">
+                        PWA hanya meminta izin yang Anda setujui secara eksplisit. Quantum Institut tidak meminta akses kamera, mikrofon, atau kontak. Hanya izin notifikasi (opsional) yang mungkin diminta untuk push alert sinyal AI.
+                    </div>
+                </details>
+                <details class="bg-qi-card border border-qi-border rounded-xl group">
+                    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-[12px] font-semibold text-slate-300 hover:text-white transition-colors list-none">
+                        Apakah data saya tersimpan offline?
+                        <span class="text-slate-500 text-xs group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="px-4 pb-4 text-[11px] text-slate-400 leading-relaxed border-t border-qi-border pt-3">
+                        Ya. Data pengaturan, histori sinyal, dan posisi paper trading tersimpan di <strong class="text-white">localStorage</strong> perangkat Anda. Data harga real-time memerlukan koneksi internet.
+                    </div>
+                </details>
+                <details class="bg-qi-card border border-qi-border rounded-xl group">
+                    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-[12px] font-semibold text-slate-300 hover:text-white transition-colors list-none">
+                        Cara uninstall / hapus aplikasi?
+                        <span class="text-slate-500 text-xs group-open:rotate-180 transition-colors">▼</span>
+                    </summary>
+                    <div class="px-4 pb-4 text-[11px] text-slate-400 leading-relaxed border-t border-qi-border pt-3">
+                        <strong class="text-white">Android:</strong> Tekan lama ikon → Hapus dari layar utama / Uninstall.<br>
+                        <strong class="text-white">iOS:</strong> Tekan lama ikon → Remove App → Remove from Home Screen.<br>
+                        <strong class="text-white">PC:</strong> Buka aplikasi → klik ⋮ di pojok kanan atas → Uninstall.
+                    </div>
+                </details>
+                <details class="bg-qi-card border border-qi-border rounded-xl group">
+                    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between text-[12px] font-semibold text-slate-300 hover:text-white transition-colors list-none">
+                        Apakah data login saya terbawa saat pindah perangkat?
+                        <span class="text-slate-500 text-xs group-open:rotate-180 transition-colors">▼</span>
+                    </summary>
+                    <div class="px-4 pb-4 text-[11px] text-slate-400 leading-relaxed border-t border-qi-border pt-3">
+                        Login akan terputus jika Anda menggunakan perangkat berbeda — Anda perlu login ulang. Ini adalah fitur keamanan standar. Cukup masuk dengan email dan password Anda di perangkat baru.
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="bg-qi-card border border-qi-cyan/20 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+            <div>
+                <div class="font-heading font-bold text-white text-base mb-1">Siap menggunakan Terminal?</div>
+                <p class="text-[11px] text-slate-400">Akses semua fitur premium dari smartphone atau PC Anda.</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+                <a href="index.html" class="px-4 py-2 rounded-xl border border-qi-border text-slate-300 text-[11px] font-semibold hover:border-slate-500 transition-all">Beranda</a>
+                <a href="dashboard.html" class="px-4 py-2 rounded-xl bg-qi-cyan/10 border border-qi-cyan/30 text-qi-cyan text-[11px] font-semibold hover:bg-qi-cyan/20 transition-all">Buka Dashboard →</a>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-qi-border mt-10 py-6 text-center text-[10px] text-slate-600">
+        © 2026 Quantum Institut Market Terminal · <a href="terms.html" class="hover:text-slate-400">Syarat & Ketentuan</a> · <a href="privacy.html" class="hover:text-slate-400">Kebijakan Privasi</a>
+    </footer>
+
+    <script>
+    function showPlatform(name) {
+        ['android','ios','pc'].forEach(p => {
+            document.getElementById('tab-' + p)?.classList.toggle('active', p === name);
+            const c = document.getElementById('content-' + p);
+            if (c) c.classList.toggle('active', p === name);
+        });
+    }
+    </script>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
+</body>
+</html>

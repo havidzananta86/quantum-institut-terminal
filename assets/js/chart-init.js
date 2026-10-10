@@ -751,15 +751,17 @@ class QuantumRealtimeTerminalManager {
                 document.head.appendChild(s2);
             }
 
+            if (this._chartRetryTimer) return;
             let attempts = 0;
-            const checkTimer = setInterval(() => {
+            this._chartRetryTimer = setInterval(() => {
                 attempts++;
                 if (typeof LightweightCharts !== 'undefined') {
-                    clearInterval(checkTimer);
-                    console.log('[QI] LightweightCharts siap setelah', attempts * 200, 'ms');
+                    clearInterval(this._chartRetryTimer);
+                    this._chartRetryTimer = null;
                     this.initChart();
                 } else if (attempts >= 40) { // 8 detik timeout
-                    clearInterval(checkTimer);
+                    clearInterval(this._chartRetryTimer);
+                    this._chartRetryTimer = null;
                     this._showError('Gagal memuat library chart. Silakan cek koneksi internet.');
                 }
             }, 200);
@@ -838,10 +840,14 @@ class QuantumRealtimeTerminalManager {
         setTimeout(forceResize, 700);
         setTimeout(forceResize, 1200);
 
+        if (this._resizeObserver) { try { this._resizeObserver.disconnect(); } catch(e) {} }
+        if (this._resizeHandler) { window.removeEventListener('resize', this._resizeHandler); this._resizeHandler = null; }
         try {
-            new ResizeObserver(forceResize).observe(container);
+            this._resizeObserver = new ResizeObserver(forceResize);
+            this._resizeObserver.observe(container);
         } catch(e) {
-            window.addEventListener('resize', forceResize);
+            this._resizeHandler = forceResize;
+            window.addEventListener('resize', this._resizeHandler);
         }
 
         // iOS Standalone app visibility resume listener
@@ -849,7 +855,6 @@ class QuantumRealtimeTerminalManager {
             this._visibilityAttached = true;
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible' && this.chart && this.currentSymbol) {
-                    console.log('[QI iOS PWA] App resumed — reloading chart data...');
                     forceResize();
                     this._loadDataAndStream();
                 }
@@ -896,7 +901,7 @@ class QuantumRealtimeTerminalManager {
         const sym      = this.currentSymbol;
         const interval = this.currentInterval;
         try {
-            const url  = `/webapp/api/get-chart-data.php?symbol=${sym}&interval=${interval}`;
+            const url  = `api/get-chart-data.php?symbol=${sym}&interval=${interval}`;
             const res  = await fetch(url, { signal: AbortSignal.timeout(8000), cache: 'no-store' });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
@@ -945,7 +950,6 @@ class QuantumRealtimeTerminalManager {
        ========================================================= */
     async _loadLocalBackendFallback(cfg) {
         try {
-            console.log(`[QI Fallback] Mencoba memuat ${cfg.label} dari backend lokal (api/get-chart-data.php)...`);
             const url = `api/get-chart-data.php?symbol=${this.currentSymbol}&interval=${this.currentInterval}`;
             const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1247,7 +1251,6 @@ class QuantumRealtimeTerminalManager {
         // 2. Fallback: Binance PAXGUSDT untuk Emas jika Biquote lambat/gagal
         if ((!candles || candles.length === 0) && this.currentSymbol === 'XAUUSD') {
             try {
-                console.log('[QI Fallback] Menggunakan Binance PAXGUSDT sebagai fallback untuk XAUUSD...');
                 const bRes = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=${intvlCfg.binance || '1h'}&limit=250`, { signal: AbortSignal.timeout(5000) });
                 if (bRes.ok) {
                     const json = await bRes.json();
@@ -1322,7 +1325,6 @@ class QuantumRealtimeTerminalManager {
 
                 await this._biquoteHub.start();
                 await this._biquoteHub.invoke('Subscribe', sym);
-                console.log(`[QI Biquote SignalR] Terhubung & Subscribe ke ${sym}`);
                 return;
             } catch (err) {
                 console.warn('[QI Biquote SignalR] Koneksi SignalR gagal, beralih ke REST pulse:', err.message);

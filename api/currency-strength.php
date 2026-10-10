@@ -6,8 +6,10 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
-require_once __DIR__ . '/../config/api_keys.php';
 qi_rate_limit(120, 60);
+$_apiKeysFile = __DIR__ . '/../config/api_keys.php';
+if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
+if (!defined('TWELVE_DATA_KEY')) define('TWELVE_DATA_KEY', '');
 
 $cacheDir  = __DIR__ . '/../cache';
 if (!is_dir($cacheDir)) @mkdir($cacheDir, 0755, true);
@@ -29,7 +31,7 @@ if (!function_exists('qi_http_get')) {
                 CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout,
                 CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_USERAGENT => 'Mozilla/5.0 (QuantumTerminal)',
-                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
             ]);
             $res = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);

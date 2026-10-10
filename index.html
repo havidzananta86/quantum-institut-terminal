@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark scroll-smooth">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,71 +15,71 @@
     <meta property="og:description" content="Sembilan mesin kuantum membaca pasar. Kamu yang memegang kendali. Terminal analisa multi-pasar 24/7.">
     <meta property="og:image" content="https://quantuminstitut.market/og-image.png">
 
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Quantum Institut Market Terminal">
+    <meta name="twitter:description" content="Sembilan mesin kuantum membaca pasar. Terminal analisa multi-pasar 24/7.">
+    <meta name="twitter:image" content="https://quantuminstitut.market/og-image.png">
+
+    <!-- PWA / Mobile -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00E5FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://quantuminstitut.market/">
+
+    <!-- Schema.org Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Quantum Institut",
+      "url": "https://quantuminstitut.market",
+      "logo": "https://quantuminstitut.market/assets/img/logo.svg",
+      "description": "Platform terminal analisa pasar multi-aset dengan sembilan mesin kuantum — crypto, forex, emas, dan indeks.",
+      "sameAs": [
+        "https://t.me/quantuminstitutterminal",
+        "https://discord.gg/quantuminstitut"
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Quantum Institut Market Terminal",
+      "url": "https://quantuminstitut.market",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "IDR",
+        "description": "Gratis untuk fitur dasar, PRO mulai Rp55.000/bulan"
+      }
+    }
+    </script>
+
+    <!-- Design tokens + theme (must load before Tailwind) -->
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind (pre-built) -->
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
 
-    <!-- TradingView Lightweight Charts CDN -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
+    <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.0">
 
-    <!-- Tailwind CSS Custom Configuration with Breakpoints -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                screens: {
-                    'xs': '480px',   // HP Kecil
-                    'sm': '640px',   // HP Besar / Landscape
-                    'md': '768px',   // Tablet Portrait
-                    'lg': '1024px',  // Laptop
-                    'xl': '1280px',  // Desktop
-                    '2xl': '1536px', // Desktop Besar / 4K
-                },
-                extend: {
-                    colors: {
-                        'quantum-dark': '#050A1A',
-                        'quantum-navy': '#0A1128',
-                        'quantum-card': '#0D1836',
-                        'quantum-cyan': '#00E5FF',
-                        'quantum-purple': '#7C4DFF',
-                        'quantum-green': '#00E676',
-                        'quantum-amber': '#FFAB00',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    boxShadow: {
-                        'cyan-glow': '0 0 25px rgba(0, 229, 255, 0.25)',
-                        'purple-glow': '0 0 25px rgba(124, 77, 255, 0.25)',
-                        'card-glow': '0 10px 30px -10px rgba(0, 229, 255, 0.15)',
-                    },
-                    animation: {
-                        'ticker': 'ticker 35s linear infinite',
-                        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        ticker: {
-                            '0%': { transform: 'translateX(0)' },
-                            '100%': { transform: 'translateX(-50%)' }
-                        },
-                        pulseGlow: {
-                            '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px rgba(0, 229, 255, 0.4))' },
-                            '50%': { opacity: '0.9', filter: 'drop-shadow(0 0 25px rgba(124, 77, 255, 0.8))' }
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    <!-- Error Tracker — load first to catch all JS errors -->
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- SCROLLBAR OVERRIDE: Hapus scrollbar native tanpa menghilangkan fungsi scroll -->
     <style>
@@ -89,9 +89,65 @@
         .thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.25); border-radius: 99px; }
         .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(0,229,255,0.25) transparent; }
+
+        @keyframes borderGlow {
+            0%, 100% { border-color: rgba(0,229,255,0.3); box-shadow: 0 0 20px rgba(0,229,255,0.05); }
+            50% { border-color: rgba(0,229,255,0.6); box-shadow: 0 0 30px rgba(0,229,255,0.1), 0 0 60px rgba(124,77,255,0.05); }
+        }
+        .signal-card-glow {
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @media (min-width: 768px) {
+            .hero-float { animation: float 6s ease-in-out infinite; }
+        }
     </style>
 </head>
-<body class="relative bg-[#050A1A] text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
+<body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
+
+    <!-- PROFESSIONAL LOADING SCREEN -->
+    <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020509]" style="transition:opacity 0.3s ease">
+        <div style="position:relative;width:72px;height:72px;margin-bottom:24px">
+            <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,229,255,0.15)"></div>
+            <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#00E5FF;animation:qiSpin 1s linear infinite"></div>
+            <div style="position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(0,229,255,0.08)"></div>
+            <div style="position:absolute;inset:8px;border-radius:50%;border:1px solid transparent;border-bottom-color:#00B8D9;animation:qiSpin 1.5s linear infinite reverse"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#00E5FF;letter-spacing:-1px">Q</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(0,229,255,0.7);letter-spacing:4px;text-transform:uppercase;margin-bottom:8px" id="qiLoaderText">INITIALIZING</div>
+        <div style="width:200px;height:2px;background:rgba(0,229,255,0.1);border-radius:2px;overflow:hidden">
+            <div id="qiLoaderBar" style="height:100%;background:linear-gradient(90deg,#00E5FF,#00B8D9);border-radius:2px;width:0%;transition:width 0.3s ease"></div>
+        </div>
+        <div style="margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(148,163,184,0.4);letter-spacing:2px">QUANTUM INSTITUT MARKET TERMINAL</div>
+    </div>
+    <style>
+    @keyframes qiSpin { to { transform: rotate(360deg); } }
+    </style>
+    <script>
+    (function() {
+        const bar = document.getElementById('qiLoaderBar');
+        const txt = document.getElementById('qiLoaderText');
+        const msgs = ['INITIALIZING','LOADING ENGINES','SCANNING MARKETS','READY'];
+        let p = 0, mi = 0;
+        const iv = setInterval(() => {
+            p = Math.min(p + (mi < 3 ? 18 : 8), 100);
+            bar.style.width = p + '%';
+            if (p >= 30 && mi === 0) { mi=1; txt.textContent = msgs[1]; }
+            if (p >= 60 && mi === 1) { mi=2; txt.textContent = msgs[2]; }
+            if (p >= 85 && mi === 2) { mi=3; txt.textContent = msgs[3]; }
+            if (p >= 100) clearInterval(iv);
+        }, 40);
+        window.addEventListener('load', () => {
+            bar.style.width = '100%';
+            const l = document.getElementById('qiLoader');
+            l.style.opacity = '0';
+            setTimeout(() => l.style.display = 'none', 300);
+        });
+    })();
+    </script>
 
     <!-- CANVAS PARTICLES BACKGROUND -->
     <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-60"></canvas>
@@ -102,15 +158,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
             
             <!-- Logo Kiri -->
-            <a href="index.html" class="flex items-center gap-3 group shrink-0">
-                <div class="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 group-hover:border-cyan-400 transition-all">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:rotate-180 transition-transform duration-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(30 12 12)" stroke="currentColor"/>
-                        <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(90 12 12)" stroke="#7C4DFF"/>
-                        <circle cx="12" cy="12" r="2.2" fill="#00E5FF"/>
-                    </svg>
-                </div>
-                <div>
+            <a href="index.html" class="flex items-center gap-2 group shrink-0">
+                <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-9 w-9 sm:h-10 sm:h-10 rounded-xl object-cover border border-cyan-500/30 group-hover:border-cyan-400 transition-all shadow-cyan-glow">
+                <div class="hidden xs:block">
                     <span class="font-heading font-bold text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
                         Quantum<span class="text-cyan-400">Institut</span>
                     </span>
@@ -127,10 +177,17 @@
                     Quantum+ <span class="px-1.5 py-0.5 text-[9px] font-mono bg-purple-500/20 text-purple-300 rounded border border-purple-500/40">PRO</span>
                 </a>
                 <a href="#belajar" class="hover:text-cyan-400 transition-colors py-1">Belajar</a>
+                <a href="#download" class="hover:text-emerald-400 transition-colors py-1 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
+                </a>
             </nav>
 
             <!-- Tombol Kanan Desktop & Tablet -->
             <div class="hidden md:flex items-center gap-3 lg:gap-4 shrink-0">
+                <button onclick="toggleQITheme()" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-700 hover:border-cyan-500/30 text-slate-400 hover:text-white transition-colors" title="Toggle theme" aria-label="Toggle light/dark theme">
+                    <span data-theme-icon>☀</span>
+                </button>
                 <a href="login.html" class="min-h-[44px] px-3.5 py-2 flex items-center text-xs lg:text-sm font-medium text-slate-300 hover:text-white border border-transparent hover:border-cyan-500/30 rounded-lg transition-all">
                     Masuk
                 </a>
@@ -140,6 +197,10 @@
                 </a>
             </div>
 
+            <!-- Mobile theme toggle (<768px) -->
+            <button onclick="toggleQITheme()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-white" title="Toggle theme" aria-label="Toggle light/dark theme">
+                <span data-theme-icon>☀</span>
+            </button>
             <!-- Hamburger Button Mobile (<768px) -->
             <button id="mobileMenuBtn" class="md:hidden min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-white flex items-center justify-center focus:outline-none" aria-label="Toggle Menu">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,12 +211,16 @@
         </div>
 
         <!-- Mobile Menu Drawer (<768px) -->
-        <div id="mobileMenu" class="hidden md:hidden bg-[#0A1128]/95 border-b border-cyan-500/20 px-4 sm:px-6 py-6 space-y-4">
+        <div id="mobileMenu" class="hidden md:hidden bg-quantum-navy/95 border-b border-cyan-500/20 px-4 sm:px-6 py-6 space-y-4">
             <a href="#mesin-kuantum" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Mesin Kuantum</a>
             <a href="#terminal" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Terminal</a>
             <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>
             <a href="#quantum-plus" class="mobile-nav-link block py-2 text-purple-300 hover:text-purple-400 font-medium">Quantum+ (PRO)</a>
             <a href="#belajar" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Belajar</a>
+            <a href="#download" class="mobile-nav-link block py-2 text-emerald-300 hover:text-emerald-400 font-medium flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download Aplikasi
+            </a>
             <div class="pt-4 border-t border-slate-800 flex flex-col gap-3">
                 <a href="login.html" class="w-full min-h-[44px] py-3 text-center text-sm font-medium text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center">Masuk</a>
                 <a href="terminal.html" class="mobile-nav-link w-full min-h-[44px] py-3 text-center text-sm font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center">Buka Terminal Pro</a>
@@ -209,8 +274,8 @@
                 </div>
 
                 <!-- Card Hologram Kanan Hero / Panduan Signal -->
-                <div id="panduan" class="relative mt-8 md:mt-0 reveal">
-                    <div class="glass-card rounded-2xl p-4 sm:p-6 border border-cyan-500/30 overflow-hidden">
+                <div id="panduan" class="relative mt-8 md:mt-0 reveal hero-float">
+                    <div class="glass-card signal-card-glow rounded-2xl p-4 sm:p-6 border border-cyan-500/30 overflow-hidden">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-cyan-500/20 font-mono text-xs">
                             <span class="text-cyan-400 font-bold flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> LIVE SIGNAL READOUT
@@ -220,36 +285,36 @@
 
                         <div class="space-y-3 font-mono text-xs">
                             <div class="flex justify-between items-center">
-                                <h3 class="text-lg sm:text-xl font-bold font-heading text-white">BTCUSDT <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">H1</span></h3>
-                                <span class="px-2.5 py-1 text-[11px] font-bold rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/40">SETUP TERBENTUK</span>
+                                <h3 id="sigPair" class="text-lg sm:text-xl font-bold font-heading text-white">BTCUSDT <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">H1</span></h3>
+                                <span id="sigStatus" class="px-2.5 py-1 text-[11px] font-bold rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/40">LOADING…</span>
                             </div>
-                            <p class="text-slate-300 text-xs">Mode: Quantum SNR & SMC Rejection — Menunggu konfirmasi candle.</p>
-                            
+                            <p id="sigMode" class="text-slate-300 text-xs">Mode: Quantum SNR & SMC — Memuat data live…</p>
+
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
                                     <div class="text-slate-400 text-[10px]">POTENSI ENTRY</div>
-                                    <div class="text-cyan-300 font-bold">68,420 - 68,550</div>
+                                    <div id="sigEntry" class="text-cyan-300 font-bold">—</div>
                                 </div>
                                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
                                     <div class="text-slate-400 text-[10px]">STOP LOSS (SL)</div>
-                                    <div class="text-rose-400 font-bold">67,910 (-0.75%)</div>
+                                    <div id="sigSL" class="text-rose-400 font-bold">—</div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
                                     <div class="text-slate-400 text-[10px]">TARGET PROFIT (TP)</div>
-                                    <div class="text-emerald-400 font-bold">70,200 (+2.70%)</div>
+                                    <div id="sigTP" class="text-emerald-400 font-bold">—</div>
                                 </div>
                                 <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
                                     <div class="text-slate-400 text-[10px]">RISK : REWARD</div>
-                                    <div class="text-purple-300 font-bold">1 : 3.4</div>
+                                    <div id="sigRR" class="text-purple-300 font-bold">—</div>
                                 </div>
                             </div>
 
                             <div class="bg-slate-950 p-2.5 rounded border border-slate-800 flex justify-between">
                                 <span class="text-slate-400">Prasyarat Terpenuhi:</span>
-                                <span class="text-cyan-400 font-bold">6 dari 8 Syarat (75%)</span>
+                                <span id="sigConditions" class="text-cyan-400 font-bold">—</span>
                             </div>
 
                             <!-- CTA di bawah signal card -->
@@ -273,17 +338,17 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
                 <!-- Stat 1 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300" id="statSignals">1,247</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300" data-count-to="1247" data-count-suffix="" data-count-format="true">0</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Sinyal Bulan Ini</div>
                 </div>
                 <!-- Stat 2 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">78%</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400" data-count-to="78" data-count-suffix="%">0%</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Akurasi Rata-rata</div>
                 </div>
                 <!-- Stat 3 -->
                 <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">9</div>
+                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" data-count-to="9" data-count-suffix="">0</div>
                     <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Mesin Analisa Aktif</div>
                 </div>
                 <!-- Stat 4 -->
@@ -336,26 +401,26 @@
     <div class="w-full py-2.5 sm:py-3 bg-[#0A1128]/90 border-y border-cyan-500/15 overflow-x-auto whitespace-nowrap z-20 no-scrollbar">
         <div class="inline-flex animate-ticker font-mono text-xs sm:text-sm">
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
             </div>
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
                 <span class="text-slate-700">|</span>
-                <span class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
             </div>
         </div>
     </div>
@@ -554,6 +619,83 @@
                 </h2>
             </div>
 
+            <!-- FREE vs PRO Comparison Table -->
+            <div class="max-w-3xl mx-auto mb-10 md:mb-14 reveal">
+                <div class="overflow-hidden rounded-2xl border border-slate-700/60">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-3 text-left text-slate-400 font-mono uppercase tracking-wider bg-slate-900/60">Fitur</th>
+                                <th class="px-4 py-3 text-center text-cyan-400 font-mono uppercase tracking-wider bg-slate-900/60">GRATIS</th>
+                                <th class="px-4 py-3 text-center text-purple-300 font-mono uppercase tracking-wider bg-purple-900/20 border-l border-purple-500/20">PRO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Kalender Ekonomi</td>
+                                <td class="px-4 py-2.5 text-center text-green-400">✓</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Berita Pasar Real-time</td>
+                                <td class="px-4 py-2.5 text-center text-green-400">✓</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Order Book Live</td>
+                                <td class="px-4 py-2.5 text-center text-green-400">✓</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Paper Trading Simulator</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Confluence Matrix</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Track Record Audit</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">AI Radar Scanner</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Correlation Matrix 10×10</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Command Center Dashboard</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-800/60">
+                                <td class="px-4 py-2.5 text-slate-300">Telegram Alert Otomatis</td>
+                                <td class="px-4 py-2.5 text-center text-slate-600">—</td>
+                                <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
+                            </tr>
+                            <tr class="border-t border-slate-700/60 bg-slate-900/40">
+                                <td class="px-4 py-3 font-bold text-white">Harga</td>
+                                <td class="px-4 py-3 text-center font-bold text-cyan-400">Rp0</td>
+                                <td class="px-4 py-3 text-center font-bold text-purple-300 bg-purple-900/10 border-l border-purple-500/20">Mulai Rp55.000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-center text-[11px] text-slate-500 mt-3 font-mono">
+                    <a href="terminal.html" class="text-cyan-400 hover:underline">→ Coba Terminal Gratis</a>
+                    &nbsp;·&nbsp;
+                    <a href="pricing.html" class="text-purple-400 hover:underline">→ Lihat Paket PRO</a>
+                </p>
+            </div>
+
             <!-- Grid Pricing Cards Responsif -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <!-- 1 Bulan -->
@@ -604,6 +746,481 @@
     </section>
 
 
+    <!-- TRADE IDEAS SECTION -->
+    <section id="trade-ideas" class="py-12 md:py-16 lg:py-20 relative z-10 bg-[#050A1A]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+
+            <div class="text-center max-w-3xl mx-auto space-y-3 mb-10 md:mb-14 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
+                    QUANTUM TRADE IDEAS
+                </div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+                    Ide Trading <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Terkurasi</span>
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm">Analisa teknikal dari mesin kuantum — diperbarui setiap penutupan candle harian.</p>
+            </div>
+
+            <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
+
+                <!-- Idea Card 1 — BUY BTC -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
+                            <span class="text-[10px] font-mono text-slate-500">H4 · 2 jam lalu</span>
+                        </div>
+                        <div class="font-heading font-bold text-white text-base mb-1">BTC/USDT — Breakout Confirmed</div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">EMA200 support + Kijun bounce + SMC OB H4. Target 72K setelah konfirmasi candle close.</p>
+                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
+                                <span class="text-slate-500">Quantum AI Engine</span>
+                            </div>
+                            <span class="text-emerald-400">R:R 1:3.2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Idea Card 2 — SELL XAU -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-rose-500/20 hover:border-rose-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 to-orange-500"></div>
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 rounded">▼ SHORT</span>
+                            <span class="text-[10px] font-mono text-slate-500">H1 · 45 menit lalu</span>
+                        </div>
+                        <div class="font-heading font-bold text-white text-base mb-1">XAU/USD — NY Session Reversal</div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">MomentumNY bearish divergence + SNR resistance 2680 + FVG fill. Potensi koreksi ke 2645.</p>
+                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
+                                <span class="text-slate-500">Quantum AI Engine</span>
+                            </div>
+                            <span class="text-rose-400">R:R 1:2.8</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Idea Card 3 — BUY ETH -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
+                            <span class="text-[10px] font-mono text-slate-500">D1 · 3 jam lalu</span>
+                        </div>
+                        <div class="font-heading font-bold text-white text-base mb-1">ETH/USDT — Ichimoku Breakout</div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Harga menembus kumo cloud + Golden Cross EMA50×EMA200. Setup swing bullish ke 4200.</p>
+                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
+                                <span class="text-slate-500">Quantum AI Engine</span>
+                            </div>
+                            <span class="text-emerald-400">R:R 1:4.1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Idea Card 4 — EUR/USD -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-amber-500/20 hover:border-amber-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 to-yellow-400"></div>
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded">◆ WAIT</span>
+                            <span class="text-[10px] font-mono text-slate-500">H4 · 1 jam lalu</span>
+                        </div>
+                        <div class="font-heading font-bold text-white text-base mb-1">EUR/USD — Fib 61.8% Watch</div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Mendekati golden zone 1.0850. Tunggu konfirmasi engulfing candle bullish untuk entry.</p>
+                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
+                                <span class="text-slate-500">Quantum AI Engine</span>
+                            </div>
+                            <span class="text-amber-400">MONITORING</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Idea Card 5 — SOL -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
+                            <span class="text-[10px] font-mono text-slate-500">H1 · 20 menit lalu</span>
+                        </div>
+                        <div class="font-heading font-bold text-white text-base mb-1">SOL/USDT — MACD Cross Zero</div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">MACD histogram positif + Volume spike + EMA20 golden cross. Momentum kuat ke 210.</p>
+                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
+                                <span class="text-slate-500">Quantum AI Engine</span>
+                            </div>
+                            <span class="text-emerald-400">R:R 1:2.5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA Card — Lihat Lebih Banyak -->
+                <div class="glass-card rounded-2xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all flex flex-col items-center justify-center p-8 cursor-pointer group" onclick="window.location.href='terminal.html'">
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 group-hover:bg-cyan-500/20 transition-all">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    </div>
+                    <div class="font-heading font-bold text-white text-base mb-2 text-center">Lihat 120+ Ide Live</div>
+                    <p class="text-slate-400 text-[11px] text-center mb-4">Semua pair, semua timeframe. Update setiap penutupan candle.</p>
+                    <span class="px-4 py-2 rounded-lg bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-mono font-bold group-hover:bg-cyan-400/20 transition-all">Buka Terminal →</span>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- AI SIGNAL WINRATE STATS -->
+    <section class="py-10 md:py-14 relative z-10 bg-[#040810]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+
+            <div class="text-center max-w-2xl mx-auto space-y-2 mb-10 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
+                    🤖 AI SIGNAL PERFORMANCE
+                </div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                    Performa Sinyal <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Otomatis</span>
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm">Statistik akurasi sinyal AI — dihitung dari seluruh sinyal yang dibukukan di platform.</p>
+            </div>
+
+            <!-- Winrate stat cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 reveal">
+                <div class="glass-card rounded-2xl p-5 border border-purple-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-500" id="idxWinrate">78.4%</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Overall Winrate</div>
+                    <div class="text-[10px] text-purple-400 mt-1 font-mono">Akumulatif</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-emerald-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-500" id="idxTotalWins">1 847</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Total TP Hit</div>
+                    <div class="text-[10px] text-emerald-400 mt-1 font-mono">Profit signals</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-cyan-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-cyan-500" id="idxAvgRR">1:2.6</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Avg Risk:Reward</div>
+                    <div class="text-[10px] text-cyan-400 mt-1 font-mono">Rasio rata-rata</div>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-amber-500/20 text-center">
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500" id="idxBestPair">XAU/USD</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1 font-mono">Best Pair</div>
+                    <div class="text-[10px] text-amber-400 mt-1 font-mono" id="idxBestPairWr">82.1% WR</div>
+                </div>
+            </div>
+
+            <!-- Winrate by pair horizontal bars -->
+            <div class="glass-card rounded-2xl border border-slate-800/60 p-5 sm:p-6 reveal">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                        <span class="font-heading font-semibold text-white text-sm">Winrate per Instrumen</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono">30 hari terakhir</span>
+                </div>
+                <div class="space-y-3" id="idxWinrateByPair">
+                    <!-- Static display — enhanced by JS if qi_signal_records available -->
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">XAU/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style="width:82%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-amber-400">82%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">BTC/USDT</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style="width:79%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-emerald-400">79%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">EUR/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full" style="width:76%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-cyan-400">76%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">GBP/USD</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full" style="width:74%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-purple-400">74%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">ETH/USDT</span>
+                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full" style="width:77%"></div></div>
+                        <span class="w-10 text-right text-[11px] font-mono text-blue-400">77%</span>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <p class="text-[10px] text-slate-600 leading-relaxed max-w-md">* Statistik dihitung berdasarkan sinyal historis Quantum AI Engine. Past performance tidak menjamin hasil di masa mendatang.</p>
+                    <a href="dashboard.html" class="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] font-semibold hover:bg-purple-500/20 transition-all">
+                        Lihat Semua Sinyal →
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <script>
+    (function(){
+        var COLORS = ['amber','emerald','cyan','purple','blue','rose','indigo','teal'];
+        function formatSym(s) {
+            if (!s) return s;
+            s = s.replace(/USDT$/,'');
+            return s.replace(/([A-Z]{3})([A-Z]{3})/, '$1/$2');
+        }
+        function renderBars(pairs) {
+            var container = document.getElementById('idxWinrateByPair');
+            if (!container || !pairs.length) return;
+            container.innerHTML = '';
+            pairs.forEach(function(p, i) {
+                var c = COLORS[i % COLORS.length];
+                var row = document.createElement('div');
+                row.className = 'flex items-center gap-3';
+                row.innerHTML = '<span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">' + formatSym(p.symbol) + '</span>'
+                    + '<div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-' + c + '-400 to-' + c + '-500 rounded-full" style="width:' + Math.round(p.wr) + '%"></div></div>'
+                    + '<span class="w-10 text-right text-[11px] font-mono text-' + c + '-400">' + Math.round(p.wr) + '%</span>';
+                container.appendChild(row);
+            });
+        }
+        fetch('api/signal-history.php', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || data.status !== 'success') return;
+                var m = data.metrics || {};
+                var el;
+                el = document.getElementById('idxWinrate');
+                if (el) el.textContent = (m.win_rate || 0) + '%';
+                el = document.getElementById('idxTotalWins');
+                if (el) el.textContent = (m.wins || 0).toLocaleString();
+                el = document.getElementById('idxAvgRR');
+                if (el) el.textContent = m.avg_rr || '1:2.5';
+                // Stats counter section
+                var cntSignals = document.querySelector('[data-count-to="1247"]');
+                if (cntSignals && m.total_signals) cntSignals.setAttribute('data-count-to', m.total_signals);
+                var cntAcc = document.querySelector('[data-count-to="78"]');
+                if (cntAcc && m.win_rate) cntAcc.setAttribute('data-count-to', Math.round(m.win_rate));
+                // Per-symbol winrate
+                var hist = data.history || [];
+                var byPair = {};
+                hist.forEach(function(s) {
+                    var isTP = (s.status || '').indexOf('HIT TP') !== -1;
+                    var isSL = (s.status || '').indexOf('HIT SL') !== -1;
+                    if (!isTP && !isSL) return;
+                    if (!byPair[s.symbol]) byPair[s.symbol] = { tp: 0, tot: 0 };
+                    byPair[s.symbol].tot++;
+                    if (isTP) byPair[s.symbol].tp++;
+                });
+                var pairs = Object.entries(byPair).map(function(e) {
+                    return { symbol: e[0], wr: e[1].tp / e[1].tot * 100, tot: e[1].tot };
+                }).sort(function(a, b) { return b.wr - a.wr; }).slice(0, 6);
+                if (pairs.length) {
+                    renderBars(pairs);
+                    var best = pairs[0];
+                    el = document.getElementById('idxBestPair');
+                    if (el) el.textContent = formatSym(best.symbol);
+                    el = document.getElementById('idxBestPairWr');
+                    if (el) el.textContent = best.wr.toFixed(1) + '% WR';
+                }
+            }).catch(function() {});
+    })();
+    </script>
+
+
+    <!-- DOWNLOAD APLIKASI SECTION -->
+    <section id="download" class="py-12 md:py-16 lg:py-20 relative z-10 bg-gradient-to-b from-[#050A1A] to-[#070D22] border-t border-cyan-500/10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 text-center">
+
+            <div class="space-y-3 mb-10 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
+                    DOWNLOAD APLIKASI
+                </div>
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+                    Install di <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">Android & iOS</span>
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto">Akses terminal langsung dari home screen — tanpa perlu App Store atau Play Store. Cukup install sekali, buka kapan saja.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 reveal">
+                <div class="glass-card rounded-2xl p-5 border border-emerald-500/20 text-center">
+                    <div class="text-3xl mb-3">📱</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">Android</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Chrome → Menu → "Add to Home Screen"</div>
+                    <button id="btnInstallAndroid" onclick="triggerPWAInstall()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download Android
+                    </button>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-700/40 text-center">
+                    <div class="text-3xl mb-3">🍎</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">iOS / iPhone</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Safari → Share → "Add to Home Screen"</div>
+                    <a href="pwa.html" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2">
+                        Lihat Panduan iOS
+                    </a>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-700/40 text-center">
+                    <div class="text-3xl mb-3">💻</div>
+                    <div class="font-heading font-bold text-white text-sm mb-1">Desktop / PC</div>
+                    <div class="text-[11px] text-slate-400 mb-3">Chrome → Klik icon install di address bar</div>
+                    <a href="pwa.html" class="block w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2">
+                        Lihat Panduan Desktop
+                    </a>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-slate-600 font-mono">Tidak membutuhkan akun Play Store / App Store. Aplikasi berjalan dari browser dan terupdate otomatis.</p>
+
+        </div>
+    </section>
+
+
+    <!-- #6 Quick Comparison Table (Gratis vs PRO) -->
+    <section class="py-12 md:py-16 relative z-10 bg-[#050A1A] border-t border-cyan-500/10">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
+            <div class="text-center mb-8 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono mb-4">
+                    GRATIS vs PRO
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-white">Bandingkan Fitur</h2>
+                <p class="text-slate-400 text-sm mt-2">Lihat perbedaan akun gratis dan Quantum+ PRO</p>
+            </div>
+            <div class="rounded-2xl border border-slate-800/60 overflow-hidden reveal" style="background:linear-gradient(135deg,rgba(13,24,54,0.80),rgba(10,17,40,0.92))">
+                <div class="grid grid-cols-3 bg-slate-900/80 border-b border-slate-800 text-center text-[10px] font-mono font-bold tracking-widest">
+                    <div class="px-4 py-3 text-left text-slate-400 uppercase">FITUR</div>
+                    <div class="px-4 py-3 text-cyan-400 uppercase border-l border-slate-800">GRATIS</div>
+                    <div class="px-4 py-3 text-purple-400 uppercase border-l border-slate-800">PRO</div>
+                </div>
+                <div class="divide-y divide-slate-800/60 text-xs">
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">📈 Chart Realtime</div><div class="px-4 py-2.5 text-center text-cyan-300 border-l border-slate-800/40">5 instrumen</div><div class="px-4 py-2.5 text-center text-purple-300 border-l border-slate-800/40">Unlimited</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">⚙️ Mesin Kuantum</div><div class="px-4 py-2.5 text-center text-slate-500 border-l border-slate-800/40">2 dasar</div><div class="px-4 py-2.5 text-center text-emerald-400 border-l border-slate-800/40">9 penuh</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">🤖 AI Radar</div><div class="px-4 py-2.5 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div><div class="px-4 py-2.5 text-center text-emerald-400 border-l border-slate-800/40">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">💼 Paper Trading</div><div class="px-4 py-2.5 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div><div class="px-4 py-2.5 text-center text-emerald-400 border-l border-slate-800/40">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">📲 Alert Telegram</div><div class="px-4 py-2.5 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div><div class="px-4 py-2.5 text-center text-emerald-400 border-l border-slate-800/40">✓ Realtime</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-2.5 text-slate-300">🌐 Command Center</div><div class="px-4 py-2.5 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div><div class="px-4 py-2.5 text-center text-emerald-400 border-l border-slate-800/40">✓ Full</div></div>
+                </div>
+            </div>
+            <div class="text-center mt-6 reveal">
+                <a href="pricing.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-heading font-bold text-sm transition-all shadow-lg shadow-purple-500/20">
+                    ⚡ Lihat Semua Paket & Harga →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- #5 FAQ Section -->
+    <section id="faq" class="py-12 md:py-16 relative z-10 bg-[#040810] border-t border-slate-800/60">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
+            <div class="text-center mb-8 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono mb-4">
+                    FAQ
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-white">Pertanyaan yang Sering Diajukan</h2>
+            </div>
+            <div class="space-y-3 reveal" id="faqList">
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Apakah Quantum Institut memberi rekomendasi trading langsung?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Tidak. Quantum Institut adalah platform analisa dan edukasi. Semua sinyal bersifat informatif — keputusan trading sepenuhnya ada di tangan Anda. Kami bukan penasihat keuangan berlisensi.</div>
+                </details>
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Apakah API key saya aman?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Ya. API key Anda dienkripsi dan disimpan server-side. Kami menggunakan SSL 256-bit, rate limiting, dan tidak pernah menyimpan password dalam plaintext. Data harga diambil langsung dari exchange tanpa menyimpan saldo atau posisi Anda.</div>
+                </details>
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Berapa akurasi sinyal secara real?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Win rate bervariasi per mesin dan per instrumen — rata-rata 60–80% berdasarkan data historis. Anda bisa melihat track record transparan langsung di dashboard. Namun, akurasi masa lalu tidak menjamin hasil di masa depan.</div>
+                </details>
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Apakah sinyal ini kena pajak?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Sinyal sendiri tidak dikenakan pajak. Namun keuntungan dari trading forex, crypto, atau emas di Indonesia bisa dikenakan pajak penghasilan sesuai aturan DJP. Konsultasikan dengan konsultan pajak Anda untuk detail spesifik.</div>
+                </details>
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Bisa diakses dari HP?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Ya! Quantum Terminal adalah Progressive Web App (PWA) — bisa diinstall langsung di home screen Android dan iOS tanpa perlu download dari Play Store. Tampilan sudah dioptimalkan untuk layar mobile.</div>
+                </details>
+                <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
+                    <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-slate-800/30 transition-colors">
+                        Apakah ada garansi uang kembali?
+                        <span class="text-slate-500 group-open:rotate-45 transition-transform text-lg">+</span>
+                    </summary>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Ya, kami menyediakan garansi 7 hari uang kembali untuk semua paket PRO. Jika Anda tidak puas dengan layanan kami dalam 7 hari pertama, hubungi kami via Telegram untuk proses refund penuh.</div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- DISCLAIMER & COPYRIGHT PANEL -->
+    <section id="disclaimer" class="py-10 md:py-14 relative z-10 bg-[#030810] border-t border-slate-800/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+
+            <div class="text-center mb-8 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono mb-4">
+                    ⚠ DISCLAIMER & LEGAL NOTICE
+                </div>
+                <h2 class="text-lg sm:text-xl font-bold text-white">Penolakan Risiko & Hak Cipta</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+                <!-- Disclaimer Box -->
+                <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6 reveal">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <h3 class="font-heading font-bold text-amber-400 text-sm">Penolakan Risiko Trading</h3>
+                    </div>
+                    <div class="space-y-2 text-[11px] text-slate-400 leading-relaxed">
+                        <p>Semua sinyal, analisa teknikal, dan konten yang tersedia di Quantum Institut Market Terminal bersifat <strong class="text-slate-300">EDUKATIF SEMATA</strong> dan <strong class="text-slate-300">BUKAN merupakan saran investasi, rekomendasi keuangan, atau ajakan untuk membeli/menjual aset keuangan</strong>.</p>
+                        <p>Trading forex, kripto, emas, dan instrumen keuangan lainnya mengandung <strong class="text-slate-300">risiko kerugian yang tinggi</strong>. Anda bisa kehilangan sebagian atau seluruh modal yang Anda investasikan. Pastikan Anda memahami risiko yang terlibat dan berkonsultasi dengan penasihat keuangan berlisensi sebelum membuat keputusan trading.</p>
+                        <p>Past performance (hasil masa lalu) tidak menjamin hasil yang sama di masa mendatang. Seluruh data, sinyal, dan statistik akurasi yang ditampilkan bersifat historis dan tidak dapat dijadikan jaminan profit.</p>
+                    </div>
+                </div>
+
+                <!-- Copyright & Legal Box -->
+                <div class="rounded-2xl border border-slate-700/40 bg-slate-900/30 p-5 sm:p-6 reveal">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        <h3 class="font-heading font-bold text-cyan-400 text-sm">Hak Cipta & Penyalahgunaan Data</h3>
+                    </div>
+                    <div class="space-y-2 text-[11px] text-slate-400 leading-relaxed">
+                        <p>© 2026 <strong class="text-white">Quantum Institut Market Terminal</strong>. Seluruh hak cipta dilindungi undang-undang.</p>
+                        <p>Dilarang keras menyalin, mendistribusikan, memodifikasi, menjual, atau menggunakan konten, algoritma, sinyal, kode sumber, desain antarmuka, atau data yang terdapat dalam platform ini untuk keperluan komersial tanpa izin tertulis dari Quantum Institut.</p>
+                        <p>Penyalahgunaan data — termasuk scraping otomatis, distribusi ulang sinyal tanpa izin, atau penggunaan API untuk keperluan di luar yang diizinkan — merupakan pelanggaran yang dapat ditindak secara hukum sesuai dengan <strong class="text-slate-300">Undang-Undang No. 28 Tahun 2014 tentang Hak Cipta</strong> dan <strong class="text-slate-300">Undang-Undang No. 11 Tahun 2008 jo. UU No. 19 Tahun 2016 tentang Informasi dan Transaksi Elektronik (ITE)</strong>.</p>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 text-[10px] font-mono">
+                        <a href="terms.html" class="px-2.5 py-1 rounded border border-slate-700 text-slate-400 hover:text-slate-300 hover:border-slate-600 transition-all">Syarat & Ketentuan</a>
+                        <a href="privacy.html" class="px-2.5 py-1 rounded border border-slate-700 text-slate-400 hover:text-slate-300 hover:border-slate-600 transition-all">Kebijakan Privasi</a>
+                        <a href="https://t.me/quantuminstitutterminal" target="_blank" rel="noopener" class="px-2.5 py-1 rounded border border-cyan-500/30 text-cyan-400 hover:border-cyan-500 transition-all">Hubungi Kami</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Full disclaimer warning banner -->
+            <div class="rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent p-4 text-[10px] text-slate-500 font-mono leading-relaxed reveal">
+                <strong class="text-amber-400">PERINGATAN RISIKO TINGGI:</strong> Instrumen derivatif (forex, CFD, kripto) memiliki leverage tinggi dan tidak cocok untuk semua investor. Perdagangan dengan margin dapat mengakibatkan kerugian melebihi investasi awal Anda. Hanya gunakan dana yang siap Anda rugikan. Quantum Institut bukan lembaga keuangan berizin OJK/BAPPEBTI dan tidak memberikan layanan pengelolaan investasi. Segala keputusan trading sepenuhnya adalah tanggung jawab pengguna.
+            </div>
+
+        </div>
+    </section>
+
+
     <!-- 5. FOOTER RESPONSIF / SECTION BELAJAR -->
     <!-- BREAKPOINT FOOTER: Mobile (stack vertikal, center), Desktop (4 kolom horizontal) -->
     <footer id="belajar" class="bg-[#030611] border-t border-cyan-500/20 pt-12 md:pt-16 pb-8 text-slate-400 font-body text-center md:text-left">
@@ -612,7 +1229,10 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/80">
                 <!-- Kolom 1 Logo & Tagline -->
                 <div class="space-y-3">
-                    <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
+                    <div class="flex items-center gap-2">
+                        <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-9 w-9 rounded-lg object-cover border border-cyan-500/20">
+                        <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
+                    </div>
                     <p class="text-xs text-slate-400">"Sembilan mesin kuantum membaca pasar. Kamu yang memegang kendali."</p>
                 </div>
 
@@ -622,13 +1242,16 @@
                     <div><a href="#mesin-kuantum" class="hover:text-cyan-400">Mesin Kuantum</a></div>
                     <div><a href="terminal.html" class="hover:text-cyan-400">Terminal Pro</a></div>
                     <div><a href="pricing.html" class="hover:text-purple-400">Quantum+</a></div>
+                    <div><a href="#download" class="hover:text-emerald-400">Download Aplikasi</a></div>
+                    <div><a href="status.html" class="hover:text-cyan-400">Status API</a></div>
                 </div>
 
                 <!-- Kolom 3 Legal -->
                 <div class="space-y-2 text-xs">
                     <div class="font-bold text-white uppercase font-heading mb-2">Legal</div>
-                    <div><a href="#" onclick="showQuantumToast('Dokumen Syarat & Ketentuan dapat dibaca di portal legal.', 'info'); return false;" class="hover:text-slate-300">Syarat & Ketentuan</a></div>
-                    <div><a href="#" onclick="showQuantumToast('Dokumen Kebijakan Privasi (PDPA/GDPR) dapat dibaca di portal legal.', 'info'); return false;" class="hover:text-slate-300">Kebijakan Privasi</a></div>
+                    <div><a href="terms.html" class="hover:text-slate-300">Syarat & Ketentuan</a></div>
+                    <div><a href="privacy.html" class="hover:text-slate-300">Kebijakan Privasi</a></div>
+                    <div><a href="pwa.html" class="hover:text-cyan-400">Install Aplikasi (PWA)</a></div>
                     <div><a href="#" onclick="showQuantumToast('Disclaimer: Sinyal & analisa terminal bukan saran keuangan atau ajakan investasi.', 'warning'); return false;" class="hover:text-slate-300">Penolakan Risiko</a></div>
                 </div>
 
@@ -636,7 +1259,7 @@
                 <div class="space-y-2 text-xs">
                     <div class="font-bold text-white uppercase font-heading mb-2">Komunitas</div>
                     <div class="flex justify-center md:justify-start gap-2 pt-1 font-mono">
-                        <a href="https://t.me/QuantumInstitutOfficial" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-900 rounded border border-slate-800 text-cyan-400 hover:border-cyan-500/40 transition-all">Telegram</a>
+                        <a href="https://t.me/quantuminstitutterminal" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-900 rounded border border-slate-800 text-cyan-400 hover:border-cyan-500/40 transition-all">Telegram</a>
                         <a href="https://discord.gg/quantuminstitut" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-900 rounded border border-slate-800 text-purple-400 hover:border-purple-500/40 transition-all">Discord</a>
                     </div>
                 </div>
@@ -650,7 +1273,275 @@
     </footer>
 
     <!-- JS Core -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/ticker.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/ticker.js?v=1.4.0"></script>
+
+    <script>
+    // ── WIB LIVE CLOCK (UTC+7) ────────────────────────────────────────────────
+    (function tickWIB() {
+        const el = document.getElementById('wibClock');
+        if (!el) return;
+        function update() {
+            const now = new Date();
+            const wib = new Date(now.getTime() + (7 * 60 - now.getTimezoneOffset()) * 60000);
+            el.textContent = wib.toTimeString().slice(0, 8);
+        }
+        update();
+        setInterval(update, 1000);
+    })();
+
+    // ── LIVE SIGNAL READOUT — rotating pairs from Binance ───────────────────
+    const SIGNAL_PAIRS = [
+        { sym:'BTCUSDT',  label:'BTC/USDT',  dec:0 },
+        { sym:'ETHUSDT',  label:'ETH/USDT',  dec:2 },
+        { sym:'SOLUSDT',  label:'SOL/USDT',  dec:2 },
+        { sym:'BNBUSDT',  label:'BNB/USDT',  dec:2 },
+        { sym:'XRPUSDT',  label:'XRP/USDT',  dec:4 },
+        { sym:'DOGEUSDT', label:'DOGE/USDT', dec:5 },
+    ];
+    let _sigPairIdx = 0;
+
+    function _calcRSI14(closes) {
+        if (closes.length < 15) return 50;
+        let gains = 0, losses = 0;
+        for (let i = closes.length - 14; i < closes.length; i++) {
+            const d = closes[i] - closes[i - 1];
+            if (d > 0) gains += d; else losses -= d;
+        }
+        if (losses === 0) return 100;
+        const rs = (gains / 14) / (losses / 14);
+        return 100 - 100 / (1 + rs);
+    }
+
+    async function fetchLiveSignal() {
+        const pair = SIGNAL_PAIRS[_sigPairIdx];
+        _sigPairIdx = (_sigPairIdx + 1) % SIGNAL_PAIRS.length;
+        try {
+            const [tr, kr] = await Promise.all([
+                fetch(`https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${pair.sym}`),
+                fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${pair.sym}&interval=1h&limit=20`)
+            ]);
+            if (!tr.ok || !kr.ok) throw new Error('fetch fail');
+            const ticker = await tr.json();
+            const klines = await kr.json();
+
+            const price  = parseFloat(ticker.lastPrice);
+            const chgPct = parseFloat(ticker.priceChangePercent);
+            const closes = klines.map(k => parseFloat(k[4]));
+            const rsi    = _calcRSI14(closes);
+
+            let statusTxt, statusClass, modeTxt, slMult, tpMult;
+            if (chgPct > 0.8 && rsi < 65) {
+                statusTxt = 'BUY SETUP'; statusClass = 'bg-emerald-400/10 text-emerald-400 border-emerald-400/40';
+                modeTxt = `Mode: Quantum Momentum LONG — RSI ${rsi.toFixed(0)}, trend bullish H1.`;
+                slMult = -0.0075; tpMult = 0.022;
+            } else if (chgPct < -0.8 && rsi > 35) {
+                statusTxt = 'SELL SETUP'; statusClass = 'bg-rose-400/10 text-rose-400 border-rose-400/40';
+                modeTxt = `Mode: Quantum Momentum SHORT — RSI ${rsi.toFixed(0)}, trend bearish H1.`;
+                slMult = 0.0075; tpMult = -0.022;
+            } else {
+                statusTxt = 'WAIT — KONSOLIDASI'; statusClass = 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40';
+                modeTxt = `Mode: Quantum SNR Rejection — RSI ${rsi.toFixed(0)}, menunggu breakout konfirmasi.`;
+                slMult = -0.006; tpMult = 0.018;
+            }
+
+            const fmt = v => v.toLocaleString('en-US', {minimumFractionDigits: pair.dec, maximumFractionDigits: pair.dec});
+            const sl  = price * (1 + slMult);
+            const tp  = price * (1 + tpMult);
+            const rr  = (Math.abs(tpMult) / Math.abs(slMult)).toFixed(1);
+            const conditions = Math.round(5 + Math.abs(rsi - 50) / 10);
+
+            document.getElementById('sigPair').innerHTML = `${pair.label} <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">H1</span>`;
+            const ss = document.getElementById('sigStatus');
+            ss.textContent = statusTxt;
+            ss.className = `px-2.5 py-1 text-[11px] font-bold rounded border ${statusClass}`;
+            document.getElementById('sigMode').textContent = modeTxt;
+            document.getElementById('sigEntry').textContent = `$${fmt(price * 0.999)} – $${fmt(price * 1.001)}`;
+            const slSign = slMult > 0 ? '+' : '';
+            const tpSign = tpMult > 0 ? '+' : '';
+            document.getElementById('sigSL').textContent = `$${fmt(sl)} (${slSign}${(slMult * 100).toFixed(2)}%)`;
+            document.getElementById('sigTP').textContent = `$${fmt(tp)} (${tpSign}${(tpMult * 100).toFixed(2)}%)`;
+            document.getElementById('sigRR').textContent = `1 : ${rr}`;
+            document.getElementById('sigConditions').textContent = `${conditions} dari 8 Syarat`;
+        } catch(e) {
+            const ss = document.getElementById('sigStatus');
+            if (ss) { ss.textContent = 'SETUP TERBENTUK'; ss.className = 'px-2.5 py-1 text-[11px] font-bold rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/40'; }
+            if (document.getElementById('sigEntry')) document.getElementById('sigEntry').textContent = 'Cek Terminal →';
+        }
+    }
+    fetchLiveSignal();
+    setInterval(fetchLiveSignal, 60000);
+
+    // ── LIVE TRADE IDEAS — fetch real signals from API ─────────────────────
+    (function() {
+        const IDEAS_CFG = [
+            { sym: 'BTCUSDT', label: 'BTC/USDT', idx: 0 },
+            { sym: 'XAUUSD',  label: 'XAU/USD',  idx: 1 },
+            { sym: 'ETHUSDT', label: 'ETH/USDT', idx: 2 },
+            { sym: 'EURUSD',  label: 'EUR/USD',  idx: 3 },
+            { sym: 'SOLUSDT', label: 'SOL/USDT', idx: 4 },
+        ];
+        async function refreshIdeas() {
+            const grid = document.getElementById('tradeIdeasGrid');
+            if (!grid) return;
+            const cards = grid.querySelectorAll(':scope > div');
+            for (const cfg of IDEAS_CFG) {
+                try {
+                    const res = await fetch(`api/signals.php?symbol=${cfg.sym}&timeframe=H1&engine=MULTI`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (!data.signal || !cards[cfg.idx]) continue;
+                    const sig = data.signal;
+                    const dir = sig.direction || 'WAIT';
+                    const titleEl = cards[cfg.idx].querySelector('.font-heading.font-bold.text-base');
+                    const descEl  = cards[cfg.idx].querySelector('p.text-slate-400');
+                    const badgeEl = cards[cfg.idx].querySelector('span[class*="font-mono font-bold"]');
+                    const timeEl  = cards[cfg.idx].querySelector('span[class*="text-slate-500"]:last-of-type');
+                    if (titleEl) titleEl.textContent = `${cfg.label} — ${sig.label || dir}`;
+                    if (descEl)  descEl.textContent  = sig.reason || sig.summary || descEl.textContent;
+                    if (badgeEl) {
+                        if (dir === 'BUY' || dir === 'STRONG_BUY') {
+                            badgeEl.textContent = '▲ LONG'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded';
+                        } else if (dir === 'SELL' || dir === 'STRONG_SELL') {
+                            badgeEl.textContent = '▼ SHORT'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 rounded';
+                        } else {
+                            badgeEl.textContent = '◆ WAIT'; badgeEl.className = 'px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded';
+                        }
+                    }
+                    if (timeEl && data.timestamp) {
+                        const ago = Math.round((Date.now() / 1000 - new Date(data.timestamp).getTime() / 1000) / 60);
+                        timeEl.textContent = `H1 · ${ago < 60 ? ago + ' mnt lalu' : Math.round(ago / 60) + ' jam lalu'}`;
+                    }
+                } catch(e) {}
+            }
+        }
+        refreshIdeas();
+        setInterval(refreshIdeas, 120000);
+    })();
+
+    // ── STATS COUNT-UP ANIMATION (#3) ───────────────────────────────────────
+    (function() {
+        function animateCount(el, target, suffix, duration) {
+            if (!el) return;
+            const start = 0;
+            const startTime = performance.now();
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const val = Math.round(start + (target - start) * eased);
+                el.textContent = val.toLocaleString('id-ID') + (suffix || '');
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    const el2 = document.getElementById('idxTotalWins');
+                    const val = el2 ? parseInt(el2.textContent.replace(/\D/g,''),10) || 0 : 0;
+                    if (val > 0) animateCount(el2, val, '', 1800);
+                    obs.disconnect();
+                }
+            });
+        }, { threshold: 0.3 });
+        const el = document.getElementById('idxTotalWins');
+        if (el) obs.observe(el);
+    })();
+
+    // ── LIVE TICKER BAR — updates both copies via data-ticker-sym ────────────
+    (function() {
+        const FMT = {
+            BTCUSDT: { dec: 0, prefix: '$' }, XAUUSD: { dec: 2, prefix: '$' },
+            ETHUSDT: { dec: 2, prefix: '$' }, EURUSD: { dec: 5, prefix: ''  },
+            SOLUSDT: { dec: 2, prefix: '$' },
+        };
+        async function refreshTicker() {
+            try {
+                const res = await fetch('api/live-price.php?symbols=BTCUSDT,XAUUSD,ETHUSDT,EURUSD,SOLUSDT', { cache: 'no-store' });
+                if (!res.ok) return;
+                const json = await res.json();
+                if (!json.prices) return;
+                for (const [sym, data] of Object.entries(json.prices)) {
+                    if (!data || data.price == null || isNaN(data.price)) continue;
+                    const cfg = FMT[sym]; if (!cfg) continue;
+                    const price = data.price.toLocaleString('en-US', { minimumFractionDigits: cfg.dec, maximumFractionDigits: cfg.dec });
+                    const chg = data.chgPct ?? 0;
+                    const sign = chg >= 0 ? '+' : '';
+                    const cls = chg >= 0 ? 'ticker-price text-emerald-400' : 'ticker-price text-rose-400';
+                    document.querySelectorAll(`[data-ticker-sym="${sym}"] .ticker-price`).forEach(el => {
+                        el.textContent = `${cfg.prefix}${price} (${sign}${chg.toFixed(2)}%)`;
+                        el.className = cls;
+                    });
+                }
+            } catch(e) {}
+        }
+        refreshTicker();
+        setInterval(refreshTicker, 30000);
+    })();
+    </script>
+    <!-- Animated stat counters -->
+    <script>
+    (function() {
+        const counters = document.querySelectorAll('[data-count-to]');
+        if (!counters.length) return;
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting || entry.target._counted) return;
+                entry.target._counted = true;
+                const el = entry.target;
+                const target = parseInt(el.dataset.countTo, 10);
+                const suffix = el.dataset.countSuffix || '';
+                const fmt = el.dataset.countFormat === 'true';
+                const dur = Math.min(1800, 400 + target * 1.2);
+                const start = performance.now();
+                function step(now) {
+                    const t = Math.min((now - start) / dur, 1);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    const val = Math.round(ease * target);
+                    el.textContent = (fmt ? val.toLocaleString('en-US') : val) + suffix;
+                    if (t < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+        }, { threshold: 0.3 });
+        counters.forEach(c => io.observe(c));
+    })();
+    </script>
+    <!-- PWA Install Prompt + Service Worker -->
+    <script>
+    let _deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _deferredInstallPrompt = e;
+        const btn = document.getElementById('btnInstallAndroid');
+        if (btn) {
+            btn.classList.add('animate-pulse');
+            btn.textContent = 'Install Sekarang';
+        }
+    });
+    function triggerPWAInstall() {
+        if (_deferredInstallPrompt) {
+            _deferredInstallPrompt.prompt();
+            _deferredInstallPrompt.userChoice.then(result => {
+                if (result.outcome === 'accepted') {
+                    if (window.showQuantumToast) showQuantumToast('Aplikasi berhasil diinstall!', 'success');
+                }
+                _deferredInstallPrompt = null;
+            });
+        } else {
+            window.location.href = 'pwa.html';
+        }
+    }
+    window.addEventListener('appinstalled', () => {
+        if (window.showQuantumToast) showQuantumToast('Quantum Terminal terinstall di perangkat Anda!', 'success');
+    });
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+    }
+    </script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="id" class="dark scroll-smooth">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/login.html">
     <title>Masuk Terminal | Quantum Institut Market Terminal</title>
     <meta name="description" content="Halaman Masuk Otentikasi Quantum Institut Market Terminal. Akses 9 mesin kuantum analisa pasar real-time.">
     
@@ -17,36 +18,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'quantum-dark': '#050A1A',
-                        'quantum-navy': '#0A1128',
-                        'quantum-card': '#0D1836',
-                        'quantum-cyan': '#00E5FF',
-                        'quantum-purple': '#7C4DFF',
-                        'quantum-indigo': '#4F46E5',
-                        'quantum-green': '#00E676',
-                    },
-                    fontFamily: {
-                        heading: ['Space Grotesk', 'sans-serif'],
-                        body: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    boxShadow: {
-                        'cyan-glow': '0 0 25px rgba(0, 229, 255, 0.25)',
-                        'purple-glow': '0 0 25px rgba(124, 77, 255, 0.25)',
-                        'card-glow': '0 10px 30px -10px rgba(0, 229, 255, 0.15)',
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
 
     <!-- Custom CSS -->
     <style>
@@ -107,14 +82,8 @@
 
     <!-- HEADER / TOP NAV MINI -->
     <header class="relative z-20 w-full px-4 sm:px-8 py-6 flex items-center justify-between border-b border-cyan-500/10 backdrop-blur-md bg-[#050A1A]/70">
-        <a href="index.html" class="flex items-center gap-3 group">
-            <div class="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 group-hover:border-cyan-400 transition-all">
-                <svg class="w-5 h-5 text-cyan-400 group-hover:rotate-180 transition-transform duration-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                    <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(30 12 12)" stroke="currentColor" class="opacity-80"/>
-                    <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(90 12 12)" stroke="#7C4DFF" class="opacity-90"/>
-                    <circle cx="12" cy="12" r="2.2" fill="#00E5FF"/>
-                </svg>
-            </div>
+        <a href="index.html" class="flex items-center gap-2.5 group">
+            <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-9 w-9 rounded-xl object-cover border border-cyan-500/30 group-hover:border-cyan-400 transition-all">
             <div>
                 <span class="font-heading font-bold text-base sm:text-lg tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
                     Quantum<span class="text-cyan-400">Institut</span>
@@ -132,7 +101,53 @@
 
     <!-- MAIN LOGIN CARD CONTAINER -->
     <main class="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-8">
-        <div class="relative w-full max-w-lg">
+        <div class="relative w-full max-w-4xl flex flex-col lg:flex-row items-center gap-8">
+
+            <!-- #12 Desktop Preview (hidden on mobile) -->
+            <div class="hidden lg:flex flex-col items-center justify-center w-1/2 text-center px-4">
+                <div class="mb-4">
+                    <div class="text-[10px] font-mono text-cyan-400/60 uppercase tracking-widest mb-2">PREVIEW TERMINAL</div>
+                    <div class="rounded-2xl border border-cyan-500/20 bg-slate-950/60 overflow-hidden shadow-2xl shadow-cyan-500/5">
+                        <div class="h-6 bg-slate-900/80 border-b border-slate-800 flex items-center gap-1.5 px-3">
+                            <span class="w-2 h-2 rounded-full bg-rose-500/60"></span>
+                            <span class="w-2 h-2 rounded-full bg-amber-500/60"></span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500/60"></span>
+                            <span class="text-[9px] text-slate-600 font-mono ml-2">Quantum Command Center</span>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex gap-2">
+                                <div class="w-16 h-20 rounded-lg bg-cyan-500/5 border border-cyan-500/10 p-2">
+                                    <div class="w-full h-1 bg-cyan-500/20 rounded mb-1"></div>
+                                    <div class="w-3/4 h-1 bg-slate-700 rounded mb-1"></div>
+                                    <div class="w-full h-1 bg-slate-700 rounded mb-1"></div>
+                                    <div class="w-1/2 h-1 bg-slate-700 rounded"></div>
+                                </div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-12 rounded-lg bg-gradient-to-r from-cyan-500/5 to-purple-500/5 border border-slate-800 flex items-center px-3">
+                                        <div class="flex gap-4">
+                                            <div><div class="text-[8px] text-slate-600">BTC/USDT</div><div class="text-[10px] text-emerald-400 font-mono font-bold">$82,761</div></div>
+                                            <div><div class="text-[8px] text-slate-600">XAU/USD</div><div class="text-[10px] text-emerald-400 font-mono font-bold">$2,641</div></div>
+                                        </div>
+                                    </div>
+                                    <div class="h-6 rounded bg-slate-800/60 flex items-center px-2 gap-1">
+                                        <span class="w-1 h-1 rounded-full bg-cyan-400 animate-pulse"></span>
+                                        <span class="text-[8px] text-slate-500 font-mono">9 Mesin Aktif</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <div class="h-8 rounded bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-[8px] text-emerald-400 font-mono">BUY EURUSD</div>
+                                <div class="h-8 rounded bg-rose-500/5 border border-rose-500/10 flex items-center justify-center text-[8px] text-rose-400 font-mono">SELL GBPJPY</div>
+                                <div class="h-8 rounded bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-[8px] text-emerald-400 font-mono">BUY XAUUSD</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-500 max-w-xs">Akses 29 panel trading profesional, 9 mesin kuantum, dan AI assistant — semua dalam satu terminal.</p>
+            </div>
+
+            <!-- Login form card -->
+            <div class="relative w-full max-w-lg lg:w-1/2">
             
             <!-- Ambient Glow Background Aura -->
             <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-600 to-indigo-600 rounded-3xl blur-2xl opacity-25 animate-aura"></div>
@@ -211,7 +226,7 @@
                     <div>
                         <label for="passwordInput" class="block text-xs font-mono text-slate-300 font-semibold mb-2 flex justify-between">
                             <span>KATA SANDI</span>
-                            <a href="#" onclick="showQuantumToast('Instruksi pemulihan kata sandi telah dikirim ke email Anda.', 'info'); return false;" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
+                            <a href="#" onclick="showQuantumToast('Untuk reset kata sandi, hubungi admin via Telegram @QuantumInstitut atau email admin@quantuminstitut.market', 'info'); return false;" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
                         </label>
                         <div class="relative">
                             <input type="password" id="passwordInput" placeholder="••••••••••••" required
@@ -229,11 +244,11 @@
                 </form>
 
                 <!-- ALTERNATIVE AUTH METHOD (GOOGLE) -->
-                <div class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-4">
-                    <div class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ATAU OTENTIKASI LISENSI CEPAT</div>
-                    
-                    <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, fallback jujur jika belum -->
-                    <div class="font-mono text-xs">
+                <div id="googleAuthSection" class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-4">
+                    <div id="googleDividerLabel" class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">ATAU OTENTIKASI LISENSI CEPAT</div>
+
+                    <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, tersembunyi jika belum -->
+                    <div id="googleBtnWrap" class="font-mono text-xs">
                         <button id="btnGoogleFallback" type="button" onclick="handleGoogleClick()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
                             <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.58 3.3-3.23 5.485-6.887 5.485-4.14 0-7.5-3.36-7.5-7.5s3.36-7.5 7.5-7.5c1.86 0 3.55.69 4.86 1.83l2.36-2.36C17.5 1.7 15.02 1 12.24 1 6.13 1 1.18 5.95 1.18 12s4.95 11 11.06 11c6.34 0 10.55-4.46 10.55-10.74 0-.72-.08-1.42-.2-2.115H12.24z"/></svg>
                             <span id="googleBtnLabel">Masuk Dengan Google Account</span>
@@ -256,6 +271,7 @@
                 </div>
 
             </div>
+            </div>
         </div>
     </main>
 
@@ -267,8 +283,8 @@
 
 
     <!-- JAVASCRIPT AUTH LOGIC -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/auth.js?v=1.4.0"></script>
     <script>
         // --- 1. PARTICLES BACKGROUND ---
         const canvas = document.getElementById('particleCanvas');
@@ -471,11 +487,11 @@
                     _googleClientId = json.data.google_client_id;
                     loadGoogleGsi();
                 } else {
-                    // Belum dikonfigurasi → tandai tombol dengan jujur
-                    const label = document.getElementById('googleBtnLabel');
-                    if (label) label.textContent = 'Masuk Dengan Google (Segera Hadir)';
-                    const btn = document.getElementById('btnGoogleFallback');
-                    if (btn) btn.classList.add('opacity-60');
+                    // Belum dikonfigurasi → sembunyikan tombol Google dan divider-nya
+                    const wrap = document.getElementById('googleBtnWrap');
+                    const divider = document.getElementById('googleDividerLabel');
+                    if (wrap) wrap.style.display = 'none';
+                    if (divider) divider.style.display = 'none';
                 }
             } catch (e) { /* endpoint tak terjangkau → tombol tetap fallback */ }
         })();
@@ -536,5 +552,6 @@
             }
         }
     </script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

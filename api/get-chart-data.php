@@ -1,8 +1,13 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/_middleware.php';
-require_once __DIR__ . '/../config/api_keys.php';
-qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
+// When included by signals.php, headers and rate limiting are handled by the caller.
+if (!defined('QI_INCLUDED_BY_SIGNALS')) {
+    header('Content-Type: application/json; charset=utf-8');
+    require_once __DIR__ . '/_middleware.php';
+    qi_rate_limit(120, 60); // chart sering di-refresh, beri limit lebih longgar
+}
+$_apiKeysFile = __DIR__ . '/../config/api_keys.php';
+if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
+if (!defined('TWELVE_DATA_KEY')) define('TWELVE_DATA_KEY', '');
 
 $symbol   = isset($_GET['symbol'])   ? strtoupper(qi_sanitize_string($_GET['symbol'], 10)) : 'BTCUSDT';
 $interval = isset($_GET['interval']) ? qi_sanitize_string($_GET['interval'], 5)            : '60';
@@ -34,6 +39,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
 /**
  * Ambil URL dengan curl (cepat) atau fallback file_get_contents.
  */
+if (!function_exists('qi_http_get')) :
 function qi_http_get($url, $timeout = 4) {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
@@ -43,7 +49,7 @@ function qi_http_get($url, $timeout = 4) {
             CURLOPT_CONNECTTIMEOUT => 3,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_USERAGENT      => 'Mozilla/5.0 (QuantumTerminal)',
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
         ]);
         $res = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -53,6 +59,7 @@ function qi_http_get($url, $timeout = 4) {
     $ctx = stream_context_create(['http' => ['method' => 'GET', 'timeout' => $timeout, 'header' => "User-Agent: Mozilla/5.0\r\n"]]);
     return @file_get_contents($url, false, $ctx);
 }
+endif;
 
 $candles = [];
 
@@ -185,6 +192,49 @@ if (empty($candles) && $symbol === 'EURUSD') {
     if (empty($candles)) {
         $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
         $raw = qi_http_get("https://biquote.io/api/EURUSD/ohlc?interval={$biquoteTf}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+            if (is_array($bars) && count($bars) > 0) {
+                foreach ($bars as $b) {
+                    $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
+                    if ($t > 0) {
+                        $candles[] = [
+                            'time'   => $t,
+                            'open'   => (float)$b['open'],
+                            'high'   => (float)$b['high'],
+                            'low'    => (float)$b['low'],
+                            'close'  => (float)$b['close'],
+                            'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                        ];
+                    }
+                }
+                usort($candles, fn($a, $b) => $a['time'] - $b['time']);
+            }
+        }
+    }
+}
+
+// 1d. Forex majors + cross pairs → Twelve Data → biquote.io MT5 fallback.
+$forexMajors = ['GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'GBPJPY', 'EURJPY', 'EURGBP', 'AUDNZD', 'CHFJPY', 'CADJPY'];
+if (empty($candles) && in_array($symbol, $forexMajors, true)) {
+    // Primary: Twelve Data — simbol diformat "XXX/YYY"
+    $tdSymbol = substr($symbol, 0, 3) . '/' . substr($symbol, 3, 3);
+    $tdUrl = 'https://api.twelvedata.com/time_series?symbol=' . urlencode($tdSymbol)
+           . '&interval=' . $tdInterval . '&outputsize=300&apikey=' . TWELVE_DATA_KEY;
+    $raw = qi_http_get($tdUrl, 6);
+    if ($raw) {
+        $d = json_decode($raw, true);
+        $values = $d['values'] ?? [];
+        if (is_array($values) && count($values) > 5 && !isset($d['code'])) {
+            $candles = qi_parse_td_candles($values);
+        }
+    }
+
+    // Fallback: biquote.io MT5 broker feed
+    if (empty($candles)) {
+        $biquoteTf = $interval === 'D' ? '1d' : ($interval === '240' ? '4h' : ($interval === '60' ? '1h' : ($interval === '15' ? '15m' : '5m')));
+        $raw = qi_http_get("https://biquote.io/api/{$symbol}/ohlc?interval={$biquoteTf}&limit=300", 4);
         if ($raw) {
             $data = json_decode($raw, true);
             $bars = $data['bars'] ?? (is_array($data) ? $data : []);

@@ -34,6 +34,11 @@ package-lock.json
 .vercel
 cache/chart/
 cache/ratelimit/
+cache/logs/
+cache/csp-reports/
+cache/frankfurter/
+cache/tv-scan/
+cache/errorlogs/
 
 # Claude Code local session config
 .claude/

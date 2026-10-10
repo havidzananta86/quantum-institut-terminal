@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/404.html">
     <title>404 - Halaman Tidak Ditemukan | Quantum Institut</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body { background-color: #050A1A; color: #E2E8F0; font-family: 'Inter', sans-serif; }
@@ -18,9 +22,20 @@
         <p class="text-sm text-slate-400">
             Halaman yang Anda cari tidak ditemukan di radar server Quantum Institut.
         </p>
-        <a href="index.html" class="inline-block px-6 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-sm transition-all shadow-lg">
-            Kembali Ke Beranda →
-        </a>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="index.html" class="inline-block px-6 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-sm transition-all shadow-lg">
+                Kembali Ke Beranda →
+            </a>
+            <a href="terminal.html" class="inline-block px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all border border-slate-700">
+                Buka Terminal
+            </a>
+        </div>
+        <div class="pt-4 flex justify-center gap-6 text-xs text-slate-500">
+            <a href="dashboard.html" class="hover:text-cyan-400 transition-colors">Dashboard</a>
+            <a href="status.html" class="hover:text-cyan-400 transition-colors">Status Server</a>
+            <a href="login.html" class="hover:text-cyan-400 transition-colors">Login</a>
+        </div>
     </div>
+<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

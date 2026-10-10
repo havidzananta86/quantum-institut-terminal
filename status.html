@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status — Quantum Institut</title>
+    <meta name="description" content="Status server dan layanan Quantum Institut Market Terminal secara real-time.">
+    <meta property="og:title" content="Status Server | Quantum Institut">
+    <meta property="og:description" content="Status server dan layanan Quantum Institut Market Terminal secara real-time.">
+    <meta property="og:image" content="https://quantuminstitut.market/assets/img/icon-512.png">
+    <meta property="og:url" content="https://quantuminstitut.market/status.html">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#00E5FF">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: var(--qi-bg, #0B1220); color: var(--qi-text, #CBD5E1); }
+        .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-dot.ok      { background: #00FFA3; box-shadow: 0 0 8px #00FFA360; }
+        .status-dot.warn    { background: #FBBF24; box-shadow: 0 0 8px #FBBF2460; }
+        .status-dot.error   { background: #FF4D6D; box-shadow: 0 0 8px #FF4D6D60; }
+        .status-dot.pending { background: #64748B; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 px-4 sm:px-8 py-6">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-2.5">
+                    <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="w-8 h-8 rounded-lg object-cover border border-cyan-500/30">
+                    <div>
+                        <div class="font-heading font-bold text-white text-sm">QUANTUM INSTITUT</div>
+                        <div class="text-[10px] text-slate-500">System Status</div>
+                    </div>
+                </a>
+            </div>
+            <div id="globalBadge" class="font-mono text-xs px-3 py-1.5 rounded-full border border-slate-700 text-slate-400">
+                Memeriksa...
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Grid -->
+    <main class="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-4">
+        <h1 class="font-heading font-bold text-white text-xl mb-6">API Endpoints</h1>
+
+        <div id="statusList" class="space-y-2"></div>
+
+        <div class="flex items-center justify-between mt-8">
+            <p class="text-[11px] text-slate-600 font-mono">Terakhir dicek: <span id="lastCheck">—</span></p>
+            <div class="flex items-center gap-2">
+                <span id="nextCheckCountdown" class="text-[10px] text-slate-600 font-mono"></span>
+                <button onclick="checkAll()" class="text-[10px] font-mono text-cyan-500 hover:text-cyan-400 transition-colors">↻ Cek Sekarang</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    const ENDPOINTS = [
+        { name: 'Live Price',         url: 'api/live-price.php?symbols=BTCUSDT',           key: 'status',  expect: 'success' },
+        { name: 'Chart Data',         url: 'api/get-chart-data.php?symbol=BTCUSDT&interval=60', key: 'status', expect: 'success' },
+        { name: 'Signals Engine',     url: 'api/signals.php?symbol=BTCUSDT&timeframe=D',    key: 'status',  expect: 'success' },
+        { name: 'Currency Strength',  url: 'api/currency-strength.php',                     key: 'status',  expect: v => v === 'success' || v === 'degraded' },
+        { name: 'Economic Calendar',  url: 'api/calendar.php',                              key: null,       expect: 'array' },
+        { name: 'AI Assistant (Groq)',url: 'api/ai-chat.php',                               key: null,       expect: 'post_only' },
+    ];
+
+    function renderRow(ep, state) {
+        const dotClass = state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'error' ? 'error' : 'pending';
+        const label    = state === 'ok' ? 'Operational' : state === 'warn' ? 'Degraded' : state === 'error' ? 'Down' : 'Checking...';
+        const labelClr = state === 'ok' ? 'text-emerald-400' : state === 'warn' ? 'text-amber-400' : state === 'error' ? 'text-rose-400' : 'text-slate-500';
+        return `<div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="flex items-center gap-3">
+                <span class="status-dot ${dotClass}"></span>
+                <span class="text-sm text-white font-medium">${ep.name}</span>
+            </div>
+            <span class="font-mono text-xs ${labelClr}">${label}</span>
+        </div>`;
+    }
+
+    async function checkOne(ep) {
+        try {
+            const opts = { cache: 'no-store', signal: AbortSignal.timeout(8000) };
+            if (ep.name.includes('AI Assistant')) {
+                opts.method = 'POST';
+                opts.headers = { 'Content-Type': 'application/json' };
+                opts.body = JSON.stringify({ message: 'ping' });
+            }
+            const res = await fetch(ep.url, opts);
+            if (ep.expect === 'post_only') {
+                return (res.status >= 200 && res.status < 500) ? 'ok' : 'error';
+            } else if (ep.expect === 'array') {
+                if (res.ok) { const data = await res.json(); return Array.isArray(data) ? 'ok' : 'warn'; }
+            } else if (ep.key && typeof ep.expect === 'string') {
+                if (res.ok) { const data = await res.json(); return data[ep.key] === ep.expect ? 'ok' : 'warn'; }
+            } else if (ep.key && typeof ep.expect === 'function') {
+                if (res.ok) { const data = await res.json(); return ep.expect(data[ep.key]) ? 'ok' : 'warn'; }
+            }
+        } catch(e) {}
+        return 'error';
+    }
+
+    async function checkAll() {
+        const list = document.getElementById('statusList');
+        list.innerHTML = ENDPOINTS.map(ep => renderRow(ep, 'pending')).join('');
+
+        const results = await Promise.all(ENDPOINTS.map(async (ep, i) => {
+            const state = await checkOne(ep);
+            const rows = list.querySelectorAll(':scope > div');
+            if (rows[i]) rows[i].outerHTML = renderRow(ep, state);
+            return state;
+        }));
+
+        // Global badge
+        const badge = document.getElementById('globalBadge');
+        const allOk   = results.every(s => s === 'ok');
+        const hasError = results.some(s => s === 'error');
+        if (allOk) {
+            badge.textContent = 'All Systems Operational';
+            badge.className = 'font-mono text-xs px-3 py-1.5 rounded-full border border-emerald-500/40 text-emerald-400 bg-emerald-500/10';
+        } else if (hasError) {
+            badge.textContent = 'Partial Outage';
+            badge.className = 'font-mono text-xs px-3 py-1.5 rounded-full border border-rose-500/40 text-rose-400 bg-rose-500/10';
+        } else {
+            badge.textContent = 'Degraded Performance';
+            badge.className = 'font-mono text-xs px-3 py-1.5 rounded-full border border-amber-500/40 text-amber-400 bg-amber-500/10';
+        }
+
+        document.getElementById('lastCheck').textContent = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' });
+    }
+
+    checkAll();
+    let _nextCheck = 60;
+    setInterval(() => {
+        _nextCheck--;
+        const el = document.getElementById('nextCheckCountdown');
+        if (el) el.textContent = _nextCheck > 0 ? `refresh ${_nextCheck}s` : 'checking…';
+        if (_nextCheck <= 0) { checkAll(); _nextCheck = 60; }
+    }, 1000);
+    </script>
+</body>
+</html>

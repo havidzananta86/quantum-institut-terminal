@@ -11,6 +11,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(60, 60);
 
 $user = qi_require_auth();          // 401 kalau token invalid
 $uid  = (int)$user['user_id'];

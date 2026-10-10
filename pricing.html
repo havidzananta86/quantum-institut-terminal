@@ -1,146 +1,362 @@
 <!DOCTYPE html>
-<html lang="id" class="dark selection:bg-purple-500/30">
+<html lang="id" class="selection:bg-purple-500/30">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://quantuminstitut.market/pricing.html">
     <title>Paket Berlangganan Quantum+ | Quantum Institut</title>
-    <meta name="description" content="Pilihan Paket Berlangganan Quantum+ Pro. Akses 9 Mesin Kuantum, 12 Slot Cek Banyak, m1 & m5 Emas/Forex.">
+    <meta name="description" content="Mulai gratis atau upgrade ke Quantum+ PRO. Akses 9 Mesin Kuantum, 12 Slot Cek Banyak, m1 & m5 Emas/Forex, notifikasi Telegram instan.">
+    <meta property="og:title" content="Paket Berlangganan Quantum+ | Quantum Institut">
+    <meta property="og:description" content="Mulai gratis atau upgrade ke Quantum+ PRO. Akses 9 Mesin Kuantum, 12 Slot Cek Banyak, m1 & m5 Emas/Forex, notifikasi Telegram instan.">
+    <meta property="og:image" content="https://quantuminstitut.market/assets/img/icon-512.png">
+    <meta property="og:url" content="https://quantuminstitut.market/pricing.html">
+    <meta property="og:type" content="website">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#050A1A">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.0"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
     <style>
-        .glass-card-purple {
+        .plan-card {
             background: linear-gradient(135deg, rgba(13,24,54,0.80) 0%, rgba(10,17,40,0.92) 100%);
             backdrop-filter: blur(14px);
-            border: 1px solid rgba(124, 77, 255, 0.20);
+            border: 1px solid rgba(30,41,59,0.8);
             transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        .glass-card-purple:hover {
+        .plan-card:hover {
             transform: translateY(-4px);
-            border-color: rgba(124, 77, 255, 0.50);
-            box-shadow: 0 16px 40px -12px rgba(124, 77, 255, 0.35);
+            box-shadow: 0 16px 40px -12px rgba(0,0,0,0.5);
         }
+        .plan-card-free:hover {
+            border-color: rgba(0, 229, 255, 0.40);
+            box-shadow: 0 16px 40px -12px rgba(0, 229, 255, 0.15);
+        }
+        .plan-card-pro:hover {
+            border-color: rgba(124, 77, 255, 0.50);
+            box-shadow: 0 16px 40px -12px rgba(124, 77, 255, 0.25);
+        }
+        .plan-card-popular {
+            border-color: rgba(124, 77, 255, 0.50) !important;
+            box-shadow: 0 0 0 1px rgba(124,77,255,0.3), 0 20px 50px -15px rgba(124,77,255,0.35);
+        }
+
+        .feature-check { color: #10B981; }
+        .feature-lock  { color: #475569; }
+
+        /* Feature comparison table */
+        .cmp-row { border-bottom: 1px solid rgba(30,41,59,0.6); }
+        .cmp-row:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
-    <header class="w-full px-5 sm:px-6 py-5 flex items-center justify-between border-b border-purple-500/20">
-        <a href="index.html" class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="#7C4DFF"/>
-                </svg>
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="w-full px-5 sm:px-6 py-4 flex items-center justify-between border-b border-slate-800/60 bg-[#050A1A]/90 backdrop-blur-md sticky top-0 z-40">
+        <a href="index.html" class="flex items-center gap-2.5 group">
+            <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-8 w-8 rounded-xl object-cover border border-cyan-500/30 group-hover:border-cyan-400 transition-all">
+            <div>
+                <span class="font-heading font-bold text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors block leading-none">Quantum<span class="text-cyan-400">Institut</span></span>
+                <span class="text-[9px] tracking-widest font-mono text-cyan-400/60 uppercase">Market Terminal</span>
             </div>
-            <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-purple-400">Institut+</span></span>
         </a>
-        <a href="terminal.html" class="text-xs font-mono text-cyan-400 hover:underline">Buka Terminal Live →</a>
+        <div class="flex items-center gap-3">
+            <a href="login.html" class="text-xs font-mono text-slate-400 hover:text-white transition-colors hidden sm:block">Masuk</a>
+            <a href="register.html" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/30 transition-all">Daftar Gratis</a>
+        </div>
     </header>
 
-    <!-- Pricing Content -->
-    <main class="max-w-7xl w-full mx-auto px-4 py-12 sm:py-16 space-y-10 sm:space-y-12">
-        <div class="text-center max-w-3xl mx-auto space-y-4">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-mono">
-                PAKET LISENSI QUANTUM+
+    <!-- ── Hero ───────────────────────────────────────────── -->
+    <main class="flex-1">
+        <div class="max-w-6xl w-full mx-auto px-4 py-10 sm:py-14 space-y-12">
+
+            <!-- Heading -->
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-mono">
+                    ⚡ PILIH PAKET AKSES ANDA
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold font-heading text-gradient-brand leading-tight">
+                    Mulai Gratis,<br>Upgrade Kapan Saja
+                </h1>
+                <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                    Akun gratis memberi kamu chart live &amp; sinyal dasar. Quantum+ PRO membuka 9 mesin kuantum, notifikasi instan, dan suite trading profesional.
+                </p>
             </div>
-            <h1 class="text-3xl sm:text-4xl font-bold font-heading text-gradient-brand">Pilih Paket Akses Terminal Pro</h1>
-            <p class="text-slate-300 text-sm sm:text-base">Pantau 12 pasar simultan, notifikasi Telegram instan, dan 4 mesin khusus PRO.</p>
+
+            <!-- ── FREE vs PRO divider ─────────────────────── -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+                <!-- FREE CARD -->
+                <div class="plan-card plan-card-free rounded-2xl p-6 sm:p-8 flex flex-col justify-between border border-cyan-500/20">
+                    <div class="space-y-5">
+                        <div>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold tracking-widest mb-3">
+                                ✦ AKSES GRATIS
+                            </div>
+                            <div class="text-4xl font-bold font-heading text-white">Rp0</div>
+                            <div class="text-xs text-slate-500 font-mono mt-1">Selamanya · Tanpa Kartu Kredit</div>
+                        </div>
+
+                        <ul class="space-y-2.5 text-sm text-slate-300">
+                            <li class="flex items-start gap-2.5"><span class="feature-check mt-0.5 shrink-0">✓</span> Quantum Terminal — chart realtime 5 instrumen</li>
+                            <li class="flex items-start gap-2.5"><span class="feature-check mt-0.5 shrink-0">✓</span> Kalender Ekonomi (24 event/hari)</li>
+                            <li class="flex items-start gap-2.5"><span class="feature-check mt-0.5 shrink-0">✓</span> Berita Pasar Realtime</li>
+                            <li class="flex items-start gap-2.5"><span class="feature-check mt-0.5 shrink-0">✓</span> Live Order Book BTC/USDT</li>
+                            <li class="flex items-start gap-2.5"><span class="feature-check mt-0.5 shrink-0">✓</span> 2 Mesin Sinyal Dasar (SNR &amp; EMA200)</li>
+                            <li class="flex items-start gap-2.5"><span class="feature-lock mt-0.5 shrink-0">🔒</span> <span class="text-slate-500">9 Mesin Kuantum Penuh</span></li>
+                            <li class="flex items-start gap-2.5"><span class="feature-lock mt-0.5 shrink-0">🔒</span> <span class="text-slate-500">Notifikasi Telegram &amp; Alert Harga</span></li>
+                            <li class="flex items-start gap-2.5"><span class="feature-lock mt-0.5 shrink-0">🔒</span> <span class="text-slate-500">Paper Trading &amp; Track Record</span></li>
+                            <li class="flex items-start gap-2.5"><span class="feature-lock mt-0.5 shrink-0">🔒</span> <span class="text-slate-500">AI Radar &amp; Correlation Matrix</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-8 space-y-3">
+                        <a href="register.html" class="block w-full py-3 rounded-xl text-center font-heading font-bold text-sm bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 hover:border-cyan-400 transition-all">
+                            Mulai Gratis Sekarang →
+                        </a>
+                        <a href="terminal.html" class="block w-full py-2.5 text-center text-xs font-mono text-slate-500 hover:text-slate-300 transition-colors">
+                            Lihat Terminal Langsung ↗
+                        </a>
+                    </div>
+                </div>
+
+                <!-- PRO PLANS -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-mono font-bold tracking-widest">
+                            ⚡ QUANTUM+ PRO
+                        </div>
+                        <span class="text-xs text-slate-500 font-mono">Akses penuh semua fitur</span>
+                    </div>
+
+                    <!-- 1 Month -->
+                    <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-purple-500/40 cursor-pointer" onclick="orderPlan('1 Bulan', 55000)">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">1 BULAN</div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp75.000</span>
+                                <span class="text-2xl font-bold font-heading text-white">Rp55.000</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono">Rp55.000 / bln · <span class="text-emerald-400">Hemat 27%</span></div>
+                        </div>
+                        <button onclick="orderPlan('1 Bulan', 55000)" class="shrink-0 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all border border-slate-700">
+                            Pilih →
+                        </button>
+                    </div>
+
+                    <!-- 3 Months -->
+                    <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-purple-500/40 cursor-pointer" onclick="orderPlan('3 Bulan', 150000)">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">3 BULAN <span class="text-emerald-400">· HEMAT 9%</span></div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp225.000</span>
+                                <span class="text-2xl font-bold font-heading text-cyan-400">Rp150.000</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono">Rp50.000 / bln · 12 Slot Cek Banyak</div>
+                        </div>
+                        <button onclick="orderPlan('3 Bulan', 150000)" class="shrink-0 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all border border-slate-700">
+                            Pilih →
+                        </button>
+                    </div>
+
+                    <!-- 6 Months POPULAR -->
+                    <div class="plan-card plan-card-popular rounded-xl p-5 flex items-center justify-between gap-4 cursor-pointer relative overflow-hidden" onclick="orderPlan('6 Bulan', 270000)" style="box-shadow:0 0 0 1px rgba(124,77,255,0.4),0 0 30px -10px rgba(124,77,255,0.5),inset 0 1px 0 rgba(124,77,255,0.2)">
+                        <div class="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-bold font-mono px-3 py-1.5 rounded-bl-xl tracking-wider animate-pulse">⭐ PALING LARIS</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] font-mono text-purple-300 uppercase tracking-wider">6 BULAN <span class="text-emerald-400">· HEMAT 18%</span></div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp330.000</span>
+                                <span class="text-2xl font-bold font-heading text-gradient-purple">Rp270.000</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono">Rp45.000 / bln · m1 &amp; m5 Emas/Forex + Webhook</div>
+                        </div>
+                        <button onclick="orderPlan('6 Bulan', 270000)" class="shrink-0 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg">
+                            Pilih →
+                        </button>
+                    </div>
+
+                    <!-- 12 Months -->
+                    <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-emerald-500/40 cursor-pointer" onclick="orderPlan('12 Bulan', 500000)">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">12 BULAN <span class="text-emerald-400">· BEST VALUE</span></div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp660.000</span>
+                                <span class="text-2xl font-bold font-heading text-emerald-400">Rp500.000</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono">Rp41.666 / bln · VIP Lounge + Hemat Rp160rb</div>
+                        </div>
+                        <button onclick="orderPlan('12 Bulan', 500000)" class="shrink-0 px-4 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white font-bold text-xs transition-all border border-emerald-500/40">
+                            Pilih →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Feature Comparison Table ────────────────── -->
+            <div class="max-w-3xl mx-auto">
+                <h2 class="text-center font-heading font-bold text-white text-xl mb-6">Perbandingan Fitur Lengkap</h2>
+                <div class="plan-card rounded-2xl overflow-hidden border border-slate-800/60">
+
+                    <!-- Table Header -->
+                    <div class="grid grid-cols-3 bg-slate-900/80 border-b border-slate-800 text-center text-[10px] font-mono font-bold tracking-widest">
+                        <div class="px-4 py-3 text-left text-slate-400 uppercase">FITUR</div>
+                        <div class="px-4 py-3 text-cyan-400 uppercase border-l border-slate-800">GRATIS</div>
+                        <div class="px-4 py-3 text-purple-400 uppercase border-l border-slate-800">QUANTUM+ PRO</div>
+                    </div>
+
+                    <!-- Rows -->
+                    <div class="divide-y divide-slate-800/60 text-xs">
+                        <!-- Chart -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📈 Chart Realtime</div>
+                            <div class="px-4 py-3 text-center text-cyan-300 border-l border-slate-800/40">5 instrumen</div>
+                            <div class="px-4 py-3 text-center text-purple-300 border-l border-slate-800/40">Unlimited</div>
+                        </div>
+                        <!-- Mesin -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">⚙️ Mesin Kuantum</div>
+                            <div class="px-4 py-3 text-center text-slate-500 border-l border-slate-800/40">2 mesin dasar</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">9 mesin penuh</div>
+                        </div>
+                        <!-- Calendar -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📅 Kalender Ekonomi</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓ + Heatmap</div>
+                        </div>
+                        <!-- News -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📰 Berita Realtime</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                        </div>
+                        <!-- Order Book -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📖 Live Order Book</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                        </div>
+                        <!-- AI Radar -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">🤖 AI Radar (Multi-pair)</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                        </div>
+                        <!-- Correlation -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">🔮 Correlation Matrix</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓ Pearson 10x10</div>
+                        </div>
+                        <!-- Paper Trading -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">💼 Paper Trading</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓</div>
+                        </div>
+                        <!-- Confluence -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📊 Confluence Matrix</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓ MTF + Liquidity</div>
+                        </div>
+                        <!-- Telegram -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">📲 Notifikasi Telegram</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓ Realtime Alert</div>
+                        </div>
+                        <!-- Command Center -->
+                        <div class="grid grid-cols-3 cmp-row hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">🌐 Quantum Command Center</div>
+                            <div class="px-4 py-3 text-center border-l border-slate-800/40"><span class="text-rose-400">✗</span></div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">✓ Full Dashboard</div>
+                        </div>
+                        <!-- Slot -->
+                        <div class="grid grid-cols-3 hover:bg-slate-900/30 transition-colors">
+                            <div class="px-4 py-3 text-slate-300 font-medium">🔍 Multi-Pair Slot</div>
+                            <div class="px-4 py-3 text-center text-slate-500 border-l border-slate-800/40">1 pair</div>
+                            <div class="px-4 py-3 text-center text-emerald-400 border-l border-slate-800/40">Hingga 12 slot</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- #8 Countdown Timer -->
+            <div class="max-w-lg mx-auto text-center rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                <div class="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-2">⏳ HARGA EARLY BIRD BERAKHIR DALAM</div>
+                <div id="earlyBirdTimer" class="flex items-center justify-center gap-3 text-white font-heading font-bold text-2xl">
+                    <div><span id="ebDays" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">HARI</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebHours" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">JAM</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebMins" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">MENIT</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebSecs" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">DETIK</span></div>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-2 font-mono">Setelah itu, harga kembali normal</div>
+            </div>
+
+            <!-- #10 Money-back Guarantee -->
+            <div class="flex items-center justify-center gap-3 py-4">
+                <div class="flex items-center gap-2 px-5 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                    <span class="text-2xl">🛡</span>
+                    <div>
+                        <div class="text-sm font-heading font-bold text-emerald-400">Garansi 7 Hari Uang Kembali</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Tidak puas? Refund penuh tanpa syarat dalam 7 hari pertama.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trust badges -->
+            <div class="flex flex-wrap justify-center gap-4 sm:gap-6 text-[11px] font-mono text-slate-400">
+                <div class="flex items-center gap-1.5"><span class="text-emerald-400">🔒</span> SSL 256-bit Terenkripsi</div>
+                <div class="flex items-center gap-1.5"><span class="text-cyan-400">⚡</span> Aktif Instan Setelah Bayar</div>
+                <div class="flex items-center gap-1.5"><span class="text-purple-400">🎯</span> Kunci Lisensi Otomatis</div>
+                <div class="flex items-center gap-1.5"><span class="text-amber-400">💬</span> Support via Telegram</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-400">🛡</span> Garansi Uang Kembali</div>
+            </div>
+
+            <p class="text-center text-[11px] text-slate-500 font-mono max-w-xl mx-auto">
+                🔒 Kunci lisensi aktif dikirim otomatis setelah pembayaran terverifikasi oleh payment gateway.
+            </p>
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            <!-- 1 Month -->
-            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
-                <div class="space-y-4">
-                    <div class="text-xs font-mono text-slate-400">1 BULAN</div>
-                    <div class="text-3xl font-bold font-heading text-white">Rp55.000</div>
-                    <div class="text-[11px] text-slate-500 font-mono">Rp55.000 / bln</div>
-                    <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
-                        <li>✓ 9 Mesin Kuantum</li>
-                        <li>✓ Live Telegram Alert</li>
-                        <li>✓ Rangkuman Pagi WIB</li>
-                    </ul>
-                </div>
-                <button onclick="orderPlan('1 Bulan', 55000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 1 Bulan</button>
-            </div>
-
-            <!-- 3 Months -->
-            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
-                <div class="space-y-4">
-                    <div class="text-xs font-mono text-slate-400">3 BULAN <span class="text-emerald-400">· HEMAT 9%</span></div>
-                    <div class="text-3xl font-bold font-heading text-cyan-400">Rp150.000</div>
-                    <div class="text-[11px] text-slate-500 font-mono">Rp50.000 / bln</div>
-                    <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
-                        <li>✓ Semua Fitur 1 Bulan</li>
-                        <li>✓ 12 Slot Cek Banyak</li>
-                        <li>✓ Jam Sunyi Custom</li>
-                    </ul>
-                </div>
-                <button onclick="orderPlan('3 Bulan', 150000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 3 Bulan</button>
-            </div>
-
-            <!-- 6 Months POPULAR -->
-            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between border-2 !border-purple-500/60 relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-purple-600 text-white text-[10px] font-bold font-mono px-3 py-1 rounded-bl-lg">POPULER</div>
-                <div class="space-y-4">
-                    <div class="text-xs font-mono text-purple-300">6 BULAN <span class="text-emerald-400">· HEMAT 18%</span></div>
-                    <div class="text-3xl font-bold font-heading text-gradient-purple">Rp270.000</div>
-                    <div class="text-[11px] text-slate-500 font-mono">Rp45.000 / bln</div>
-                    <ul class="space-y-2 text-xs text-slate-200 border-t border-purple-900/60 pt-4">
-                        <li>✓ Akses Full m1 &amp; m5 Emas/Forex</li>
-                        <li>✓ Antrean Server Prioritas</li>
-                        <li>✓ Webhook Integration</li>
-                    </ul>
-                </div>
-                <button onclick="orderPlan('6 Bulan', 270000)" class="mt-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all">Pilih 6 Bulan</button>
-            </div>
-
-            <!-- 12 Months -->
-            <div class="glass-card-purple rounded-2xl p-6 flex flex-col justify-between">
-                <div class="space-y-4">
-                    <div class="text-xs font-mono text-slate-400">12 BULAN <span class="text-emerald-400">· BEST VALUE</span></div>
-                    <div class="text-3xl font-bold font-heading text-emerald-400">Rp500.000</div>
-                    <div class="text-[11px] text-slate-500 font-mono">Rp41.666 / bln</div>
-                    <ul class="space-y-2 text-xs text-slate-300 border-t border-slate-800 pt-4">
-                        <li>✓ Akses Tanpa Batas 1 Tahun</li>
-                        <li>✓ Hemat Maksimal Rp160.000</li>
-                        <li>✓ VIP Lounge Community</li>
-                    </ul>
-                </div>
-                <button onclick="orderPlan('12 Bulan', 500000)" class="mt-8 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all">Pilih 12 Bulan</button>
-            </div>
-        </div>
-
-        <p class="text-center text-[11px] text-slate-500 font-mono max-w-xl mx-auto">
-            🔒 Kunci lisensi aktif dikirim otomatis setelah pembayaran terverifikasi oleh payment gateway.
-        </p>
     </main>
 
-    <footer class="py-6 text-center text-xs font-mono text-slate-400 border-t border-slate-900">
-        © 2026 Quantum Institut Market Terminal.
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <footer class="w-full border-t border-slate-800/60 bg-slate-950/80 py-4 px-4 text-center">
+        <p class="text-[10px] text-slate-500 leading-relaxed max-w-3xl mx-auto">
+            ⚠ <strong class="text-slate-400">Bukan Nasihat Keuangan.</strong>
+            Platform ini disediakan untuk tujuan edukasi. Semua keputusan trading adalah tanggung jawab penuh pengguna. Kinerja masa lalu tidak menjamin hasil di masa mendatang.
+        </p>
+        <p class="text-[9px] text-slate-600 mt-1">© 2026 Quantum Institut Market Terminal · <a href="index.html" class="hover:text-slate-400 transition-colors">Beranda</a> · <a href="login.html" class="hover:text-slate-400 transition-colors">Masuk</a></p>
     </footer>
 
-    <!-- ORDER / PAYMENT MODAL -->
-    <div id="orderModal" onclick="if(event.target===this) closeOrderModal()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 font-mono">
+    <!-- ── ORDER / PAYMENT MODAL ──────────────────────────── -->
+    <div id="orderModal" onclick="if(event.target===this) closeOrderModal()" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden items-center justify-center p-4 font-mono">
         <div class="w-full max-w-md glass-card rounded-2xl p-6 space-y-4 border border-purple-500/40">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-white text-sm flex items-center gap-2">
                     <span class="text-purple-400 text-lg">🧾</span> Ringkasan Pesanan
                 </h3>
-                <button onclick="closeOrderModal()" class="text-slate-400 hover:text-white text-sm" aria-label="Tutup">✕</button>
+                <button onclick="closeOrderModal()" class="text-slate-400 hover:text-white w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-all" aria-label="Tutup">✕</button>
             </div>
 
             <div id="orderLoading" class="py-8 text-center text-slate-400 text-xs">
-                <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-purple-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-purple-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
                 Membuat tagihan pesanan...
             </div>
 
             <div id="orderDetails" class="hidden space-y-3 text-xs">
-                <div class="flex justify-between"><span class="text-slate-400">Paket</span><strong id="odPlan" class="text-white"></strong></div>
-                <div class="flex justify-between"><span class="text-slate-400">Order ID</span><strong id="odOrderId" class="text-cyan-300"></strong></div>
-                <div class="flex justify-between"><span class="text-slate-400">Total Bayar</span><strong id="odAmount" class="text-purple-300 text-base"></strong></div>
-                <div class="flex justify-between"><span class="text-slate-400">Status</span><span id="odStatus" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold"></span></div>
+                <div class="flex justify-between py-1"><span class="text-slate-400">Paket</span><strong id="odPlan" class="text-white"></strong></div>
+                <div class="flex justify-between py-1 border-t border-slate-800"><span class="text-slate-400">Order ID</span><strong id="odOrderId" class="text-cyan-300 font-mono"></strong></div>
+                <div class="flex justify-between py-1 border-t border-slate-800"><span class="text-slate-400">Total Bayar</span><strong id="odAmount" class="text-purple-300 text-base"></strong></div>
+                <div class="flex justify-between py-1 border-t border-slate-800 items-center"><span class="text-slate-400">Status</span><span id="odStatus" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold"></span></div>
 
                 <div class="border-t border-slate-800 pt-3">
                     <div class="text-slate-400 mb-2">Metode Pembayaran</div>
@@ -152,20 +368,29 @@
                     <div class="text-[10px] text-amber-300">⏱ Selesaikan sebelum <strong id="odExpires"></strong></div>
                 </div>
 
-                <p class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-3">
-                    🔒 Ini demo alur pemesanan. Kunci lisensi dikirim otomatis setelah pembayaran terverifikasi gateway. Sudah bayar? <a href="login.html" class="text-cyan-400 hover:underline">Masuk di sini</a>.
+                <div class="pt-2">
+                    <a href="login.html" class="block w-full py-2.5 text-center rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold hover:bg-cyan-500/30 transition-all">
+                        Sudah bayar? Login di sini →
+                    </a>
+                </div>
+
+                <p class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-800 pt-2">
+                    🔒 Kunci lisensi dikirim otomatis setelah pembayaran terverifikasi gateway.
                 </p>
             </div>
 
-            <div id="orderError" class="hidden py-6 text-center text-rose-400 text-xs"></div>
+            <div id="orderError" class="hidden py-6 text-center text-rose-400 text-xs space-y-3">
+                <div id="orderErrorMsg"></div>
+                <button onclick="closeOrderModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs transition-all">Tutup</button>
+            </div>
         </div>
     </div>
 
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/main.js?v=1.4.0"></script>
     <script>
         const orderModal = document.getElementById('orderModal');
 
-        function closeOrderModal() { orderModal.classList.add('hidden'); }
+        function closeOrderModal() { orderModal.classList.add('hidden'); orderModal.style.display = ''; }
 
         function showSection(id) {
             ['orderLoading', 'orderDetails', 'orderError'].forEach(s => {
@@ -175,6 +400,7 @@
 
         async function orderPlan(name, price) {
             orderModal.classList.remove('hidden');
+            orderModal.style.display = 'flex';
             showSection('orderLoading');
 
             let res, data;
@@ -188,7 +414,7 @@
                 data = await res.json();
             } catch (err) {
                 showSection('orderError');
-                document.getElementById('orderError').textContent = 'Server pembayaran tidak dapat dihubungi. Coba lagi nanti.';
+                document.getElementById('orderErrorMsg').textContent = 'Server pembayaran tidak dapat dihubungi. Coba lagi nanti.';
                 return;
             }
 
@@ -209,20 +435,44 @@
                     span.textContent = m;
                     methods.appendChild(span);
                 });
-
                 showSection('orderDetails');
-                showQuantumToast('🧾 Tagihan untuk paket ' + (d.plan || name) + ' berhasil dibuat.', 'success');
+                showQuantumToast('🧾 Tagihan paket ' + (d.plan || name) + ' berhasil dibuat.', 'success');
             } else {
                 showSection('orderError');
                 const msg = res.status === 429
-                    ? 'Terlalu banyak permintaan order. Coba lagi beberapa saat.'
+                    ? 'Terlalu banyak permintaan. Coba lagi beberapa saat.'
                     : (data?.message || 'Gagal membuat pesanan. Silakan coba lagi.');
-                document.getElementById('orderError').textContent = msg;
+                document.getElementById('orderErrorMsg').textContent = msg;
             }
         }
 
-        // Esc untuk tutup modal
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOrderModal(); });
+
+        // #8 Early Bird Countdown Timer (resets daily at midnight)
+        (function(){
+            function getEndOfDay() {
+                var now = new Date();
+                var end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+                return end;
+            }
+            function tick() {
+                var now = new Date();
+                var end = getEndOfDay();
+                var diff = Math.max(0, end - now);
+                var d = Math.floor(diff / 86400000);
+                var h = Math.floor((diff % 86400000) / 3600000);
+                var m = Math.floor((diff % 3600000) / 60000);
+                var s = Math.floor((diff % 60000) / 1000);
+                var el;
+                el = document.getElementById('ebDays'); if(el) el.textContent = String(d).padStart(2,'0');
+                el = document.getElementById('ebHours'); if(el) el.textContent = String(h).padStart(2,'0');
+                el = document.getElementById('ebMins'); if(el) el.textContent = String(m).padStart(2,'0');
+                el = document.getElementById('ebSecs'); if(el) el.textContent = String(s).padStart(2,'0');
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
     </script>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

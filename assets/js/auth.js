@@ -71,6 +71,13 @@ const QuantumAuth = {
     },
 
     logout() {
+        const token = this.getToken();
+        if (token) {
+            fetch('api/logout.php', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => {});
+        }
         try {
             localStorage.removeItem('qi_token');
             localStorage.removeItem('qi_user');
