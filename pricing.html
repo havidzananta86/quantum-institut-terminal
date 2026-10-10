@@ -135,8 +135,11 @@
                     <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-purple-500/40 cursor-pointer" onclick="orderPlan('1 Bulan', 55000)">
                         <div class="flex-1 min-w-0">
                             <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">1 BULAN</div>
-                            <div class="text-2xl font-bold font-heading text-white mt-0.5">Rp55.000</div>
-                            <div class="text-[10px] text-slate-500 font-mono">Rp55.000 / bln</div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp75.000</span>
+                                <span class="text-2xl font-bold font-heading text-white">Rp55.000</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono">Rp55.000 / bln · <span class="text-emerald-400">Hemat 27%</span></div>
                         </div>
                         <button onclick="orderPlan('1 Bulan', 55000)" class="shrink-0 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all border border-slate-700">
                             Pilih →
@@ -147,7 +150,10 @@
                     <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-purple-500/40 cursor-pointer" onclick="orderPlan('3 Bulan', 150000)">
                         <div class="flex-1 min-w-0">
                             <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">3 BULAN <span class="text-emerald-400">· HEMAT 9%</span></div>
-                            <div class="text-2xl font-bold font-heading text-cyan-400 mt-0.5">Rp150.000</div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp225.000</span>
+                                <span class="text-2xl font-bold font-heading text-cyan-400">Rp150.000</span>
+                            </div>
                             <div class="text-[10px] text-slate-500 font-mono">Rp50.000 / bln · 12 Slot Cek Banyak</div>
                         </div>
                         <button onclick="orderPlan('3 Bulan', 150000)" class="shrink-0 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all border border-slate-700">
@@ -156,11 +162,14 @@
                     </div>
 
                     <!-- 6 Months POPULAR -->
-                    <div class="plan-card plan-card-popular rounded-xl p-5 flex items-center justify-between gap-4 cursor-pointer relative overflow-hidden" onclick="orderPlan('6 Bulan', 270000)">
-                        <div class="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-bold font-mono px-2.5 py-1 rounded-bl-lg tracking-wider">POPULER</div>
+                    <div class="plan-card plan-card-popular rounded-xl p-5 flex items-center justify-between gap-4 cursor-pointer relative overflow-hidden" onclick="orderPlan('6 Bulan', 270000)" style="box-shadow:0 0 0 1px rgba(124,77,255,0.4),0 0 30px -10px rgba(124,77,255,0.5),inset 0 1px 0 rgba(124,77,255,0.2)">
+                        <div class="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-bold font-mono px-3 py-1.5 rounded-bl-xl tracking-wider animate-pulse">⭐ PALING LARIS</div>
                         <div class="flex-1 min-w-0">
                             <div class="text-[10px] font-mono text-purple-300 uppercase tracking-wider">6 BULAN <span class="text-emerald-400">· HEMAT 18%</span></div>
-                            <div class="text-2xl font-bold font-heading text-gradient-purple mt-0.5">Rp270.000</div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp330.000</span>
+                                <span class="text-2xl font-bold font-heading text-gradient-purple">Rp270.000</span>
+                            </div>
                             <div class="text-[10px] text-slate-500 font-mono">Rp45.000 / bln · m1 &amp; m5 Emas/Forex + Webhook</div>
                         </div>
                         <button onclick="orderPlan('6 Bulan', 270000)" class="shrink-0 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all shadow-lg">
@@ -172,7 +181,10 @@
                     <div class="plan-card plan-card-pro rounded-xl p-5 flex items-center justify-between gap-4 border border-slate-700/60 hover:border-emerald-500/40 cursor-pointer" onclick="orderPlan('12 Bulan', 500000)">
                         <div class="flex-1 min-w-0">
                             <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">12 BULAN <span class="text-emerald-400">· BEST VALUE</span></div>
-                            <div class="text-2xl font-bold font-heading text-emerald-400 mt-0.5">Rp500.000</div>
+                            <div class="flex items-baseline gap-2 mt-0.5">
+                                <span class="text-sm text-slate-600 line-through font-mono">Rp660.000</span>
+                                <span class="text-2xl font-bold font-heading text-emerald-400">Rp500.000</span>
+                            </div>
                             <div class="text-[10px] text-slate-500 font-mono">Rp41.666 / bln · VIP Lounge + Hemat Rp160rb</div>
                         </div>
                         <button onclick="orderPlan('12 Bulan', 500000)" class="shrink-0 px-4 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white font-bold text-xs transition-all border border-emerald-500/40">
@@ -272,12 +284,39 @@
                 </div>
             </div>
 
+            <!-- #8 Countdown Timer -->
+            <div class="max-w-lg mx-auto text-center rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                <div class="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-2">⏳ HARGA EARLY BIRD BERAKHIR DALAM</div>
+                <div id="earlyBirdTimer" class="flex items-center justify-center gap-3 text-white font-heading font-bold text-2xl">
+                    <div><span id="ebDays" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">HARI</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebHours" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">JAM</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebMins" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">MENIT</span></div>
+                    <span class="text-slate-600">:</span>
+                    <div><span id="ebSecs" class="text-amber-400">00</span><span class="text-[10px] text-slate-500 block font-mono font-normal">DETIK</span></div>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-2 font-mono">Setelah itu, harga kembali normal</div>
+            </div>
+
+            <!-- #10 Money-back Guarantee -->
+            <div class="flex items-center justify-center gap-3 py-4">
+                <div class="flex items-center gap-2 px-5 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                    <span class="text-2xl">🛡</span>
+                    <div>
+                        <div class="text-sm font-heading font-bold text-emerald-400">Garansi 7 Hari Uang Kembali</div>
+                        <div class="text-[10px] text-slate-500 font-mono">Tidak puas? Refund penuh tanpa syarat dalam 7 hari pertama.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Trust badges -->
             <div class="flex flex-wrap justify-center gap-4 sm:gap-6 text-[11px] font-mono text-slate-400">
                 <div class="flex items-center gap-1.5"><span class="text-emerald-400">🔒</span> SSL 256-bit Terenkripsi</div>
                 <div class="flex items-center gap-1.5"><span class="text-cyan-400">⚡</span> Aktif Instan Setelah Bayar</div>
                 <div class="flex items-center gap-1.5"><span class="text-purple-400">🎯</span> Kunci Lisensi Otomatis</div>
                 <div class="flex items-center gap-1.5"><span class="text-amber-400">💬</span> Support via Telegram</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-400">🛡</span> Garansi Uang Kembali</div>
             </div>
 
             <p class="text-center text-[11px] text-slate-500 font-mono max-w-xl mx-auto">
@@ -408,6 +447,31 @@
         }
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOrderModal(); });
+
+        // #8 Early Bird Countdown Timer (resets daily at midnight)
+        (function(){
+            function getEndOfDay() {
+                var now = new Date();
+                var end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+                return end;
+            }
+            function tick() {
+                var now = new Date();
+                var end = getEndOfDay();
+                var diff = Math.max(0, end - now);
+                var d = Math.floor(diff / 86400000);
+                var h = Math.floor((diff % 86400000) / 3600000);
+                var m = Math.floor((diff % 3600000) / 60000);
+                var s = Math.floor((diff % 60000) / 1000);
+                var el;
+                el = document.getElementById('ebDays'); if(el) el.textContent = String(d).padStart(2,'0');
+                el = document.getElementById('ebHours'); if(el) el.textContent = String(h).padStart(2,'0');
+                el = document.getElementById('ebMins'); if(el) el.textContent = String(m).padStart(2,'0');
+                el = document.getElementById('ebSecs'); if(el) el.textContent = String(s).padStart(2,'0');
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
     </script>
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
