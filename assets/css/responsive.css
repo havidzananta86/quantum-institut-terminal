@@ -1,41 +1,93 @@
 /* Quantum Institut Responsive Media Queries & Overrides */
 
-/* Extra Small (xs: < 480px) */
+/* ── Global: prevent horizontal overflow on all screens ── */
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════
+   XS: < 480px  (Android 375px, iPhone 390px)
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 479px) {
-    .hero-title {
-        font-size: 1.5rem !important;
-        line-height: 1.25 !important;
-    }
+
+    /* Touch target minimum */
     .touch-target-min {
         min-height: 44px;
         min-width: 44px;
     }
-}
 
-/* Small (sm: 640px to 767px) */
-@media (min-width: 640px) and (max-width: 767px) {
-    .container-padding {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+    /* Hero title on landing */
+    .hero-title {
+        font-size: 1.5rem !important;
+        line-height: 1.25 !important;
+    }
+
+    /* ── terminal.html: hide quick action icons so profile+logout are visible ── */
+    #termQuickActionsBar {
+        display: none !important;
+    }
+
+    /* ── terminal.html: tighten right-zone gap and profile padding on mobile ── */
+    header > div:last-child {
+        gap: 0.25rem !important;
+    }
+    #profileBadge {
+        padding-left: 0.375rem !important;
+        padding-right: 0.375rem !important;
+        min-height: auto !important;
     }
 }
 
-/* Medium (md: 768px to 1023px - Tablet) */
+/* ══════════════════════════════════════════════════════════
+   SM: < 768px  (All mobile phones)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+    /* ── dashboard.html: charts top bar scrollable horizontally ── */
+    #chartTopBar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+    }
+    #chartTopBar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Hide watchlist toggle — already hidden in inline CSS but ensure it's gone */
+    #watchlistToggleBtn {
+        display: none !important;
+    }
+
+    /* Prevent TF buttons from shrinking */
+    #chartTopBar .flex.gap-1.ml-3 {
+        flex-shrink: 0;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MD: 768px–1023px (Tablet)
+   ══════════════════════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1023px) {
     .chart-responsive-height {
         height: 350px !important;
     }
 }
 
-/* Large & Desktop (lg: ≥ 1024px) */
+/* ══════════════════════════════════════════════════════════
+   LG: ≥ 1024px (Desktop)
+   ══════════════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
     .chart-responsive-height {
         height: 500px !important;
     }
 }
 
-/* Ensure no horizontal overflow on 320px screens */
-html, body {
-    max-width: 100vw;
-    overflow-x: hidden;
+/* ── SM: 640px–767px ── */
+@media (min-width: 640px) and (max-width: 767px) {
+    .container-padding {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
 }

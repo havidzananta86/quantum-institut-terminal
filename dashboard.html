@@ -29,6 +29,8 @@
     <script src="assets/js/auth.js?v=1.4.0"></script>
     <!-- Tailwind (pre-built) -->
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
+    <!-- Responsive overrides -->
+    <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.1">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -1134,7 +1136,7 @@ document.addEventListener('keydown', e => {
     <!-- ══ PANEL: Charts (TradingView) ══ -->
     <div id="panel-charts" class="panel-content hidden h-full flex flex-col overflow-hidden">
         <!-- Top bar: symbol info + timeframe -->
-        <div class="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-qi-border bg-qi-panel/60">
+        <div id="chartTopBar" class="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-qi-border bg-qi-panel/60">
             <!-- Current symbol badge -->
             <div class="flex items-center gap-2">
                 <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan session-dot"></span>
