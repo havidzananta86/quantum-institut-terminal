@@ -28,11 +28,16 @@ $cacheDir = __DIR__ . '/../cache/chart';
 if (!is_dir($cacheDir)) { @mkdir($cacheDir, 0755, true); }
 $cacheFile = $cacheDir . '/' . md5($symbol . '_' . $interval) . '.json';
 
-// Sajikan dari cache kalau masih segar
+// Sajikan dari cache kalau masih segar.
+// Saat di-include signals.php, pakai `return` (bukan exit) supaya kontrol
+// kembali ke pemanggil — exit() akan mematikan seluruh request signals.php.
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-    header('X-QI-Cache: HIT');
-    header('Cache-Control: public, max-age=' . $cacheTtl);
+    if (!defined('QI_INCLUDED_BY_SIGNALS')) {
+        header('X-QI-Cache: HIT');
+        header('Cache-Control: public, max-age=' . $cacheTtl);
+    }
     echo file_get_contents($cacheFile);
+    if (defined('QI_INCLUDED_BY_SIGNALS')) return;
     exit();
 }
 
@@ -96,6 +101,9 @@ $tdIntervalMap = ['1'=>'1min','5'=>'5min','15'=>'15min','30'=>'30min','60'=>'1h'
 $tdInterval = $tdIntervalMap[$interval] ?? '1h';
 
 // Helper: parse Twelve Data time_series response into candle array
+// Guarded: signals.php includes this file once per timeframe, so an
+// unguarded declaration fatals with "Cannot redeclare" on the 2nd include.
+if (!function_exists('qi_parse_td_candles')) :
 function qi_parse_td_candles(array $values): array {
     $out = [];
     foreach ($values as $v) {
@@ -114,6 +122,7 @@ function qi_parse_td_candles(array $values): array {
     // Twelve Data returns newest-first; flip to oldest-first for chart
     return array_reverse($out);
 }
+endif;
 
 // 1b. XAUUSD: Twelve Data → biquote.io MT5 → PAXG fallback
 if (empty($candles) && $symbol === 'XAUUSD') {
