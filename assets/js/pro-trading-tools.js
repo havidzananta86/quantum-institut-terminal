@@ -2169,8 +2169,9 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
-                if (Array.isArray(data)) {
-                    this.events = data;
+                const events = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
+                if (events) {
+                    this.events = events;
                     this.evaluateAlerts();
                 } else {
                     throw new Error('Format data invalid');
