@@ -291,6 +291,11 @@ body {
 .hover\:bg-qi-green\/30:hover    { background-color: color-mix(in srgb, var(--qi-green) 30%, transparent); }
 .hover\:bg-qi-cyan\/30:hover     { background-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }
 .hover\:bg-qi-red\/30:hover      { background-color: color-mix(in srgb, var(--qi-red) 30%, transparent); }
+.hover\:bg-qi-red\/10:hover      { background-color: color-mix(in srgb, var(--qi-red) 10%, transparent); }
+.hover\:bg-qi-cyan\/80:hover     { background-color: color-mix(in srgb, var(--qi-cyan) 80%, transparent); }
+.hover\:bg-qi-purple\/80:hover   { background-color: color-mix(in srgb, var(--qi-purple) 80%, transparent); }
+.hover\:bg-qi-green\/80:hover    { background-color: color-mix(in srgb, var(--qi-green) 80%, transparent); }
+.hover\:bg-qi-gold\/80:hover     { background-color: color-mix(in srgb, var(--qi-gold) 80%, transparent); }
 .hover\:border-qi-cyan:hover     { border-color: var(--qi-cyan); }
 .hover\:border-qi-cyan\/30:hover { border-color: color-mix(in srgb, var(--qi-cyan) 30%, transparent); }
 .hover\:border-qi-cyan\/40:hover { border-color: color-mix(in srgb, var(--qi-cyan) 40%, transparent); }
