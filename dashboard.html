@@ -120,6 +120,41 @@
             color: var(--qi-cyan) !important;
         }
 
+        /* ── Price flash animation (#33) ── */
+        @keyframes priceFlashGreen { 0%{background:rgba(16,185,129,.25)} 100%{background:transparent} }
+        @keyframes priceFlashRed   { 0%{background:rgba(239,68,68,.25)}  100%{background:transparent} }
+        .price-flash-up   { animation: priceFlashGreen .8s ease-out; }
+        .price-flash-down { animation: priceFlashRed .8s ease-out; }
+
+        /* ── Toast notification system (#22) ── */
+        #qiToastContainer { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+        .qi-toast { pointer-events:auto; animation:toastSlideIn .3s ease; }
+        @keyframes toastSlideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+        .qi-toast-exit { animation:toastSlideOut .3s ease forwards; }
+        @keyframes toastSlideOut { to{transform:translateX(120%);opacity:0} }
+
+        /* ── Fullscreen panel (#29) ── */
+        .panel-fullscreen { position:fixed!important; inset:0; z-index:90; overflow-y:auto; background:var(--qi-bg); }
+
+        /* ── Mobile bottom nav (#37) ── */
+        @media (max-width:767px) {
+            #mobileBottomNav { display:flex!important; }
+            #floatingTicker { bottom:48px; }
+            footer.flex-shrink-0 { margin-bottom:75px; }
+        }
+        @media (min-width:768px) {
+            #mobileBottomNav { display:none!important; }
+        }
+        #mobileBottomNav button.active { color:var(--qi-cyan); }
+
+        /* ── Font size preference (#32) ── */
+        html.font-compact  { font-size:13px; }
+        html.font-normal   { font-size:14px; }
+        html.font-large    { font-size:16px; }
+
+        /* ── Glassmorphism cards (#40) ── */
+        .glass-card { background:color-mix(in srgb, var(--qi-card) 80%, transparent); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+
         /* ── Panel fade-in animation (professional tab switch) ── */
         @keyframes panelFadeIn {
             from { opacity:0; transform:translateY(6px); }
@@ -542,6 +577,11 @@ document.addEventListener('keydown', e => {
 
     <!-- Nav -->
     <nav class="flex-1 px-2 py-3 space-y-4 text-xs" id="dashNav">
+        <!-- Panel search (#36) -->
+        <div class="px-1 mb-1">
+            <input type="text" placeholder="Cari panel..." oninput="filterSidebarPanels(this.value)"
+                class="w-full bg-qi-panel border border-qi-border rounded-lg px-2.5 py-1.5 text-[10px] text-white placeholder:text-slate-600 outline-none focus:border-qi-cyan/40">
+        </div>
 
         <!-- MARKET INTELLIGENCE -->
         <div>
@@ -727,10 +767,19 @@ document.addEventListener('keydown', e => {
         </div>
     </div>
 
-    <!-- ── PANEL TITLE BAR ── -->
+    <!-- ── PANEL TITLE BAR + Status bar (#25 #28) ── -->
     <div id="panelTitleBar" class="px-5 py-2 border-b border-qi-border flex items-center gap-2 flex-shrink-0 bg-qi-panel/60">
         <span id="panelTitleIcon" class="text-sm">🌐</span>
         <span id="panelTitleText" class="text-xs font-semibold text-white font-mono uppercase tracking-wider">Market Overview</span>
+        <div class="ml-auto flex items-center gap-3">
+            <span id="statusLastUpdate" class="text-[9px] text-slate-600 font-mono hidden sm:inline">Updated: --:--</span>
+            <button onclick="togglePanelFullscreen()" class="text-slate-500 hover:text-qi-cyan transition-colors" title="Fullscreen (F)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+            <button onclick="openCommandPalette()" class="text-slate-500 hover:text-qi-cyan transition-colors hidden sm:inline-flex" title="Search (Ctrl+K)">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </button>
+        </div>
     </div>
 
     <!-- ── SCROLLABLE BODY ── -->
@@ -2365,6 +2414,15 @@ document.addEventListener('keydown', e => {
         <div id="floatingTickerContent" class="flex items-center gap-1 text-[10px]">
             <span class="text-slate-500 px-3">Loading prices...</span>
         </div>
+    </div>
+
+    <!-- ══ MOBILE BOTTOM NAV (#37) ══ -->
+    <div id="mobileBottomNav" class="fixed bottom-0 left-0 right-0 z-50 h-12 bg-qi-panel/95 backdrop-blur-sm border-t border-qi-border hidden items-center justify-around px-2">
+        <button onclick="switchPanel('panel-overview')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400 active" data-mob-panel="panel-overview"><span class="text-base">🌐</span><span class="text-[8px]">Overview</span></button>
+        <button onclick="switchPanel('panel-charts')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-charts"><span class="text-base">📈</span><span class="text-[8px]">Charts</span></button>
+        <button onclick="switchPanel('panel-signal')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-signal"><span class="text-base">📡</span><span class="text-[8px]">Signals</span></button>
+        <button onclick="switchPanel('panel-ai')" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400" data-mob-panel="panel-ai"><span class="text-base">🤖</span><span class="text-[8px]">AI</span></button>
+        <button onclick="toggleSidebar()" class="flex flex-col items-center gap-0.5 py-1 px-2 text-slate-400"><span class="text-base">☰</span><span class="text-[8px]">Menu</span></button>
     </div>
 
     <!-- ── Disclaimer Footer ───────────────────────────────────────── -->

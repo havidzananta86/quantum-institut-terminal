@@ -628,9 +628,318 @@ function initProPanel(id) {
     if (id === 'panel-sentiment') renderSentimentGauge();
 }
 
+/* ═══════════════════════════════════════════════════════════
+   #22  GLOBAL TOAST NOTIFICATION SYSTEM (enhanced)
+   ═══════════════════════════════════════════════════════════ */
+if (!window.showQuantumToast) {
+    window.showQuantumToast = function(msg, type, duration) {
+        duration = duration || 3500;
+        var container = document.getElementById('qiToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'qiToastContainer';
+            document.body.appendChild(container);
+        }
+        var colors = { success: 'border-qi-green bg-qi-green/10 text-qi-green',
+            error: 'border-qi-red bg-qi-red/10 text-qi-red',
+            warning: 'border-qi-gold bg-qi-gold/10 text-qi-gold',
+            info: 'border-qi-cyan bg-qi-cyan/10 text-qi-cyan' };
+        var icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+        var cls = colors[type] || colors.info;
+        var icon = icons[type] || icons.info;
+        var toast = document.createElement('div');
+        toast.className = 'qi-toast flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold shadow-lg ' + cls;
+        toast.style.cssText = 'background:var(--qi-card);min-width:200px;max-width:380px;';
+        toast.innerHTML = '<span class="text-base">' + icon + '</span><span class="flex-1">' + msg + '</span>';
+        container.appendChild(toast);
+        setTimeout(function() { toast.classList.add('qi-toast-exit'); setTimeout(function() { toast.remove(); }, 300); }, duration);
+    };
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #25  STATUS BAR — last update timestamp
+   ═══════════════════════════════════════════════════════════ */
+function updateStatusBar() {
+    var el = document.getElementById('statusLastUpdate');
+    if (el) el.textContent = 'Updated: ' + new Date().toLocaleTimeString('id-ID');
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #26  SORTABLE TABLES
+   ═══════════════════════════════════════════════════════════ */
+function makeSortable(tableId) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var headers = table.querySelectorAll('th');
+    headers.forEach(function(th, idx) {
+        th.style.cursor = 'pointer';
+        th.title = 'Klik untuk sort';
+        th.addEventListener('click', function() {
+            var tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            var asc = th.dataset.sortDir !== 'asc';
+            th.dataset.sortDir = asc ? 'asc' : 'desc';
+            headers.forEach(function(h) { if (h !== th) delete h.dataset.sortDir; });
+            rows.sort(function(a, b) {
+                var aVal = (a.cells[idx] && a.cells[idx].textContent.trim()) || '';
+                var bVal = (b.cells[idx] && b.cells[idx].textContent.trim()) || '';
+                var aNum = parseFloat(aVal.replace(/[^0-9.\-]/g, ''));
+                var bNum = parseFloat(bVal.replace(/[^0-9.\-]/g, ''));
+                if (!isNaN(aNum) && !isNaN(bNum)) return asc ? aNum - bNum : bNum - aNum;
+                return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(function(r) { tbody.appendChild(r); });
+        });
+    });
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #29  FULLSCREEN PANEL TOGGLE
+   ═══════════════════════════════════════════════════════════ */
+var _panelFullscreen = false;
+function togglePanelFullscreen() {
+    var activeId = (typeof _activePanel !== 'undefined') ? _activePanel : 'panel-overview';
+    var panel = document.getElementById(activeId);
+    if (!panel) return;
+    _panelFullscreen = !_panelFullscreen;
+    if (_panelFullscreen) {
+        panel.classList.add('panel-fullscreen');
+        panel.dataset.wasHidden = panel.classList.contains('hidden') ? '1' : '0';
+        panel.classList.remove('hidden');
+    } else {
+        panel.classList.remove('panel-fullscreen');
+    }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #31  DIM MODE (additional theme)
+   ═══════════════════════════════════════════════════════════ */
+function addDimTheme() {
+    var dd = document.getElementById('themeDropdown');
+    if (!dd || dd.querySelector('[data-theme-dim]')) return;
+    var btn = document.createElement('button');
+    btn.setAttribute('data-theme-dim', '1');
+    btn.className = 'w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors';
+    btn.style.cssText = 'color:var(--qi-text)';
+    btn.onmouseenter = function() { this.style.background = 'var(--qi-surface)'; };
+    btn.onmouseleave = function() { this.style.background = 'transparent'; };
+    btn.innerHTML = '<span>🌙</span><span class="font-semibold">Dim</span>';
+    btn.onclick = function() { applyThemeChoice('oled-black'); };
+    dd.appendChild(btn);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #32  FONT SIZE PREFERENCE
+   ═══════════════════════════════════════════════════════════ */
+function setFontSize(size) {
+    document.documentElement.classList.remove('font-compact', 'font-normal', 'font-large');
+    document.documentElement.classList.add('font-' + size);
+    try { localStorage.setItem('qi_font_size', size); } catch(e) {}
+}
+function loadFontSize() {
+    try {
+        var s = localStorage.getItem('qi_font_size');
+        if (s) setFontSize(s);
+    } catch(e) {}
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #33  PRICE FLASH ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+var _prevPrices = {};
+function flashPriceChange(sym, newPrice) {
+    var prev = _prevPrices[sym];
+    _prevPrices[sym] = newPrice;
+    if (prev === undefined) return;
+    if (newPrice === prev) return;
+    var el = document.getElementById('ftk_' + sym);
+    if (!el) return;
+    el.classList.remove('price-flash-up', 'price-flash-down');
+    void el.offsetWidth;
+    el.classList.add(newPrice > prev ? 'price-flash-up' : 'price-flash-down');
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #35  KEYBOARD SHORTCUTS
+   ═══════════════════════════════════════════════════════════ */
+var _shortcutsMap = {
+    '1': 'panel-overview', '2': 'panel-charts', '3': 'panel-signal',
+    '4': 'panel-radar', '5': 'panel-ai', '6': 'panel-alerts',
+    '7': 'panel-journal', '8': 'panel-screener', '9': 'panel-risk'
+};
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.altKey && _shortcutsMap[e.key]) {
+        e.preventDefault();
+        if (typeof switchPanel === 'function') switchPanel(_shortcutsMap[e.key]);
+    }
+    if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.target === document.body) { e.preventDefault(); togglePanelFullscreen(); }
+    }
+    if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.target === document.body) { e.preventDefault(); if (typeof toggleQITheme === 'function') toggleQITheme(); }
+    }
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        if (e.target === document.body) { e.preventDefault(); showShortcutsModal(); }
+    }
+});
+
+function showShortcutsModal() {
+    var existing = document.getElementById('shortcutsModal');
+    if (existing) { existing.remove(); return; }
+    var shortcuts = [
+        ['Ctrl+K', 'Command Palette'],
+        ['Alt+1-9', 'Switch Panel'],
+        ['F', 'Fullscreen Panel'],
+        ['T', 'Toggle Tema'],
+        ['?', 'Tampilkan Shortcuts'],
+        ['Esc', 'Tutup Modal/Palette'],
+    ];
+    var html = '<div class="text-xs font-semibold text-white mb-3">Keyboard Shortcuts</div>';
+    shortcuts.forEach(function(s) {
+        html += '<div class="flex items-center justify-between py-1.5 border-b border-qi-border/30">' +
+            '<span class="text-[11px] text-slate-400">' + s[1] + '</span>' +
+            '<kbd class="text-[10px] bg-qi-panel border border-qi-border rounded px-2 py-0.5 text-qi-cyan font-mono">' + s[0] + '</kbd></div>';
+    });
+    var modal = document.createElement('div');
+    modal.id = 'shortcutsModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" onclick="document.getElementById(\'shortcutsModal\').remove()"></div>' +
+        '<div class="relative bg-qi-card border border-qi-border rounded-2xl p-5 w-80 shadow-2xl">' + html + '</div>';
+    document.body.appendChild(modal);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #36  SIDEBAR PANEL SEARCH / FILTER
+   ═══════════════════════════════════════════════════════════ */
+function filterSidebarPanels(q) {
+    q = (q || '').toLowerCase();
+    var nav = document.getElementById('dashNav');
+    if (!nav) return;
+    nav.querySelectorAll('[data-panel]').forEach(function(btn) {
+        var text = btn.textContent.toLowerCase();
+        btn.style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
+    });
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #38  ONBOARDING TOUR (first visit)
+   ═══════════════════════════════════════════════════════════ */
+function maybeShowOnboarding() {
+    try {
+        if (localStorage.getItem('qi_onboarding_v2')) return;
+        var steps = [
+            { text: 'Gunakan Ctrl+K untuk mencari panel, pair, atau fitur apapun', icon: '⌨️' },
+            { text: 'Alt+1-9 untuk switch panel dengan keyboard', icon: '🔢' },
+            { text: 'Tekan F untuk fullscreen panel aktif', icon: '🖥️' },
+            { text: 'Tekan T untuk ganti tema (Navy/OLED Black/OLED White)', icon: '🎨' },
+            { text: 'Panel baru: Risk Calculator, Price Alerts, Trade Journal, Market Screener', icon: '🆕' },
+        ];
+        var html = '<div class="text-xs font-semibold text-white mb-3">✨ Fitur Baru v2.1</div>';
+        steps.forEach(function(s) {
+            html += '<div class="flex items-start gap-2 mb-2"><span class="text-base">' + s.icon + '</span>' +
+                '<span class="text-[11px] text-slate-300">' + s.text + '</span></div>';
+        });
+        html += '<button onclick="document.getElementById(\'onboardTour\').remove();try{localStorage.setItem(\'qi_onboarding_v2\',\'1\')}catch(e){}" class="w-full mt-3 py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30">Mengerti!</button>';
+        var modal = document.createElement('div');
+        modal.id = 'onboardTour';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:101;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,.6)"></div>' +
+            '<div class="relative bg-qi-card border border-qi-border rounded-2xl p-5 w-80 shadow-2xl" style="animation:panelFadeIn .3s ease">' + html + '</div>';
+        document.body.appendChild(modal);
+    } catch(e) {}
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #30  SIDEBAR BADGE NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+function updateNavBadge(panelId, count) {
+    var btn = document.querySelector('[data-panel="' + panelId + '"]');
+    if (!btn) return;
+    var badge = btn.querySelector('.nav-badge');
+    if (count <= 0) { if (badge) badge.remove(); return; }
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'nav-badge ml-auto text-[8px] bg-qi-red text-white rounded-full w-4 h-4 flex items-center justify-center font-bold';
+        btn.appendChild(badge);
+    }
+    badge.textContent = count > 9 ? '9+' : count;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #34  EMPTY STATE ILLUSTRATION
+   ═══════════════════════════════════════════════════════════ */
+function emptyState(icon, title, subtitle) {
+    return '<div class="flex flex-col items-center justify-center py-10 text-center">' +
+        '<div class="text-4xl mb-3">' + icon + '</div>' +
+        '<div class="text-sm font-semibold text-slate-400 mb-1">' + title + '</div>' +
+        '<div class="text-[10px] text-slate-600 max-w-xs">' + subtitle + '</div></div>';
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #37  MOBILE BOTTOM NAV — active state sync
+   ═══════════════════════════════════════════════════════════ */
+function syncMobileNav() {
+    var activeId = (typeof _activePanel !== 'undefined') ? _activePanel : 'panel-overview';
+    document.querySelectorAll('#mobileBottomNav [data-mob-panel]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.dataset.mobPanel === activeId);
+        btn.classList.toggle('text-slate-400', btn.dataset.mobPanel !== activeId);
+    });
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   #27  STICKY TABLE HEADERS (via CSS class)
+   ═══════════════════════════════════════════════════════════ */
+function applyStickyHeaders() {
+    document.querySelectorAll('.panel-content table thead th').forEach(function(th) {
+        th.style.position = 'sticky';
+        th.style.top = '0';
+        th.style.zIndex = '5';
+        th.style.background = 'var(--qi-card)';
+    });
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   INIT — bootstrap all UI features
+   ═══════════════════════════════════════════════════════════ */
 (function() {
     loadAlerts();
+    loadFontSize();
     setInterval(function() { updateSessionClocks(); }, 1000);
     setInterval(function() { checkNewSignals(); }, 60000);
+    setInterval(function() { updateStatusBar(); }, 10000);
     updateSessionClocks();
+    updateStatusBar();
+    setTimeout(function() { maybeShowOnboarding(); }, 2000);
+    setTimeout(function() { applyStickyHeaders(); }, 3000);
+
+    var origSwitch = window.switchPanel;
+    if (origSwitch) {
+        var _origSwitchRef = origSwitch;
+    }
+    var checkSync = setInterval(function() {
+        if (typeof switchPanel === 'function') {
+            var _origSwitch = switchPanel;
+            window.switchPanel = function(id) {
+                _origSwitch(id);
+                syncMobileNav();
+            };
+            clearInterval(checkSync);
+        }
+    }, 500);
 })();
