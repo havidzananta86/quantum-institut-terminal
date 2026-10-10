@@ -318,6 +318,14 @@ section[id] { scroll-margin-top: 80px; }
     }
 }
 
+/* Modal/overlay backdrop fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(1px)) {
+    [style*="backdrop-filter"],
+    [style*="-webkit-backdrop-filter"] {
+        background: rgba(5, 10, 26, 0.97) !important;
+    }
+}
+
 /* Ensure terminal main content doesn't get hidden behind bottom nav on mobile */
 @media (max-width: 767px) {
     .terminal-main-scroll { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
