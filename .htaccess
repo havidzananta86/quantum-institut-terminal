@@ -2,6 +2,20 @@
 RewriteEngine On
 RewriteBase /
 
+# =============================================
+# FORCE HTTPS (production only, skip localhost)
+# =============================================
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# =============================================
+# PHP ERROR DISPLAY — off in production
+# =============================================
+php_flag display_errors Off
+php_flag display_startup_errors Off
+
 # Teruskan header Authorization ke PHP (Apache mod_php sering stripping ini).
 # Tanpa ini, token Bearer tidak sampai ke $_SERVER dan auth gagal.
 RewriteCond %{HTTP:Authorization} .
