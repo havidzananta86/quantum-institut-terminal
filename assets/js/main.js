@@ -56,15 +56,22 @@ window.showToast = showQuantumToast;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Scroll reveal observer
+    const revealEls = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
+                observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    revealEls.forEach(el => observer.observe(el));
+
+    // Fallback: force-reveal any elements still hidden after 2.5s
+    setTimeout(() => {
+        revealEls.forEach(el => el.classList.add('active'));
+    }, 2500);
 
     // Mobile Menu Drawer Handler
     const mobileBtn  = document.getElementById('mobileMenuBtn');
