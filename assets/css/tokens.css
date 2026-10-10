@@ -80,6 +80,10 @@
 }
 
 /* ── Base application ── */
+html {
+  background-color: #000000;
+  color-scheme: dark;
+}
 body {
   background-color: var(--qi-bg);
   color: var(--qi-text);
