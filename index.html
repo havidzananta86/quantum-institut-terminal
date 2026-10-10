@@ -105,12 +105,61 @@
         @media (min-width: 768px) {
             .hero-float { animation: float 6s ease-in-out infinite; }
         }
+
+        /* ══ REDESIGN v2 — OLED Black Professional ══ */
+        /* Force OLED black base */
+        html, body { background-color: #000000; }
+
+        /* Hero gradient mesh (replaces particle canvas) */
+        .qi-hero-mesh {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 55% at 50% -8%, rgba(0,229,255,0.07) 0%, transparent 62%),
+                radial-gradient(ellipse 55% 45% at 88% 22%, rgba(124,77,255,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 45% 40% at 8% 78%, rgba(0,229,255,0.03) 0%, transparent 50%);
+        }
+        /* Subtle dot-grid texture for depth */
+        .qi-grid-bg {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+            background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 0%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 0%, transparent 75%);
+        }
+
+        /* Section eyebrow label — consistent across all sections */
+        .qi-eyebrow {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 5px 13px; border-radius: 999px;
+            font-size: 10.5px; font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500;
+        }
+        .qi-eyebrow-cyan { background: rgba(0,229,255,0.07); border: 1px solid rgba(0,229,255,0.22); color: #5eead4; color: rgba(103,232,249,0.9); }
+        .qi-eyebrow-purple { background: rgba(124,77,255,0.09); border: 1px solid rgba(124,77,255,0.25); color: rgba(192,168,255,0.92); }
+        .qi-eyebrow-emerald { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.22); color: rgba(110,231,183,0.9); }
+        .qi-eyebrow-amber { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.22); color: rgba(252,211,77,0.9); }
+        .qi-eyebrow .qi-dot { width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+
+        /* Consistent section heading */
+        .qi-h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.02em; color: #fff; line-height: 1.15; }
+
+        /* Glass card refined for OLED */
+        .qi-card { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; transition: border-color .25s, background .25s, transform .25s; }
+        .qi-card:hover { border-color: rgba(0,229,255,0.3); background: rgba(255,255,255,0.04); }
+
+        /* Trust strip pill */
+        .qi-trust { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: rgba(148,163,184,0.75); white-space: nowrap; }
+        .qi-trust svg { width: 13px; height: 13px; }
+
+        /* Logo mark hover */
+        .qi-logo-mark { transition: filter .3s; }
+        a:hover > .qi-logo-mark { filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)); }
     </style>
 </head>
 <body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
 
     <!-- PROFESSIONAL LOADING SCREEN -->
-    <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020509]" style="transition:opacity 0.3s ease">
+    <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black" style="transition:opacity 0.3s ease">
         <div style="position:relative;width:72px;height:72px;margin-bottom:24px">
             <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,229,255,0.15)"></div>
             <div style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:#00E5FF;animation:qiSpin 1s linear infinite"></div>
@@ -150,22 +199,37 @@
     })();
     </script>
 
-    <!-- CANVAS PARTICLES BACKGROUND -->
-    <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-60"></canvas>
+    <!-- OLED BLACK BACKGROUND + subtle dot-grid texture (replaces particle canvas) -->
+    <div class="qi-grid-bg"></div>
 
     <!-- 1. NAVBAR RESPONSIF -->
     <!-- BREAKPOINT NAVBAR: Mobile (<768px), Tablet (768-1024px), Desktop (≥1024px) -->
-    <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#050A1A]/80 border-b border-cyan-500/10 transition-all duration-300">
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-black/70 border-b border-white/[0.06] transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
-            
+
             <!-- Logo Kiri -->
-            <a href="index.html" class="flex items-center gap-2 group shrink-0">
-                <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-9 w-9 sm:h-10 sm:h-10 rounded-xl object-cover border border-cyan-500/30 group-hover:border-cyan-400 transition-all shadow-cyan-glow">
+            <a href="index.html" class="flex items-center gap-2.5 group shrink-0">
+                <svg class="qi-logo-mark h-9 w-9 sm:h-10 sm:w-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Quantum Institut">
+                    <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#qiLogoFill)" stroke="url(#qiLogoStroke)" stroke-width="1.2"/>
+                    <circle cx="20" cy="19" r="8" stroke="#00E5FF" stroke-width="1.6"/>
+                    <path d="M25.5 24.5L30 29.5" stroke="#00E5FF" stroke-width="2.4" stroke-linecap="round"/>
+                    <path d="M14.5 19L17 15.5L20 21L23 15.5L25.5 19" stroke="#7C4DFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="qiLogoFill" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#00E5FF" stop-opacity="0.1"/>
+                            <stop offset="1" stop-color="#7C4DFF" stop-opacity="0.06"/>
+                        </linearGradient>
+                        <linearGradient id="qiLogoStroke" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#00E5FF" stop-opacity="0.5"/>
+                            <stop offset="1" stop-color="#7C4DFF" stop-opacity="0.4"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
                 <div class="hidden xs:block">
                     <span class="font-heading font-bold text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
                         Quantum<span class="text-cyan-400">Institut</span>
                     </span>
-                    <span class="text-[9px] sm:text-[10px] tracking-widest font-mono text-cyan-400/70 uppercase">Market Terminal</span>
+                    <span class="text-[9px] sm:text-[10px] tracking-[0.2em] font-mono text-cyan-400/60 uppercase">Market Terminal</span>
                 </div>
             </a>
 
@@ -236,7 +300,7 @@
         </div>
 
         <!-- Mobile Menu Drawer (<768px) -->
-        <div id="mobileMenu" class="hidden md:hidden bg-quantum-navy/95 border-b border-cyan-500/20 px-4 sm:px-6 py-6 space-y-4">
+        <div id="mobileMenu" class="hidden md:hidden bg-black/95 backdrop-blur-xl border-b border-white/[0.06] px-4 sm:px-6 py-6 space-y-4">
             <a href="#mesin-kuantum" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Mesin Kuantum</a>
             <a href="#terminal" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Terminal</a>
             <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>
@@ -266,60 +330,79 @@
 
     <!-- 2. HERO SECTION RESPONSIF -->
     <!-- BREAKPOINT HERO: Mobile (center, heading 2rem), Tablet (heading 2.75rem), Desktop (split 50/50, heading 3.5rem) -->
-    <section id="terminal" class="relative py-12 md:py-16 lg:py-24 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12 items-center">
-                
+    <section id="terminal" class="relative py-14 md:py-20 lg:py-28 z-10">
+        <div class="qi-hero-mesh"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 relative z-10">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+
                 <!-- Teks Kiri Hero -->
                 <div class="space-y-6 text-center md:text-left reveal">
-                    
+
                     <!-- Top Badge -->
-                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono tracking-wide shadow-cyan-glow">
+                    <div class="qi-eyebrow qi-eyebrow-cyan">
                         <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                        LIVE TERMINAL ENGINE V4.2 ACTIVE
+                        Live Engine V4.2 Active
                     </div>
 
-                    <!-- Heading Responsif: text-2xl (HP) -> sm:text-3xl -> md:text-4xl -> lg:text-5xl -> xl:text-6xl (Desktop) -->
-                    <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white leading-[1.15]">
-                        Mesin kuantum membaca chart. <br/>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-indigo-400">
+                    <!-- Heading -->
+                    <h1 class="qi-h2 text-3xl sm:text-4xl md:text-5xl lg:text-[3.4rem] xl:text-6xl leading-[1.1]">
+                        Mesin kuantum<br class="hidden sm:block"/> membaca chart.<br/>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400">
                             Kamu yang memutuskan.
                         </span>
                     </h1>
 
-                    <!-- Subjudul Responsif: text-xs (<480px) -> text-sm -> sm:text-base -> lg:text-lg -->
-                    <p class="text-xs sm:text-base lg:text-lg text-slate-300 font-normal leading-relaxed max-w-xl mx-auto md:mx-0">
+                    <!-- Subjudul -->
+                    <p class="text-sm sm:text-base lg:text-lg text-slate-400 font-normal leading-relaxed max-w-lg mx-auto md:mx-0">
                         Sembilan mesin analisa kuantum membaca lebih dari 120 pasar kripto, emas, forex, dan indeks setiap penutupan candle — lengkap dengan level, prasyarat, dan biaya eksekusi.
                     </p>
 
-                    <!-- CTA Buttons Stack (Mobile vertikal, Tablet & Desktop horizontal) -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 sm:gap-4 pt-2">
-                        <!-- Hero CTA: 2 tombol langsung (no dropdown) -->
-                        <a href="terminal.html" class="min-h-[44px] px-6 py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-cyan-glow transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <!-- CTA: 2 tombol (primary + secondary) -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 pt-1">
+                        <a href="terminal.html" class="min-h-[48px] px-7 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-[0_0_28px_rgba(0,229,255,0.28)] transition-all flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             Buka Terminal
                         </a>
-                        <a href="dashboard.html" class="min-h-[44px] px-6 py-3.5 rounded-xl font-heading font-bold text-sm lg:text-base transition-all flex items-center justify-center gap-2 text-white" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.4)">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:#7C4DFF"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
-                            Command Center
+                        <a href="#mesin-kuantum" class="min-h-[48px] px-7 py-3 rounded-xl font-heading font-semibold text-sm lg:text-base transition-all flex items-center justify-center gap-2 text-slate-300 hover:text-white" style="border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03)">
+                            Lihat 9 Mesin
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </a>
-                        
-                        <a href="#mesin-kuantum" class="min-h-[44px] px-6 py-3.5 rounded-xl bg-slate-900/80 hover:bg-purple-950/50 text-slate-200 border border-purple-500/30 font-heading font-medium text-sm lg:text-base transition-all flex items-center justify-center gap-2">
-                            <span>Lihat Sembilan Mesin →</span>
-                        </a>
+                    </div>
+
+                    <!-- Trust strip -->
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 pt-2">
+                        <span class="qi-trust">
+                            <svg class="text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L3.5 6.5v5C3.5 16.65 7.24 21.33 12 22c4.76-.67 8.5-5.35 8.5-10.5v-5L12 2zm-1 14l-4-4 1.41-1.41L11 13.17l6.59-6.59L19 8l-8 8z"/></svg>
+                            SSL 256-bit
+                        </span>
+                        <span class="text-slate-700">·</span>
+                        <span class="qi-trust">
+                            <svg class="text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            78% Akurasi
+                        </span>
+                        <span class="text-slate-700">·</span>
+                        <span class="qi-trust">
+                            <svg class="text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/></svg>
+                            24/7 Monitor
+                        </span>
+                        <span class="text-slate-700">·</span>
+                        <span class="qi-trust">
+                            <svg class="text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            Gratis Mulai
+                        </span>
                     </div>
 
                 </div>
 
                 <!-- Card Hologram Kanan Hero / Panduan Signal -->
                 <div id="panduan" class="relative mt-8 md:mt-0 reveal hero-float">
-                    <div class="glass-card signal-card-glow rounded-2xl p-4 sm:p-6 border border-cyan-500/30 overflow-hidden">
-                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-cyan-500/20 font-mono text-xs">
+                    <div class="signal-card-glow rounded-2xl p-4 sm:p-6 overflow-hidden" style="background:linear-gradient(160deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015));border:1px solid rgba(0,229,255,0.3);backdrop-filter:blur(12px)">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/10 font-mono text-xs">
                             <span class="text-cyan-400 font-bold flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> LIVE SIGNAL READOUT
                             </span>
-                            <span class="text-slate-400 bg-slate-900 px-2 py-0.5 rounded">SERVER WIB: <strong class="text-cyan-300" id="wibClock">14:00:00</strong></span>
+                            <span class="text-slate-400 bg-white/5 px-2 py-0.5 rounded">WIB: <strong class="text-cyan-300" id="wibClock">14:00:00</strong></span>
                         </div>
 
                         <div class="space-y-3 font-mono text-xs">
@@ -330,28 +413,28 @@
                             <p id="sigMode" class="text-slate-300 text-xs">Mode: Quantum SNR & SMC — Memuat data live…</p>
 
                             <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
                                     <div class="text-slate-400 text-[10px]">POTENSI ENTRY</div>
                                     <div id="sigEntry" class="text-cyan-300 font-bold">—</div>
                                 </div>
-                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
                                     <div class="text-slate-400 text-[10px]">STOP LOSS (SL)</div>
                                     <div id="sigSL" class="text-rose-400 font-bold">—</div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
                                     <div class="text-slate-400 text-[10px]">TARGET PROFIT (TP)</div>
                                     <div id="sigTP" class="text-emerald-400 font-bold">—</div>
                                 </div>
-                                <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                                <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
                                     <div class="text-slate-400 text-[10px]">RISK : REWARD</div>
                                     <div id="sigRR" class="text-purple-300 font-bold">—</div>
                                 </div>
                             </div>
 
-                            <div class="bg-slate-950 p-2.5 rounded border border-slate-800 flex justify-between">
+                            <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06] flex justify-between">
                                 <span class="text-slate-400">Prasyarat Terpenuhi:</span>
                                 <span id="sigConditions" class="text-cyan-400 font-bold">—</span>
                             </div>
@@ -371,65 +454,75 @@
     </section>
 
 
-    <!-- STATS COUNTER SECTION — Social proof & aktivitas platform -->
-    <section class="relative z-10 py-8 sm:py-10 border-y border-cyan-500/10 bg-[#070D22]/60">
+    <!-- STATS COUNTER SECTION — angka besar, stand-alone -->
+    <section class="relative z-10 py-10 sm:py-12 border-y border-white/[0.06]" style="background:rgba(255,255,255,0.015)">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
                 <!-- Stat 1 -->
-                <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-300" data-count-to="1247" data-count-suffix="" data-count-format="true">0</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Sinyal Bulan Ini</div>
+                <div class="reveal">
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-cyan-500 tabular-nums" data-count-to="1247" data-count-suffix="" data-count-format="true">0</div>
+                    <div class="text-[11px] sm:text-xs text-slate-500 font-mono uppercase tracking-wider mt-2">Sinyal Bulan Ini</div>
                 </div>
                 <!-- Stat 2 -->
-                <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400" data-count-to="78" data-count-suffix="%">0%</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Akurasi Rata-rata</div>
+                <div class="reveal">
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-emerald-300 to-emerald-500 tabular-nums" data-count-to="78" data-count-suffix="%">0%</div>
+                    <div class="text-[11px] sm:text-xs text-slate-500 font-mono uppercase tracking-wider mt-2">Akurasi Rata-rata</div>
                 </div>
                 <!-- Stat 3 -->
-                <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400" data-count-to="9" data-count-suffix="">0</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Mesin Analisa Aktif</div>
+                <div class="reveal">
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-purple-300 to-purple-500 tabular-nums" data-count-to="9" data-count-suffix="">0</div>
+                    <div class="text-[11px] sm:text-xs text-slate-500 font-mono uppercase tracking-wider mt-2">Mesin Analisa Aktif</div>
                 </div>
                 <!-- Stat 4 -->
-                <div class="space-y-1 reveal">
-                    <div class="text-2xl sm:text-3xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">24/7</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono">Monitor Non-stop</div>
+                <div class="reveal">
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-amber-300 to-orange-500">24/7</div>
+                    <div class="text-[11px] sm:text-xs text-slate-500 font-mono uppercase tracking-wider mt-2">Monitor Non-stop</div>
                 </div>
             </div>
-            <!-- Testimonial mini -->
-            <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div class="glass-card rounded-xl p-4 text-xs text-slate-300 reveal">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-[10px]">RD</div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIAL SECTION — terpisah dari stats -->
+    <section class="relative z-10 py-12 md:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
+            <div class="text-center max-w-2xl mx-auto mb-10 space-y-3 reveal">
+                <div class="qi-eyebrow qi-eyebrow-amber"><span class="qi-dot"></span>Kata Trader</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">Dipakai trader lintas pasar</h2>
+                <p class="text-slate-400 text-sm sm:text-base">Dari kripto, emas, hingga forex — ini kata mereka tentang mesin kuantum.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+                <div class="qi-card p-5 text-sm reveal">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-9 h-9 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs">RD</div>
                         <div>
-                            <div class="text-white font-bold text-[11px]">Rizky D.</div>
-                            <div class="text-slate-500 text-[9px] font-mono">Trader Kripto · Jakarta</div>
+                            <div class="text-white font-bold text-xs">Rizky D.</div>
+                            <div class="text-slate-500 text-[10px] font-mono">Trader Kripto · Jakarta</div>
                         </div>
-                        <div class="ml-auto text-amber-400 text-[11px]">★★★★★</div>
+                        <div class="ml-auto text-amber-400 text-xs">★★★★★</div>
                     </div>
-                    <p class="text-slate-400 leading-relaxed">"SNR + SMC engine sangat membantu. Setup langsung keliatan entry-nya."</p>
+                    <p class="text-slate-400 leading-relaxed text-[13px]">"SNR + SMC engine sangat membantu. Setup langsung keliatan entry-nya."</p>
                 </div>
-                <div class="glass-card rounded-xl p-4 text-xs text-slate-300 reveal">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold text-[10px]">AF</div>
+                <div class="qi-card p-5 text-sm reveal">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-9 h-9 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs">AF</div>
                         <div>
-                            <div class="text-white font-bold text-[11px]">Arif F.</div>
-                            <div class="text-slate-500 text-[9px] font-mono">Trader Emas · Surabaya</div>
+                            <div class="text-white font-bold text-xs">Arif F.</div>
+                            <div class="text-slate-500 text-[10px] font-mono">Trader Emas · Surabaya</div>
                         </div>
-                        <div class="ml-auto text-amber-400 text-[11px]">★★★★★</div>
+                        <div class="ml-auto text-amber-400 text-xs">★★★★★</div>
                     </div>
-                    <p class="text-slate-400 leading-relaxed">"MomentumNY buat XAUUSD akurat. H1 paling konsisten dari 9 mesin."</p>
+                    <p class="text-slate-400 leading-relaxed text-[13px]">"MomentumNY buat XAUUSD akurat. H1 paling konsisten dari 9 mesin."</p>
                 </div>
-                <div class="glass-card rounded-xl p-4 text-xs text-slate-300 reveal">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-[10px]">SN</div>
+                <div class="qi-card p-5 text-sm reveal">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">SN</div>
                         <div>
-                            <div class="text-white font-bold text-[11px]">Sari N.</div>
-                            <div class="text-slate-500 text-[9px] font-mono">Trader Forex · Bandung</div>
+                            <div class="text-white font-bold text-xs">Sari N.</div>
+                            <div class="text-slate-500 text-[10px] font-mono">Trader Forex · Bandung</div>
                         </div>
-                        <div class="ml-auto text-amber-400 text-[11px]">★★★★☆</div>
+                        <div class="ml-auto text-amber-400 text-xs">★★★★☆</div>
                     </div>
-                    <p class="text-slate-400 leading-relaxed">"Kalender ekonomi terintegrasi. Nggak perlu buka tab ForexFactory lagi."</p>
+                    <p class="text-slate-400 leading-relaxed text-[13px]">"Kalender ekonomi terintegrasi. Nggak perlu buka tab ForexFactory lagi."</p>
                 </div>
             </div>
         </div>
@@ -437,7 +530,7 @@
 
     <!-- TICKER PASAR RESPONSIF -->
     <!-- BREAKPOINT TICKER: Mobile (font 0.75rem, scroll), Desktop (font 0.875rem, full width) -->
-    <div class="w-full py-2.5 sm:py-3 bg-[#0A1128]/90 border-y border-cyan-500/15 overflow-x-auto whitespace-nowrap z-20 no-scrollbar">
+    <div class="w-full py-2.5 sm:py-3 bg-black/80 border-y border-white/[0.06] overflow-x-auto whitespace-nowrap z-20 no-scrollbar">
         <div class="inline-flex animate-ticker font-mono text-xs sm:text-sm">
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
                 <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
@@ -467,17 +560,15 @@
 
     <!-- 3. SECTION 9 MESIN KUANTUM RESPONSIF -->
     <!-- BREAKPOINT GRID 9 MESIN: Mobile (grid-cols-1), Tablet (sm:grid-cols-2), Desktop (lg:grid-cols-3) -->
-    <section id="mesin-kuantum" class="py-12 md:py-16 lg:py-24 relative z-10">
+    <section id="mesin-kuantum" class="py-14 md:py-20 lg:py-24 relative z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            
-            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 mb-10 md:mb-16 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
-                    QUANTUM ENGINE MATRIX
-                </div>
-                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white">
-                    Satu Pasar, <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Sembilan Cara Membacanya</span>
+
+            <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-16 reveal">
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Quantum Engine Matrix</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
+                    Satu pasar, <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">sembilan cara membacanya</span>
                 </h2>
-                <p class="text-slate-300 text-xs sm:text-base">
+                <p class="text-slate-400 text-sm sm:text-base">
                     Setiap mesin kuantum beroperasi independen dengan logika matematika spesifik.
                 </p>
             </div>
@@ -646,16 +737,15 @@
 
     <!-- 4. SECTION PRICING RESPONSIF -->
     <!-- BREAKPOINT PRICING: Mobile (grid-cols-1), Tablet (sm:grid-cols-2), Desktop (lg:grid-cols-4) -->
-    <section id="quantum-plus" class="py-12 md:py-16 lg:py-24 relative z-10 bg-[#070D22]/90 border-t border-purple-500/20">
+    <section id="quantum-plus" class="py-14 md:py-20 lg:py-24 relative z-10 border-t border-white/[0.06]" style="background:rgba(124,77,255,0.025)">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            
-            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 mb-10 md:mb-16 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-mono">
-                    QUANTUM INSTITUT+ (QI+)
-                </div>
-                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white">
-                    Akses Penuh Sembilan Mesin & Fitur Pro
+
+            <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-16 reveal">
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Quantum Institut+ (QI+)</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
+                    Akses penuh sembilan mesin <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">& fitur Pro</span>
                 </h2>
+                <p class="text-slate-400 text-sm sm:text-base">Mulai gratis, upgrade kapan saja. Tanpa kontrak, bisa berhenti kapan pun.</p>
             </div>
 
             <!-- FREE vs PRO Comparison Table -->
@@ -786,17 +876,15 @@
 
 
     <!-- TRADE IDEAS SECTION -->
-    <section id="trade-ideas" class="py-12 md:py-16 lg:py-20 relative z-10 bg-[#050A1A]">
+    <section id="trade-ideas" class="py-14 md:py-20 relative z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
-            <div class="text-center max-w-3xl mx-auto space-y-3 mb-10 md:mb-14 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
-                    QUANTUM TRADE IDEAS
-                </div>
-                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
-                    Ide Trading <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Terkurasi</span>
+            <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-14 reveal">
+                <div class="qi-eyebrow qi-eyebrow-cyan"><span class="qi-dot"></span>Quantum Trade Ideas</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
+                    Ide trading <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">terkurasi</span>
                 </h2>
-                <p class="text-slate-400 text-xs sm:text-sm">Analisa teknikal dari mesin kuantum — diperbarui setiap penutupan candle harian.</p>
+                <p class="text-slate-400 text-sm sm:text-base">Analisa teknikal dari mesin kuantum — diperbarui setiap penutupan candle harian.</p>
             </div>
 
             <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
@@ -917,17 +1005,15 @@
 
 
     <!-- AI SIGNAL WINRATE STATS -->
-    <section class="py-10 md:py-14 relative z-10 bg-[#040810]">
+    <section class="py-14 md:py-16 relative z-10 border-t border-white/[0.06]" style="background:rgba(255,255,255,0.012)">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
-            <div class="text-center max-w-2xl mx-auto space-y-2 mb-10 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
-                    🤖 AI SIGNAL PERFORMANCE
-                </div>
-                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                    Performa Sinyal <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Otomatis</span>
+            <div class="text-center max-w-2xl mx-auto space-y-3 mb-10 reveal">
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>AI Signal Performance</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
+                    Performa sinyal <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">otomatis</span>
                 </h2>
-                <p class="text-slate-400 text-xs sm:text-sm">Statistik akurasi sinyal AI — dihitung dari seluruh sinyal yang dibukukan di platform.</p>
+                <p class="text-slate-400 text-sm sm:text-base">Statistik akurasi sinyal AI — dihitung dari seluruh sinyal yang dibukukan di platform.</p>
             </div>
 
             <!-- Winrate stat cards -->
@@ -1069,17 +1155,15 @@
 
 
     <!-- DOWNLOAD APLIKASI SECTION -->
-    <section id="download" class="py-12 md:py-16 lg:py-20 relative z-10 bg-gradient-to-b from-[#050A1A] to-[#070D22] border-t border-cyan-500/10">
+    <section id="download" class="py-14 md:py-20 relative z-10 border-t border-white/[0.06]">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 text-center">
 
-            <div class="space-y-3 mb-10 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono">
-                    DOWNLOAD APLIKASI
-                </div>
-                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+            <div class="space-y-3 mb-10 reveal flex flex-col items-center">
+                <div class="qi-eyebrow qi-eyebrow-emerald"><span class="qi-dot"></span>Download Aplikasi</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
                     Install di <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">Android & iOS</span>
                 </h2>
-                <p class="text-slate-400 text-xs sm:text-sm max-w-xl mx-auto">Akses terminal langsung dari home screen — tanpa perlu App Store atau Play Store. Cukup install sekali, buka kapan saja.</p>
+                <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">Akses terminal langsung dari home screen — tanpa perlu App Store atau Play Store. Cukup install sekali, buka kapan saja.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 reveal">
@@ -1117,14 +1201,12 @@
 
 
     <!-- #6 Quick Comparison Table (Gratis vs PRO) -->
-    <section class="py-12 md:py-16 relative z-10 bg-[#050A1A] border-t border-cyan-500/10">
+    <section class="py-14 md:py-16 relative z-10 border-t border-white/[0.06]">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
-            <div class="text-center mb-8 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono mb-4">
-                    GRATIS vs PRO
-                </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-white">Bandingkan Fitur</h2>
-                <p class="text-slate-400 text-sm mt-2">Lihat perbedaan akun gratis dan Quantum+ PRO</p>
+            <div class="text-center mb-10 reveal flex flex-col items-center space-y-3">
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Gratis vs Pro</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl">Bandingkan fitur</h2>
+                <p class="text-slate-400 text-sm sm:text-base">Lihat perbedaan akun gratis dan Quantum+ PRO.</p>
             </div>
             <div class="rounded-2xl border border-slate-800/60 overflow-hidden reveal" style="background:linear-gradient(135deg,rgba(13,24,54,0.80),rgba(10,17,40,0.92))">
                 <div class="grid grid-cols-3 bg-slate-900/80 border-b border-slate-800 text-center text-[10px] font-mono font-bold tracking-widest">
@@ -1150,13 +1232,11 @@
     </section>
 
     <!-- #5 FAQ Section -->
-    <section id="faq" class="py-12 md:py-16 relative z-10 bg-[#040810] border-t border-slate-800/60">
+    <section id="faq" class="py-14 md:py-16 relative z-10 border-t border-white/[0.06]" style="background:rgba(255,255,255,0.012)">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
-            <div class="text-center mb-8 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono mb-4">
-                    FAQ
-                </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-white">Pertanyaan yang Sering Diajukan</h2>
+            <div class="text-center mb-10 reveal flex flex-col items-center space-y-3">
+                <div class="qi-eyebrow qi-eyebrow-cyan"><span class="qi-dot"></span>FAQ</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl">Pertanyaan yang sering diajukan</h2>
             </div>
             <div class="space-y-3 reveal" id="faqList">
                 <details class="group rounded-xl border border-slate-800/60 bg-slate-900/30 overflow-hidden">
@@ -1206,14 +1286,12 @@
     </section>
 
     <!-- DISCLAIMER & COPYRIGHT PANEL -->
-    <section id="disclaimer" class="py-10 md:py-14 relative z-10 bg-[#030810] border-t border-slate-800/60">
+    <section id="disclaimer" class="py-12 md:py-14 relative z-10 border-t border-white/[0.06]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
-            <div class="text-center mb-8 reveal">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono mb-4">
-                    ⚠ DISCLAIMER & LEGAL NOTICE
-                </div>
-                <h2 class="text-lg sm:text-xl font-bold text-white">Penolakan Risiko & Hak Cipta</h2>
+            <div class="text-center mb-10 reveal flex flex-col items-center space-y-3">
+                <div class="qi-eyebrow qi-eyebrow-amber"><span class="qi-dot"></span>Disclaimer &amp; Legal Notice</div>
+                <h2 class="qi-h2 text-xl sm:text-2xl">Penolakan risiko &amp; hak cipta</h2>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -1262,14 +1340,23 @@
 
     <!-- 5. FOOTER RESPONSIF / SECTION BELAJAR -->
     <!-- BREAKPOINT FOOTER: Mobile (stack vertikal, center), Desktop (4 kolom horizontal) -->
-    <footer id="belajar" class="bg-[#030611] border-t border-cyan-500/20 pt-12 md:pt-16 pb-8 text-slate-400 font-body text-center md:text-left">
+    <footer id="belajar" class="bg-black border-t border-white/[0.06] pt-14 md:pt-16 pb-8 text-slate-400 font-body text-center md:text-left">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
-            
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800/80">
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-white/[0.06]">
                 <!-- Kolom 1 Logo & Tagline -->
                 <div class="space-y-3">
-                    <div class="flex items-center gap-2">
-                        <img src="assets/img/logo-square.webp" alt="Quantum Institut" class="h-9 w-9 rounded-lg object-cover border border-cyan-500/20">
+                    <div class="flex items-center justify-center md:justify-start gap-2.5">
+                        <svg class="h-9 w-9" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Quantum Institut">
+                            <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#qiLogoFillF)" stroke="url(#qiLogoStrokeF)" stroke-width="1.2"/>
+                            <circle cx="20" cy="19" r="8" stroke="#00E5FF" stroke-width="1.6"/>
+                            <path d="M25.5 24.5L30 29.5" stroke="#00E5FF" stroke-width="2.4" stroke-linecap="round"/>
+                            <path d="M14.5 19L17 15.5L20 21L23 15.5L25.5 19" stroke="#7C4DFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <defs>
+                                <linearGradient id="qiLogoFillF" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse"><stop stop-color="#00E5FF" stop-opacity="0.1"/><stop offset="1" stop-color="#7C4DFF" stop-opacity="0.06"/></linearGradient>
+                                <linearGradient id="qiLogoStrokeF" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse"><stop stop-color="#00E5FF" stop-opacity="0.5"/><stop offset="1" stop-color="#7C4DFF" stop-opacity="0.4"/></linearGradient>
+                            </defs>
+                        </svg>
                         <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
                     </div>
                     <p class="text-xs text-slate-400">"Sembilan mesin kuantum membaca pasar. Kamu yang memegang kendali."</p>
