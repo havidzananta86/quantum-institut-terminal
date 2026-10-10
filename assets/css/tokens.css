@@ -1,10 +1,9 @@
 /*
  * Quantum Institut — Design Tokens
- * 3 themes: oled-black (default), oled-white, navy
+ * 2 themes: oled-black (default), navy
  *
  * Themes:
  *   oled-black — bg #000000, surface #0A0A0A, text #F0F0F0 (pure black OLED, DEFAULT)
- *   oled-white — bg #FFFFFF, surface #F5F5F5, text #111111 (pure white OLED)
  *   navy       — bg #0B1220, surface #111C33, text #E2E8F0 (dark navy)
  */
 
@@ -59,33 +58,7 @@
   color-scheme: dark;
 }
 
-/* ── OLED White theme ── */
-:root[data-theme="oled-white"] {
-  --qi-bg: #FFFFFF;
-  --qi-surface: #F5F5F5;
-  --qi-card: #EEEEEE;
-  --qi-panel: #FAFAFA;
-  --qi-border: #D4D4D4;
-  --qi-text: #111111;
-  --qi-text-muted: #555555;
-  --qi-text-inv: #FFFFFF;
-  --qi-navy: #1E3A8A;
-  --qi-accent: #2563EB;
-  --qi-accent-soft: #DBEAFE;
-  --qi-scrollbar: #CCCCCC;
-  --qi-chart-bg: #FFFFFF;
-  --qi-chart-grid: #E8E8E8;
-  --qi-chart-text: #555555;
-  --qi-chart-crosshair: #2563EB55;
-  --qi-cyan: #0891B2;
-  --qi-purple: #6D28D9;
-  --qi-green: #059669;
-  --qi-red: #DC2626;
-  --qi-gold: #D97706;
-  color-scheme: light;
-}
-
-/* ── Navy (explicit toggle, same as default) ── */
+/* ── Navy ── */
 :root[data-theme="navy"] {
   --qi-bg: #0B1220;
   --qi-surface: #111C33;
@@ -117,40 +90,6 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--qi-scrollbar) !important; }
 *  { scrollbar-color: var(--qi-scrollbar) transparent; }
 
-/* ── Light-mode overrides for hardcoded dark-only Tailwind classes ── */
-:root[data-theme="oled-white"] .text-white,
-:root[data-theme="oled-white"] .text-slate-200,
-:root[data-theme="oled-white"] .text-slate-100 {
-  color: var(--qi-text);
-}
-:root[data-theme="oled-white"] .text-slate-300,
-:root[data-theme="oled-white"] .text-slate-400 {
-  color: var(--qi-text-muted);
-}
-:root[data-theme="oled-white"] .text-slate-500,
-:root[data-theme="oled-white"] .text-slate-600 {
-  color: #64748B;
-}
-:root[data-theme="oled-white"] .border-slate-700,
-:root[data-theme="oled-white"] .border-slate-800 {
-  border-color: var(--qi-border);
-}
-:root[data-theme="oled-white"] .bg-slate-800,
-:root[data-theme="oled-white"] .bg-slate-900,
-:root[data-theme="oled-white"] .bg-slate-950 {
-  background-color: var(--qi-surface);
-}
-:root[data-theme="oled-white"] .bg-\[\#050A1A\],
-:root[data-theme="oled-white"] .bg-\[\#040810\],
-:root[data-theme="oled-white"] .bg-\[\#070D22\],
-:root[data-theme="oled-white"] .bg-\[\#0B1220\] {
-  background-color: var(--qi-bg) !important;
-}
-:root[data-theme="oled-white"] .border-cyan-500\/10,
-:root[data-theme="oled-white"] .border-cyan-500\/20 {
-  border-color: var(--qi-border);
-}
-
 /* OLED Black overrides for hardcoded navy backgrounds */
 :root[data-theme="oled-black"] .bg-\[\#050A1A\],
 :root[data-theme="oled-black"] .bg-\[\#040810\],
@@ -160,16 +99,6 @@ body {
 }
 
 /* ── Nav items ── */
-:root[data-theme="oled-white"] .nav-item.active {
-  background: rgba(30, 58, 138, 0.08);
-  color: var(--qi-navy);
-  border-left-color: var(--qi-navy);
-}
-:root[data-theme="oled-white"] .nav-item:hover {
-  background: rgba(30, 58, 138, 0.05);
-  color: var(--qi-text);
-}
-
 :root[data-theme="navy"] .nav-item.active,
 :root[data-theme="oled-black"] .nav-item.active {
   background: rgba(0, 229, 255, 0.12);
@@ -183,10 +112,6 @@ body {
 }
 
 /* ── glass-card theming ── */
-:root[data-theme="oled-white"] .glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: var(--qi-border);
-}
 :root[data-theme="oled-black"] .glass-card {
   background: rgba(10, 10, 10, 0.9);
   border-color: var(--qi-border);
@@ -316,10 +241,6 @@ body {
 /* ── #21 P&L Contrast Boost ── */
 .text-qi-green, .pnl-profit { color: #34D399 !important; font-weight: 700; }
 .text-qi-red, .pnl-loss { color: #F87171 !important; font-weight: 700; }
-:root[data-theme="oled-white"] .text-qi-green,
-:root[data-theme="oled-white"] .pnl-profit { color: #059669 !important; }
-:root[data-theme="oled-white"] .text-qi-red,
-:root[data-theme="oled-white"] .pnl-loss { color: #DC2626 !important; }
 
 /* ── #28 Pinch-to-zoom hint ── */
 .pinch-hint { position:absolute; bottom:8px; left:50%; transform:translateX(-50%);

@@ -20,7 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <!-- Design tokens + theme (must load before Tailwind) -->
-    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.1">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.2">
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
 
     <!-- Error Tracker — load first to catch all JS errors -->
@@ -829,9 +829,8 @@ document.addEventListener('keydown', e => {
                     <span data-theme-icon>🌊</span>
                 </button>
                 <div id="themeDropdown" class="hidden absolute right-0 top-10 w-36 rounded-xl shadow-2xl overflow-hidden z-50" style="background:var(--qi-card);border:1px solid var(--qi-border)" onclick="event.stopPropagation()">
-                    <button onclick="applyThemeChoice('navy')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🌊</span><span class="font-semibold">Navy</span></button>
                     <button onclick="applyThemeChoice('oled-black')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🖤</span><span class="font-semibold">OLED Black</span></button>
-                    <button onclick="applyThemeChoice('oled-white')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>☀</span><span class="font-semibold">OLED White</span></button>
+                    <button onclick="applyThemeChoice('navy')" class="w-full flex items-center gap-2 px-3 py-2.5 text-[11px] text-left transition-colors" style="color:var(--qi-text)" onmouseenter="this.style.background='var(--qi-surface)'" onmouseleave="this.style.background='transparent'"><span>🌊</span><span class="font-semibold">Navy</span></button>
                 </div>
             </div>
         </div>
