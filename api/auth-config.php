@@ -6,6 +6,7 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(60, 60);
 
 $clientId = '';
 $cfg = __DIR__ . '/../config/api_keys.php';

@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $userKeys[] = $newKey;
     $allKeys[$userId] = $userKeys;
-    file_put_contents($keysFile, json_encode($allKeys, JSON_PRETTY_PRINT));
+    file_put_contents($keysFile, json_encode($allKeys, JSON_PRETTY_PRINT), LOCK_EX);
 
     echo json_encode([
         'status' => 'success',
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         return $k['id'] !== $keyId;
     });
     $allKeys[$userId] = array_values($userKeys);
-    file_put_contents($keysFile, json_encode($allKeys, JSON_PRETTY_PRINT));
+    file_put_contents($keysFile, json_encode($allKeys, JSON_PRETTY_PRINT), LOCK_EX);
 
     echo json_encode(['status' => 'success', 'message' => 'API key berhasil dicabut']);
     exit();

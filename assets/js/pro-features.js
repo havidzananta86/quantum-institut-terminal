@@ -928,10 +928,6 @@ function applyStickyHeaders() {
     setTimeout(function() { maybeShowOnboarding(); }, 2000);
     setTimeout(function() { applyStickyHeaders(); }, 3000);
 
-    var origSwitch = window.switchPanel;
-    if (origSwitch) {
-        var _origSwitchRef = origSwitch;
-    }
     var checkSync = setInterval(function() {
         if (typeof switchPanel === 'function') {
             var _origSwitch = switchPanel;

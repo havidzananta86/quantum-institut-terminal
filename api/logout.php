@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(30, 60);
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit();
 

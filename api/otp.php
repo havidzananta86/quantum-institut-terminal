@@ -38,7 +38,6 @@ if ($action === 'send') {
     $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
     $data = [
         'code' => password_hash($code, PASSWORD_DEFAULT),
-        'plain' => $code, // Dev only — remove in production
         'email' => $email,
         'created_at' => time(),
         'expires_at' => time() + 300, // 5 minutes

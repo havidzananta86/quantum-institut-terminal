@@ -4001,7 +4001,7 @@ async function chartScreenshot() {
         });
         const j = await r.json();
         const el = document.getElementById('ssAiResult');
-        if (el) el.innerHTML = `<div class="text-[11px] leading-relaxed whitespace-pre-wrap text-slate-200">${(j.reply || j.message || 'Analisis tidak tersedia').replace(/\n/g,'<br>')}</div>`;
+        if (el) { var _t = (j.reply || j.message || 'Analisis tidak tersedia').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); el.innerHTML = `<div class="text-[11px] leading-relaxed whitespace-pre-wrap text-slate-200">${_t}</div>`; }
     } catch(e) {
         const el = document.getElementById('ssAiResult');
         if (el) el.innerHTML = '<div class="text-red-400 text-xs">AI analisis error — coba lagi.</div>';
@@ -6377,7 +6377,7 @@ async function fetchCryptoAIOutlook() {
             })
         });
         const j = await r.json();
-        el.innerHTML = `<div class="text-[11px] leading-relaxed whitespace-pre-wrap text-slate-200">${(j.reply||j.message||'').replace(/\n/g,'<br>')}</div>`;
+        var _t2 = (j.reply||j.message||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); el.innerHTML = `<div class="text-[11px] leading-relaxed whitespace-pre-wrap text-slate-200">${_t2}</div>`;
     } catch(e) { el.innerHTML = '<div class="text-red-400 text-xs">AI error — coba lagi.</div>'; }
 }
 </script>

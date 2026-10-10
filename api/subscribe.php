@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_rate_limit(10, 60);
 
 $input = qi_get_json_body();
 $plan = is_array($input) && isset($input['plan']) ? qi_sanitize_string($input['plan'], 20) : '6 Bulan';

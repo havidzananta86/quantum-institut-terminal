@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'referrals' => [],
             'rewards' => 0,
         ];
-        file_put_contents($refFile, json_encode($allRefs, JSON_PRETTY_PRINT));
+        file_put_contents($refFile, json_encode($allRefs, JSON_PRETTY_PRINT), LOCK_EX);
     }
 
     $myRef = $allRefs[$userId];
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'date' => date('Y-m-d H:i:s'),
     ];
     $allRefs[$referrerId]['rewards'] = ($allRefs[$referrerId]['rewards'] ?? 0) + 1;
-    file_put_contents($refFile, json_encode($allRefs, JSON_PRETTY_PRINT));
+    file_put_contents($refFile, json_encode($allRefs, JSON_PRETTY_PRINT), LOCK_EX);
 
     echo json_encode(['status' => 'success', 'message' => 'Referral berhasil diterapkan!']);
     exit();

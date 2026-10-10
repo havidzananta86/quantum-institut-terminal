@@ -41,7 +41,7 @@ if ($originAllowed && $origin) {
     // JANGAN set Access-Control-Allow-Origin agar browser blokir cross-origin
 }
 
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-QI-Token');
 header('Access-Control-Max-Age: 86400');
 
@@ -383,7 +383,7 @@ function qi_log(string $level, string $message, array $context = []): void {
 header('X-Request-ID: ' . QI_REQUEST_ID);
 
 // =============================================
-// 5. TERAPKAN RATE LIMIT OTOMATIS
+// 5. RATE LIMIT (per-endpoint)
 // =============================================
-// Setiap endpoint yang include file ini otomatis dibatasi
-qi_rate_limit(60, 60); // 60 request per menit per IP
+// Rate limiting applied per-endpoint via qi_rate_limit() calls.
+// Removed global 60/min to avoid double-limiting endpoints with custom limits.
