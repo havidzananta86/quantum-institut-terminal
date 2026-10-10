@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'code' => $myRef['code'],
             'total_referrals' => count($myRef['referrals']),
             'rewards_earned' => $myRef['rewards'],
-            'referral_link' => 'https://quantuminstitut.market/register.html?ref=' . $myRef['code'],
+            'referral_link' => 'https://quantum-institut.com/register.html?ref=' . $myRef['code'],
         ]
     ]);
     exit();

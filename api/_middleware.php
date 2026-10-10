@@ -19,8 +19,10 @@ if (!defined('QI_DEV')) {
 // 1. CORS YANG KETAT — Hanya izinkan origin terpercaya
 // =============================================
 $allowedOrigins = [
+    'https://quantum-institut.com',
+    'https://www.quantum-institut.com',
     'https://quantum-institut-terminal.vercel.app',
-    'https://quantuminstitut.market',
+    'https://quantum-institut.com',
     'http://localhost',
     'http://localhost:3000',
     'http://127.0.0.1',
