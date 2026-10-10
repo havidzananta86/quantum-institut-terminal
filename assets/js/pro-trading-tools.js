@@ -597,7 +597,7 @@
 • Risk/Reward  : ${ratio}
 • Mesin Analisa: Quantum SNR & SMC Algorithmic
 ═════════════════════════════════════
-Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
+Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
 
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(textPlan).then(() => {
@@ -2169,8 +2169,9 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantuminstitut.market`;
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
-                if (Array.isArray(data)) {
-                    this.events = data;
+                const events = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
+                if (events) {
+                    this.events = events;
                     this.evaluateAlerts();
                 } else {
                     throw new Error('Format data invalid');

@@ -3,7 +3,7 @@
  * Application Settings Configuration
  */
 define('APP_NAME', 'Quantum Institut Market Terminal');
-define('APP_DOMAIN', 'quantuminstitut.market');
+define('APP_DOMAIN', 'quantum-institut.com');
 define('APP_ENV', 'production');
 define('APP_TIMEZONE', 'Asia/Jakarta');
 

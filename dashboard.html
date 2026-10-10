@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="canonical" href="https://quantuminstitut.market/dashboard.html">
+    <link rel="canonical" href="https://quantum-institut.com/dashboard.html">
     <title>Quantum Command Center | Quantum Institut Market Terminal</title>
     <meta name="description" content="Dashboard intelijen pasar real-time: harga live, kekuatan mata uang, kalender ekonomi, dan sembilan mesin analisa Quantum Institut.">
     <meta property="og:title" content="Quantum Command Center | Quantum Institut">
     <meta property="og:description" content="Dashboard intelijen pasar real-time: harga live, kekuatan mata uang, kalender ekonomi, dan sembilan mesin analisa Quantum Institut.">
-    <meta property="og:image" content="https://quantuminstitut.market/assets/img/icon-512.png">
-    <meta property="og:url" content="https://quantuminstitut.market/dashboard.html">
+    <meta property="og:image" content="https://quantum-institut.com/assets/img/icon-512.png">
+    <meta property="og:url" content="https://quantum-institut.com/dashboard.html">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#00E5FF">
     <link rel="manifest" href="manifest.json">
@@ -2734,7 +2734,8 @@ async function fetchMarketData() {
         renderTicker(_lastPrices);
         renderMarketTape(_lastPrices);
         renderStatCards(_lastPrices);
-        document.getElementById('tapeUpdated').textContent = new Date().toLocaleTimeString('id-ID');
+        const tapeUpd = document.getElementById('tapeUpdated');
+        if (tapeUpd) tapeUpd.textContent = new Date().toLocaleTimeString('id-ID');
         updateWatchlistPrices();
         // Pro features: floating ticker + price alerts
         var flatPrices = {};
@@ -3480,7 +3481,7 @@ async function fetchNewsImpact() {
         if (!rows.length) { body.innerHTML = '<tr><td colspan="11" class="px-4 py-6 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
         body.innerHTML = rows.map((r, i) => {
             const impCls  = r.impact==='HIGH'?'badge-high':r.impact==='MED'?'badge-med':'badge-low';
-            const avgPips = _impactWin==='30m' ? r.avg30m : r.avg1h;
+            const avgPips = (_impactWin==='30m' ? r.avg30m : r.avg1h) ?? 0;
             const barW    = Math.min(100, avgPips / 100 * 100);
             const consCls = r.cons >= 50 ? 'text-qi-green' : r.cons >= 30 ? 'text-qi-gold' : 'text-slate-400';
             return `<tr class="border-b border-qi-border/40 hover:bg-white/[.015] transition-colors">
@@ -5228,7 +5229,8 @@ async function ptUpdateLivePrice() {
                 : `api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&tf=1&limit=2`;
             const r = await fetch(url);
             const j = await r.json();
-            const price = j.price ? parseFloat(j.price) : (j.candles || j).slice(-1)[0]?.close;
+            const candles = j.candles || (Array.isArray(j) ? j : []);
+            const price = j.price ? parseFloat(j.price) : candles.length ? candles.slice(-1)[0]?.close : null;
             if (price) { d = { price }; _lastPrices[sym] = d; }
         } catch(e) {}
     }
@@ -6468,32 +6470,41 @@ async function fetchFearGreed() {
     try {
         const r = await fetch('https://api.alternative.me/fng/?limit=1');
         const j = await r.json();
+        if (!j.data?.length) return;
         const val = parseInt(j.data[0].value);
         const label = j.data[0].value_classification;
-        document.getElementById('ctFGValue').textContent = val;
-        document.getElementById('ctFGValue').className = `text-4xl font-mono font-bold ${val >= 60 ? 'text-qi-green' : val <= 30 ? 'text-qi-red' : 'text-yellow-400'}`;
-        document.getElementById('ctFGLabel').textContent = label;
-        document.getElementById('ctFGLabel').className = `text-xs mt-1 font-semibold ${val >= 60 ? 'text-qi-green' : val <= 30 ? 'text-qi-red' : 'text-yellow-400'}`;
-        document.getElementById('ctFGBar').style.width = val + '%';
-    } catch(e) { document.getElementById('ctFGValue').textContent = 'N/A'; }
+        const valEl = document.getElementById('ctFGValue');
+        const lblEl = document.getElementById('ctFGLabel');
+        const barEl = document.getElementById('ctFGBar');
+        const cls = val >= 60 ? 'text-qi-green' : val <= 30 ? 'text-qi-red' : 'text-yellow-400';
+        if (valEl) { valEl.textContent = val; valEl.className = `text-4xl font-mono font-bold ${cls}`; }
+        if (lblEl) { lblEl.textContent = label; lblEl.className = `text-xs mt-1 font-semibold ${cls}`; }
+        if (barEl) barEl.style.width = val + '%';
+    } catch(e) {
+        const el = document.getElementById('ctFGValue');
+        if (el) el.textContent = 'N/A';
+    }
 }
 
 async function fetchIDRRates() {
     try {
-        // Get USD/IDR via server-side proxy (avoids CSP + CORS)
         const rateR = await fetch('api/crypto-futures.php?action=idr');
         const rateJ = await rateR.json();
         const usdIdr = rateJ.rate || 0;
-        document.getElementById('ctUSDIDR').textContent = usdIdr > 0 ? 'Rp ' + usdIdr.toLocaleString('id-ID', {maximumFractionDigits:0}) : '—';
+        const idrEl = document.getElementById('ctUSDIDR');
+        if (idrEl) idrEl.textContent = usdIdr > 0 ? 'Rp ' + usdIdr.toLocaleString('id-ID', {maximumFractionDigits:0}) : '—';
 
-        // Get crypto prices and convert
         const cryptoR = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SOLUSDT"]');
         const cryptoJ = await cryptoR.json();
+        if (!Array.isArray(cryptoJ)) return;
         const prices = Object.fromEntries(cryptoJ.map(p => [p.symbol, parseFloat(p.price)]));
         if (usdIdr > 0) {
-            document.getElementById('ctBTCIDR').textContent = 'Rp ' + (prices.BTCUSDT * usdIdr / 1e6).toFixed(1) + 'M';
-            document.getElementById('ctETHIDR').textContent = 'Rp ' + (prices.ETHUSDT * usdIdr / 1e6).toFixed(2) + 'M';
-            document.getElementById('ctSOLIDR').textContent = 'Rp ' + (prices.SOLUSDT * usdIdr / 1e3).toFixed(0) + 'K';
+            const btcEl = document.getElementById('ctBTCIDR');
+            const ethEl = document.getElementById('ctETHIDR');
+            const solEl = document.getElementById('ctSOLIDR');
+            if (btcEl) btcEl.textContent = 'Rp ' + (prices.BTCUSDT * usdIdr / 1e6).toFixed(1) + 'M';
+            if (ethEl) ethEl.textContent = 'Rp ' + (prices.ETHUSDT * usdIdr / 1e6).toFixed(2) + 'M';
+            if (solEl) solEl.textContent = 'Rp ' + (prices.SOLUSDT * usdIdr / 1e3).toFixed(0) + 'K';
         }
     } catch(e) {}
 }
@@ -6503,13 +6514,18 @@ async function fetchGlobalMarket() {
         const r = await fetch('https://api.coingecko.com/api/v3/global');
         const j = await r.json();
         const d = j.data;
+        if (!d) return;
         const dom = d.market_cap_percentage?.btc?.toFixed(1);
-        const mc  = (d.total_market_cap?.usd / 1e12).toFixed(2);
-        const vol = (d.total_volume?.usd / 1e9).toFixed(1);
-        if (dom) document.getElementById('ctDomValue').textContent = dom + '%';
-        document.getElementById('ctDomNote').textContent = dom > 55 ? 'BTC dominan — altcoin lemah' : dom < 45 ? 'Altcoin season' : 'Market seimbang';
-        document.getElementById('ctGlobalMC').textContent = mc ? '$' + mc + 'T' : '—';
-        document.getElementById('ctVolume').textContent  = vol ? '$' + vol + 'B' : '—';
+        const mc  = d.total_market_cap?.usd ? (d.total_market_cap.usd / 1e12).toFixed(2) : null;
+        const vol = d.total_volume?.usd ? (d.total_volume.usd / 1e9).toFixed(1) : null;
+        const domVal = document.getElementById('ctDomValue');
+        const domNote = document.getElementById('ctDomNote');
+        const mcEl = document.getElementById('ctGlobalMC');
+        const volEl = document.getElementById('ctVolume');
+        if (dom && domVal) domVal.textContent = dom + '%';
+        if (domNote) domNote.textContent = parseFloat(dom) > 55 ? 'BTC dominan — altcoin lemah' : parseFloat(dom) < 45 ? 'Altcoin season' : 'Market seimbang';
+        if (mcEl) mcEl.textContent = mc ? '$' + mc + 'T' : '—';
+        if (volEl) volEl.textContent = vol ? '$' + vol + 'B' : '—';
     } catch(e) {}
 }
 
