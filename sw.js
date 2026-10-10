@@ -1,12 +1,12 @@
 /**
  * Quantum Institut Market Terminal — Service Worker
- * Versi: 1.4.0
- * Fungsi: Enable PWA install prompt + offline fallback caching
+ * Versi: 2.1.0
+ * #47 Improved cache strategy: stale-while-revalidate for assets, network-first for pages
  */
 
-const CACHE_NAME = 'quantum-terminal-v1.4.0';
+const CACHE_NAME = 'quantum-terminal-v2.1.0';
+const STATIC_CACHE = 'quantum-static-v2.1.0';
 
-// File inti yang di-cache untuk offline (relative to SW scope)
 const CORE_ASSETS = [
     'terminal.html',
     'index.html',
@@ -18,12 +18,17 @@ const CORE_ASSETS = [
     'assets/css/tokens.css',
     'assets/css/tailwind.css',
     'assets/js/main.js',
+    'assets/js/auth.js',
+    'assets/js/theme-toggle.js',
+    'assets/js/pro-features.js',
+    'assets/js/perf-upgrades.js',
+    'assets/js/error-tracker.js',
 ];
 
 // ── Install: cache core assets ────────────────────────────────
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
+        caches.open(STATIC_CACHE).then((cache) => {
             return cache.addAll(CORE_ASSETS).catch(() => {});
         }).then(() => self.skipWaiting())
     );
@@ -31,62 +36,77 @@ self.addEventListener('install', (event) => {
 
 // ── Activate: cleanup old caches ─────────────────────────────
 self.addEventListener('activate', (event) => {
+    const keep = [CACHE_NAME, STATIC_CACHE];
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter(name => name !== CACHE_NAME)
+                    .filter(name => !keep.includes(name))
                     .map(name => caches.delete(name))
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// ── Fetch: Network-first strategy ─────────────────────────────
-// Utamakan network (data realtime trading harus fresh),
-// fallback ke cache hanya jika network gagal
+// ── Fetch strategies ─────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Skip non-GET requests & cross-origin API calls (Binance, Yahoo, etc.)
     if (request.method !== 'GET') return;
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
     if (!url.origin.includes(self.location.origin)) return;
 
-    // Skip chrome-extension and devtools requests
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+    // API calls: network-only (trading data must be fresh)
+    if (url.pathname.includes('/api/')) return;
 
-    event.respondWith(
-        fetch(request)
-            .then(response => {
-                // Cache successful responses for static assets
-                if (response.ok && (
-                    request.url.includes('/assets/') ||
-                    request.url.includes('/manifest.json') ||
-                    request.url.endsWith('/terminal.html')
-                )) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, responseClone);
-                    });
-                }
-                return response;
-            })
-            .catch(() => {
-                // Network failed — try cache
-                return caches.match(request).then(cached => {
-                    if (cached) return cached;
-                    // Ultimate fallback for navigation requests
-                    if (request.mode === 'navigate') {
-                        return caches.match('terminal.html');
-                    }
-                    return new Response('Network Error', { status: 503 });
-                });
-            })
-    );
+    // Static assets (CSS, JS, images, fonts): stale-while-revalidate
+    if (url.pathname.includes('/assets/') || url.pathname.includes('/manifest.json')) {
+        event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+        return;
+    }
+
+    // HTML pages: network-first with cache fallback
+    event.respondWith(networkFirst(request, CACHE_NAME));
 });
 
-// ── Push Notification (future use) ───────────────────────────
+function staleWhileRevalidate(request, cacheName) {
+    return caches.open(cacheName).then(cache => {
+        return cache.match(request).then(cached => {
+            const networkFetch = fetch(request).then(response => {
+                if (response.ok) {
+                    cache.put(request, response.clone());
+                }
+                return response;
+            }).catch(() => {
+                return cached || new Response('', { status: 503 });
+            });
+            return cached || networkFetch;
+        });
+    });
+}
+
+function networkFirst(request, cacheName) {
+    return fetch(request)
+        .then(response => {
+            if (response.ok) {
+                const clone = response.clone();
+                caches.open(cacheName).then(cache => cache.put(request, clone));
+            }
+            return response;
+        })
+        .catch(() => {
+            return caches.match(request).then(cached => {
+                if (cached) return cached;
+                if (request.mode === 'navigate') {
+                    return caches.match('terminal.html');
+                }
+                return new Response('Network Error', { status: 503 });
+            });
+        });
+}
+
+// ── Push Notification ───────────────────────────────────────
 self.addEventListener('push', (event) => {
     if (!event.data) return;
     const data = event.data.json();
