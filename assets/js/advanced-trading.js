@@ -460,41 +460,64 @@ window.renderCotChart = renderCotChart;
 function renderLeaderboard() {
     var el = document.getElementById('leaderboardBody');
     if (!el) return;
-    var leaders = [
-        { rank: 1, name: 'QuantumAlpha', winRate: 78.5, pnl: 12450.80, trades: 156, badge: '🥇' },
-        { rank: 2, name: 'CryptoSamurai', winRate: 72.1, pnl: 9820.50, trades: 210, badge: '🥈' },
-        { rank: 3, name: 'GoldHunter_ID', winRate: 69.8, pnl: 8315.20, trades: 134, badge: '🥉' },
-        { rank: 4, name: 'ForexNinja99', winRate: 66.2, pnl: 6280.40, trades: 189, badge: '4' },
-        { rank: 5, name: 'SMC_Master', winRate: 64.5, pnl: 5190.15, trades: 98, badge: '5' },
-        { rank: 6, name: 'IchiTrader', winRate: 61.3, pnl: 4220.90, trades: 167, badge: '6' },
-        { rank: 7, name: 'PivotPro_JKT', winRate: 59.8, pnl: 3450.60, trades: 142, badge: '7' },
-        { rank: 8, name: 'TrendFollower', winRate: 57.2, pnl: 2890.30, trades: 225, badge: '8' },
-        { rank: 9, name: 'ScalperKing', winRate: 55.9, pnl: 2150.75, trades: 312, badge: '9' },
-        { rank: 10, name: 'NewbieTrader', winRate: 52.1, pnl: 890.20, trades: 45, badge: '10' },
-    ];
-    var ptSaved = null;
-    try { ptSaved = JSON.parse(localStorage.getItem('QI_PAPER_TRADING')); } catch(e) {}
-    if (ptSaved && ptSaved.history && ptSaved.history.length > 0) {
-        var myPnl = 0; ptSaved.history.forEach(function(h) { myPnl += (parseFloat(h.realizedPnL) || 0); });
-        var myWins = ptSaved.history.filter(function(h) { return (parseFloat(h.realizedPnL) || 0) > 0; }).length;
-        var myWR = ptSaved.history.length > 0 ? ((myWins / ptSaved.history.length) * 100).toFixed(1) : '0.0';
-        leaders.push({ rank: 0, name: 'Kamu ⭐', winRate: parseFloat(myWR), pnl: myPnl, trades: ptSaved.history.length, badge: '⭐', isMe: true });
-        leaders.sort(function(a, b) { return b.pnl - a.pnl; });
-        leaders.forEach(function(l, i) { l.rank = i + 1; });
+
+    var RANK_BADGE = ['🥇','🥈','🥉'];
+
+    function buildRows(leaders, myStats) {
+        if (!leaders.length) {
+            return '<tr><td colspan="5" class="px-3 py-8 text-center text-slate-500 text-xs">Belum ada data — mulai paper trading dulu!</td></tr>';
+        }
+        var html = '';
+        leaders.forEach(function(l) {
+            var badge  = l.rank <= 3 ? RANK_BADGE[l.rank - 1] : l.rank;
+            var pnlCls = l.total_pnl >= 0 ? 'text-qi-green' : 'text-qi-red';
+            var pnlStr = (l.total_pnl >= 0 ? '+' : '') + '$' + parseFloat(l.total_pnl).toFixed(2);
+            html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50">' +
+                '<td class="px-3 py-2 text-center font-bold ' + (l.rank <= 3 ? 'text-lg' : 'text-xs text-slate-500') + '">' + badge + '</td>' +
+                '<td class="px-3 py-2 font-semibold text-white text-xs">' + l.name + '</td>' +
+                '<td class="px-3 py-2 font-mono text-right text-xs">' + l.win_rate + '%</td>' +
+                '<td class="px-3 py-2 font-mono text-right text-xs font-bold ' + pnlCls + '">' + pnlStr + '</td>' +
+                '<td class="px-3 py-2 font-mono text-right text-xs text-slate-400">' + l.total_trades + '</td></tr>';
+        });
+        // Tambahkan baris "Kamu" di bawah jika tidak masuk top 10
+        if (myStats) {
+            var inTop = leaders.some(function(l) { return l.isMe; });
+            if (!inTop) {
+                var mePnlCls = myStats.total_pnl >= 0 ? 'text-qi-green' : 'text-qi-red';
+                var mePnlStr = (myStats.total_pnl >= 0 ? '+' : '') + '$' + parseFloat(myStats.total_pnl).toFixed(2);
+                var eligMsg  = myStats.eligible ? '' : '<span class="text-slate-600 ml-1">(butuh min 3 trade)</span>';
+                html += '<tr class="border-t-2 border-qi-cyan/30 bg-qi-cyan/5">' +
+                    '<td class="px-3 py-2 text-center text-xs text-slate-500">#' + myStats.rank + '</td>' +
+                    '<td class="px-3 py-2 font-semibold text-qi-cyan text-xs">Kamu ⭐' + eligMsg + '</td>' +
+                    '<td class="px-3 py-2 font-mono text-right text-xs">' + myStats.win_rate + '%</td>' +
+                    '<td class="px-3 py-2 font-mono text-right text-xs font-bold ' + mePnlCls + '">' + mePnlStr + '</td>' +
+                    '<td class="px-3 py-2 font-mono text-right text-xs text-slate-400">' + myStats.total_trades + '</td></tr>';
+            }
+        }
+        return html;
     }
 
-    var html = '';
-    leaders.forEach(function(l) {
-        var rankCls = l.isMe ? 'bg-qi-cyan/10 border-qi-cyan/30' : '';
-        var pnlCls = l.pnl >= 0 ? 'text-qi-green' : 'text-qi-red';
-        html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 ' + rankCls + '">' +
-            '<td class="px-3 py-2 text-center font-bold ' + (l.rank <= 3 ? 'text-lg' : 'text-xs text-slate-500') + '">' + l.badge + '</td>' +
-            '<td class="px-3 py-2 font-semibold ' + (l.isMe ? 'text-qi-cyan' : 'text-white') + ' text-xs">' + l.name + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right text-xs">' + l.winRate + '%</td>' +
-            '<td class="px-3 py-2 font-mono text-right text-xs font-bold ' + pnlCls + '">' + (l.pnl >= 0 ? '+' : '') + '$' + l.pnl.toFixed(2) + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right text-xs text-slate-400">' + l.trades + '</td></tr>';
-    });
-    el.innerHTML = html;
+    // Loading state
+    el.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-slate-500 text-xs">Memuat leaderboard...</td></tr>';
+
+    var token = null;
+    try { var s = localStorage.getItem('qi_session'); if (s) token = JSON.parse(s).token || null; } catch(e) {}
+
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    fetch('api/leaderboard.php', { cache: 'no-store', headers: headers })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                el.innerHTML = buildRows(data.leaderboard, data.my_stats);
+            } else {
+                el.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-rose-400 text-xs">Gagal memuat data.</td></tr>';
+            }
+        })
+        .catch(function() {
+            el.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-slate-500 text-xs">Tidak dapat terhubung ke server.</td></tr>';
+        });
 }
 window.renderLeaderboard = renderLeaderboard;
 
