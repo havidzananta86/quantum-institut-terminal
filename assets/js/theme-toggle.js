@@ -15,7 +15,7 @@
   var root = document.documentElement;
 
   function apply(theme) {
-    if (THEMES.indexOf(theme) === -1) theme = 'navy';
+    if (THEMES.indexOf(theme) === -1) theme = 'oled-black';
     root.setAttribute('data-theme', theme);
     if (theme === 'oled-white') {
       root.classList.remove('dark');
@@ -46,6 +46,11 @@
   var saved = null;
   try { saved = localStorage.getItem(KEY); } catch(e) {}
 
+  // Migrate users who had 'navy' saved → oled-black
+  if (saved === 'navy') {
+    try { localStorage.setItem(KEY, 'oled-black'); } catch(e) {}
+    saved = 'oled-black';
+  }
   if (saved && THEMES.indexOf(saved) !== -1) {
     apply(saved);
   } else {

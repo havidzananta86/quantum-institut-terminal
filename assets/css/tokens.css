@@ -1,26 +1,26 @@
 /*
  * Quantum Institut — Design Tokens
- * 3 themes: oled-white, oled-black, navy (default)
+ * 3 themes: oled-black (default), oled-white, navy
  *
  * Themes:
+ *   oled-black — bg #000000, surface #0A0A0A, text #F0F0F0 (pure black OLED, DEFAULT)
  *   oled-white — bg #FFFFFF, surface #F5F5F5, text #111111 (pure white OLED)
- *   oled-black — bg #000000, surface #0A0A0A, text #F0F0F0 (pure black OLED)
- *   navy       — bg #0B1220, surface #111C33, text #E2E8F0 (default dark navy)
+ *   navy       — bg #0B1220, surface #111C33, text #E2E8F0 (dark navy)
  */
 
-/* ── Default: Navy (dark) ── */
+/* ── Default: OLED Black ── */
 :root {
-  --qi-bg: #0B1220;
-  --qi-surface: #111C33;
-  --qi-card: #162040;
-  --qi-panel: #0D1629;
-  --qi-border: #1E293B;
-  --qi-text: #E2E8F0;
-  --qi-text-muted: #94A3B8;
-  --qi-text-inv: #0F172A;
-  --qi-navy: #3B82F6;
+  --qi-bg: #000000;
+  --qi-surface: #0A0A0A;
+  --qi-card: #111111;
+  --qi-panel: #050505;
+  --qi-border: #1A1A1A;
+  --qi-text: #F0F0F0;
+  --qi-text-muted: #888888;
+  --qi-text-inv: #000000;
+  --qi-navy: #4A90D9;
   --qi-accent: #60A5FA;
-  --qi-accent-soft: #1E3A5F;
+  --qi-accent-soft: #1A2A4A;
 
   --qi-cyan: #00E5FF;
   --qi-purple: #7C4DFF;
@@ -28,10 +28,10 @@
   --qi-red: #EF4444;
   --qi-gold: #F59E0B;
 
-  --qi-scrollbar: #1E293B;
-  --qi-chart-bg: #0B1220;
-  --qi-chart-grid: #0F1A2E;
-  --qi-chart-text: #64748B;
+  --qi-scrollbar: #222222;
+  --qi-chart-bg: #000000;
+  --qi-chart-grid: #111111;
+  --qi-chart-text: #666666;
   --qi-chart-crosshair: #00E5FF55;
 
   --qi-theme-transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
