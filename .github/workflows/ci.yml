@@ -1,0 +1,79 @@
+name: CI
+
+# Deploys happen by pushing to master, which Hostinger picks up
+# automatically. There is no gate between a push and production, so this
+# workflow is the one place a broken file can still be caught.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  checks:
+    name: Syntax and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, curl, json, pdo_mysql, gd
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint every PHP file
+        run: npm run test:php
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  smoke:
+    name: Cold-cache API smoke
+    runs-on: ubuntu-latest
+    # Hits live upstream price APIs, so a provider outage or rate limit can
+    # fail this without anything being wrong with the code. Reported, not
+    # enforced — the hard gate is the `checks` job above.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, curl, json, pdo_mysql, gd
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Start PHP dev server
+        run: |
+          php -S 127.0.0.1:8788 -t . > /tmp/php-server.log 2>&1 &
+          # health.php answers 503 while api keys are absent, which is fine
+          # here: we only need the socket to be accepting requests, so treat
+          # any HTTP status as ready and only fail on no connection at all.
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null "http://127.0.0.1:8788/api/health.php"; then
+              echo "server ready after ${i}s"; break
+            fi
+            sleep 1
+          done
+
+      - name: Cold-cache smoke test
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:8788
+        run: npm run test:smoke
+
+      - name: Server log on failure
+        if: failure()
+        run: tail -50 /tmp/php-server.log
