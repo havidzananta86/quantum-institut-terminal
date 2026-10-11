@@ -125,7 +125,7 @@
     </script>
 
     <!-- Design tokens + theme (must load before Tailwind) -->
-    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.3">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.4">
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
 
     <!-- Fonts -->
@@ -259,6 +259,9 @@
     })();
     </script>
 
+    <!-- Lewati navbar sticky (hanya muncul saat fokus keyboard) -->
+    <a href="#main-content" class="skip-link">Lompat ke konten utama</a>
+
     <!-- OLED BLACK BACKGROUND + subtle dot-grid texture (replaces particle canvas) -->
     <div class="qi-grid-bg"></div>
 
@@ -390,6 +393,8 @@
 
     <!-- 2. HERO SECTION RESPONSIF -->
     <!-- BREAKPOINT HERO: Mobile (center, heading 2rem), Tablet (heading 2.75rem), Desktop (split 50/50, heading 3.5rem) -->
+    <main id="main-content">
+
     <section id="terminal" class="relative pt-20 md:pt-24 lg:pt-28 pb-14 md:pb-20 lg:pb-28 z-10">
         <div class="qi-hero-mesh"></div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 relative z-10">
@@ -1411,6 +1416,8 @@
         </div>
     </section>
 
+
+    </main>
 
     <!-- 5. FOOTER RESPONSIF / SECTION BELAJAR -->
     <!-- BREAKPOINT FOOTER: Mobile (stack vertikal, center), Desktop (4 kolom horizontal) -->
