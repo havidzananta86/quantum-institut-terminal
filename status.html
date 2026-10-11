@@ -67,6 +67,7 @@
 
     <script>
     const ENDPOINTS = [
+        { name: 'Platform Health',    url: 'api/health.php',                                key: null,       expect: 'health' },
         { name: 'Live Price',         url: 'api/live-price.php?symbols=BTCUSDT',           key: 'status',  expect: 'success' },
         { name: 'Chart Data',         url: 'api/get-chart-data.php?symbol=BTCUSDT&interval=60', key: 'status', expect: 'success' },
         { name: 'Signals Engine',     url: 'api/signals.php?symbol=BTCUSDT&timeframe=D',    key: 'status',  expect: 'success' },
@@ -97,7 +98,18 @@
                 opts.body = JSON.stringify({ message: 'ping' });
             }
             const res = await fetch(ep.url, opts);
-            if (ep.expect === 'post_only') {
+            if (ep.expect === 'health') {
+                // health.php answers 503 while it is merely degraded (e.g. an
+                // optional API key missing). res.ok would be false there, so
+                // read the body regardless of the status code — otherwise a
+                // degraded-but-serving platform would be reported as "Down".
+                let data = null;
+                try { data = await res.json(); } catch (e) {}
+                if (!data || !data.status) return 'error';
+                if (data.status === 'ok' || data.status === 'healthy') return 'ok';
+                if (data.status === 'degraded') return 'warn';
+                return 'error';
+            } else if (ep.expect === 'post_only') {
                 return (res.status >= 200 && res.status < 500) ? 'ok' : 'error';
             } else if (ep.expect === 'array') {
                 if (res.ok) { const data = await res.json(); return Array.isArray(data) ? 'ok' : 'warn'; }
