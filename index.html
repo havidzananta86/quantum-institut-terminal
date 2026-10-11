@@ -64,6 +64,66 @@
     }
     </script>
 
+    <!-- Schema.org FAQPage — teks harus sama persis dengan FAQ yang terlihat
+         di halaman (#faq), karena Google memverifikasi kecocokan itu.
+         Perbarui blok ini bila teks FAQ diubah. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Apakah Quantum Institut memberi rekomendasi trading langsung?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Tidak. Quantum Institut adalah platform analisa dan edukasi. Semua sinyal bersifat informatif — keputusan trading sepenuhnya ada di tangan Anda. Kami bukan penasihat keuangan berlisensi."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah API key saya aman?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya. API key Anda dienkripsi dan disimpan server-side. Kami menggunakan SSL 256-bit, rate limiting, dan tidak pernah menyimpan password dalam plaintext. Data harga diambil langsung dari exchange tanpa menyimpan saldo atau posisi Anda."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Berapa akurasi sinyal secara real?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Win rate bervariasi per mesin dan per instrumen — rata-rata 60–80% berdasarkan data historis. Anda bisa melihat track record transparan langsung di dashboard. Namun, akurasi masa lalu tidak menjamin hasil di masa depan."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah sinyal ini kena pajak?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sinyal sendiri tidak dikenakan pajak. Namun keuntungan dari trading forex, crypto, atau emas di Indonesia bisa dikenakan pajak penghasilan sesuai aturan DJP. Konsultasikan dengan konsultan pajak Anda untuk detail spesifik."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bisa diakses dari HP?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya! Quantum Terminal adalah Progressive Web App (PWA) — bisa diinstall langsung di home screen Android dan iOS tanpa perlu download dari Play Store. Tampilan sudah dioptimalkan untuk layar mobile."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah ada garansi uang kembali?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, kami menyediakan garansi 7 hari uang kembali untuk semua paket PRO. Jika Anda tidak puas dengan layanan kami dalam 7 hari pertama, hubungi kami via Telegram untuk proses refund penuh."
+          }
+        }
+      ]
+    }
+    </script>
+
     <!-- Design tokens + theme (must load before Tailwind) -->
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.3">
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
