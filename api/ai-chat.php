@@ -7,6 +7,10 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(20, 60);
 
+// Tiap panggilan membakar kuota Groq API, jadi endpoint ini wajib login.
+// Rate limit per-IP saja tidak cukup — rotasi IP bisa menguras kuota.
+qi_require_auth();
+
 // Load Groq API key from config (add GROQ_API_KEY to config/api_keys.php)
 $groqKey = '';
 $apiKeysFile = __DIR__ . '/../config/api_keys.php';

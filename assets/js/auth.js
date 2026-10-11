@@ -21,6 +21,15 @@ const QuantumAuth = {
         }
     },
 
+    // Bangun header fetch lengkap dengan Bearer token bila sesi ada.
+    // Dipakai endpoint ber-qi_require_auth() supaya tidak balik 401.
+    authHeaders(extra) {
+        const headers = Object.assign({}, extra || {});
+        const token = this.getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return headers;
+    },
+
     saveSession(token, userData, remember = true) {
         try {
             const storage = remember ? localStorage : sessionStorage;

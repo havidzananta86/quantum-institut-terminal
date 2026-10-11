@@ -27,7 +27,7 @@
     <!-- Error Tracker — load first to catch all JS errors -->
     <script src="assets/js/error-tracker.js?v=1.4.0"></script>
     <!-- Auth must load before page renders so gate check fires immediately -->
-    <script src="assets/js/auth.js?v=1.4.0"></script>
+    <script src="assets/js/auth.js?v=1.4.3"></script>
     <!-- Tailwind (pre-built) -->
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.0">
     <!-- Responsive overrides -->
@@ -4281,7 +4281,7 @@ async function chartScreenshot() {
 
     try {
         const r = await fetch('api/ai-chat.php', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: QuantumAuth.authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 message: `Analisa chart ${sym} timeframe ${tf}. Berikan: 1) BIAS PASAR saat ini (Bullish/Bearish/Sideway), 2) Level kunci yang terlihat (S/R, EMA, Fib), 3) Setup ENTRY terbaik: arah BUY atau SELL, level entry, Stop Loss di mana, Take Profit di mana, dan alasannya. Jawab dalam bahasa Indonesia, singkat dan actionable.`,
                 history: [], context
@@ -5887,7 +5887,7 @@ async function sendAiMessage(preset) {
         if (Object.keys(_lastSignals).length) aiContext.signals = _lastSignals;
 
         const res  = await fetch('api/ai-chat.php', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: QuantumAuth.authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ message: text, history: _aiHistory.slice(-12), context: aiContext })
         });
         const data = await res.json();
@@ -6673,7 +6673,7 @@ async function fetchCryptoAIOutlook() {
             Object.entries(_lastPrices).filter(([k]) => k.endsWith('USDT')).slice(0,8).map(([k,v])=>[k,{price:v.price,chgPct:v.chgPct}])
         );
         const r = await fetch('api/ai-chat.php', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
+            method: 'POST', headers: QuantumAuth.authHeaders({'Content-Type':'application/json'}),
             body: JSON.stringify({
                 message: 'Berikan outlook harian untuk pasar crypto hari ini. Analisa Bitcoin, Ethereum, dan altcoin utama. Sertakan: 1) Sentimen pasar (bullish/bearish/sideways), 2) Level support dan resistance BTC penting, 3) Altcoin yang perlu diperhatikan, 4) Risiko utama yang perlu diwaspadai, 5) Rekomendasi trading singkat. Jawab dalam bahasa Indonesia yang jelas dan actionable.',
                 history: [], context: { prices }
