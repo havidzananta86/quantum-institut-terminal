@@ -10,9 +10,19 @@
  * Cara pakai: require_once __DIR__ . '/_middleware.php';
  */
 
-// Dev mode: nonaktifkan SSL verify hanya di localhost
+// Dev mode. JANGAN disimpulkan dari input klien: pada Apache dengan
+// UseCanonicalName Off (default), SERVER_NAME diambil dari header Host
+// kiriman klien, sehingga "localhost" bisa dipalsukan dari internet.
+// Fail closed — dianggap produksi kecuali terbukti berjalan lokal.
 if (!defined('QI_DEV')) {
-    define('QI_DEV', in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true));
+    $qiIsDev = false;
+    if (PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server') {
+        $qiIsDev = true;                                              // CLI/cron atau `php -S`
+    } elseif (in_array($_SERVER['SERVER_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
+        $qiIsDev = true;                                              // soket server memang loopback
+    }
+    define('QI_DEV', $qiIsDev);
+    unset($qiIsDev);
 }
 
 // =============================================

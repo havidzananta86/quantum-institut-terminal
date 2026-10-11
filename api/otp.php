@@ -45,13 +45,13 @@ if ($action === 'send') {
     ];
     file_put_contents($otpFile, json_encode($data));
 
-    // In production: send via email using PHPMailer or similar
-    // For demo, return code directly (DEV mode only)
-    $response = ['status' => 'success', 'message' => 'Kode OTP telah dikirim ke email Anda'];
+    // In production: send via email using PHPMailer or similar.
+    // Kode OTP tidak pernah dikembalikan lewat response — itu meniadakan
+    // gunanya OTP sebagai faktor kedua. Saat dev, baca dari log server.
     if (QI_DEV) {
-        $response['dev_otp'] = $code;
+        qi_log('debug', 'OTP dibuat (khusus dev)', ['email' => $email, 'code' => $code]);
     }
-    echo json_encode($response);
+    echo json_encode(['status' => 'success', 'message' => 'Kode OTP telah dikirim ke email Anda']);
     exit();
 }
 

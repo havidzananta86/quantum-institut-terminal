@@ -508,7 +508,7 @@ async function sendOtp() {
         if (d.status === 'success') {
             document.getElementById('otpVerifySection').classList.remove('hidden');
             status.className = 'mt-2 text-[11px] text-qi-green'; status.classList.remove('hidden');
-            status.textContent = d.dev_otp ? 'DEV: Kode OTP = ' + d.dev_otp : 'Kode OTP dikirim ke email Anda';
+            status.textContent = 'Kode OTP dikirim ke email Anda';
         } else {
             status.className = 'mt-2 text-[11px] text-qi-red'; status.classList.remove('hidden');
             status.textContent = d.message || 'Gagal mengirim OTP';
