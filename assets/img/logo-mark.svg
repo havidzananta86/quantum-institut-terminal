@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" role="img" aria-label="Quantum Institut">
+    <defs>
+        <linearGradient id="qiMarkFill" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00E5FF" stop-opacity=".1"/>
+            <stop offset="1" stop-color="#7C4DFF" stop-opacity=".06"/>
+        </linearGradient>
+        <linearGradient id="qiMarkStroke" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00E5FF" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#7C4DFF" stop-opacity=".4"/>
+        </linearGradient>
+    </defs>
+    <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#qiMarkFill)" stroke="url(#qiMarkStroke)" stroke-width="1.2"/>
+    <circle cx="20" cy="19" r="8" stroke="#00E5FF" stroke-width="1.6"/>
+    <path d="M25.5 24.5 30 29.5" stroke="#00E5FF" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M14.5 19 17 15.5 20 21 23 15.5 25.5 19" stroke="#7C4DFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
