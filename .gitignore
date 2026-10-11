@@ -26,7 +26,11 @@ desktop.ini
 
 # Node
 node_modules/
-package-lock.json
+# package-lock.json is deliberately NOT ignored. This is an application,
+# not a library: committing the lockfile is what makes `npm ci` install
+# the same tailwindcss build locally and in CI. Without it the generated
+# tailwind.css can drift between machines, which is how utility classes
+# went missing from the prebuilt stylesheet before.
 
 # Logs
 *.log
