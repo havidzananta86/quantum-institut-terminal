@@ -57,8 +57,9 @@ header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-QI-Token');
 header('Access-Control-Max-Age: 86400');
 
-// Handle preflight OPTIONS
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+// Handle preflight OPTIONS. REQUEST_METHOD is absent under CLI (cron),
+// where there is no preflight to answer.
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(204);
     exit();
 }
@@ -392,7 +393,11 @@ function qi_log(string $level, string $message, array $context = []): void {
     );
 }
 
-header('X-Request-ID: ' . QI_REQUEST_ID);
+// Under CLI there is no response to attach headers to, and emitting one
+// raises "headers already sent" noise in cron output.
+if (PHP_SAPI !== 'cli') {
+    header('X-Request-ID: ' . QI_REQUEST_ID);
+}
 
 // =============================================
 // 5. RATE LIMIT (per-endpoint)
