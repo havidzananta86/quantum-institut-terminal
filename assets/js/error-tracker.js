@@ -1,5 +1,10 @@
 (function() {
-  var ENDPOINT = '/api/error-log.php';
+  // Relative on purpose. A leading slash resolves against the domain root,
+  // so under a subdirectory deployment (XAMPP's localhost/webapp/, a staging
+  // path) every report would POST to a 404 and vanish — and this is the one
+  // thing that must not fail quietly, since it is how front-end errors get
+  // noticed at all. Every other API call in the codebase is relative too.
+  var ENDPOINT = 'api/error-log.php';
   var sent = 0;
   var MAX = 10;
 

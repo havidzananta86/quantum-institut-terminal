@@ -43,11 +43,15 @@ if (!$isCli) {
 // Retention per directory, in seconds. Key = directory under cache/,
 // pattern = filenames eligible for deletion (anything else is left alone).
 $RULES = [
-    'logs'      => ['pattern' => '/^app-\d{4}-\d{2}-\d{2}\.jsonl$/', 'max_age' => 14 * 86400],
-    'ratelimit' => ['pattern' => '/^[0-9a-f]{32}\.json$/',           'max_age' => 3600],
-    'otp'       => ['pattern' => '/^[0-9a-f]{32}\.json$/',           'max_age' => 3600],
-    'chart'     => ['pattern' => '/^[0-9a-f]{32}\.json$/',           'max_age' => 86400],
-    'td'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',           'max_age' => 86400],
+    'logs'      => ['pattern' => '/^app-\d{4}-\d{2}-\d{2}\.jsonl$/',    'max_age' => 14 * 86400],
+    // Written by api/error-log.php, one file per day, from browser errors.
+    // Kept longer than app logs: it is the only record of client-side
+    // failures, and a bug reported days later still needs its trace.
+    'errorlogs' => ['pattern' => '/^errors-\d{4}-\d{2}-\d{2}\.jsonl$/', 'max_age' => 30 * 86400],
+    'ratelimit' => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
+    'otp'       => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
+    'chart'     => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    'td'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
 ];
 
 $cacheRoot = realpath(__DIR__ . '/../cache');
