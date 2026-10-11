@@ -311,11 +311,19 @@ summary:focus-visible,
   outline-offset: -2px;
 }
 
-/* ── Spacing utilities absent from the pre-built Tailwind build ──
-   The prebuilt tailwind.css only ships py-0..6,8,10,12,16. Anything
-   outside that scale (py-14, pt-20, mb-12, px-7, gap-x-*, and most
-   sm:/md:/lg: spacing variants) silently resolved to no padding,
-   which collapsed section spacing on small screens. */
+/* ── Spacing utilities: safety net for a stale tailwind.css ──
+   These were added when the committed tailwind.css had drifted out of
+   sync with the markup and lacked py-14, pt-20, mb-12, px-7, gap-x-*
+   and most sm:/md:/lg: spacing variants. Such a class matches no rule
+   and silently resolves to no spacing, which collapsed every section's
+   padding on small screens with nothing in the console to show for it.
+
+   tailwind.css has since been rebuilt and now carries all of them, so
+   these are duplicates rather than fixes. They are kept deliberately:
+   the stylesheet is a build artifact that is committed by hand, so it
+   can go stale again whenever someone edits markup without running
+   `npm run build:css`. Values match Tailwind's own scale exactly, so
+   whichever file wins the cascade the result is identical. */
 .p-7  { padding: 1.75rem; }
 .px-7 { padding-left: 1.75rem; padding-right: 1.75rem; }
 .py-7 { padding-top: 1.75rem; padding-bottom: 1.75rem; }
