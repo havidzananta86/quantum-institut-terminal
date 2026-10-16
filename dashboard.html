@@ -1580,6 +1580,11 @@ document.addEventListener('keydown', e => {
             <button id="indGX"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Golden / Death Cross Markers"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>G.Cross</button>
             <button id="indSND"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Supply & Demand Fresh Zones (Order Blocks)"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span>S&amp;D Zones</button>
             <button id="indVP"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Volume Profile & POC (Point of Control)"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"></span>VPVR / POC</button>
+            <button id="indPSAR"   data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Parabolic SAR (0.02 / 0.2) — titik hijau di bawah = trend naik, merah di atas = trend turun"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#26a69a"></span>PSAR</button>
+            <button id="indKC"     data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Keltner Channel (EMA20 ± 2×ATR10)"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#38bdf8"></span>Keltner</button>
+            <button id="indST"     data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="SuperTrend (ATR10 × 3)"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#ef5350"></span>SuperTrend</button>
+            <button id="indLIQ"    data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Liquidity Zone — equal highs (BSL) & equal lows (SSL) yang belum disapu harga"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#f5b942"></span>Liquidity</button>
+            <button id="indCDL"    data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Pola candlestick otomatis: Doji, Hammer, Shooting Star, Engulfing, Morning/Evening Star"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#a0a5b1"></span>Pola Candle</button>
             <span class="w-px h-4 bg-qi-border/60 mx-1 shrink-0"></span>
             <button onclick="setAllInds(true)"  class="shrink-0 px-2 py-0.5 rounded border border-qi-border text-slate-400 hover:text-qi-cyan hover:border-qi-cyan/30 text-[9px] transition-all font-mono" title="Aktifkan semua indikator">All ✓</button>
             <button onclick="setAllInds(false)" class="shrink-0 px-2 py-0.5 rounded border border-qi-border text-slate-400 hover:text-rose-400 hover:border-rose-500/30 text-[9px] transition-all font-mono" title="Nonaktifkan semua indikator">All ✕</button>
@@ -2442,6 +2447,17 @@ document.addEventListener('keydown', e => {
             <div class="px-4 pb-4 flex items-center gap-3">
                 <div class="text-[10px] text-slate-500 font-mono">Live: <span id="ptLivePrice" class="text-white font-semibold">—</span></div>
                 <button onclick="ptOpenPosition()" class="ml-auto px-4 py-2 rounded-lg font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">+ Buka Posisi</button>
+            </div>
+            <!-- Pengaman posisi: SL/TP otomatis, break-even, trailing stop (qim-trading-tools.js) -->
+            <div class="px-4 py-3 border-t border-qi-border flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-slate-400">
+                <span class="font-semibold text-slate-300 uppercase tracking-wider">Pengaman Posisi</span>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardExit" type="checkbox" onchange="QIMTools.saveGuardPrefs()"> SL/TP otomatis</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardBE" type="checkbox" onchange="QIMTools.saveGuardPrefs()"> Break-even di
+                    <input id="qtGuardBEAt" type="number" min="0.1" step="0.1" value="1" onchange="QIMTools.saveGuardPrefs()" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
+                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardTrail" type="checkbox" onchange="QIMTools.saveGuardPrefs()"> Trailing stop
+                    <input id="qtGuardTrailBy" type="number" min="0.1" step="0.1" value="1" onchange="QIMTools.saveGuardPrefs()" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
+                <span id="qtGuardStatus" class="ml-auto font-mono text-slate-500">—</span>
+                <p class="w-full text-slate-500 leading-relaxed">R = jarak SL awal ke entry. Break-even memindah SL ke entry saat profit mencapai nilai itu; trailing mulai di titik yang sama lalu mengikuti harga sejauh nilai R-nya. Dicek setiap 2 detik dari harga live.</p>
             </div>
         </div>
         <!-- Open positions -->
@@ -3358,6 +3374,90 @@ document.addEventListener('keydown', e => {
                 </div>
             </div>
         </div>
+
+        <!-- Kalkulator tambahan (qim-trading-tools.js) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Profit / Loss Calculator</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                        <select id="qtPnlSym" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="XAUUSD">XAU/USD</option><option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
+                            <option value="USDJPY">USD/JPY</option><option value="AUDUSD">AUD/USD</option><option value="NZDUSD">NZD/USD</option>
+                            <option value="USDCHF">USD/CHF</option><option value="USDCAD">USD/CAD</option><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option>
+                        </select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Arah</label>
+                        <select id="qtPnlSide" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Lot</label>
+                        <input id="qtPnlLots" type="number" value="1" step="0.01" min="0.01" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Balance ($, opsional)</label>
+                        <input id="qtPnlBalance" type="number" value="10000" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Harga Entry</label>
+                        <input id="qtPnlEntry" type="number" step="any" placeholder="2650.00" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Harga Exit</label>
+                        <input id="qtPnlExit" type="number" step="any" placeholder="2665.00" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                </div>
+                <button onclick="QIMTools.calcPnl()" class="w-full py-2.5 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30 transition-colors">Hitung P&amp;L</button>
+                <div id="qtPnlResult"><div class="text-center text-slate-600 text-xs py-4">Isi form lalu klik Hitung</div></div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Margin &amp; Leverage Calculator</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                        <select id="qtMgSym" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="XAUUSD">XAU/USD</option><option value="EURUSD">EUR/USD</option><option value="GBPUSD">GBP/USD</option>
+                            <option value="USDJPY">USD/JPY</option><option value="AUDUSD">AUD/USD</option><option value="NZDUSD">NZD/USD</option>
+                            <option value="USDCHF">USD/CHF</option><option value="USDCAD">USD/CAD</option><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option>
+                        </select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Lot</label>
+                        <input id="qtMgLots" type="number" value="1" step="0.01" min="0.01" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Harga</label>
+                        <input id="qtMgPrice" type="number" step="any" placeholder="2650.00" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Leverage (1:x)</label>
+                        <input id="qtMgLeverage" type="number" value="100" min="1" step="1" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div class="col-span-2"><label class="text-[10px] text-slate-500 block mb-1">Balance ($, opsional)</label>
+                        <input id="qtMgBalance" type="number" value="10000" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                </div>
+                <button onclick="QIMTools.calcMargin()" class="w-full py-2.5 rounded-xl bg-qi-gold/20 border border-qi-gold/40 text-qi-gold text-xs font-semibold hover:bg-qi-gold/30 transition-colors">Hitung Margin</button>
+                <div id="qtMgResult"><div class="text-center text-slate-600 text-xs py-4">Isi form lalu klik Hitung</div></div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Risk of Ruin (Monte Carlo)</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Win Rate (%)</label>
+                        <input id="qtRrWin" type="number" value="45" min="1" max="99" step="1" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Rata-rata RR (win ÷ loss)</label>
+                        <input id="qtRrPayoff" type="number" value="2" min="0.1" step="0.1" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Risiko per Trade (%)</label>
+                        <input id="qtRrRisk" type="number" value="2" min="0.1" max="100" step="0.1" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Batas Ruin (DD %)</label>
+                        <input id="qtRrRuin" type="number" value="50" min="1" max="100" step="1" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                    <div class="col-span-2"><label class="text-[10px] text-slate-500 block mb-1">Jumlah Trade</label>
+                        <input id="qtRrTrades" type="number" value="200" min="10" max="2000" step="10" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                </div>
+                <button onclick="QIMTools.calcRuin()" class="w-full py-2.5 rounded-xl bg-qi-purple/20 border border-qi-purple/40 text-qi-purple text-xs font-semibold hover:bg-qi-purple/30 transition-colors">Simulasikan</button>
+                <div id="qtRrResult"><div class="text-center text-slate-600 text-xs py-4">Isi statistik strategi lalu klik Simulasikan</div></div>
+            </div>
+            <div class="bg-qi-card border border-qi-border rounded-2xl p-4 space-y-3">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Backtest + Monte Carlo</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Pair</label>
+                        <select id="qtBtSym" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option><option value="SOLUSDT">SOL/USDT</option>
+                            <option value="BNBUSDT">BNB/USDT</option><option value="XRPUSDT">XRP/USDT</option>
+                        </select></div>
+                    <div><label class="text-[10px] text-slate-500 block mb-1">Timeframe</label>
+                        <select id="qtBtTf" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none">
+                            <option value="15">M15</option><option value="60" selected>H1</option><option value="240">H4</option><option value="D">D1</option>
+                        </select></div>
+                    <div class="col-span-2"><label class="text-[10px] text-slate-500 block mb-1">Risiko per Trade (%)</label>
+                        <input id="qtBtRisk" type="number" value="2" min="0.5" max="10" step="0.5" class="w-full bg-qi-panel border border-qi-border rounded-lg px-3 py-2 text-xs text-white font-mono focus:border-qi-cyan outline-none"></div>
+                </div>
+                <button id="qtBtRun" onclick="QIMTools.runBacktestMC()" class="w-full py-2.5 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30 transition-colors">Jalankan Backtest + Monte Carlo</button>
+                <div id="qtBtResult"><div class="text-center text-slate-600 text-xs py-4">Strategi SMA 9/21 cross pada data candle asli (kripto)</div></div>
+            </div>
+        </div>
     </div>
 
     <!-- ══ PANEL: Price Alerts (#2) ══ -->
@@ -3606,6 +3706,9 @@ document.addEventListener('keydown', e => {
                     <option value="XRPUSDT">XRP/USDT</option><option value="DOGEUSDT">DOGE/USDT</option>
                 </select>
                 <button onclick="addToWatchlist()" class="bg-qi-cyan/20 text-qi-cyan border border-qi-cyan/30 rounded-lg px-3 py-1.5 text-[11px] font-semibold hover:bg-qi-cyan/30 transition">+ Add</button>
+                <button onclick="QIMTools.exportWatchlist()" title="Unduh watchlist sebagai file JSON" class="border border-qi-border text-slate-300 rounded-lg px-3 py-1.5 text-[11px] font-semibold hover:border-qi-cyan/40 hover:text-qi-cyan transition">⤓ Export</button>
+                <label title="Impor dari file JSON QIM, array JSON, atau teks/CSV berisi simbol" class="border border-qi-border text-slate-300 rounded-lg px-3 py-1.5 text-[11px] font-semibold hover:border-qi-cyan/40 hover:text-qi-cyan transition cursor-pointer">⤒ Import
+                    <input type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" class="hidden" onchange="QIMTools.importWatchlist(this)"></label>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-[10px] font-mono">
@@ -4119,6 +4222,8 @@ document.addEventListener('keydown', e => {
 ═══════════════════════════════════════════════════════════ -->
 <script src="assets/js/dashboard-app.js?v=2.0.9"></script>
 <script src="assets/js/qim-dashboard.js?v=1.4.0"></script>
+<script src="assets/js/qim-indicators.js?v=1.0.0"></script>
+<script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
 
 <!-- Sidebar toggle floating button -->
 <button id="sbToggleBtn" onclick="toggleSidebar()" title="Toggle sidebar">

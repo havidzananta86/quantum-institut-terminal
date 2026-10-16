@@ -7,7 +7,7 @@
     "watch:css": "tailwindcss -i assets/css/tailwind-input.css -o assets/css/tailwind.css --watch",
     "test": "npm run test:php && npm run test:unit",
     "test:php": "node tests/php-syntax.test.js",
-    "test:unit": "node tests/correlation.test.js",
+    "test:unit": "node tests/correlation.test.js && node tests/qim-tools.test.js",
     "test:smoke": "node tests/api-smoke.test.js"
   },
   "devDependencies": {
