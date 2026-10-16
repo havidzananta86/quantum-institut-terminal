@@ -41,6 +41,39 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
     exit();
 }
 
+// Single-flight: saat cache kedaluwarsa hanya SATU request yang mengambil data upstream
+// (terukur ~9 dtk). Request lain langsung menerima cache terakhir (≤10 menit) alih-alih
+// ikut antre — tanpa ini polling chart menumpuk sampai 30 dtk dan melambatkan semua API.
+// Selalu LOCK_NB: flock blocking di PHP/Apache Windows terbukti membuat penunggu macet >60 dtk.
+$qiChartLock = @fopen($cacheFile . '.lock', 'c');
+if ($qiChartLock && !flock($qiChartLock, LOCK_EX | LOCK_NB)) {
+    fclose($qiChartLock);
+    $qiChartLock = null;
+    $qiChartDeadline = microtime(true) + 15;
+    while ((!is_file($cacheFile) || (time() - filemtime($cacheFile)) >= 600) && microtime(true) < $qiChartDeadline) {
+        usleep(250000);
+        clearstatcache(true, $cacheFile);
+    }
+    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < 600) {
+        if (!defined('QI_INCLUDED_BY_SIGNALS')) header('X-QI-Cache: STALE');
+        echo file_get_contents($cacheFile);
+        if (defined('QI_INCLUDED_BY_SIGNALS')) return;
+        exit();
+    }
+}
+if ($qiChartLock) {
+    clearstatcache(true, $cacheFile);
+    if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+        flock($qiChartLock, LOCK_UN);
+        fclose($qiChartLock);
+        $qiChartLock = null;
+        if (!defined('QI_INCLUDED_BY_SIGNALS')) header('X-QI-Cache: HIT');
+        echo file_get_contents($cacheFile);
+        if (defined('QI_INCLUDED_BY_SIGNALS')) return;
+        exit();
+    }
+}
+
 /**
  * Ambil URL dengan curl (cepat) atau fallback file_get_contents.
  */
@@ -299,6 +332,11 @@ $payload = json_encode([
 // Simpan ke cache hanya jika data nyata (jangan cache candle simulasi)
 if (!$simulated) {
     @file_put_contents($cacheFile, $payload, LOCK_EX);
+}
+if (!empty($qiChartLock)) {
+    flock($qiChartLock, LOCK_UN);
+    fclose($qiChartLock);
+    $qiChartLock = null;
 }
 
 header('X-QI-Cache: MISS');

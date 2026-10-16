@@ -92,9 +92,14 @@
         if (volume) volume.textContent = data && Number(data.vol) > 0 ? Number(data.vol).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
     }
 
+    let pricesInFlight = false;
     async function refreshPrices() {
+        if (pricesInFlight) return;
+        pricesInFlight = true;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
         try {
-            const response = await fetch('api/live-price.php?symbols=BTCUSDT,ETHUSDT,EURUSD,XAUUSD', { cache: 'no-store' });
+            const response = await fetch('api/live-price.php?symbols=BTCUSDT,ETHUSDT,EURUSD,XAUUSD', { cache: 'no-store', signal: controller.signal });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
             if (!result || result.status !== 'success' || !result.prices) throw new Error('Format data harga tidak valid');
@@ -107,6 +112,9 @@
             const target = document.getElementById('qimWatchlistRows');
             if (target && !Object.keys(prices).length) target.replaceChildren(node('div', 'qim-muted', 'Data harga belum tersedia.'));
             console.warn('[QIM] Harga ringkasan tidak dapat dimuat:', error.message);
+        } finally {
+            clearTimeout(timer);
+            pricesInFlight = false;
         }
     }
 
@@ -162,7 +170,7 @@
     async function refreshBrokerStatus() {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 5000);
+            const timer = setTimeout(() => controller.abort(), 15000);
             const headers = typeof window.QuantumAuth !== 'undefined' && window.QuantumAuth.authHeaders
                 ? window.QuantumAuth.authHeaders() : {};
             const response = await fetch('api/account-analytics.php', { headers, cache: 'no-store', signal: controller.signal });
