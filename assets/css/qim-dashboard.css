@@ -41,7 +41,8 @@
 }
 
 html, body { background: var(--qim-bg) !important; color: var(--qim-text); }
-body { display: grid !important; grid-template: 56px minmax(0, 1fr) / 240px minmax(0, 1fr) 320px; }
+body { --qim-sb:240px; --qim-rp:320px; display: grid !important; grid-template: 56px minmax(0, 1fr) / var(--qim-sb) minmax(0, 1fr) var(--qim-rp); }
+body:has(#sidebar.sidebar-collapsed) { --qim-sb:0px; }
 
 .qim-header {
     grid-area: 1 / 1 / 2 / 4;
@@ -80,8 +81,8 @@ body { display: grid !important; grid-template: 56px minmax(0, 1fr) / 240px minm
 #sidebar {
     grid-area: 2 / 1 / 3 / 2;
     position:relative !important;
-    width:240px !important;
-    min-width:240px !important;
+    width:var(--qim-sb) !important;
+    min-width:var(--qim-sb) !important;
     height:auto !important;
     max-height:none;
     overflow-x:hidden;
@@ -128,7 +129,14 @@ body { display: grid !important; grid-template: 56px minmax(0, 1fr) / 240px minm
 .qim-broker-row b, .qim-broker-row small { display:block; }.qim-broker-row b { font-size:10px; }.qim-broker-row small { margin-top:2px; color:var(--qim-muted); font-size:8px; }
 .qim-broker-status { color:var(--qim-green); font-size:8px; white-space:nowrap; }.qim-broker-status i { display:inline-block; width:7px; height:7px; margin-right:3px; border-radius:50%; background:currentColor; }
 .qim-broker-status.is-offline { color:var(--qim-red); }
-#dashNav { min-height:0; }
+/* Sidebar sendiri yang di-scroll; anak-anaknya tidak boleh menyusut, kalau tidak isi menu
+   meluap menimpa footer (Install App / Profil Saya). */
+#sidebar > * { flex-shrink:0; }
+#dashNav { flex:0 0 auto; min-height:0; }
+/* Di tengah tepi sidebar: tidak menimpa menu, footer, maupun logo atribusi TradingView di kiri-bawah chart. */
+#sbToggleBtn { position:fixed !important; left:calc(var(--qim-sb) - 8px) !important; top:50% !important; bottom:auto !important; transform:translateY(-50%); width:24px !important; height:24px !important; font-size:13px !important; transition:border-color .2s, color .2s !important; }
+/* Selektor saudara langsung: Chrome tidak selalu menerapkan ulang var dari body:has() ke tombol ini. */
+#sidebar.sidebar-collapsed ~ #sbToggleBtn { left:6px !important; }
 
 #mainContent { grid-area:2 / 2 / 3 / 3; min-width:0; min-height:0; background:var(--qim-bg); }
 #appHeader { display:none !important; }
@@ -169,24 +177,21 @@ body.charts-active #panelTitleBar { display:none !important; }
 .qim-equity-rows { padding:0 10px 8px; }.qim-equity-rows div { display:flex; justify-content:space-between; padding:4px 0; font-size:9px; }.qim-equity-rows span { color:var(--qim-muted); }.qim-equity-rows b { color:var(--qim-text); font-family:'JetBrains Mono',monospace; font-weight:500; }
 
 @media (max-width:1440px) {
-    body { grid-template-columns:220px minmax(0,1fr) 290px; }
-    #sidebar { width:220px !important; min-width:220px !important; }
+    body { --qim-sb:220px; --qim-rp:290px; }
     .qim-brand { width:270px; min-width:220px; }
     .qim-top-link { padding:0 9px; }
 }
 @media (max-width:1280px) {
-    body { grid-template-columns:200px minmax(0,1fr) 265px; }
-    #sidebar { width:200px !important; min-width:200px !important; }
+    body { --qim-sb:200px; --qim-rp:265px; }
     .qim-brand { width:250px; min-width:200px; }
 }
 @media (max-width:1080px) {
-    body { grid-template-columns:185px minmax(0,1fr) 240px; }
-    #sidebar { width:185px !important; min-width:185px !important; }
+    body { --qim-sb:185px; --qim-rp:240px; }
     .qim-brand { width:230px; min-width:185px; }
     #qimRightPanel { padding:6px; gap:6px; }
 }
 @media (max-width:900px) {
-    body { grid-template-columns:185px minmax(0,1fr); }
+    body { grid-template-columns:var(--qim-sb) minmax(0,1fr); }
     .qim-header { grid-column:1 / 3; }
     #qimRightPanel { display:none; }
     .qim-header-actions { padding-right:9px; gap:6px; }
