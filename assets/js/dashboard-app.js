@@ -3064,6 +3064,7 @@ const WL_GROUPS = [
         { label:'GBP/USD', key:'GBPUSD',  tv:'OANDA:GBPUSD' },
         { label:'USD/JPY', key:'USDJPY',  tv:'OANDA:USDJPY' },
         { label:'AUD/USD', key:'AUDUSD',  tv:'OANDA:AUDUSD' },
+        { label:'NZD/USD', key:'NZDUSD',  tv:'OANDA:NZDUSD' },
         { label:'USD/CHF', key:'USDCHF',  tv:'OANDA:USDCHF' },
         { label:'USD/CAD', key:'USDCAD',  tv:'OANDA:USDCAD' },
         { label:'GBP/JPY', key:'GBPJPY',  tv:'OANDA:GBPJPY' },
@@ -3956,7 +3957,11 @@ function lwClearAll() {
 }
 
 function setChartSymbolFull(key, tvSym, label) {
-    _tvSymbol   = tvSym;
+    // Kode `tv` yang dipakai chart SELALU yang ada di WL_GROUPS (lwFetchAndSetData mencarinya dengan
+    // kecocokan persis). Pemanggil lain (watchlist kolom kiri) boleh membawa kode `tv` lama, mis.
+    // BINANCE:BTCUSDT padahal chart memakai OANDA:BTCUSD — tanpa normalisasi ini chart menjadi kosong.
+    const entri = WL_GROUPS.flatMap(g => g.syms).find(s => s.key === key);
+    _tvSymbol   = entri ? entri.tv : tvSym;
     _tvSymLabel = label;
     updateChartHeader();
     renderWatchlist();

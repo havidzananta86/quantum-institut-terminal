@@ -1241,7 +1241,7 @@
     const NAMA_SIMBOL = {
         BTCUSDT: 'Bitcoin / TetherUS', ETHUSDT: 'Ethereum / TetherUS', SOLUSDT: 'Solana / TetherUS', BNBUSDT: 'BNB / TetherUS', XRPUSDT: 'XRP / TetherUS',
         XAUUSD: 'Gold / U.S. Dollar', EURUSD: 'Euro / U.S. Dollar', GBPUSD: 'British Pound / U.S. Dollar', USDJPY: 'U.S. Dollar / Japanese Yen',
-        AUDUSD: 'Australian Dollar / U.S. Dollar', USDCHF: 'U.S. Dollar / Swiss Franc', USDCAD: 'U.S. Dollar / Canadian Dollar',
+        AUDUSD: 'Australian Dollar / U.S. Dollar', NZDUSD: 'New Zealand Dollar / U.S. Dollar', USDCHF: 'U.S. Dollar / Swiss Franc', USDCAD: 'U.S. Dollar / Canadian Dollar',
         GBPJPY: 'British Pound / Japanese Yen', EURJPY: 'Euro / Japanese Yen'
     };
     const TF_UTAMA = [['1', '1m'], ['5', '5m'], ['15', '15m'], ['60', '1h'], ['240', '4h'], ['D', '1D'], ['W', '1W']];
