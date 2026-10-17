@@ -107,10 +107,22 @@ function cron_macd(array $c): float {
     $sig=cron_ema($s,9);$last=end($s);
     return $last-($sig??0);
 }
+/**
+ * Berkas cache candle yang dipakai, urut prioritas: cache feed broker MT5 (akhiran _mt5, ditulis
+ * get-chart-data.php) lalu cache umum (OANDA/sumber lama). MT5 dilewati bila jauh lebih basi
+ * (> 5 menit) daripada cache umum, misalnya bridge VPS sedang mati.
+ */
+function cron_chart_files(string $sym, string $iv): array {
+    $dir  = __DIR__.'/../cache/chart';
+    $umum = $dir.'/'.md5(strtoupper($sym).'_'.$iv).'.json';
+    $mt5  = $dir.'/'.md5(strtoupper($sym).'_'.$iv.'_mt5').'.json';
+    if (is_file($mt5) && (!is_file($umum) || (int)@filemtime($mt5) >= (int)@filemtime($umum) - 300)) return [$mt5, $umum];
+    return [$umum];
+}
 function cron_analyze(string $sym, string $iv): ?array {
-    $dir = __DIR__.'/../cache/chart';
-    $f   = $dir.'/'.md5($sym.'_'.$iv).'.json';
-    if (!file_exists($f)) return null;
+    $f = null;
+    foreach (cron_chart_files($sym, $iv) as $c) { if (file_exists($c)) { $f = $c; break; } }
+    if ($f === null) return null;
     $d = json_decode(file_get_contents($f),true);
     $candles = $d['candles'] ?? [];
     if (count($candles)<55) return null;
@@ -136,18 +148,34 @@ function get_ai_signal_cached(string $sym): ?array {
     return json_decode(file_get_contents($f), true);
 }
 
-// ── Harga terkini dari candle cache (tanpa API call tambahan) ────────────
-function get_current_price(string $sym): float {
-    // Coba H1 dulu, fallback ke D1
-    foreach (['60','D','240'] as $iv) {
-        $f = __DIR__.'/../cache/chart/'.md5($sym.'_'.$iv).'.json';
-        if (file_exists($f)) {
-            $d = json_decode(file_get_contents($f), true);
-            $candles = $d['candles'] ?? [];
-            if (!empty($candles)) return (float)end($candles)['close'];
+// ── Harga terkini ──────────────────────────────────────────────────────────
+// Utama: Bid/Ask live dari feed broker MT5 (bridge VPS), sama dengan chart LIVE · MT5.
+// Cadangan: close candle terakhir dari cache (MT5 lalu umum); saat itu Bid = Ask.
+function get_current_quote(string $sym): array {
+    static $memo = [];
+    if (isset($memo[$sym])) return $memo[$sym];
+    if (qi_tv_bridge_symbol($sym) !== null && qi_mt5_configured()) {
+        $q = qi_mt5_quotes([$sym])[strtoupper($sym)] ?? null;
+        if ($q && (float)$q['bid'] > 0 && (float)$q['ask'] >= (float)$q['bid']) {
+            return $memo[$sym] = ['bid' => (float)$q['bid'], 'ask' => (float)$q['ask'], 'source' => 'mt5'];
         }
     }
-    return 0;
+    // Coba H1 dulu, fallback ke D1
+    foreach (['60','D','240'] as $iv) {
+        foreach (cron_chart_files($sym, $iv) as $f) {
+            if (!file_exists($f)) continue;
+            $d = json_decode(file_get_contents($f), true);
+            $candles = $d['candles'] ?? [];
+            if (!empty($candles)) {
+                $p = (float)end($candles)['close'];
+                return $memo[$sym] = ['bid' => $p, 'ask' => $p, 'source' => (string)($d['source'] ?? 'cache')];
+            }
+        }
+    }
+    return $memo[$sym] = ['bid' => 0.0, 'ask' => 0.0, 'source' => ''];
+}
+function get_current_price(string $sym): float {
+    return get_current_quote($sym)['bid'];
 }
 
 // ── Step 1: Buka posisi baru berdasarkan AI signal ────────────────────────
@@ -208,7 +236,9 @@ foreach ($aiUsers as $u) {
         }
 
         $direction = $aiAction === 'ENTRY_BUY' ? 'BUY' : 'SELL';
-        $ep = $ep > 0 ? $ep : get_current_price($sym);
+        // Tanpa harga entry dari sinyal: BUY dibuka di Ask, SELL di Bid (seperti MT5).
+        $kini = get_current_quote($sym);
+        $ep = $ep > 0 ? $ep : ($direction === 'BUY' ? $kini['ask'] : $kini['bid']);
 
         $pdo->beginTransaction();
         try {
@@ -261,7 +291,9 @@ foreach ($openPositions as $pos) {
     $sl     = (float)($pos['stop_loss']   ?? 0);
     $dir    = $pos['direction'];
     $lots   = (float)$pos['lots'];
-    $cp     = get_current_price($sym);
+    // Seperti MT5: posisi BUY ditutup di Bid, posisi SELL ditutup di Ask.
+    $kini   = get_current_quote($sym);
+    $cp     = $dir === 'BUY' ? $kini['bid'] : $kini['ask'];
 
     if ($cp <= 0 || $tp <= 0 || $sl <= 0) continue; // data tidak cukup
 
@@ -287,7 +319,7 @@ foreach ($openPositions as $pos) {
          WHERE id=:id"
     )->execute([':cp'=>$closeAt,':pnl'=>$pnl,':id'=>(int)$pos['id']]);
 
-    cron_log("  [{$pos['user_id']}] {$sym} pos#{$pos['id']}: {$reason} at {$closeAt}, PnL={$pnl}");
+    cron_log("  [{$pos['user_id']}] {$sym} pos#{$pos['id']}: {$reason} at {$closeAt}, PnL={$pnl} (harga {$kini['source']})");
     $closedCount++;
 }
 
