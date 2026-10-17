@@ -1,14 +1,47 @@
 (function () {
     'use strict';
 
-    const SYMBOLS = [
-        { symbol: 'BTCUSDT', label: 'Bitcoin · TetherUS', icon: '₿', iconClass: 'btc', tv: 'BINANCE:BTCUSDT' },
-        { symbol: 'ETHUSDT', label: 'Ethereum · Tether', icon: '◆', iconClass: 'eth', tv: 'BINANCE:ETHUSDT' },
-        { symbol: 'EURUSD', label: 'Euro · US Dollar', icon: '◉', iconClass: 'fx', tv: 'OANDA:EURUSD' },
-        { symbol: 'XAUUSD', label: 'Gold · US Dollar', icon: 'Au', iconClass: 'gold', tv: 'OANDA:XAUUSD' },
-        { symbol: 'AAPL', label: 'Apple Inc.', icon: '●', iconClass: 'apple', tv: 'NASDAQ:AAPL', chartSupported: false },
-        { symbol: 'TSLA', label: 'Tesla Inc.', icon: 'T', iconClass: 'tesla', tv: 'NASDAQ:TSLA', chartSupported: false }
+    // Grup watchlist: Metals · Crypto · Forex · Saham. Harga: OANDA (emas, BTC, forex) & Binance (kripto lain).
+    const GROUPS = [
+        { key: 'metals', label: 'Metals' },
+        { key: 'crypto', label: 'Crypto' },
+        { key: 'forex',  label: 'Forex' },
+        { key: 'saham',  label: 'Saham' }
     ];
+    const SYMBOLS = [
+        { group: 'metals', symbol: 'XAUUSD', label: 'Gold · U.S. Dollar', icon: 'Au', iconClass: 'gold', tv: 'OANDA:XAUUSD' },
+        { group: 'crypto', symbol: 'BTCUSDT', label: 'Bitcoin · TetherUS', icon: '₿', iconClass: 'btc', tv: 'BINANCE:BTCUSDT' },
+        { group: 'crypto', symbol: 'ETHUSDT', label: 'Ethereum · Tether', icon: '◆', iconClass: 'eth', tv: 'BINANCE:ETHUSDT' },
+        { group: 'crypto', symbol: 'SOLUSDT', label: 'Solana · Tether', icon: '◎', iconClass: 'sol', tv: 'BINANCE:SOLUSDT' },
+        { group: 'crypto', symbol: 'BNBUSDT', label: 'BNB · Tether', icon: '◈', iconClass: 'bnb', tv: 'BINANCE:BNBUSDT' },
+        { group: 'forex', symbol: 'EURUSD', label: 'Euro · U.S. Dollar', icon: '€', iconClass: 'fx', tv: 'OANDA:EURUSD' },
+        { group: 'forex', symbol: 'GBPUSD', label: 'Pound · U.S. Dollar', icon: '£', iconClass: 'fx', tv: 'OANDA:GBPUSD' },
+        { group: 'forex', symbol: 'USDJPY', label: 'U.S. Dollar · Yen', icon: '¥', iconClass: 'fx', tv: 'OANDA:USDJPY' },
+        { group: 'forex', symbol: 'AUDUSD', label: 'Aussie · U.S. Dollar', icon: 'A$', iconClass: 'fx', tv: 'OANDA:AUDUSD' },
+        { group: 'forex', symbol: 'NZDUSD', label: 'Kiwi · U.S. Dollar', icon: 'N$', iconClass: 'fx', tv: 'OANDA:NZDUSD' },
+        { group: 'forex', symbol: 'USDCHF', label: 'U.S. Dollar · Franc', icon: '₣', iconClass: 'fx', tv: 'OANDA:USDCHF' },
+        { group: 'forex', symbol: 'USDCAD', label: 'U.S. Dollar · CAD', icon: 'C$', iconClass: 'fx', tv: 'OANDA:USDCAD' },
+        { group: 'forex', symbol: 'GBPJPY', label: 'Pound · Yen', icon: '£', iconClass: 'fx', tv: 'OANDA:GBPJPY' },
+        { group: 'forex', symbol: 'EURJPY', label: 'Euro · Yen', icon: '€', iconClass: 'fx', tv: 'OANDA:EURJPY' },
+        { group: 'saham', symbol: 'AAPL', label: 'Apple Inc.', icon: '●', iconClass: 'apple', tv: 'NASDAQ:AAPL', chartSupported: false },
+        { group: 'saham', symbol: 'TSLA', label: 'Tesla Inc.', icon: 'T', iconClass: 'tesla', tv: 'NASDAQ:TSLA', chartSupported: false }
+    ];
+    const LIVE_SYMBOLS = SYMBOLS.filter(item => item.chartSupported !== false).map(item => item.symbol).join(',');
+    function pairLabel(symbol) {
+        return /^[A-Z]{6}$/.test(symbol) ? symbol.slice(0, 3) + '/' + symbol.slice(3)
+            : symbol === 'BTCUSDT' ? 'BTC/USDT' : symbol;
+    }
+    // B/S hanya MEMBUKA panel Paper Trading dengan instrumen & arah terpilih; tidak mengeksekusi apa pun.
+    function openPaper(symbol, side) {
+        if (typeof window.switchPanel !== 'function') return;
+        window.switchPanel('panel-paper');
+        setTimeout(() => {
+            const sym = document.getElementById('ptSymbol');
+            if (sym && Array.from(sym.options).some(o => o.value === symbol)) { sym.value = symbol; sym.dispatchEvent(new Event('change')); }
+            const dir = document.getElementById('ptSide');
+            if (dir) { dir.value = side; dir.dispatchEvent(new Event('change')); }
+        }, 80);
+    }
     const FALLBACK_CURVES = {
         up: 'M1 16 L6 14 L10 15 L15 10 L20 12 L25 7 L30 8 L35 2',
         down: 'M1 2 L6 5 L10 4 L15 9 L20 7 L25 13 L30 11 L35 17'
@@ -33,39 +66,77 @@
         const target = document.getElementById('qimWatchlistRows');
         if (!target) return;
         target.replaceChildren();
-        SYMBOLS.forEach(item => {
-            const data = prices[item.symbol];
-            const change = data && Number(data.chgPct);
-            const hasChange = Number.isFinite(change);
-            const row = node('button', 'qim-watch-row');
-            row.type = 'button';
-            row.disabled = item.chartSupported === false;
-            row.title = row.disabled ? `${item.label} · feed saham belum tersedia` : item.label;
-            row.setAttribute('aria-label', `${item.symbol}, ${priceText(data && data.price)}, ${hasChange ? change.toFixed(2) + '%' : 'harga belum tersedia'}`);
-            if (item.symbol === 'BTCUSDT') row.classList.add('is-active');
-            if (!row.disabled) row.addEventListener('click', () => {
-                if (typeof window.setChartSymbolFull !== 'function') return;
-                window.switchPanel('panel-charts');
-                window.setChartSymbolFull(item.symbol, item.tv, item.symbol === 'EURUSD' ? 'EUR/USD' : item.symbol === 'XAUUSD' ? 'XAU/USD' : item.symbol);
-            });
+        const active = (typeof currentChartSymbol === 'function' ? currentChartSymbol() : '') || 'XAUUSD';
+        GROUPS.forEach(group => {
+            const items = SYMBOLS.filter(item => item.group === group.key);
+            if (!items.length) return;
+            const heading = node('div', 'qim-watch-group', group.label);
+            heading.dataset.group = group.key;
+            target.append(heading);
+            items.forEach(item => {
+                const data = prices[item.symbol];
+                const change = data && Number(data.chgPct);
+                const hasChange = Number.isFinite(change);
+                const disabled = item.chartSupported === false;
+                const row = node('div', 'qim-watch-row');
+                row.setAttribute('role', 'button');
+                row.tabIndex = disabled ? -1 : 0;
+                if (disabled) row.setAttribute('aria-disabled', 'true');
+                row.title = disabled ? item.label + ' · feed saham belum tersedia' : item.label;
+                row.setAttribute('aria-label', item.symbol + ', ' + priceText(data && data.price) + ', ' + (hasChange ? change.toFixed(2) + '%' : 'harga belum tersedia'));
+                if (item.symbol === active) row.classList.add('is-active');
+                const select = () => {
+                    if (disabled || typeof window.setChartSymbolFull !== 'function') return;
+                    window.switchPanel('panel-charts');
+                    window.setChartSymbolFull(item.symbol, item.tv, pairLabel(item.symbol));
+                };
+                row.addEventListener('click', select);
+                row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } });
 
-            const asset = node('span', 'qim-watch-asset');
-            asset.append(node('span', `qim-watch-icon ${item.iconClass}`, item.icon));
-            asset.append(node('span', 'qim-watch-name', item.symbol));
-            const quote = node('span', 'qim-watch-quote');
-            quote.append(node('span', 'qim-watch-price', priceText(data && data.price)));
-            quote.append(node('span', `qim-watch-change ${hasChange ? (change >= 0 ? 'qim-positive' : 'qim-negative') : ''}`,
-                hasChange ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '—'));
-            const spark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            spark.setAttribute('viewBox', '0 0 36 20');
-            spark.setAttribute('class', `qim-sparkline${hasChange && change < 0 ? ' down' : ''}`);
-            spark.setAttribute('aria-hidden', 'true');
-            spark.setAttribute('title', 'Arah perubahan 24 jam; histori intraday tidak tersedia di feed ringkasan.');
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', hasChange && change < 0 ? FALLBACK_CURVES.down : FALLBACK_CURVES.up);
-            spark.append(path);
-            row.append(asset, quote, spark);
-            target.append(row);
+                const asset = node('span', 'qim-watch-asset');
+                asset.append(node('span', 'qim-watch-icon ' + item.iconClass, item.icon));
+                const name = node('span', 'qim-watch-name');
+                name.append(node('b', '', item.symbol), node('small', '', item.label.replace(' · ', ' / ')));
+                asset.append(name);
+                const quote = node('span', 'qim-watch-quote');
+                quote.append(node('span', 'qim-watch-price', priceText(data && data.price)));
+                quote.append(node('span', 'qim-watch-change ' + (hasChange ? (change >= 0 ? 'qim-positive' : 'qim-negative') : ''),
+                    hasChange ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%' : '—'));
+                const spark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                spark.setAttribute('viewBox', '0 0 36 20');
+                spark.setAttribute('class', 'qim-sparkline' + (hasChange && change < 0 ? ' down' : ''));
+                spark.setAttribute('aria-hidden', 'true');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', hasChange && change < 0 ? FALLBACK_CURVES.down : FALLBACK_CURVES.up);
+                spark.append(path);
+                const trade = node('span', 'qim-watch-trade');
+                [['B', 'BUY'], ['S', 'SELL']].forEach(([text, side]) => {
+                    const tip = 'Buka Paper Trading: ' + side + ' ' + item.symbol;
+                    const button = node('button', 'qim-bs ' + (side === 'BUY' ? 'buy' : 'sell'), text);
+                    button.type = 'button';
+                    button.title = tip;
+                    button.setAttribute('aria-label', tip);
+                    button.disabled = disabled;
+                    button.addEventListener('click', e => { e.stopPropagation(); openPaper(item.symbol, side); });
+                    trade.append(button);
+                });
+                row.append(asset, quote, spark, trade);
+                target.append(row);
+            });
+        });
+    }
+
+    function bindWatchTabs() {
+        const tabs = document.getElementById('qimWatchTabs');
+        if (!tabs || tabs.dataset.bound) return;
+        tabs.dataset.bound = '1';
+        tabs.addEventListener('click', event => {
+            const button = event.target.closest('[data-group]');
+            if (!button) return;
+            tabs.querySelectorAll('[data-group]').forEach(b => b.classList.toggle('active', b === button));
+            const heading = document.querySelector('#qimWatchlistRows .qim-watch-group[data-group="' + button.dataset.group + '"]');
+            const scroller = document.getElementById('qimWatchlistRows');
+            if (heading && scroller) scroller.scrollTo({ top: Math.max(0, heading.offsetTop - scroller.offsetTop), behavior: 'smooth' });
         });
     }
 
@@ -99,14 +170,14 @@
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 12000);
         try {
-            const response = await fetch('api/live-price.php?symbols=BTCUSDT,ETHUSDT,EURUSD,XAUUSD', { cache: 'no-store', signal: controller.signal });
+            const response = await fetch('api/live-price.php?symbols=' + LIVE_SYMBOLS, { cache: 'no-store', signal: controller.signal });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
             if (!result || result.status !== 'success' || !result.prices) throw new Error('Format data harga tidak valid');
             prices = result.prices;
             renderWatchlist();
             const selected = document.getElementById('chartCurSym');
-            const pair = selected ? selected.textContent.replace(/[^A-Z0-9]/gi, '').toUpperCase() : 'BTCUSDT';
+            const pair = selected ? selected.textContent.replace(/[^A-Z0-9]/gi, '').toUpperCase() : 'XAUUSD';
             setPairSummary(pair);
         } catch (error) {
             const target = document.getElementById('qimWatchlistRows');
@@ -519,14 +590,97 @@
         if (avatar) avatar.textContent = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
     }
 
+
+    // ─── News Signal Engine + Active Alerts & Guardrails ───────────────────
+    // Data nyata dari api/calendar.php (kalender ekonomi). Tidak ada sinyal/angka rekaan:
+    // kartu hanya menampilkan event High impact, hitung mundur, dan status blackout ±30 menit.
+    const BLACKOUT_MENIT = 30;
+    let calendarEvents = [];
+    function eventTime(item) { const t = new Date(item.date).getTime(); return Number.isFinite(t) ? t : 0; }
+    function dash(value) { return value && value !== '-' ? value : '—'; }
+    function countdownText(ms) {
+        const abs = Math.abs(ms);
+        const m = Math.floor(abs / 60000);
+        const text = m >= 1440 ? `${Math.floor(m / 1440)}h ${Math.floor((m % 1440) / 60)}j` : m >= 60 ? `${Math.floor(m / 60)}j ${m % 60}m` : `${m}m`;
+        return ms >= 0 ? `dalam ${text}` : `${text} lalu`;
+    }
+    function renderEvents() {
+        const list = document.getElementById('qimEventList');
+        const guard = document.getElementById('qimGuardBody');
+        if (!list || !guard) return;
+        const now = Date.now();
+        const high = calendarEvents.filter(e => String(e.impact).toLowerCase() === 'high').sort((a, b) => eventTime(a) - eventTime(b));
+        const upcoming = high.filter(e => eventTime(e) >= now - BLACKOUT_MENIT * 60000);
+        const shown = upcoming.length ? upcoming.slice(0, 3) : high.slice(-3).reverse();
+
+        list.replaceChildren();
+        if (!shown.length) list.append(node('div', 'qim-muted', 'Tidak ada event High impact di kalender minggu ini.'));
+        shown.forEach((e, i) => {
+            const ms = eventTime(e) - now;
+            const hasActual = e.actual && e.actual !== '-';
+            const row = node('a', 'qim-event' + (i === 0 && ms >= 0 && ms < 3600000 ? ' is-soon' : ''));
+            row.href = '#';
+            row.addEventListener('click', ev => { ev.preventDefault(); if (typeof window.switchPanel === 'function') window.switchPanel('panel-news'); });
+            const badge = node('span', 'qim-event-ccy', e.currency || e.country || '—');
+            const body = node('span', 'qim-event-body');
+            body.append(node('b', '', e.title || 'Event ekonomi'));
+            body.append(node('small', '', 'Forecast ' + dash(e.forecast) + ' · Prev ' + dash(e.previous) + (hasActual ? ' · Aktual ' + e.actual : '')));
+            const side = node('span', 'qim-event-side');
+            side.append(node('em', 'is-bearish', 'HIGH'));
+            side.append(node('time', '', countdownText(ms)));
+            row.append(badge, body, side);
+            list.append(row);
+        });
+        const note = document.getElementById('qimEventNote');
+        if (note) note.textContent = (upcoming.length ? 'Event High impact terdekat' : 'Tidak ada event mendatang — menampilkan yang terakhir') + ' · ForexFactory';
+
+        // Guardrail: blackout berita ±30 menit di sekitar event High impact.
+        const active = high.find(e => Math.abs(eventTime(e) - now) <= BLACKOUT_MENIT * 60000);
+        guard.replaceChildren();
+        const banner = node('div', 'qim-guard-banner ' + (active ? 'is-alert' : 'is-ok'));
+        banner.append(node('span', 'qim-guard-icon', active ? '!' : '✓'));
+        const text = node('span');
+        if (active) {
+            text.append(node('b', '', 'BLACKOUT BERITA AKTIF'),
+                node('small', '', (active.currency || '') + ' ' + (active.title || '') + ' · ' + countdownText(eventTime(active) - now) + ' · sinyal mesin biasa ditahan ±' + BLACKOUT_MENIT + ' menit'));
+        } else {
+            const next = upcoming[0];
+            text.append(node('b', '', 'Tidak ada blackout berita'),
+                node('small', '', next ? 'Berikutnya: ' + (next.currency || '') + ' ' + (next.title || '') + ' ' + countdownText(eventTime(next) - now) : 'Tidak ada event High impact mendatang'));
+        }
+        banner.append(text);
+        guard.append(banner);
+        [['Filter berita ±' + BLACKOUT_MENIT + ' menit', 'Aktif', 'on'], ['Mode berita', 'Proteksi Ketat', 'on']].forEach(([label, value, tone]) => {
+            const row = node('div', 'qim-guard-row');
+            row.append(node('span', '', label), node('b', 'is-' + tone, value));
+            guard.append(row);
+        });
+    }
+    async function refreshEvents() {
+        try {
+            const response = await fetch('api/calendar.php', { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const result = await response.json();
+            if (!result || result.status !== 'success' || !Array.isArray(result.data)) throw new Error('Format kalender tidak valid');
+            calendarEvents = result.data;
+            renderEvents();
+        } catch (error) {
+            const list = document.getElementById('qimEventList');
+            if (list && !calendarEvents.length) list.replaceChildren(node('div', 'qim-muted', 'Kalender ekonomi belum tersedia.'));
+            console.warn('[QIM] Kalender tidak dapat dimuat:', error.message);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         syncUserName();
+        bindWatchTabs();
         refreshPrices();
         refreshNews();
         refreshBrokerStatus();
         refreshAnalysis();
         refreshSignalFeed();
         refreshSimulation();
+        refreshEvents();
         const hasPanelRoute = new URLSearchParams(window.location.search).has('panel') || !!window.location.hash;
         if (!hasPanelRoute && typeof window.switchPanel === 'function') {
             window.setTimeout(() => window.switchPanel('panel-charts'), 450);
@@ -537,10 +691,16 @@
         window.setInterval(() => refreshAnalysis(), 120000);
         window.setInterval(refreshSignalFeed, 120000);
         window.setInterval(refreshSimulation, 30000);
+        window.setInterval(refreshEvents, 300000);
+        window.setInterval(renderEvents, 30000);
     });
 
     document.addEventListener('qim:chart-symbol', event => {
         setPairSummary(event.detail && event.detail.symbol);
+        document.querySelectorAll('#qimWatchlistRows .qim-watch-row').forEach(row => {
+            const name = row.querySelector('.qim-watch-name b');
+            row.classList.toggle('is-active', !!name && name.textContent === String(event.detail && event.detail.symbol || '').toUpperCase());
+        });
         // Event ini ikut terpicu tiap tick harga; analisa hanya dimuat ulang bila simbolnya berganti.
         const symbol = String(event.detail && event.detail.symbol || '').toUpperCase();
         if (symbol && symbol !== analysisSymbol) refreshAnalysis(symbol);

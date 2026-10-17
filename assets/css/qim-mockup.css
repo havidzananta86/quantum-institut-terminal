@@ -1,0 +1,164 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   QIM MOCKUP — penyelarasan tampilan desktop dengan desain "Market Terminal".
+   Dimuat PALING AKHIR. Hanya tampilan; tidak mengubah perilaku/ID elemen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Header: logo atom + judul, menu berbentuk kapsul ──────────────────────── */
+.qim-logo { flex: 0 0 auto; width: 38px; height: 38px; color: #27c4ff; filter: drop-shadow(0 0 6px #27c4ff66); }
+.qim-logo * { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.qim-logo .dot { fill: currentColor; stroke: none; }
+@media (min-width: 900px) {
+    .qim-header { background: #050a14; border-bottom-color: #14213a; }
+    .qim-brand { width: auto; min-width: 0; padding: 0 12px 0 14px; gap: 10px; }
+    .qim-brand-mark { display: none; }
+    .qim-brand-name { font-size: 31px; font-weight: 800; letter-spacing: -.03em; background: linear-gradient(95deg, #36d1ff, #1677ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .qim-brand-divider { height: 30px; margin: 0 10px 0 8px; background: #1b2942; }
+    .qim-brand-caption { overflow: visible; font-size: 17px; font-weight: 700; color: #fff; letter-spacing: .005em; }
+    .qim-top-nav { align-self: center; align-items: stretch; height: 44px; gap: 2px; margin-left: 18px; padding: 4px; border: 1px solid #1c3866; border-radius: 14px; background: #07101f; box-shadow: inset 0 0 0 1px #0b1a33; }
+    .qim-top-link { padding: 0 19px; border-radius: 10px; color: #b3bfd2; font-size: 13.5px; font-weight: 500; transition: background .15s, color .15s; }
+    .qim-top-link.active { color: #fff; background: #1677ff; box-shadow: 0 4px 14px #1677ff55; }
+    .qim-top-link.active::after { display: none; }
+    .qim-top-link:hover:not(.active) { color: #fff; background: #0f1d36; }
+    .qim-header-actions { gap: 14px; padding: 0 18px; }
+    .qim-bell i { top: -3px; right: -2px; width: 15px; height: 15px; border: 2px solid #050a14; box-sizing: content-box; }
+    .qim-balance-button { padding: 9px 14px; border-radius: 10px; font-size: 12px; box-shadow: 0 4px 14px #087df555; }
+    .qim-avatar { width: 34px; height: 34px; font-size: 11px; box-shadow: 0 0 0 2px #1b2942; }
+}
+#qimNewsTicker { align-self: center; margin-left: 18px; border-color: #7a1f2b !important; background: #3a0d16aa !important; color: #fecaca !important; font-size: 11px !important; }
+#qimNewsTicker span:first-child { background: #ef4444 !important; }
+#qimNewsTickerCountdown { color: #fca5a5 !important; }
+
+/* ── Tata letak: kartu bergaris dengan jarak, kolom kanan lebih lebar ──────── */
+@media (min-width: 900px) {
+    body.qim-has-rail { --qim-rp: 340px; }
+    body.charts-active #mainContent { padding: 8px 6px; }
+    body.charts-active #panel-charts { border: 1px solid #16243d; border-radius: 12px; overflow: hidden; background: #08101d; box-shadow: 0 6px 24px #0006; }
+    .qim-rail { padding-top: 18px; background: #050a14; }
+    .qim-rail-btn { width: 44px; height: 44px; border-radius: 12px; }
+    .qim-statusbar { background: #040812; }
+}
+@media (min-width: 1440px) { body.qim-has-rail { --qim-rp: 380px; } }
+@media (min-width: 1600px) { body.qim-has-rail { --qim-rp: 412px; --qim-sb: 300px; } }
+
+/* ── Kartu: sudut lebih bulat, judul tebal ─────────────────────────────────── */
+.qim-card { border-radius: 12px; border-color: #16243d; background: #0a1322; }
+.qim-card-heading { min-height: 44px; padding: 10px 14px; border-bottom-color: #14213a; }
+.qim-card-heading h2 { font-size: 15px; font-weight: 700; gap: 9px; }
+.qim-card-heading h2 svg { width: 19px; height: 19px; stroke: #2fa5ff; }
+.qim-link-button { font-size: 11.5px; color: #3ea0ff; }
+#qimRightPanel { gap: 10px; padding: 8px 8px 8px 4px; }
+
+/* ── Watchlist: tab grup, baris dua baris, tombol B/S ──────────────────────── */
+.qim-watch-tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid #14213a; }
+.qim-watch-tabs button { position: relative; padding: 9px 11px 10px; border: 0; color: #8b98ad; background: none; font-size: 12px; font-weight: 500; cursor: pointer; }
+.qim-watch-tabs button:hover { color: #fff; }
+.qim-watch-tabs button.active { color: #3ea0ff; }
+.qim-watch-tabs button.active::after { position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: #1677ff; content: ""; }
+.qim-watchlist-labels { display: none; }
+.qim-watchlist-rows { padding: 0 6px 6px; }
+.qim-watch-group { padding: 9px 8px 4px; color: #8b98ad; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.qim-watch-group:first-child { padding-top: 6px; }
+.qim-watch-row { grid-template-columns: minmax(0, 1fr) auto 38px auto; gap: 8px; min-height: 46px; padding: 6px 6px; border-top: 0; border-radius: 9px; }
+.qim-watch-row:hover { background: #0e1a30; }
+.qim-watch-row.is-active { background: linear-gradient(90deg, #0c2a3a, #0b1d33); box-shadow: inset 2px 0 0 #1fb6ff; }
+.qim-watch-row[aria-disabled="true"] { cursor: not-allowed; opacity: .6; }
+.qim-watch-asset { gap: 9px; }
+.qim-watch-icon { flex: 0 0 28px; height: 28px; font-size: 12px; box-shadow: 0 0 0 1px #ffffff14; }
+.qim-watch-icon.sol { background: #14b8a6; }
+.qim-watch-icon.bnb { background: #d4a017; }
+.qim-watch-name { display: block; min-width: 0; overflow: hidden; }
+.qim-watch-name b { display: block; color: #e8eef9; font-size: 12.5px; font-weight: 700; letter-spacing: .01em; }
+.qim-watch-name small { display: block; overflow: hidden; margin-top: 1px; color: #7f8da4; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.qim-watch-price { color: #e8eef9; font-size: 12px; font-weight: 600; }
+.qim-watch-change { margin-top: 2px; font-size: 11px; }
+.qim-sparkline { width: 38px; height: 20px; }
+.qim-watch-trade { display: flex; gap: 4px; }
+.qim-bs { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.qim-bs.buy { border-color: #1f6f5b; color: #3dd9a6; background: #0c3a30; }
+.qim-bs.sell { border-color: #7a2a35; color: #ff6b7b; background: #3a1018; }
+.qim-bs:hover:not(:disabled) { filter: brightness(1.25); }
+.qim-bs:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Daftar watchlist punya tinggi sendiri (digulir), supaya News & Broker tetap terlihat di bawahnya. */
+#qimWatchlistRows { position: relative; max-height: 318px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #1d2c47 transparent; overscroll-behavior: contain; }
+@media (min-width: 1600px) { body.qim-has-rail { --qim-rp: 400px; --qim-sb: 332px; } }
+@media (max-width: 1500px) { .qim-sparkline { display: none; } .qim-watch-row { grid-template-columns: minmax(0, 1fr) auto auto; } }
+
+/* Kepala chart satu baris: simbol · harga · High/Low/Vol. */
+@media (min-width: 1500px) {
+    .qch-head { flex-wrap: nowrap; gap: 10px 22px; padding: 10px 14px; }
+    .qch-sym-text b { font-size: 18px; }
+    .qch-price strong { font-size: 27px; }
+    .qch-price span { font-size: 13px; }
+    .qch-stat { min-width: 0; }
+    .qch-stat b { font-size: 14px; white-space: nowrap; }
+    .qch-stat small { font-size: 11.5px; white-space: nowrap; }
+}
+
+/* ── Kartu kanan: News Signal Engine & Active Alerts & Guardrails ──────────── */
+.qim-event-list { padding: 4px 10px 2px; }
+.qim-event { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 6px; border-bottom: 1px solid #14213a; color: inherit; text-decoration: none; }
+.qim-event:last-child { border-bottom: 0; }
+.qim-event:hover { background: #0d1830; border-radius: 8px; }
+.qim-event.is-soon { box-shadow: inset 3px 0 0 #ef4444; background: linear-gradient(90deg, #2a0f18, transparent 70%); border-radius: 8px; }
+.qim-event-ccy { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: #fff; background: #1d3a66; font-size: 10px; font-weight: 800; letter-spacing: .02em; }
+.qim-event.is-soon .qim-event-ccy { background: #7a1f2b; }
+.qim-event-body b { display: block; overflow: hidden; color: #e8eef9; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.qim-event-body small { display: block; margin-top: 3px; color: #7f8da4; font-size: 10.5px; }
+.qim-event-side { display: grid; justify-items: end; gap: 4px; }
+.qim-event-side em { padding: 2px 7px; border: 1px solid #7a2a35; border-radius: 5px; color: #ff6b7b; background: #ef44441a; font-size: 9.5px; font-style: normal; font-weight: 700; }
+.qim-event-side time { color: #9aa7bb; font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qim-guard-body { padding: 10px 12px 12px; }
+.qim-guard-banner { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid; border-radius: 9px; }
+.qim-guard-banner.is-alert { border-color: #8a2230; color: #ffd0d6; background: #3a0d16; }
+.qim-guard-banner.is-ok { border-color: #1b5f4b; color: #c8f5e5; background: #0a2a24; }
+.qim-guard-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 13px; font-weight: 800; color: #fff; background: #ef4444; }
+.qim-guard-banner.is-ok .qim-guard-icon { background: #1fa57a; }
+.qim-guard-banner b { display: block; font-size: 11.5px; letter-spacing: .02em; }
+.qim-guard-banner small { display: block; margin-top: 3px; font-size: 10.5px; line-height: 1.4; opacity: .9; }
+.qim-guard-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 2px 0; color: #9fb0c7; font-size: 11.5px; }
+.qim-guard-row b { padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+.qim-guard-row b.is-on { color: #3dd9a6; background: #0f3a30; }
+
+/* Bar chart satu baris (tidak membungkus ke baris kedua saat kartu chart menyempit). */
+@media (min-width: 900px) {
+    .qch-bar { flex-wrap: nowrap; gap: 2px; padding: 6px 10px; overflow-x: auto; scrollbar-width: none; }
+    .qch-bar::-webkit-scrollbar { display: none; }
+    .qch-tf { min-width: 32px; padding: 6px 8px; }
+    .qch-btn { padding: 6px 8px; gap: 6px; white-space: nowrap; font-size: 12.5px; }
+    .qch-sep { margin: 0 4px; }
+}
+
+/* ── Lebar layar menengah: kolom kanan & header menyesuaikan ───────────────── */
+@media (min-width: 900px) and (max-width: 1279px) { body.qim-has-rail { --qim-rp: 270px; } }
+@media (min-width: 1280px) and (max-width: 1439px) { body.qim-has-rail { --qim-rp: 320px; } }
+@media (max-width: 1379px) {
+    .qim-brand-caption, .qim-brand-divider { display: none; }
+    .qim-brand-name { font-size: 27px; }
+    .qim-top-link { padding: 0 13px; font-size: 13px; }
+    .qim-top-nav { margin-left: 8px; }
+    #qimNewsTicker { display: none !important; }
+}
+@media (max-width: 1279px) {
+    .qim-watch-trade { display: none; }
+    .qim-watch-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .qim-header-actions { gap: 8px; padding: 0 10px; }
+    #qimUserName { display: none; }
+    .qim-profile-chevron { display: none; }
+}
+@media (max-width: 1100px) {
+    .qim-top-link { padding: 0 10px; font-size: 12.5px; }
+    .qim-balance-button { padding: 8px 10px; }
+}
+
+@media (max-width: 1499px) {
+    .qch-head { gap: 8px 18px; }
+    .qch-stat { flex: 0 0 auto; }
+    .qim-card-heading h2 { font-size: 13.5px; gap: 7px; white-space: nowrap; }
+    .qim-card-heading h2 svg { width: 16px; height: 16px; }
+    .qim-card-heading { padding: 8px 10px; }
+}
+
+/* Logo atom menggantikan tanda ⌁ lama di semua ukuran layar. */
+.qim-brand-mark { display: none !important; }
+@media (max-width: 899px) { .qim-logo { width: 28px; height: 28px; } }
