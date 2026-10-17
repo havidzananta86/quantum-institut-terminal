@@ -55,6 +55,48 @@ if (file_exists($cfgPath)) {
     $status = 'degraded';
 }
 
+// ?bridges=1 : uji koneksi Hostinger -> bridge VPS. Hanya alamat publik, kode HTTP, dan galat curl;
+// kunci tidak pernah ditampilkan. Tidak dijalankan pada pemanggilan biasa (monitor uptime).
+if (isset($_GET['bridges'])) {
+    $probe = function (string $url, array $header = []): array {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_HTTPHEADER     => $header,
+        ]);
+        $t0 = microtime(true);
+        $raw = curl_exec($ch);
+        $out = [
+            'http'  => (int)curl_getinfo($ch, CURLINFO_HTTP_CODE),
+            'ms'    => (int)round((microtime(true) - $t0) * 1000),
+            'error' => $raw === false ? curl_error($ch) : null,
+        ];
+        curl_close($ch);
+        return $out;
+    };
+    $hostOnly = fn(string $u): string => preg_replace('#^(\w+://[^/]+).*$#', '$1', $u);
+    $tvUrl = defined('QI_TV_BRIDGE_URL') ? rtrim((string)QI_TV_BRIDGE_URL, '/') : '';
+    $tv = ['configured' => $tvUrl !== '', 'host' => $tvUrl !== '' ? $hostOnly($tvUrl) : null,
+           'key_set' => defined('QI_TV_BRIDGE_KEY') && (string)QI_TV_BRIDGE_KEY !== ''];
+    if ($tvUrl !== '') {
+        $tv['health'] = $probe($tvUrl . '/health');
+        $tv['candles_with_key'] = $probe($tvUrl . '/candles?exchange=OANDA&symbol=XAUUSD&tf=1h&limit=5',
+            $tv['key_set'] ? ['X-Bridge-Key: ' . QI_TV_BRIDGE_KEY] : []);
+    }
+    $mt5Url = defined('QI_MT5_BRIDGE_URL') ? preg_replace('#^ws#i', 'http', rtrim((string)QI_MT5_BRIDGE_URL, '/')) : '';
+    $mt5 = ['configured' => $mt5Url !== '', 'host' => $mt5Url !== '' ? $hostOnly($mt5Url) : null,
+            'secret_set' => defined('QI_MT5_BRIDGE_SECRET') && (string)QI_MT5_BRIDGE_SECRET !== ''];
+    if ($mt5Url !== '') $mt5['health'] = $probe($mt5Url . '/health');
+    $marker = __DIR__ . '/../cache/tv_bridge_down.txt';
+    $checks['bridges'] = [
+        'tv' => $tv,
+        'mt5' => $mt5,
+        'tv_breaker_age_s' => is_file($marker) ? time() - (int)filemtime($marker) : null,
+    ];
+}
+
 if (!$checks['db'] || !$checks['disk'] || !$checks['cache_writable']) {
     $status = 'degraded';
 }
