@@ -176,11 +176,15 @@
 .qim-setup-metode button:hover { border-color: #2fa5ff80; color: #e2e8f0; }
 .qim-setup-metode button.active { border-color: #2fa5ff; background: #2fa5ff1f; color: #6cc4ff; }
 .qim-setup-card #qimSetupStatus a { margin-left: 6px; }
-.qim-setup-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding: 0 12px 12px; }
+.qim-setup-list { display: block; max-height: 420px; overflow-y: auto; padding: 0 12px 12px; }
 .qim-setup-list:empty { display: none; }
+/* Daftar memakai alur blok (bukan kolom flex): di kolom flex bertinggi terbatas kartu ikut menyusut
+   sehingga setup terpotong (hanya baris judul terlihat). Kartu harus menjaga tinggi aslinya; daftar yang menggulir. */
+.qim-setup-list > * { flex: 0 0 auto; box-sizing: border-box; }
+.qim-setup-list > * + * { margin-top: 8px; }
 .qim-setup-kosong { padding: 8px 10px; border: 1px dashed #1c2c47; border-radius: 8px; color: #8394ad; font-size: 11.5px; line-height: 1.45; }
 .qim-setup-kosong b { color: #cbd5e1; }
-.qim-setup-item { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 9px 10px; border: 1px solid #1c2c47; border-left-width: 3px; border-radius: 8px; background: #0b1527; color: #cbd5e1; text-align: left; cursor: pointer; }
+.qim-setup-item { overflow: visible; display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 9px 10px; border: 1px solid #1c2c47; border-left-width: 3px; border-radius: 8px; background: #0b1527; color: #cbd5e1; text-align: left; cursor: pointer; }
 .qim-setup-item.buy { border-left-color: #26a69a; }
 .qim-setup-item.sell { border-left-color: #ef5350; }
 .qim-setup-item:hover, .qim-setup-item.terpilih { border-color: #2fa5ff80; background: #0f1d33; }
