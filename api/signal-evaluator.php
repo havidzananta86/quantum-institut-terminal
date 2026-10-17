@@ -90,15 +90,45 @@ if (!function_exists('qi_sig_ambil_candle')) :
 function qi_sig_ambil_candle(string $symbol, array $intervals): ?array {
     $dir = __DIR__ . '/../cache/chart';
     foreach ($intervals as $iv) {
-        $file = $dir . '/' . md5(strtoupper($symbol) . '_' . $iv) . '.json';
-        if (!is_file($file)) continue;
-        $data = json_decode((string)@file_get_contents($file), true);
-        if (!is_array($data) || !empty($data['simulated'])) continue; // data palsu: jangan dipakai
-        $candles = $data['candles'] ?? null;
-        if (!is_array($candles) || count($candles) < 3) continue;
-        return ['interval' => $iv, 'candles' => $candles];
+        // Cache feed broker MT5 diutamakan (sinyal otomatis dibuat dari harga broker), kecuali
+        // jauh lebih basi daripada cache umum (OANDA/sumber lama) — misalnya bridge VPS mati.
+        $umum = $dir . '/' . md5(strtoupper($symbol) . '_' . $iv) . '.json';
+        $mt5  = $dir . '/' . md5(strtoupper($symbol) . '_' . $iv . '_mt5') . '.json';
+        $urutan = [$umum];
+        if (is_file($mt5) && (!is_file($umum) || (int)@filemtime($mt5) >= (int)@filemtime($umum) - 300)) {
+            $urutan = [$mt5, $umum];
+        }
+        foreach ($urutan as $file) {
+            if (!is_file($file)) continue;
+            $data = json_decode((string)@file_get_contents($file), true);
+            if (!is_array($data) || !empty($data['simulated'])) continue; // data palsu: jangan dipakai
+            $candles = $data['candles'] ?? null;
+            if (!is_array($candles) || count($candles) < 3) continue;
+            return ['interval' => $iv, 'candles' => $candles, 'source' => (string)($data['source'] ?? '')];
+        }
     }
     return null;
+}
+endif;
+
+if (!function_exists('qi_sig_hangatkan_mt5')) :
+/**
+ * Isi cache candle MT5 (berkas yang sama dengan get-chart-data.php untuk feed broker)
+ * langsung dari bridge VPS. Mengembalikan false bila bridge/simbol tidak tersedia.
+ */
+function qi_sig_hangatkan_mt5(string $symbol, string $iv): bool {
+    if (!function_exists('qi_mt5_candles') || !function_exists('qi_mt5_configured') || !function_exists('qi_tv_bridge_symbol')) return false;
+    if (qi_tv_bridge_symbol($symbol) === null || !qi_mt5_configured()) return false;
+    $candles = qi_mt5_candles($symbol, $iv);
+    if (!$candles) return false;
+    $dir = __DIR__ . '/../cache/chart';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $payload = json_encode([
+        'status' => 'success', 'symbol' => strtoupper($symbol), 'interval' => $iv,
+        'count' => count($candles), 'simulated' => false, 'source' => 'mt5',
+        'generated_at' => gmdate('c'), 'candles' => $candles,
+    ]);
+    return @file_put_contents($dir . '/' . md5(strtoupper($symbol) . '_' . $iv . '_mt5') . '.json', $payload, LOCK_EX) !== false;
 }
 endif;
 
@@ -325,9 +355,12 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
         foreach (array_keys($perlu) as $kunci) {
             if ($n >= 12) break; // batasi jumlah panggilan
             list($simbol, $iv) = explode('|', $kunci);
+            // Utama: candle broker MT5 langsung dari bridge VPS. Cache umum (OANDA) tetap
+            // dihangatkan sebagai cadangan bila bridge mati.
+            $okMt5 = qi_sig_hangatkan_mt5($simbol, $iv);
             $url = qi_sig_url_dasar() . '/api/get-chart-data.php?symbol=' . urlencode($simbol) . '&interval=' . urlencode($iv);
             $hasil = @qi_http_get($url, 12);
-            $laporan['warm'][] = $simbol . '/' . $iv . '=' . ($hasil !== false ? 'ok' : 'gagal');
+            $laporan['warm'][] = $simbol . '/' . $iv . '=' . ($okMt5 ? 'mt5' : ($hasil !== false ? 'ok' : 'gagal'));
             $n++;
         }
     }
@@ -358,6 +391,7 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
             'symbol'   => $s['symbol'] ?? '?',
             'side'     => $s['side'] ?? '?',
             'interval' => $pakai['interval'],
+            'sumber'   => $pakai['source'] ?? null,
             'status'   => $hasil['status'],
             'pnl_usd'  => $hasil['pnl_usd'],
         ];

@@ -823,6 +823,24 @@ if (!function_exists('qi_mt5_allowed')) {
         }
     }
 }
+if (!function_exists('qi_chart_use_mt5')) {
+    /**
+     * Pakai candle feed broker MT5 untuk simbol ini? Ya bila simbol didukung bridge dan
+     * (a) pemanggilnya proses sinyal server (konstanta QI_SERVER_MT5: generator & evaluator
+     * otomatis — sinyalnya mengikuti harga broker), atau (b) pengguna login yang berhak.
+     */
+    function qi_chart_use_mt5(string $symbol): bool {
+        if (qi_tv_bridge_symbol($symbol) === null) return false;
+        if (defined('QI_SERVER_MT5') && QI_SERVER_MT5) return qi_mt5_configured();
+        return qi_mt5_allowed();
+    }
+}
+if (!function_exists('qi_chart_cache_file')) {
+    /** Berkas cache candle chart; feed MT5 memakai berkas terpisah (akhiran _mt5). */
+    function qi_chart_cache_file(string $symbol, string $interval, bool $mt5): string {
+        return __DIR__ . '/../cache/chart/' . md5(strtoupper($symbol) . '_' . $interval . ($mt5 ? '_mt5' : '')) . '.json';
+    }
+}
 if (!function_exists('qi_mt5_request')) {
     /**
      * GET ke REST bridge MT5 dengan JWT HS256 berumur 60 detik (scope ticks+candles).

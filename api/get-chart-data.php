@@ -30,8 +30,8 @@ $cacheDir = __DIR__ . '/../cache/chart';
 if (!is_dir($cacheDir)) { @mkdir($cacheDir, 0755, true); }
 // Pengguna yang berhak feed bridge MT5 memakai cache TERPISAH (suffix _mt5) supaya candle broker
 // tidak sampai ke pengguna lain lewat cache bersama.
-$useMt5 = qi_tv_bridge_symbol($symbol) !== null && qi_mt5_allowed();
-$cacheFile = $cacheDir . '/' . md5($symbol . '_' . $interval . ($useMt5 ? '_mt5' : '')) . '.json';
+$useMt5 = qi_chart_use_mt5($symbol);
+$cacheFile = qi_chart_cache_file($symbol, $interval, $useMt5);
 $cacheScope = $useMt5 ? 'private' : 'public';
 if (!defined('QI_INCLUDED_BY_SIGNALS')) header('Vary: Authorization');
 

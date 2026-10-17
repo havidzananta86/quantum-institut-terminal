@@ -106,6 +106,8 @@ if ($blackout['aktif']) {
 
 // ── ENGINE (dipakai ulang dari ai-signal.php) ───────────────────────────────
 define('QI_AI_SIGNAL_LIB', 1);
+// Sinyal otomatis memakai candle feed broker MT5 (VPS) bila tersedia; OANDA/sumber lama cadangan.
+if (!defined('QI_SERVER_MT5')) define('QI_SERVER_MT5', true);
 require_once __DIR__ . '/ai-signal.php';
 if (!function_exists('ai_analyze') || !function_exists('ai_load_candles')) {
     gen_jawab(200, ['status' => 'error', 'message' => 'Engine analisa tidak tersedia.']);

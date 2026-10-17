@@ -49,8 +49,8 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 900) {
  * harga gagal, dan candle acak tidak boleh dipakai untuk mengambil keputusan.
  */
 function ai_load_candles(string $sym, string $interval): array {
-    $cacheDir  = __DIR__ . '/../cache/chart';
-    $cacheFile = $cacheDir . '/' . md5($sym . '_' . $interval) . '.json';
+    // Cache yang sama dengan yang akan ditulis get-chart-data.php (MT5 atau umum).
+    $cacheFile = qi_chart_cache_file($sym, $interval, qi_chart_use_mt5($sym));
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
         $d = json_decode(file_get_contents($cacheFile), true);
         // Cache hanya menyimpan data nyata (candle simulasi tidak pernah di-cache).
