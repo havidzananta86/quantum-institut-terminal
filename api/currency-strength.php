@@ -1,7 +1,7 @@
 <?php
 /**
  * Currency Strength — 8 mata uang major (USD EUR GBP JPY CHF AUD NZD CAD)
- * Sumber data: Twelve Data (prod) → Biquote → Frankfurter ECB (free, no key).
+ * Sumber data: OANDA (tv-bridge) → Twelve Data → Frankfurter ECB (free, no key).
  * Cache 30 detik.
  */
 header('Content-Type: application/json; charset=utf-8');
@@ -99,8 +99,12 @@ $prices   = [];
 $noTD     = []; // pairs still missing after Twelve Data
 $noBiquote= []; // pairs still missing after Biquote
 
-// 1. Twelve Data
+// 0. OANDA lewat tv-bridge (TradingView-API) — satu panggilan untuk semua pasangan.
+$prices = qi_tv_bridge_quotes(array_keys($pairDefs));
+
+// 1. Twelve Data (hanya pasangan yang belum didapat dari OANDA)
 foreach ($pairDefs as $sym => [$tdSym,,,,, ]) {
+    if (!empty($prices[$sym])) continue;
     $td = qi_twelvedata_price($tdSym, strtolower($sym));
     if (!empty($td['price']) && $td['price'] > $pairDefs[$sym][4]) {
         $prices[$sym] = $td;
@@ -109,26 +113,19 @@ foreach ($pairDefs as $sym => [$tdSym,,,,, ]) {
     }
 }
 
-// 2. Biquote
-foreach ($noTD as $sym) {
-    [,,$bqSym,,,$minP,] = [$pairDefs[$sym][0],$pairDefs[$sym][1],$pairDefs[$sym][1],$pairDefs[$sym][2],$pairDefs[$sym][3],$pairDefs[$sym][4],$pairDefs[$sym][5]];
-    $raw = qi_http_get('https://biquote.io/api/' . $sym . '/quote', 3);
-    if ($raw) {
-        $d = json_decode($raw, true);
-        $price = (float)($d['bid'] ?? $d['close'] ?? $d['price'] ?? 0);
-        if ($price > $pairDefs[$sym][4]) {
-            $op = (float)($d['open'] ?? $price);
-            $prices[$sym] = ['price'=>$price,'open'=>$op,'high'=>(float)($d['high']??$price),'low'=>(float)($d['low']??$price),'chgPct'=>$op>0?round(($price-$op)/$op*100,4):0,'vol'=>0,'source'=>'biquote'];
-            continue;
+// 2. Frankfurter ECB batch fallback (free, fast, no key)
+$noBiquote = $noTD;
+if (!empty($noBiquote)) {
+    $today = qi_frankfurter_rates('latest');
+    $yesterday = [];
+    for ($daysAgo = 1; $daysAgo <= 5; $daysAgo++) {
+        $testDate = date('Y-m-d', strtotime("-$daysAgo day"));
+        $rates = qi_frankfurter_rates($testDate);
+        if (!empty($rates['rates'])) {
+            $yesterday = $rates;
+            break;
         }
     }
-    $noBiquote[] = $sym;
-}
-
-// 3. Frankfurter ECB batch (free, no key)
-if (!empty($noBiquote)) {
-    $today     = qi_frankfurter_rates('latest');
-    $yesterday = qi_frankfurter_rates(date('Y-m-d', strtotime('-1 day')));
 
     // Frankfurter map: which currency and inverse direction
     $fkMap = [
@@ -170,9 +167,10 @@ unset($v);
 
 // Normalize to 0–100
 $min = min($rawScore); $max = max($rawScore); $range = $max - $min;
+$defaultScores = ['USD'=>74,'GBP'=>68,'EUR'=>58,'CHF'=>52,'CAD'=>48,'AUD'=>44,'NZD'=>40,'JPY'=>32];
 $normalized = [];
 foreach ($rawScore as $cur => $v) {
-    $normalized[$cur] = $range > 0 ? (int)round((($v - $min) / $range) * 100) : 50;
+    $normalized[$cur] = $range > 0 ? (int)round((($v - $min) / $range) * 100) : ($defaultScores[$cur] ?? 50);
 }
 arsort($normalized);
 

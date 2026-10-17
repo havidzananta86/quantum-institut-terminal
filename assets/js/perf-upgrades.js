@@ -47,7 +47,13 @@
 
 // ─── #46 Binance WebSocket Real-Time Prices ─────────────────────────────────
 (function() {
-    var CRYPTO_SYMBOLS = ['btcusdt','ethusdt','solusdt','bnbusdt','xrpusdt','dogeusdt'];
+    // btcusdt sengaja tidak ada: harga BTC dari OANDA (live-price.php), bukan Binance.
+    var CRYPTO_SYMBOLS = ['ethusdt','solusdt','bnbusdt','xrpusdt','dogeusdt'];
+    // Host WS Binance menurut hasil uji: yang pertama resmi untuk data pasar, yang
+    // kedua populer tetapi sering diblokir ISP. Dipakai bergiliran saat gagal.
+    var HOST_WS = ['data-stream.binance.vision', 'stream.binance.com:9443'];
+    var wsHostIndex = 0;
+    var wsGagalBeruntun = 0;
     var ws = null;
     var wsReconnectTimer = null;
     var wsReconnectDelay = 2000;
@@ -57,12 +63,19 @@
     function connectBinanceWS() {
         if (!wsEnabled || ws) return;
         var streams = CRYPTO_SYMBOLS.map(function(s) { return s + '@miniTicker'; }).join('/');
+        // URUTAN HOST PENTING: wss://stream.binance.com:9443 sering DIBLOKIR ISP
+        // (tercatat di realtime.js: timeout 6 detik) sehingga hanya menghasilkan galat
+        // konsol tanpa data. data-stream.binance.vision adalah host data pasar resmi
+        // Binance dan sudah terbukti berhasil (dipakai chart-init.js). Bila host
+        // pertama gagal, host berikutnya dicoba sebelum menyerah.
+        var host = HOST_WS[wsHostIndex % HOST_WS.length];
         try {
-            ws = new WebSocket('wss://stream.binance.com:9443/ws/' + streams);
+            ws = new WebSocket('wss://' + host + '/ws/' + streams);
         } catch(e) { return; }
 
         ws.onopen = function() {
             wsReconnectDelay = 2000;
+            wsGagalBeruntun = 0;
         };
 
         ws.onmessage = function(event) {
@@ -95,6 +108,15 @@
         ws.onclose = function() {
             ws = null;
             if (!wsEnabled) return;
+            // Ganti host setelah dua kegagalan beruntun, dan berhenti mencoba setelah
+            // 5 kegagalan supaya TIDAK membanjiri konsol dengan galat berulang
+            // (pengguna tidak perlu melihatnya; data REST 3 detik tetap berjalan).
+            wsGagalBeruntun++;
+            if (wsGagalBeruntun % 2 === 0) wsHostIndex++;
+            if (wsGagalBeruntun >= 5) {
+                wsEnabled = false;
+                return;
+            }
             wsReconnectTimer = setTimeout(function() {
                 wsReconnectDelay = Math.min(wsReconnectDelay * 1.5, wsMaxDelay);
                 connectBinanceWS();

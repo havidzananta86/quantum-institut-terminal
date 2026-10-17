@@ -9,20 +9,20 @@ require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(60, 60);
 
 $TV_SYMBOLS = [
-    'XAUUSD'  => 'TVC:GOLD',
-    'EURUSD'  => 'FX_IDC:EURUSD',
-    'GBPUSD'  => 'FX_IDC:GBPUSD',
-    'USDJPY'  => 'FX_IDC:USDJPY',
-    'AUDUSD'  => 'FX_IDC:AUDUSD',
-    'USDCHF'  => 'FX_IDC:USDCHF',
-    'USDCAD'  => 'FX_IDC:USDCAD',
-    'NZDUSD'  => 'FX_IDC:NZDUSD',
-    'GBPJPY'  => 'FX_IDC:GBPJPY',
-    'EURJPY'  => 'FX_IDC:EURJPY',
-    'EURGBP'  => 'FX_IDC:EURGBP',
-    'AUDNZD'  => 'FX_IDC:AUDNZD',
-    'CHFJPY'  => 'FX_IDC:CHFJPY',
-    'CADJPY'  => 'FX_IDC:CADJPY',
+    'XAUUSD'  => 'OANDA:XAUUSD',
+    'EURUSD'  => 'OANDA:EURUSD',
+    'GBPUSD'  => 'OANDA:GBPUSD',
+    'USDJPY'  => 'OANDA:USDJPY',
+    'AUDUSD'  => 'OANDA:AUDUSD',
+    'USDCHF'  => 'OANDA:USDCHF',
+    'USDCAD'  => 'OANDA:USDCAD',
+    'NZDUSD'  => 'OANDA:NZDUSD',
+    'GBPJPY'  => 'OANDA:GBPJPY',
+    'EURJPY'  => 'OANDA:EURJPY',
+    'EURGBP'  => 'OANDA:EURGBP',
+    'AUDNZD'  => 'OANDA:AUDNZD',
+    'CHFJPY'  => 'OANDA:CHFJPY',
+    'CADJPY'  => 'OANDA:CADJPY',
     'BTCUSDT' => 'BINANCE:BTCUSDT',
     'ETHUSDT' => 'BINANCE:ETHUSDT',
     'SOLUSDT' => 'BINANCE:SOLUSDT',
@@ -35,6 +35,9 @@ $TV_SYMBOLS = [
     'NGAS'    => 'NYMEX:NG1!',
     'COPPER'  => 'COMEX:HG1!',
     'PLATINUM'=> 'TVC:PLATINUM',
+    // Indeks dolar AS — dipakai kartu DXY Tracker. Sebelumnya kartu itu menampilkan
+    // angka ACAK (Math.random); sekarang memakai data NYATA dari pemindai yang sama.
+    'DXY'     => 'TVC:DXY',
 ];
 
 $requestSymbols = isset($_GET['symbols'])
@@ -92,22 +95,7 @@ $body = json_encode([
     'columns' => $columns,
 ]);
 
-$ch = curl_init('https://scanner.tradingview.com/global/scan');
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $body,
-    CURLOPT_HTTPHEADER     => [
-        'Content-Type: application/json',
-        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    ],
-    CURLOPT_TIMEOUT        => 10,
-    CURLOPT_CONNECTTIMEOUT => 5,
-    CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
-]);
-$raw      = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+[$raw, $httpCode] = qi_tv_scan($body, 10);   // library TradingView-API (bridge) → scanner
 
 if (!$raw || $httpCode !== 200) {
     echo json_encode(['status' => 'error', 'message' => 'TradingView scanner unavailable', 'http' => $httpCode]);
@@ -192,10 +180,28 @@ foreach ($tvData['data'] as $item) {
     ];
 }
 
+// Rating multi-timeframe dari LIBRARY TradingView-API (tv-bridge /ta): forex & emas dari OANDA,
+// BTC dari BINANCE (OANDA tidak punya TA untuk BTC). Menimpa angka scanner; bila bridge mati
+// atau simbolnya tidak ada, nilai scanner tetap dipakai.
+$taLib = qi_tv_bridge_ta(array_keys($result));
+foreach ($taLib as $ourSym => $ta) {
+    if (!isset($result[$ourSym]) || empty($ta['timeframes'])) continue;
+    foreach ($ta['timeframes'] as $tf => $x) {
+        if (!isset($result[$ourSym]['timeframes'][$tf]) || !isset($x['all'])) continue;
+        $result[$ourSym]['timeframes'][$tf] = [
+            'signal'     => tv_signal((float)$x['all']),
+            'value'      => round((float)$x['all'], 4),
+            'ma'         => isset($x['ma'])  ? round((float)$x['ma'], 4)  : null,
+            'oscillator' => isset($x['osc']) ? round((float)$x['osc'], 4) : null,
+        ];
+    }
+    $result[$ourSym]['ta_source'] = $ta['ticker'] ?? 'tradingview-api';
+}
+
 $output = json_encode([
     'status'    => 'success',
     'timestamp' => date('Y-m-d H:i:s'),
-    'source'    => 'TradingView Scanner API',
+    'source'    => $taLib ? 'TradingView-API (OANDA) + Scanner' : 'TradingView Scanner API',
     'count'     => count($result),
     'data'      => $result,
 ]);
