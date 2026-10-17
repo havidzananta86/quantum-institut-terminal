@@ -1081,6 +1081,11 @@ function filterSidebarPanels(q) {
 function maybeShowOnboarding() {
     try {
         if (localStorage.getItem('qi_onboarding_v2')) return;
+        // Tips ini tentang pintasan KEYBOARD: tidak berguna di ponsel/tablet → dilewati (ditandai sudah dilihat).
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { localStorage.setItem('qi_onboarding_v2', '1'); return; }
+        // Satu dialog sekaligus: tunggu pengguna baru menyelesaikan sambutan dulu (muncul lagi di kunjungan berikutnya).
+        if (localStorage.getItem('qi_dashboard_onboarded') !== '1' || window.__qimDialogAktif) return;
+        window.__qimDialogAktif = 'tips';
         var steps = [
             { text: 'Gunakan Ctrl+K untuk mencari panel, pair, atau fitur apapun', icon: '⌨️' },
             { text: 'Alt+1-9 untuk switch panel dengan keyboard', icon: '🔢' },
@@ -1093,7 +1098,7 @@ function maybeShowOnboarding() {
             html += '<div class="flex items-start gap-2 mb-2"><span class="text-base">' + s.icon + '</span>' +
                 '<span class="text-[11px] text-slate-300">' + s.text + '</span></div>';
         });
-        html += '<button onclick="document.getElementById(\'onboardTour\').remove();try{localStorage.setItem(\'qi_onboarding_v2\',\'1\')}catch(e){}" class="w-full mt-3 py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30">Mengerti!</button>';
+        html += '<button onclick="document.getElementById(\'onboardTour\').remove();window.__qimDialogAktif=null;try{localStorage.setItem(\'qi_onboarding_v2\',\'1\')}catch(e){}" class="w-full mt-3 py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30">Mengerti!</button>';
         var modal = document.createElement('div');
         modal.id = 'onboardTour';
         modal.style.cssText = 'position:fixed;inset:0;z-index:101;display:flex;align-items:center;justify-content:center;';

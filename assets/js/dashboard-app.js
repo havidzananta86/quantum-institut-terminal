@@ -3145,8 +3145,13 @@ async function buildLwChart() {
     const chartText = cs.getPropertyValue('--qi-chart-text').trim() || '#64748B';
     const chartCH   = cs.getPropertyValue('--qi-chart-crosshair').trim() || '#00E5FF55';
 
+    // Layar sentuh: geser horizontal = menggeser chart, cubit = zoom; geser VERTIKAL tidak lagi
+    // menggeser skala harga tanpa sengaja (gestur paling sering salah di ponsel).
+    const layarSentuh = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     _lwChart = createChart(container, {
         autoSize: true,
+        handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: !layarSentuh },
+        handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
         layout: {
             background: { color: chartBg },
             textColor: chartText,
@@ -3253,12 +3258,14 @@ async function lwFetchAndSetData() {
     const found   = allSyms.find(s => s.tv === _tvSymbol);
     if (!found) return;
     const st = document.getElementById('lwChartStatus');
+    const kabar = nama => { try { window.dispatchEvent(new CustomEvent(nama, { detail: { symbol: found.key, interval: _tvInterval } })); } catch (e) {} };
+    kabar('qi-chart-loading');   // kerangka (skeleton) chart tampil sampai data siap
     try {
         if (st) st.textContent = 'Memuat data…';
         const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
         const data = await res.json();
         const candles = (data.candles || []).filter(c => c.time && c.open);
-        if (!candles.length) { if (st) st.textContent = 'Tidak ada data'; return; }
+        if (!candles.length) { if (st) st.textContent = 'Tidak ada data'; kabar('qi-chart-gagal'); return; }
         // PENTING (integritas data): `.filter()` menghasilkan array BARU sehingga
         // properti `simulated` dari server HILANG. Akibatnya 9 mesin tidak bisa tahu
         // bahwa candle yang dinilai adalah candle ACAK (data simulasi) dan bisa
@@ -3293,6 +3300,7 @@ async function lwFetchAndSetData() {
         // membocorkan internal dan tidak membingungkan.
         console.error('[QI Chart] gagal memuat candle:', e);
         if (st) st.textContent = 'Gagal memuat data chart. Coba ganti timeframe atau muat ulang.';
+        kabar('qi-chart-gagal');
     }
 }
 

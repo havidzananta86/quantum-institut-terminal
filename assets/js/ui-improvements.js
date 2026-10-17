@@ -545,6 +545,11 @@ function showWhatsNew() {
     try { if (localStorage.getItem(key) === CHANGELOG_VERSION) return; } catch(e){ return; }
 
     setTimeout(function(){
+        // Pengguna BARU tidak perlu "apa yang baru" (sambutan sudah menjelaskan fiturnya): tandai dilihat.
+        try { if (localStorage.getItem('qi_dashboard_onboarded') !== '1') { localStorage.setItem(key, CHANGELOG_VERSION); return; } } catch(e){}
+        // Satu dialog sekaligus: bila dialog lain sedang terbuka, tampilkan di kunjungan berikutnya.
+        if (window.__qimDialogAktif || document.getElementById('onboardTour')) return;
+        window.__qimDialogAktif = 'changelog';
         var modal = document.createElement('div');
         modal.id = 'qiWhatsNew';
         modal.className = 'fixed inset-0 z-[8500] flex items-center justify-center p-4';
@@ -570,6 +575,7 @@ function showWhatsNew() {
         function dismiss() {
             try { localStorage.setItem(key, CHANGELOG_VERSION); } catch(e){}
             modal.remove();
+            window.__qimDialogAktif = null;
         }
         modal.querySelector('button').onclick = dismiss;
     }, 2000);
