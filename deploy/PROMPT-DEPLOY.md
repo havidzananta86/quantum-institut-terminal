@@ -11,7 +11,7 @@ ke Hostinger shared hosting. Bekerjalah hati-hati: ini situs produksi yang sedan
 KONTEKS
 - Repo: https://github.com/havidzananta86/quantum-institut-terminal  (remote "origin")
 - Folder lokal: D:\xamp\htdocs\webapp
-- Versi baru ada di cabang  feat/oanda-tv-bridge  (commit terakhir c852475 atau yang lebih baru di cabang yang sama).
+- Versi baru ada di cabang  feat/oanda-tv-bridge  (ambil commit paling atas cabang itu: git log --oneline -1).
 - Produksi saat ini = origin/master di commit 0596c5c (belum pernah di-deploy dari cabang baru; situs live masih
   memuat dashboard-app.js?v=2.0.8 dan qim-mockup.css masih 404).
   Perbedaan terhadap produksi: 229 file (+42.650 / -11.565 baris), 20 migrasi database baru (003-021, 023),
@@ -36,7 +36,7 @@ PERSIAPAN (semua harus selesai sebelum push)
 A. Di komputer:
    1. cd D:\xamp\htdocs\webapp ; git status  -> tidak boleh ada berkas dilacak yang belum di-commit (cache/calendar.json
       dan cache/news.json boleh diabaikan: berubah otomatis).
-   2. git log --oneline -1 -> harus c852475 atau turunannya di cabang yang sama (jika ada commit lebih baru, catat id-nya).
+   2. git log --oneline -1 -> catat id commit paling atas; itu yang akan dikirim.
    3. npm run test  -> semua PASS.
 B. Di hPanel Hostinger (pengguna login sendiri):
    1. BACKUP database: Databases -> phpMyAdmin -> pilih database -> Export (Quick, SQL). Simpan file.
