@@ -473,6 +473,14 @@
                 .then(r => r.ok ? r.json() : null)
                 .then(d => { if (d && d.dibuat) console.debug('[pembangkit sinyal] dibuat:', d.dibuat); })
                 .catch(() => {});
+            // Sumber sinyal berbasis struktur (mode BAYANGAN): hanya dicatat untuk dibandingkan dengan
+            // pembangkit lama, tidak tampil ke pengguna. Dijeda 15 menit & dikunci di sisi server.
+            setTimeout(() => {
+                fetch('api/signal-setup-shadow.php?auto=1&_=' + Date.now(), { cache: 'no-store' })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => { if (d && d.dibuat) console.debug('[sinyal bayangan] dibuat:', d.dibuat); })
+                    .catch(() => {});
+            }, 4000);
         } catch (e) {}
     }
     // Dipicu lebih lambat dari penilai (20 detik) agar tidak berebut saat halaman dibuka.

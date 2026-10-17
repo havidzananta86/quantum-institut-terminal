@@ -141,6 +141,34 @@ if (!$dryRun) {
     }
 }
 
+// ── Sinyal bayangan berbasis struktur ───────────────────────────────────────
+// Menilai order limit yang terbuka dan memindai beberapa simbol (lihat api/_setup_shadow.php).
+// Hanya dicatat di cache/signal_shadow.json untuk dibandingkan dengan sinyal lama — tidak tampil
+// ke pengguna. Dilewati bila putaran lain (dashboard) baru jalan <10 menit lalu.
+if (!$dryRun) {
+    try {
+        $penandaBayangan = __DIR__ . '/../cache/signal_shadow_auto.txt';
+        if (is_file($penandaBayangan) && (time() - (int)@filemtime($penandaBayangan)) < 600) {
+            $out['sinyal_bayangan'] = ['dilewati' => 'baru dijalankan <10 menit lalu'];
+        } else {
+            if (!defined('QI_SERVER_MT5')) define('QI_SERVER_MT5', true);
+            if (!defined('QI_AI_SIGNAL_LIB')) define('QI_AI_SIGNAL_LIB', 1);
+            require_once __DIR__ . '/_setup_shadow.php';
+            require_once __DIR__ . '/ai-signal.php';
+            if (function_exists('ai_load_candles') && function_exists('qi_ss_jalankan')) {
+                @file_put_contents($penandaBayangan, (string)time(), LOCK_EX);
+                $b = qi_ss_jalankan([
+                    'muat'   => fn(string $simbol, string $iv): array => ai_load_candles($simbol, $iv),
+                    'berita' => qi_berita_blackout(30, true),
+                ]);
+                $out['sinyal_bayangan'] = ['dinilai' => $b['dinilai'], 'dibuat' => $b['dibuat'], 'dipindai' => $b['dipindai'], 'total_rekor' => $b['total_rekor'] ?? null];
+            }
+        }
+    } catch (Throwable $e) {
+        $out['sinyal_bayangan'] = ['error' => 'sinyal bayangan dilewati'];
+    }
+}
+
 // ── Retensi snapshot akun ───────────────────────────────────────────────────
 // EA mengirim snapshot tiap ±60 detik = ±1.440 baris/hari/akun, dan sebelumnya TIDAK
 // ADA pembersihan sama sekali (tumbuh tanpa batas: ±526 ribu baris per akun per tahun).
