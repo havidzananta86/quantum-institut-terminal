@@ -147,7 +147,7 @@ $tvKey = Get-EnvValue "$Root\tv-bridge\.env"  'BRIDGE_KEY'
 if (-not $jwt -or -not $tvKey) { throw 'Kunci di .env tidak ditemukan. Jalankan setup-vps.ps1 dulu.' }
 $me = "$env:USERDOMAIN\$env:USERNAME"
 $block = @"
-// -- Tempel di config/api_keys.php (Hostinger). GANTIKAN blok bridge lama bila sudah pernah ditempel. --
+// -- Hostinger: buat config/bridge.php, baris pertama <?php, lalu tempel blok ini di bawahnya. --
 define('QI_TV_BRIDGE_URL', 'https://$hostName/tv');
 define('QI_TV_BRIDGE_KEY', '$tvKey');
 
