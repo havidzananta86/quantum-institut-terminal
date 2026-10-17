@@ -50,13 +50,11 @@ python main.py
 
 ---
 
-## 2. Cara Mengakses Chart Webapp
+## 2. Dipakai oleh webapp
 
-Buka di browser Anda:
-👉 **`http://localhost/webapp/tv-chart.html`**
-
-Atau dari Dashboard utama **`http://localhost/webapp/dashboard.html`**, klik menu sidebar:
-👉 **Market Terminal → 📊 TradingView Live**
+Halaman `tv-chart.html` dan menu "TradingView Live" sudah dihapus. Bridge ini sekarang hanya melayani **PHP**
+(`api/get-chart-data.php`, `api/live-price.php`, `api/tv-scan.php`, dan lainnya) untuk data OANDA; chart di
+`dashboard.html` memakai chart Quantum, bukan widget TradingView. Lihat bagian 5 untuk deploy.
 
 ---
 
