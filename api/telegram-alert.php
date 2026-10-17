@@ -2,6 +2,10 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(10, 60);
+
+// Wajibkan autentikasi user untuk cegah penyalahgunaan bot
+$authUser = qi_require_auth();
+
 $_apiKeysFile = __DIR__ . '/../config/api_keys.php';
 if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
 

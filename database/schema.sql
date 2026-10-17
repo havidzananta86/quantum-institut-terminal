@@ -3,11 +3,7 @@
 -- Updated: 2026-10-07
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS `quantum_market_terminal`
-    DEFAULT CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE `quantum_market_terminal`;
+-- Database schema table definitions
 
 -- ============================================================
 -- 1. USERS

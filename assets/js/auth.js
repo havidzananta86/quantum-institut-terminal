@@ -79,13 +79,21 @@ const QuantumAuth = {
         return true;
     },
 
-    logout() {
+    async logout() {
         const token = this.getToken();
         if (token) {
-            fetch('api/logout.php', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            }).catch(() => {});
+            try {
+                await fetch('api/logout.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    signal: AbortSignal.timeout(3000)
+                });
+            } catch (e) {
+                console.warn('[QI Auth] Logout server notification failed', e);
+            }
         }
         try {
             localStorage.removeItem('qi_token');

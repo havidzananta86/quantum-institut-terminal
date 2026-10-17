@@ -672,6 +672,7 @@ class QuantumEngineOverlay {
     /* ── DISPATCH ke engine yang aktif ── */
     drawEngine(engineCode, candles) {
         this.clearAll();
+        if (!engineCode || engineCode === 'NONE' || engineCode === 'CLEAN') return;
         if (!candles || candles.length < 10) return;
 
         switch (engineCode) {
@@ -684,7 +685,7 @@ class QuantumEngineOverlay {
             case 'MOMENTUM_NY':  this.drawMomentumNY(candles);   break;
             case 'MACD_MOM':     this.drawMACD(candles);         break;
             case 'GOLDEN_CROSS': this.drawGoldenCross(candles);  break;
-            default:             this.drawSNR(candles);
+            default:             break; // Bersih, jangan fallback ke SNR jika tidak aktif
         }
     }
 }
@@ -698,7 +699,8 @@ class QuantumRealtimeTerminalManager {
         this.containerId     = options.containerId  || 'tv_advanced_main';
         this.currentSymbol   = options.symbol       || 'BTCUSDT';
         this.currentInterval = options.interval     || '60';
-        this.currentEngine   = options.engine       || 'SNR';
+        this.currentEngine   = options.engine       || null; // null = bersih tanpa garis saat awal
+        this.showEma         = options.showEma      || false; // false = tanpa garis EMA otomatis saat awal
 
         this.chart        = null;
         this.candleSeries = null;
@@ -814,7 +816,22 @@ class QuantumRealtimeTerminalManager {
             wickUpColor:'#00FFA3', wickDownColor:'#FF4D6D',
         });
 
-        // Volume histogram dihapus — mengganggu pandangan candle
+        // ── Panel volume ────────────────────────────────────────────────────
+        // Dulu di sini ada catatan "Volume histogram dihapus — mengganggu pandangan
+        // candle", tetapi kode yang MEMAKAI this.volumeSeries (setData/update) masih
+        // tertinggal, sehingga serinya tidak pernah ada. Sekarang serinya benar-benar
+        // dibuat, dan bisa DIMATIKAN lewat tombol (default: tampil, dengan tinggi 20%
+        // agar candle tidak terlalu terdesak — permintaan sebelumnya dihormati).
+        this.volumeSeries = this.chart.addHistogramSeries({
+            priceFormat: { type: 'volume' },
+            priceScaleId: 'volume',
+            lastValueVisible: false,
+            priceLineVisible: false,
+            visible: true,
+        });
+        try {
+            this.volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } });
+        } catch (e) {}
 
         this.emaSeries = this.chart.addLineSeries({
             color:'#7C4DFF', lineWidth:1,
@@ -824,6 +841,12 @@ class QuantumRealtimeTerminalManager {
         });
 
         this.overlay = new QuantumEngineOverlay(this.chart, this.candleSeries);
+
+        // Penghalusan tampilan (sumber aturan: assets/js/chart-style.js).
+        // `warna:false` → palet khas terminal TIDAK diubah; yang diterapkan hanya
+        // penghalusan fungsional: label waktu WIB, presisi harga per instrumen,
+        // watermark simbol · timeframe, dan warna label kursor.
+        this._terapkanGayaChart();
 
         // Multi-stage forceResize for iOS Safari Standalone WebApp flex layout recalculations
         const forceResize = () => {
@@ -919,14 +942,20 @@ class QuantumRealtimeTerminalManager {
         this._startLocalPoller(cfg);
     }
 
-    /* Poller ringan: update candle terakhir dari window._livePrices setiap 5 detik */
+    /* Poller ringan: update candle terakhir dari window._livePrices setiap 2 detik.
+       Dipercepat dari 5 detik → 2 detik supaya candle terasa hidup seperti chart
+       profesional. Sumbernya dijaga poller harga di halaman (live-price.php), jadi
+       biayanya kecil: hanya satu series.update() dan hanya bila harga berubah. */
     _startLocalPoller(cfg) {
         if (this._localPoller) { clearInterval(this._localPoller); this._localPoller = null; }
         const sym = this.currentSymbol;
+        let hargaTerakhir = null;
         this._localPoller = setInterval(() => {
             if (this.currentSymbol !== sym) { clearInterval(this._localPoller); return; }
             const price = window._livePrices?.[sym];
             if (!price || price <= 0) return;
+            if (price === hargaTerakhir) return;      // tidak berubah → tidak perlu gambar
+            hargaTerakhir = price;
             if (!this._cachedCandles || this._cachedCandles.length === 0) return;
             const last = this._cachedCandles[this._cachedCandles.length - 1];
             const updated = {
@@ -942,7 +971,7 @@ class QuantumRealtimeTerminalManager {
             const base  = first ? first.open : price;
             const pct   = base > 0 ? ((price - base) / base) * 100 : 0;
             this._updateHeaderUI(price, pct, cfg);
-        }, 5000);
+        }, 2000);
     }
 
     /* =========================================================
@@ -1411,7 +1440,11 @@ class QuantumRealtimeTerminalManager {
         const displayCandles = this.candleType === 'heikinashi' ? _toHeikinAshi(candles) : candles;
         if (this.candleSeries) this.candleSeries.setData(displayCandles);
         if (this.volumeSeries) this.volumeSeries.setData(volumes);
-        if (this.emaSeries)    this.emaSeries.setData(emaData);
+        if (this.emaSeries && this.showEma) {
+            this.emaSeries.setData(emaData);
+        } else if (this.emaSeries) {
+            this.emaSeries.setData([]);
+        }
         this.chart.timeScale().fitContent();
         this._clearOverlay();
 
@@ -1423,8 +1456,14 @@ class QuantumRealtimeTerminalManager {
 
         this._updateHeaderUI(last.close, null, cfg);
 
-        // Gambar engine overlay otomatis
-        if (this.overlay) this.overlay.drawEngine(this.currentEngine, candles);
+        // Gambar engine overlay: HANYA jika engine aktif dipilih oleh user
+        if (this.overlay) {
+            if (this.currentEngine) {
+                this.overlay.drawEngine(this.currentEngine, candles);
+            } else {
+                this.overlay.clearAll();
+            }
+        }
     }
 
     /* =========================================================
@@ -1472,8 +1511,13 @@ class QuantumRealtimeTerminalManager {
     _connectBinanceWS(bSym, bIntvl) {
         const sym = bSym.toLowerCase();
 
-        // Stream from Binance Vision (unblocked globally) with Binance primary fallback
+        // Urutan host BERDASARKAN HASIL UJI: wss://data-stream.binance.vision
+        // tersambung dari jaringan Indonesia (561 ms), sedangkan dua host lama
+        // GAGAL di sini (stream.binance.vision error 295 ms, stream.binance.com
+        // timeout 6 dtk — khas pemblokiran ISP). Host yang gagal tetap dicoba
+        // sebagai cadangan karena di region lain justru ia yang jalan.
         const klineWsUrls = [
+            `wss://data-stream.binance.vision/ws/${sym}@kline_${bIntvl}`,
             `wss://stream.binance.vision/ws/${sym}@kline_${bIntvl}`,
             `wss://stream.binance.com:9443/ws/${sym}@kline_${bIntvl}`
         ];
@@ -1510,6 +1554,7 @@ class QuantumRealtimeTerminalManager {
         tryKlineWs();
 
         const tickerWsUrls = [
+            `wss://data-stream.binance.vision/ws/${sym}@miniTicker`,
             `wss://stream.binance.vision/ws/${sym}@miniTicker`,
             `wss://stream.binance.com:9443/ws/${sym}@miniTicker`
         ];
@@ -1597,6 +1642,61 @@ class QuantumRealtimeTerminalManager {
     }
 
     /* =========================================================
+       PENGHALUSAN TAMPILAN — memakai aturan dari assets/js/chart-style.js
+       ========================================================= */
+    _terapkanGayaChart() {
+        try {
+            if (!this.chart || !window.QuantumChartStyle) return false;
+            const candles = (Array.isArray(this._cachedCandles) && this._cachedCandles.length)
+                ? this._cachedCandles[this._cachedCandles.length - 1] : null;
+            const gaya = window.QuantumChartStyle.opsiDasar(
+                this.currentSymbol,
+                this.currentInterval,
+                candles ? candles.close : undefined,
+                { warna: true }             // warna mengikuti TEMA APLIKASI (tokens.css),
+                                            // supaya seragam dengan dashboard & panel
+            );
+            const formatHarga = gaya.priceFormatSeri;
+            const warnaSeri = gaya.warnaSeri;
+            delete gaya.priceFormatSeri;
+            delete gaya.presisi;
+            delete gaya.warnaSeri;
+            this.chart.applyOptions(gaya);
+            if (this.candleSeries) this.candleSeries.applyOptions(Object.assign({ priceFormat: formatHarga }, warnaSeri || {}));
+            if (this.volumeSeries) {
+                try { this.volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.80, bottom: 0 } }); } catch (e2) {}
+            }
+            return true;
+        } catch (e) {
+            console.warn('[QI] Gaya chart terminal gagal diterapkan:', e && e.message ? e.message : e);
+            return false;
+        }
+    }
+
+    /* =========================================================
+       PUBLIC API — Panel Volume (tampil/sembunyi)
+       ========================================================= */
+    setVolumeVisible(tampil) {
+        try {
+            if (!this.volumeSeries) return false;
+            this.volumeSeries.applyOptions({ visible: !!tampil });
+            // Saat disembunyikan, candle dipakai penuh; saat tampil, beri ruang 20%.
+            try {
+                this.volumeSeries.priceScale().applyOptions({
+                    scaleMargins: tampil ? { top: 0.80, bottom: 0 } : { top: 1, bottom: 0 }
+                });
+            } catch (e) {}
+            const btn = document.getElementById('btnVolume');
+            if (btn) {
+                btn.classList.toggle('bg-cyan-500/20', !!tampil);
+                btn.classList.toggle('text-cyan-300', !!tampil);
+                btn.classList.toggle('text-slate-400', !tampil);
+            }
+            return true;
+        } catch (e) { return false; }
+    }
+
+    /* =========================================================
        PUBLIC API — Ganti Simbol
        ========================================================= */
     setSymbol(symbol) {
@@ -1607,6 +1707,7 @@ class QuantumRealtimeTerminalManager {
         });
         const ab = document.getElementById(`pair-${symbol}`);
         if (ab) ab.className = 'min-h-[44px] px-2.5 sm:px-3 py-1.5 rounded-lg active-tab font-bold transition-all border flex items-center';
+        this._terapkanGayaChart();   // presisi harga & watermark mengikuti simbol baru
         this._loadDataAndStream();
     }
 
@@ -1624,6 +1725,7 @@ class QuantumRealtimeTerminalManager {
         const tfNames = {'1':'M1','5':'M5','15':'M15','30':'M30','60':'H1','240':'H4','D':'D1'};
         const tfL = document.getElementById('tf-active');
         if (tfL) tfL.textContent = tfNames[tf] || tf;
+        this._terapkanGayaChart();   // watermark & label waktu ikut berubah
         this._loadDataAndStream();
     }
 
@@ -1631,9 +1733,13 @@ class QuantumRealtimeTerminalManager {
        PUBLIC API — Ganti Engine (dipanggil dari switchQuantumEngine)
        ========================================================= */
     setEngine(engineCode) {
-        this.currentEngine = engineCode;
-        if (this.overlay && this._cachedCandles.length > 0) {
-            this.overlay.drawEngine(engineCode, this._cachedCandles);
+        this.currentEngine = (engineCode && engineCode !== 'NONE' && engineCode !== 'CLEAN') ? engineCode : null;
+        if (this.overlay) {
+            if (this.currentEngine && this._cachedCandles.length > 0) {
+                this.overlay.drawEngine(this.currentEngine, this._cachedCandles);
+            } else {
+                this.overlay.clearAll();
+            }
         }
     }
 
@@ -1940,7 +2046,7 @@ function initQuantumRealtimeSystem() {
         containerId: 'tv_advanced_main',
         symbol:      'BTCUSDT',
         interval:    '60',
-        engine:      'SNR',
+        engine:      null, // Awal buka terminal: chart bersih tanpa garis-garis overlay
     });
     quantumTerminalManager.initChart();
     window.quantumTerminalManager = quantumTerminalManager; // expose globally

@@ -64,71 +64,57 @@ try {
     // Fallback error handling
 }
 
-// 2. If ForexFactory fetch fails or empty, populate with high-precision sample calendar data for demo
+// 2. FALLBACK YANG JUJUR.
+//
+// ⚠️ Sebelumnya di sini dibuat 5 event CONTOH ("Core CPI", NFP, ECB, BOE, Unemployment)
+// yang diberi label source='ForexFactory' dan tanggal relatif terhadap waktu sekarang —
+// termasuk satu event High impact yang seolah rilis 20 MENIT LAGI. Itu berbahaya:
+//   · filter berita bisa MENAHAN sinyal nyata karena berita palsu, dan
+//   · pemantau sinyal berita bisa MENERBITKAN sinyal dari event palsu.
+// Karena itu pembuatan event contoh DIHAPUS TOTAL.
+//
+// Yang dilakukan sekarang bila sumber gagal:
+//   · pakai cache NYATA terakhir (bila ada) dan sebutkan umurnya apa adanya, ATAU
+//   · kembalikan daftar KOSONG dengan status 'gagal' + alasan jujur.
+// Cache yang baik TIDAK ditimpa oleh hasil gagal, sehingga percobaan berikutnya
+// masih bisa menyajikan data nyata.
 if (empty($events)) {
-    $now = time();
-    $events = [
-        [
-            'id' => 'evt_1',
-            'source' => 'ForexFactory',
-            'title' => 'Core CPI (MoM)',
-            'country' => 'USD',
-            'currency' => 'USD',
-            'date' => date('c', $now + 1200), // 20 min from now (High impact)
-            'impact' => 'high',
-            'forecast' => '0.3%',
-            'previous' => '0.2%',
-            'actual' => '-'
-        ],
-        [
-            'id' => 'evt_2',
-            'source' => 'ForexFactory',
-            'title' => 'Non-Farm Employment Change (NFP)',
-            'country' => 'USD',
-            'currency' => 'USD',
-            'date' => date('c', $now + 86400),
-            'impact' => 'high',
-            'forecast' => '175K',
-            'previous' => '142K',
-            'actual' => '-'
-        ],
-        [
-            'id' => 'evt_3',
-            'source' => 'ForexFactory',
-            'title' => 'ECB Press Conference & Monetary Policy',
-            'country' => 'EUR',
-            'currency' => 'EUR',
-            'date' => date('c', $now + 3600 * 3),
-            'impact' => 'high',
-            'forecast' => '3.25%',
-            'previous' => '3.50%',
-            'actual' => '-'
-        ],
-        [
-            'id' => 'evt_4',
-            'source' => 'ForexFactory',
-            'title' => 'BOE Monetary Policy Summary',
-            'country' => 'GBP',
-            'currency' => 'GBP',
-            'date' => date('c', $now + 3600 * 6),
-            'impact' => 'medium',
-            'forecast' => '5.00%',
-            'previous' => '5.00%',
-            'actual' => '-'
-        ],
-        [
-            'id' => 'evt_5',
-            'source' => 'ForexFactory',
-            'title' => 'Unemployment Rate',
-            'country' => 'USD',
-            'currency' => 'USD',
-            'date' => date('c', $now + 86400),
-            'impact' => 'high',
-            'forecast' => '4.2%',
-            'previous' => '4.2%',
-            'actual' => '-'
-        ]
-    ];
+    $cacheLama = null;
+    if (is_file($cacheFile)) {
+        $lama = json_decode((string)@file_get_contents($cacheFile), true);
+        if (is_array($lama) && !empty($lama['data']) && is_array($lama['data'])) {
+            $sah = true; $jumlah = 0;
+            foreach ($lama['data'] as $e) {
+                if (!is_array($e)) continue;
+                $jumlah++;
+                // Tolak bila ternyata berisi sisa data contoh (id 'evt_').
+                if (strpos((string)($e['id'] ?? ''), 'evt_') === 0) { $sah = false; break; }
+            }
+            if ($sah && $jumlah > 0) $cacheLama = $lama;
+        }
+    }
+
+    if ($cacheLama !== null) {
+        $umurMenit = (int)round((time() - (int)@filemtime($cacheFile)) / 60);
+        $cacheLama['status']         = 'basi';
+        $cacheLama['sumber_basi']    = true;
+        $cacheLama['umur_menit']     = $umurMenit;
+        $cacheLama['catatan']        = 'Sumber kalender sedang tidak dapat dihubungi. Yang ditampilkan adalah data NYATA '
+            . 'terakhir (umur ' . $umurMenit . ' menit). Tidak ada event contoh yang ditambahkan.';
+        echo json_encode($cacheLama, JSON_PRETTY_PRINT);
+        exit();
+    }
+
+    echo json_encode([
+        'status'                => 'gagal',
+        'timestamp'             => date('Y-m-d H:i:s'),
+        'count'                 => 0,
+        'cache_expires_in_sec'  => $cacheTime,
+        'data'                  => [],
+        'catatan'               => 'Kalender ekonomi tidak dapat diambil dan belum ada data nyata tersimpan. '
+            . 'Daftar sengaja dikosongkan — event contoh TIDAK dibuat karena bisa memicu sinyal palsu.',
+    ], JSON_PRETTY_PRINT);
+    exit();
 }
 
 // 3. Sort chronologically by date

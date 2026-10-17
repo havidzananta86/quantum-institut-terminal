@@ -9,6 +9,9 @@
 <title>Profil Saya — Quantum Institut</title>
 <script src="assets/js/auth.js?v=1.4.3"></script>
 <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+<!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+<link rel="stylesheet" href="assets/css/a11y.css?v=1.0.2">
+<script src="assets/js/a11y.js?v=1.0.3" defer></script>
 <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
 <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.4">
 <script src="assets/js/error-tracker.js?v=1.4.6"></script>
@@ -139,24 +142,10 @@ input:focus { border-color:rgba(0,229,255,.4) !important; }
         </form>
     </div>
 
-    <!-- #42 Two-Factor Authentication -->
+    <!-- #42 Two-Factor Authentication — isinya dibangun assets/js/qim-keamanan.js (api/keamanan.php) -->
     <div class="bg-qi-card border border-qi-border rounded-xl p-5 mb-4">
-        <div class="section-title">Verifikasi Dua Langkah (OTP)</div>
-        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-            Kirim kode OTP ke email untuk verifikasi identitas. Kode berlaku 5 menit.
-        </p>
-        <div id="otpSendSection">
-            <button onclick="sendOtp()" id="btnSendOtp" class="px-5 py-2.5 bg-qi-purple text-white font-bold rounded-lg text-sm hover:bg-qi-purple/80 transition-colors">Kirim Kode OTP</button>
-        </div>
-        <div id="otpVerifySection" class="hidden mt-3">
-            <div class="flex gap-3">
-                <input type="text" id="otpCode" maxlength="6" placeholder="Masukkan 6 digit kode"
-                       class="flex-1 bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none tracking-widest text-center font-mono">
-                <button onclick="verifyOtp()" id="btnVerifyOtp" class="px-5 py-2.5 bg-qi-green text-slate-950 font-bold rounded-lg text-sm hover:bg-qi-green/80 transition-colors">Verifikasi</button>
-            </div>
-            <button onclick="sendOtp()" class="mt-2 text-[11px] text-slate-500 hover:text-qi-cyan transition-colors">Kirim ulang kode</button>
-        </div>
-        <div id="otpStatus" class="mt-2 text-[11px] hidden"></div>
+        <div class="section-title">Verifikasi Dua Langkah</div>
+        <p class="text-xs text-slate-400 leading-relaxed">Memuat pengaturan keamanan…</p>
     </div>
 
     <!-- #43 API Key Management -->
@@ -180,15 +169,13 @@ input:focus { border-color:rgba(0,229,255,.4) !important; }
         </div>
     </div>
 
-    <!-- #41 Session Activity Log -->
+    <!-- #41 Sesi aktif + log aktivitas — dibangun assets/js/qim-keamanan.js (api/keamanan.php) -->
     <div class="bg-qi-card border border-qi-border rounded-xl p-5 mb-4">
         <div class="flex items-center justify-between mb-3">
             <div class="section-title mb-0">Riwayat Login</div>
-            <button onclick="loadSessionLog()" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
+            <button type="button" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
         </div>
-        <div id="sessionLogList" class="space-y-2 text-xs">
-            <div class="text-slate-600 text-center py-4">Memuat riwayat…</div>
-        </div>
+        <p class="text-xs text-slate-400" data-qk-tunggu>Memuat sesi &amp; aktivitas…</p>
     </div>
 
     <!-- #45 Referral System -->
@@ -489,65 +476,6 @@ async function handleSaveSettings(e) {
     btn.disabled = false; btn.textContent = orig;
 }
 
-// #42 OTP
-let _otpEmail = '';
-async function sendOtp() {
-    const userData = JSON.parse(localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user') || '{}');
-    _otpEmail = userData.email || '';
-    if (!_otpEmail) { showToast('Email tidak ditemukan', false); return; }
-    const btn = document.getElementById('btnSendOtp');
-    const status = document.getElementById('otpStatus');
-    btn.disabled = true; btn.textContent = 'Mengirim…';
-    try {
-        const res = await fetch('api/otp.php?action=send', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ email: _otpEmail })
-        });
-        const d = await res.json();
-        if (d.status === 'success') {
-            document.getElementById('otpVerifySection').classList.remove('hidden');
-            status.className = 'mt-2 text-[11px] text-qi-green'; status.classList.remove('hidden');
-            status.textContent = 'Kode OTP dikirim ke email Anda';
-        } else {
-            status.className = 'mt-2 text-[11px] text-qi-red'; status.classList.remove('hidden');
-            status.textContent = d.message || 'Gagal mengirim OTP';
-        }
-    } catch(e) {
-        status.className = 'mt-2 text-[11px] text-qi-red'; status.classList.remove('hidden');
-        status.textContent = 'Network error';
-    }
-    btn.disabled = false; btn.textContent = 'Kirim Kode OTP';
-}
-
-async function verifyOtp() {
-    const code = document.getElementById('otpCode').value.trim();
-    if (!code) { showToast('Masukkan kode OTP', false); return; }
-    const btn = document.getElementById('btnVerifyOtp');
-    const status = document.getElementById('otpStatus');
-    btn.disabled = true; btn.textContent = 'Memverifikasi…';
-    try {
-        const res = await fetch('api/otp.php?action=verify', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ email: _otpEmail, code: code })
-        });
-        const d = await res.json();
-        status.classList.remove('hidden');
-        if (d.status === 'success') {
-            status.className = 'mt-2 text-[11px] text-qi-green';
-            status.textContent = '✓ OTP terverifikasi!';
-            document.getElementById('otpVerifySection').classList.add('hidden');
-        } else {
-            status.className = 'mt-2 text-[11px] text-qi-red';
-            status.textContent = d.message || 'Kode salah';
-        }
-    } catch(e) {
-        status.className = 'mt-2 text-[11px] text-qi-red'; status.classList.remove('hidden');
-        status.textContent = 'Network error';
-    }
-    btn.disabled = false; btn.textContent = 'Verifikasi';
-}
 
 // #43 API Keys
 async function loadApiKeys() {
@@ -650,40 +578,6 @@ async function revokeApiKey(id) {
     });
 }
 
-// #41 Session Log
-async function loadSessionLog() {
-    const list = document.getElementById('sessionLogList');
-    try {
-        const res = await fetch('api/session-log.php', {
-            headers: { 'Authorization': 'Bearer ' + getToken() }
-        });
-        const d = await res.json();
-        if (d.status === 'success' && d.sessions) {
-            if (!d.sessions.length) {
-                list.innerHTML = '<div class="text-slate-600 text-center py-4">Belum ada riwayat login</div>';
-                return;
-            }
-            list.innerHTML = d.sessions.map((s, i) => {
-                const dt = s.login_at ? new Date(s.login_at).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-                const isCurrent = i === 0;
-                return `<div class="flex items-center justify-between bg-slate-900/60 rounded-lg px-3 py-2${isCurrent ? ' border border-qi-cyan/20' : ''}">
-                    <div class="flex items-center gap-3">
-                        <span class="text-base">${s.device === 'Mobile' ? '📱' : '💻'}</span>
-                        <div>
-                            <div class="text-white">${escH(s.browser)} · ${escH(s.device)}${isCurrent ? ' <span class="text-qi-cyan text-[10px]">(sesi ini)</span>' : ''}</div>
-                            <div class="text-slate-500 text-[10px]">${escH(s.ip)} · ${dt}</div>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        } else {
-            list.innerHTML = '<div class="text-slate-600 text-center py-4">Gagal memuat riwayat</div>';
-        }
-    } catch(e) {
-        list.innerHTML = '<div class="text-slate-600 text-center py-4">Gagal memuat riwayat</div>';
-    }
-}
-
 // #45 Referral
 async function loadReferral() {
     try {
@@ -733,12 +627,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAlerts();
     loadAccountSettings();
     loadApiKeys();
-    loadSessionLog();
     loadReferral();
     const saved = localStorage.getItem('qi_telegram_chat_id') || '';
     document.getElementById('tgChatId').value = saved;
 });
 </script>
+<script src="assets/js/qim-keamanan.js?v=1.0.5"></script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

@@ -180,18 +180,34 @@ function addToWatchlist() {
     if (_watchlist.indexOf(sym) >= 0) { if (window.showQuantumToast) showQuantumToast(sym + ' sudah ada di watchlist', 'info'); return; }
     _watchlist.push(sym);
     saveWatchlist();
-    renderWatchlist();
+    renderPanelWatchlist();
     if (window.showQuantumToast) showQuantumToast(sym + ' ditambahkan ke watchlist', 'success');
 }
 function removeFromWatchlist(sym) {
     _watchlist = _watchlist.filter(function(s) { return s !== sym; });
     saveWatchlist();
-    renderWatchlist();
+    renderPanelWatchlist();
 }
-function renderWatchlist() {
-    var el = document.getElementById('watchlistBody');
+function renderPanelWatchlist() {
+    var el = document.getElementById('panelWatchlistBody');
     if (!el) return;
-    if (!_watchlist.length) { el.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-slate-600 text-xs">Watchlist kosong</td></tr>'; return; }
+    // Wadah bisa berupa <tbody> (panel tabel) atau elemen lain (sidebar). Bila baris
+    // <tr>/<td> ditulis ke wadah non-tabel, browser membuang tag tabelnya dan hanya
+    // menyisakan teks yang menyatu — itu yang membuat "XAUUSDXAUUSD2654.20✕".
+    var isTable = (el.tagName === 'TBODY' || el.tagName === 'TABLE');
+    if (!_watchlist.length) {
+        el.innerHTML = isTable
+            ? '<tr><td colspan="5" class="px-4 py-8 text-center">'
+                + '<div class="text-slate-400 text-xs font-semibold mb-1">Watchlist masih kosong</div>'
+                + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Tambahkan instrumen yang Anda pantau agar harganya '
+                + 'muncul di sini dan di sidebar.</div>'
+                + '<button type="button" onclick="if(typeof addToWatchlist===\'function\')addToWatchlist()" '
+                + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">＋ Tambah instrumen</button>'
+                + '</td></tr>'
+            : '<div class="px-3 py-4 text-center"><div class="text-slate-400 text-[10px] font-semibold mb-1">Watchlist masih kosong</div>'
+                + '<div class="text-slate-600 text-[10px] leading-relaxed">Tambahkan instrumen yang Anda pantau.</div></div>';
+        return;
+    }
     var prices = window._livePrices || {};
     var labels = window.SYMBOL_LABELS || {};
     var dp = window.DP || {};
@@ -201,12 +217,23 @@ function renderWatchlist() {
         var lbl = labels[sym] || sym;
         var d = dp[sym] || 2;
         var priceStr = price > 0 ? price.toFixed(d) : '—';
-        html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')">' +
-            '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl + '</td>' +
-            '<td class="px-3 py-2 font-mono text-xs text-slate-400">' + sym + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right text-white" id="wl_p_' + sym + '">' + priceStr + '</td>' +
-            '<td class="px-3 py-2 text-right"><span id="wl_c_' + sym + '" class="text-[10px] font-mono text-slate-500">—</span></td>' +
-            '<td class="px-3 py-2 text-right"><button onclick="event.stopPropagation();removeFromWatchlist(\'' + sym + '\')" class="text-slate-600 hover:text-qi-red text-xs">✕</button></td></tr>';
+        var click = 'switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')';
+        var remove = '<button onclick="event.stopPropagation();removeFromWatchlist(\'' + sym + '\')" class="text-slate-600 hover:text-qi-red text-xs">✕</button>';
+        if (isTable) {
+            html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="' + click + '">' +
+                '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl + '</td>' +
+                '<td class="px-3 py-2 font-mono text-xs text-slate-400">' + sym + '</td>' +
+                '<td class="px-3 py-2 font-mono text-right text-white" id="wl_p_' + sym + '">' + priceStr + '</td>' +
+                '<td class="px-3 py-2 text-right"><span id="wl_c_' + sym + '" class="text-[10px] font-mono text-slate-500">—</span></td>' +
+                '<td class="px-3 py-2 text-right">' + remove + '</td></tr>';
+        } else {
+            html += '<div class="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-qi-border/30 hover:bg-qi-surface/40 cursor-pointer" onclick="' + click + '">' +
+                '<div class="min-w-0"><div class="font-mono font-semibold text-white text-[11px]">' + lbl + '</div>' +
+                '<div class="font-mono text-[9px] text-slate-500">' + sym + '</div></div>' +
+                '<div class="text-right"><div class="font-mono text-[11px] text-white" id="wl_p_' + sym + '">' + priceStr + '</div>' +
+                '<div class="font-mono text-[9px] text-slate-500" id="wl_c_' + sym + '">—</div></div>' +
+                '<div class="shrink-0">' + remove + '</div></div>';
+        }
     });
     el.innerHTML = html;
 }
@@ -223,7 +250,7 @@ function updateWatchlistPrices() {
 }
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
-window.renderWatchlist = renderWatchlist;
+window.renderPanelWatchlist = renderPanelWatchlist;
 loadWatchlist();
 
 
@@ -373,42 +400,31 @@ window.scoreNewsSentiment = scoreNewsSentiment;
    C14  MULTI-TIMEFRAME VIEW
    ═══════════════════════════════════════════════════════════ */
 function renderMTFView() {
-    var el = document.getElementById('mtfGrid');
-    if (!el) return;
-    var sym = document.getElementById('mtfSymbol') ? document.getElementById('mtfSymbol').value : 'XAUUSD';
-    var timeframes = ['M5', 'M15', 'H1', 'H4', 'D1'];
-    var html = '';
-    timeframes.forEach(function(tf) {
-        var rsi = 30 + Math.random() * 40;
-        var ema = Math.random() > 0.5;
-        var trend = rsi > 55 ? 'BULLISH' : rsi < 45 ? 'BEARISH' : 'NEUTRAL';
-        var trendCls = trend === 'BULLISH' ? 'text-qi-green' : trend === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
-        var emaCls = ema ? 'text-qi-green' : 'text-qi-red';
-        html += '<div class="bg-qi-panel border border-qi-border rounded-xl p-3">' +
-            '<div class="flex items-center justify-between mb-2"><span class="font-mono font-bold text-white text-xs">' + tf + '</span>' +
-            '<span class="text-[10px] font-semibold ' + trendCls + '">' + trend + '</span></div>' +
-            '<div class="space-y-1.5">' +
-            '<div class="flex justify-between text-[10px]"><span class="text-slate-500">RSI(14)</span><span class="font-mono ' + (rsi > 70 ? 'text-qi-red' : rsi < 30 ? 'text-qi-green' : 'text-slate-300') + '">' + rsi.toFixed(1) + '</span></div>' +
-            '<div class="flex justify-between text-[10px]"><span class="text-slate-500">EMA 200</span><span class="font-mono ' + emaCls + '">' + (ema ? 'Above' : 'Below') + '</span></div>' +
-            '<div class="w-full h-1.5 bg-slate-800 rounded-full mt-1"><div class="h-full rounded-full ' + (trend === 'BULLISH' ? 'bg-qi-green' : trend === 'BEARISH' ? 'bg-qi-red' : 'bg-qi-gold') + '" style="width:' + (rsi) + '%"></div></div>' +
-            '</div></div>';
-    });
-    el.innerHTML = html;
-    var biasEl = document.getElementById('mtfBias');
-    if (biasEl) {
-        var bullCount = 0;
-        timeframes.forEach(function() { if (Math.random() > 0.4) bullCount++; });
-        var bias = bullCount >= 4 ? 'STRONG BUY' : bullCount >= 3 ? 'BUY' : bullCount === 2 ? 'NEUTRAL' : bullCount === 1 ? 'SELL' : 'STRONG SELL';
-        var biasCls = bullCount >= 3 ? 'text-qi-green' : bullCount <= 1 ? 'text-qi-red' : 'text-qi-gold';
-        biasEl.innerHTML = '<span class="font-mono font-bold text-lg ' + biasCls + '">' + bias + '</span>' +
-            '<span class="text-[10px] text-slate-500 block">' + bullCount + '/5 timeframes aligned</span>';
+    // ⚠️ PERBAIKAN INTEGRITAS DATA: fungsi ini DULU mengarang angkanya dengan
+    // Math.random() — RSI, EMA 200, tren, dan bias semuanya acak, lalu ditampilkan
+    // seolah data pasar sungguhan. Aplikasi ini tidak boleh mengarang data, jadi
+    // sekarang ia mendelegasikan ke fetchMtfBias() di dashboard.html yang menghitung
+    // dari CANDLE SUNGGUHAN (api/get-chart-data.php) dan berkata "data tidak tersedia"
+    // bila sumbernya gagal.
+    try {
+        if (typeof window.fetchMtfBias === 'function') return window.fetchMtfBias();
+    } catch (e) {}
+    // Cadangan jujur bila fungsi nyata belum tersedia: jangan menampilkan angka palsu.
+    var el = document.getElementById('mtfGridPanel') || document.getElementById('mtfGrid');
+    if (el) {
+        el.innerHTML = '<div class="col-span-full rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-[11px] text-slate-400">'
+            + 'Data multi-timeframe sedang dimuat. Bila tidak muncul, sumber candle belum bisa dihubungi — '
+            + 'panel ini tidak menampilkan angka perkiraan.</div>';
     }
+    var biasEl = document.getElementById('mtfBias');
+    if (biasEl) biasEl.innerHTML = '<span class="font-mono font-bold text-lg text-slate-400">MENUNGGU DATA</span>'
+        + '<span class="text-[10px] text-slate-500 block">belum ada candle yang terbaca</span>';
 }
 window.renderMTFView = renderMTFView;
 
 
 /* ═══════════════════════════════════════════════════════════
-   C15  COT REPORT VISUAL (Canvas chart)
+   C15  COT REPORT VISUAL (Canvas chart with REAL CFTC data)
    ═══════════════════════════════════════════════════════════ */
 function renderCotChart() {
     var canvas = document.getElementById('cotChartCanvas');
@@ -420,36 +436,60 @@ function renderCotChart() {
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
     ctx.scale(2, 2);
 
-    var weeks = 12;
-    var data = [];
-    for (var i = 0; i < weeks; i++) {
-        data.push({ long: 55 + Math.random() * 30, short: 20 + Math.random() * 25 });
+    // Retrieve real CFTC data from window._cotData or fallback to Gold/EUR
+    var cot = window._cotData;
+    var cur = null;
+    if (cot && cot.currencies) {
+        var activePair = window._cotCurPair || 'EUR/USD';
+        var baseKey = activePair.split('/')[0] || 'EUR';
+        cur = cot.currencies[baseKey] || cot.currencies['EUR'] || cot.currencies['XAU'];
     }
 
-    var barW = (w - 40) / weeks;
+    var history = (cur && cur.history && cur.history.length) ? cur.history : [];
+    if (!history.length) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#64748B';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Memuat data historis CFTC COT real-time...', w / 2, h / 2);
+        return;
+    }
+
+    var len = history.length;
+    var barW = (w - 60) / len;
     ctx.clearRect(0, 0, w, h);
 
     ctx.font = '9px JetBrains Mono, monospace';
     ctx.fillStyle = '#475569';
     ctx.textAlign = 'center';
 
-    data.forEach(function(d, i) {
-        var x = 20 + i * barW;
-        var longH = d.long / 100 * (h - 30);
-        var shortH = d.short / 100 * (h - 30);
-        ctx.fillStyle = 'rgba(16,185,129,0.6)';
-        ctx.fillRect(x + 2, h - 15 - longH, barW * 0.4 - 2, longH);
-        ctx.fillStyle = 'rgba(239,68,68,0.6)';
-        ctx.fillRect(x + barW * 0.4 + 2, h - 15 - shortH, barW * 0.4 - 2, shortH);
-        ctx.fillStyle = '#475569';
-        ctx.fillText('W' + (i + 1), x + barW / 2, h - 3);
+    var maxOI = 0;
+    history.forEach(function(d) { maxOI = Math.max(maxOI, d.longs, d.shorts); });
+    if (maxOI <= 0) maxOI = 1;
+
+    history.forEach(function(d, i) {
+        var x = 30 + i * barW;
+        var longH = (d.longs / maxOI) * (h - 45);
+        var shortH = (d.shorts / maxOI) * (h - 45);
+        ctx.fillStyle = 'rgba(16,185,129,0.7)';
+        ctx.fillRect(x + 2, h - 22 - longH, barW * 0.42 - 2, longH);
+        ctx.fillStyle = 'rgba(239,68,68,0.7)';
+        ctx.fillRect(x + barW * 0.42 + 2, h - 22 - shortH, barW * 0.42 - 2, shortH);
+
+        ctx.fillStyle = '#64748B';
+        var dtLbl = d.date ? d.date.slice(5) : ('W' + (i + 1));
+        ctx.fillText(dtLbl, x + barW / 2, h - 6);
     });
 
-    ctx.fillStyle = '#10B981'; ctx.fillRect(w - 100, 5, 8, 8);
+    var curTitle = cur ? cur.label + ' (' + cur.name + ')' : 'CFTC Positions';
+    ctx.fillStyle = '#38BDF8'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('CFTC Real Data: ' + curTitle, 10, 14);
+
+    ctx.fillStyle = '#10B981'; ctx.fillRect(w - 150, 6, 8, 8);
     ctx.fillStyle = '#94A3B8'; ctx.font = '9px Inter, sans-serif';
-    ctx.textAlign = 'left'; ctx.fillText('Commercial Long', w - 88, 12);
-    ctx.fillStyle = '#EF4444'; ctx.fillRect(w - 100, 18, 8, 8);
-    ctx.fillStyle = '#94A3B8'; ctx.fillText('Commercial Short', w - 88, 25);
+    ctx.textAlign = 'left'; ctx.fillText('Non-Comm Long', w - 138, 13);
+    ctx.fillStyle = '#EF4444'; ctx.fillRect(w - 150, 19, 8, 8);
+    ctx.fillStyle = '#94A3B8'; ctx.fillText('Non-Comm Short', w - 138, 26);
 }
 window.renderCotChart = renderCotChart;
 
@@ -465,7 +505,15 @@ function renderLeaderboard() {
 
     function buildRows(leaders, myStats) {
         if (!leaders.length) {
-            return '<tr><td colspan="5" class="px-3 py-8 text-center text-slate-500 text-xs">Belum ada data — mulai paper trading dulu!</td></tr>';
+            // Keadaan kosong yang BERGUNA: bukan sekadar memberi tahu, tetapi
+            // menyediakan tombol menuju tempat datanya dibuat (Paper Trading).
+            return '<tr><td colspan="5" class="px-3 py-8 text-center">'
+                + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada data peringkat</div>'
+                + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Peringkat dihitung dari hasil paper trading '
+                + '(minimal 3 trade). Mulai catat trade Anda untuk masuk daftar.</div>'
+                + '<button type="button" onclick="if(typeof switchPanel===\'function\')switchPanel(\'panel-paper\')" '
+                + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">Mulai Paper Trading</button>'
+                + '</td></tr>';
         }
         var html = '';
         leaders.forEach(function(l) {
@@ -523,52 +571,143 @@ window.renderLeaderboard = renderLeaderboard;
 
 
 /* ═══════════════════════════════════════════════════════════
-   D18  IN-APP COMMUNITY CHAT
+   D18  IN-APP COMMUNITY CHAT (Multi-Channel + Live Badges)
    ═══════════════════════════════════════════════════════════ */
 var _chatMessages = [];
+var _currentChannel = 'all';
+
+function getDefaultChatSeed() {
+    // ⚠️ PERBAIKAN INTEGRITAS DATA: fungsi ini DULU mengembalikan 7 pesan komunitas
+    // KARANGAN (pengguna "CryptoSamurai", "InstitutionalDesk", "GoldHunter_ID", dst.)
+    // sehingga ruang diskusi tampak aktif padahal belum ada satu pun pesan nyata —
+    // itu menyesatkan pengguna. Sekarang kosong, dan renderChat() menampilkan
+    // keadaan kosong yang jujur: "Belum ada pesan di channel ini. Jadilah yang pertama!".
+    return [];
+}
+
 function loadChat() {
-    try { _chatMessages = JSON.parse(localStorage.getItem('qi_chat') || '[]'); } catch(e) { _chatMessages = []; }
-    if (!_chatMessages.length) {
-        _chatMessages = [
-            { user: 'QuantumBot', msg: 'Selamat datang di Quantum Community Chat! Diskusi trading, share analisa, dan belajar bersama.', time: new Date(Date.now() - 3600000).toISOString(), isBot: true },
-            { user: 'CryptoSamurai', msg: 'XAUUSD masih strong bullish di H4, target 2700 minggu ini', time: new Date(Date.now() - 1800000).toISOString() },
-            { user: 'GoldHunter_ID', msg: 'Setuju, SNR engine juga kasih sinyal BUY tadi', time: new Date(Date.now() - 900000).toISOString() },
-        ];
+    try {
+        var raw = localStorage.getItem('qi_chat');
+        _chatMessages = raw ? JSON.parse(raw) : [];
+    } catch(e) { _chatMessages = []; }
+    if (!_chatMessages || !_chatMessages.length) {
+        _chatMessages = getDefaultChatSeed();
+        saveChat();
     }
 }
+
 function saveChat() {
-    if (_chatMessages.length > 200) _chatMessages = _chatMessages.slice(-200);
+    if (_chatMessages.length > 300) _chatMessages = _chatMessages.slice(-300);
     try { localStorage.setItem('qi_chat', JSON.stringify(_chatMessages)); } catch(e) {}
 }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setChatChannel(chan) {
+    _currentChannel = chan || 'all';
+    ['all','gold','crypto','signals'].forEach(function(c) {
+        var btn = document.getElementById('chatChan-' + c);
+        if (btn) {
+            var active = c === _currentChannel;
+            btn.className = active
+                ? 'chat-chan-btn px-2.5 py-1 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan font-semibold transition-all'
+                : 'chat-chan-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all';
+        }
+    });
+    renderChat();
+}
+
+function sendQuickChat(text) {
+    var input = document.getElementById('chatInput');
+    if (input) {
+        input.value = text;
+        sendChatMsg();
+    }
+}
+
 function sendChatMsg() {
     var input = document.getElementById('chatInput');
     if (!input || !input.value.trim()) return;
+    var msgText = input.value.trim();
+
     var userName = 'Trader_' + Math.random().toString(36).substring(2, 6).toUpperCase();
-    try { var profile = JSON.parse(localStorage.getItem('qi_user')); if (profile && profile.name) userName = profile.name; } catch(e) {}
-    _chatMessages.push({ user: userName, msg: input.value.trim(), time: new Date().toISOString() });
+    var userRole = 'PRO';
+    try {
+        var profile = JSON.parse(localStorage.getItem('qi_user') || '{}');
+        if (profile && (profile.name || profile.username)) userName = profile.name || profile.username;
+        if (profile && profile.role) userRole = profile.role.toUpperCase();
+    } catch(e) {}
+
+    var chan = _currentChannel === 'all' ? 'gold' : _currentChannel;
+    _chatMessages.push({
+        id: Date.now(),
+        user: userName,
+        role: userRole,
+        channel: chan,
+        msg: msgText,
+        time: new Date().toISOString()
+    });
     saveChat();
     renderChat();
     input.value = '';
 }
+
 function renderChat() {
     var el = document.getElementById('chatMessages');
     if (!el) return;
+    loadChat();
+
+    var filtered = _chatMessages.filter(function(m) {
+        if (_currentChannel === 'all') return true;
+        return m.channel === _currentChannel || m.channel === 'all';
+    });
+
+    if (!filtered.length) {
+        el.innerHTML = '<div class="text-center py-8 text-slate-600 text-xs font-mono">Belum ada pesan di channel ini. Jadilah yang pertama mengirim analisa!</div>';
+        return;
+    }
+
     var html = '';
-    _chatMessages.slice(-50).forEach(function(m) {
+    filtered.slice(-80).forEach(function(m) {
         var t = new Date(m.time);
-        var timeStr = t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0');
-        var userCls = m.isBot ? 'text-qi-cyan' : 'text-qi-gold';
-        html += '<div class="px-3 py-1.5 hover:bg-qi-surface/30">' +
-            '<span class="text-[10px] text-slate-600 mr-2">' + timeStr + '</span>' +
-            '<span class="text-[11px] font-semibold ' + userCls + ' mr-1">' + esc(m.user) + ':</span>' +
-            '<span class="text-[11px] text-slate-300">' + esc(m.msg) + '</span></div>';
+        var timeStr = isNaN(t.getTime()) ? '--:--' : (t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0'));
+        var isBot = !!m.isBot;
+        var roleBadge = isBot
+            ? '<span class="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold">BOT</span>'
+            : (m.role === 'ELITE'
+                ? '<span class="text-[9px] px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono font-bold">ELITE</span>'
+                : (m.role === 'VIP'
+                    ? '<span class="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold">VIP</span>'
+                    : '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">PRO</span>'));
+
+        var chanPill = m.channel && m.channel !== 'all'
+            ? '<span class="text-[9px] text-slate-500 font-mono">#' + esc(m.channel) + '</span>'
+            : '';
+
+        var userColor = isBot ? 'text-qi-cyan' : (m.role === 'ELITE' ? 'text-purple-300' : (m.role === 'VIP' ? 'text-amber-300' : 'text-qi-gold'));
+
+        html += '<div class="px-3 py-2 rounded-xl bg-qi-panel/40 border border-qi-border/40 hover:border-qi-cyan/30 transition-colors">' +
+            '<div class="flex items-center gap-2 mb-1">' +
+                '<span class="text-[10px] text-slate-500 font-mono">' + timeStr + '</span>' +
+                '<span class="text-xs font-semibold ' + userColor + '">' + esc(m.user) + '</span>' +
+                roleBadge +
+                chanPill +
+            '</div>' +
+            '<div class="text-[11px] text-slate-200 leading-relaxed font-sans pl-1">' + esc(m.msg) + '</div>' +
+        '</div>';
     });
     el.innerHTML = html;
     el.scrollTop = el.scrollHeight;
 }
+
 window.sendChatMsg = sendChatMsg;
+window.sendQuickChat = sendQuickChat;
 window.renderChat = renderChat;
+window.setChatChannel = setChatChannel;
+window.loadChat = loadChat;
 loadChat();
 
 
@@ -578,7 +717,7 @@ loadChat();
 var _origInitProPanel = window.initProPanel;
 window.initProPanel = function(id) {
     if (typeof _origInitProPanel === 'function') _origInitProPanel(id);
-    if (id === 'panel-watchlist') { renderWatchlist(); }
+    if (id === 'panel-watchlist') { renderPanelWatchlist(); }
     if (id === 'panel-performance') { renderPerformanceDashboard(); }
     if (id === 'panel-mtf') { renderMTFView(); }
     if (id === 'panel-leaderboard') { renderLeaderboard(); }

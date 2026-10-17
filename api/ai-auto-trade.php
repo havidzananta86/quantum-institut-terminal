@@ -10,50 +10,38 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+require_once __DIR__ . '/_paper_math.php';
 qi_rate_limit(30, 60);
 
-$user = qi_require_auth();
+$user = qi_require_level('vip');  // AI Auto-Trade — VIP (eksekusi)
 $uid  = (int)$user['user_id'];
 $pdo  = qi_db();
 
-// ── Pastikan tabel yang dibutuhkan ada ────────────────────────────────────
+// ── Pastikan tabel yang dibutuhkan sudah ada (dibuat oleh migrasi 007) ────
+// Sebelumnya blok ini menjalankan CREATE TABLE / ALTER TABLE pada SETIAP request:
+// lambat, berisiko lock, dan mengubah struktur database tanpa migrasi. Sekarang
+// hanya diperiksa; bila migrasi belum dijalankan, API menjawab dengan jelas.
 try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS ai_settings (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            user_id    INT NOT NULL UNIQUE,
-            enabled    TINYINT(1) NOT NULL DEFAULT 0,
-            symbols    JSON,
-            lots       DECIMAL(6,2) NOT NULL DEFAULT 0.10,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_user (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS ai_trade_log (
-            id          INT AUTO_INCREMENT PRIMARY KEY,
-            user_id     INT NOT NULL,
-            symbol      VARCHAR(20) NOT NULL,
-            action      VARCHAR(20) NOT NULL,
-            confidence  TINYINT UNSIGNED,
-            entry_price DECIMAL(20,6),
-            tp          DECIMAL(20,6),
-            sl          DECIMAL(20,6),
-            risk_reward DECIMAL(6,2),
-            reason      VARCHAR(200),
-            executed    TINYINT(1) NOT NULL DEFAULT 0,
-            position_id INT DEFAULT NULL,
-            created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_user (user_id),
-            INDEX idx_sym  (symbol),
-            INDEX idx_time (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    // Tambah kolom source ke paper_positions kalau belum ada
-    $pdo->exec("ALTER TABLE paper_positions ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'manual'");
+    $readySettings = $pdo->query("SHOW TABLES LIKE 'ai_settings'")->fetch();
+    $readyLog      = $pdo->query("SHOW TABLES LIKE 'ai_trade_log'")->fetch();
+    $readySource   = $pdo->query("SHOW COLUMNS FROM paper_positions LIKE 'source'")->fetch();
+    if (!$readySettings || !$readyLog || !$readySource) {
+        http_response_code(503);
+        echo json_encode([
+            'status'  => 'error',
+            'code'    => 'MIGRATION_REQUIRED',
+            'message' => 'Modul AI Auto-Trade belum diaktifkan. Jalankan migrasi database (007).',
+        ]);
+        exit;
+    }
 } catch (PDOException $e) {
-    // Kolom sudah ada / tabel sudah ada → abaikan
+    http_response_code(503);
+    echo json_encode([
+        'status'  => 'error',
+        'code'    => 'MIGRATION_REQUIRED',
+        'message' => 'Modul AI Auto-Trade belum siap. Jalankan migrasi database (007).',
+    ]);
+    exit;
 }
 
 // ── GET: status AI + log ─────────────────────────────────────────────────
@@ -149,6 +137,33 @@ if ($action === 'execute') {
     if (!in_array($aiAction, ['ENTRY_BUY','ENTRY_SELL'])) {
         echo json_encode(['status' => 'skip', 'message' => 'AI menyarankan SKIP untuk ' . $symbol]);
         exit;
+    }
+
+    // Guardrail Berita: Lindungi auto-trade dari eksekusi saat High-Impact news blackout aktif
+    if (function_exists('qi_berita_blackout')) {
+        $blackout = qi_berita_blackout(30, true);
+        if (!empty($blackout['aktif'])) {
+            $mataTerdampak = false;
+            foreach (($blackout['events'] ?? []) as $ev) {
+                $mata = strtoupper((string)($ev['currency'] ?? ($ev['country'] ?? '')));
+                if ($mata !== '' && strpos(strtoupper($symbol), $mata) !== false) {
+                    $mataTerdampak = true;
+                    break;
+                }
+                if ($mata === 'USD' && (strpos(strtoupper($symbol), 'XAU') !== false || strpos(strtoupper($symbol), 'BTC') !== false)) {
+                    $mataTerdampak = true;
+                    break;
+                }
+            }
+            if ($mataTerdampak && ($sig['engine'] ?? '') !== 'NEWS') {
+                echo json_encode([
+                    'status'   => 'skip',
+                    'message'  => 'Auto-trade ditahan oleh proteksi High-Impact News Blackout (±30 menit rilis berita) untuk melindungi modal dari pelebaran spread dan slippage liar.',
+                    'blackout' => $blackout,
+                ]);
+                exit;
+            }
+        }
     }
 
     // Cek apakah sudah ada posisi terbuka untuk simbol ini
@@ -249,11 +264,10 @@ if ($action === 'close') {
     $ep  = (float)$pos['entry_price'];
     $cp  = $closePrice > 0 ? $closePrice : $ep;
 
-    // Hitung PnL sederhana (pip value ~$1 untuk 0.1 lot pada BTCUSDT; disesuaikan)
+    // Hitung P/L memakai model yang sama dengan sisi klien (_pipMult), supaya angka
+    // yang dilihat pengguna saat floating sama dengan yang tersimpan saat ditutup.
     $lots   = (float)$pos['lots'];
-    $pipVal = (in_array($pos['symbol'], ['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT'])) ? $lots * 1 : $lots * 10;
-    $pips   = ($pos['direction'] === 'BUY') ? ($cp - $ep) : ($ep - $cp);
-    $pnl    = round($pips * $pipVal, 2);
+    $pnl    = qi_paper_pnl((string)$pos['symbol'], (string)$pos['direction'], $ep, (float)$cp, $lots);
 
     $closeStmt = $pdo->prepare(
         "UPDATE paper_positions

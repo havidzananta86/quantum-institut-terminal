@@ -161,13 +161,27 @@
           - Ticker bar prices
           - Ticker status badge (LIVE/OFFLINE)
        ========================================================================== */
-    const ALL_POLL_SYMBOLS = 'BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,XAUUSD,EURUSD';
+    // Catatan: daftar ALL_POLL_SYMBOLS DIHAPUS karena sudah tidak dipakai.
+    // Poller kini meminta SATU simbol (yang sedang tampil di chart) agar permintaan
+    // cepat dan siklus 3 detik tidak terlewat; papan ticker & harga pasar diperbarui
+    // oleh fetchMarketData (15 detik) di dashboard-app.js.
 
     const QuantumPricePoller = {
         _timer: null,
         _consecutiveFails: 0,
         _interval: 3000,
         _polling: false,
+
+        /** Kunci simbol yang sedang tampil di chart (mis. 'XAUUSD' untuk OANDA:XAUUSD). */
+        _kunciAktif() {
+            try {
+                if (typeof _tvSymbol !== 'undefined' && typeof WL_GROUPS !== 'undefined') {
+                    const c = WL_GROUPS.flatMap(g => g.syms).find(s => s.tv === _tvSymbol);
+                    if (c && c.key) return c.key;
+                }
+            } catch (e) {}
+            return window.quantumTerminalManager?.currentSymbol || window.currentCleanSymbol || 'BTCUSDT';
+        },
 
         start() {
             this.poll();
@@ -178,7 +192,15 @@
             if (this._polling) return;
             this._polling = true;
             try {
-                const res = await fetch(`api/live-price.php?symbols=${ALL_POLL_SYMBOLS}`, { cache: 'no-store' });
+                // ── SIMBOL AKTIF SAJA ────────────────────────────────────────────
+                // Sebelumnya di sini diminta SELURUH daftar simbol (13 instrumen).
+                // Akibatnya satu permintaan butuh lebih dari 3 detik, siklus berikutnya
+                // terlewat (_polling guard), dan chart bisa "diam" 10–20 detik.
+                // Yang benar-benar membutuhkan kecepatan 3 detik adalah CHART YANG
+                // SEDANG DILIHAT; papan ticker & harga pasar sudah diperbarui
+                // fetchMarketData setiap 15 detik. Jadi poller fokus ke satu simbol.
+                const simbolAktif = this._kunciAktif();
+                const res = await fetch(`api/live-price.php?symbols=${encodeURIComponent(simbolAktif)}`, { cache: 'no-store' });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
                 if (json.status !== 'success' || !json.prices) throw new Error('bad response');
@@ -193,6 +215,18 @@
                 for (const [sym, data] of Object.entries(prices)) {
                     if (!data || data.price == null || isNaN(data.price)) continue;
                     if (window._livePrices) window._livePrices[sym] = data.price;
+                    // ── PENTING: teruskan tick ini ke mesin chart ──
+                    // Sebelumnya poller ini HANYA memperbarui _livePrices/ticker/header dan
+                    // TIDAK PERNAH memanggil qiRealtimeTick(). Akibatnya candle terakhir di
+                    // chart kripto ikut bergerak (lewat WebSocket Binance) tetapi chart
+                    // EMAS & FOREX (XAUUSD/EURUSD/GBPUSD/USDJPY) TIDAK PERNAH bergerak —
+                    // karena simbol-simbol itu tidak ada di Binance, sehingga qiRealtimeTick
+                    // tidak pernah dipanggil. Inilah sebab chart terlihat "diam".
+                    // qiRealtimeTick sudah punya pengaman sendiri: throttle 4×/detik,
+                    // tidak menimpa candle saat kursor hover, dan hanya untuk simbol aktif.
+                    if (typeof window.qiRealtimeTick === 'function') {
+                        try { window.qiRealtimeTick(sym, Number(data.price), { source: data.source, spread: data.spread }); } catch (e) {}
+                    }
                     // Update ticker bar items
                     document.querySelectorAll(`[id^="ticker-price-${sym}-"]`).forEach(el => {
                         const dp = (sym === 'EURUSD') ? 5 : (data.price >= 100 ? 2 : 4);
@@ -301,8 +335,31 @@
             if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
 
             if (!CRYPTO_OB_SYMBOLS.has(sym)) {
-                this._generateEstimatedBook(basePrice);
-                this.render();
+                // Instrumen non-kripto: sumber tidak menyediakan kedalaman order book nyata.
+                // Server mengembalikan buku PERKIRAAN (dari harga tengah) dengan label jujur
+                // source='perkiraan_mid'. Tetap diambil sebagai konteks, tetapi WAJIB
+                // ditandai "PERKIRAAN" di UI — tidak boleh tampak seperti buku asli.
+                this.trades = [];                    // tape nyata tidak tersedia → dibiarkan kosong
+                this._perkiraan = true;
+                const muat = async () => {
+                    try {
+                        const res = await fetch(`api/orderbook.php?symbol=${sym}&limit=10`, { cache: 'no-store' });
+                        const d = await res.json();
+                        if (d && Array.isArray(d.bids) && d.bids.length && Array.isArray(d.asks) && d.asks.length) {
+                            let cb = 0, ca = 0;
+                            this.bids = d.bids.slice(0, 10).map(([p, q]) => { cb += +q; return { price: +p, qty: +q, total: +cb.toFixed(4) }; });
+                            this.asks = d.asks.slice(0, 10).map(([p, q]) => { ca += +q; return { price: +p, qty: +q, total: +ca.toFixed(4) }; });
+                            this._perkiraan = (d.nyata === false) || d.source === 'perkiraan_mid';
+                        } else {
+                            this.bids = []; this.asks = [];
+                        }
+                    } catch (e) {
+                        this.bids = []; this.asks = [];   // gagal → "tidak tersedia", bukan karangan
+                    }
+                    this.render();
+                };
+                muat();
+                this._pollTimer = setInterval(muat, 5000);
                 return;
             }
 
@@ -322,22 +379,19 @@
                         return { price: +p, qty: +q, total: +cumAsk.toFixed(4) };
                     });
                     this._midPrice = (this.bids.length && this.asks.length) ? (this.bids[0].price + this.asks[0].price) / 2 : basePrice;
+                    this._perkiraan = false;              // ini order book BINANCE yang nyata
 
-                    // Simulate time-and-sales from bid/ask spread
-                    const midP = this._midPrice;
-                    const isBuy = Math.random() > 0.45;
-                    const qty = +(Math.random() * 1.5 + 0.01).toFixed(3);
-                    this.trades.unshift({
-                        time: new Date().toTimeString().split(' ')[0],
-                        price: midP + (isBuy ? 1 : -1) * midP * 0.0001,
-                        qty, side: isBuy ? 'BUY' : 'SELL'
-                    });
-                    if (this.trades.length > 20) this.trades.pop();
+                    // TAPE TRANSAKSI: sebelumnya di sini dibuat transaksi ACAK (Math.random)
+                    // lalu ditampilkan sebagai time & sales. Sumber kedalaman tidak menyediakan
+                    // tape, jadi tape KARANGAN DIHAPUS — lebih baik kosong dan jujur.
+                    this.trades = [];
 
                     this.render();
                     this.renderTrades();
                 } catch(e) {
-                    this._generateEstimatedBook(basePrice);
+                    // Gagal mengambil kedalaman nyata: JANGAN mengarang buku. Kosongkan
+                    // supaya UI mengatakan "tidak tersedia" apa adanya.
+                    this.bids = []; this.asks = []; this.trades = [];
                     this.render();
                 }
             };
@@ -357,31 +411,11 @@
                 document.addEventListener('visibilitychange', this._visHandler);
             }
         },
-        _generateEstimatedBook(midPrice) {
-            const spread = midPrice * 0.0003;
-            this.bids = []; this.asks = [];
-            let cumBid = 0, cumAsk = 0;
-            for (let i = 1; i <= 10; i++) {
-                const bPrice = midPrice - (spread * i);
-                const bQty = +(Math.random() * 2 + 0.1).toFixed(3);
-                cumBid += bQty;
-                this.bids.push({ price: bPrice, qty: bQty, total: +cumBid.toFixed(3) });
-                const aPrice = midPrice + (spread * i);
-                const aQty = +(Math.random() * 2 + 0.1).toFixed(3);
-                cumAsk += aQty;
-                this.asks.push({ price: aPrice, qty: aQty, total: +cumAsk.toFixed(3) });
-            }
-            if (!this.trades.length) {
-                for (let i = 0; i < 8; i++) {
-                    const isBuy = Math.random() > 0.5;
-                    this.trades.push({
-                        time: new Date(Date.now() - i * 3000).toTimeString().split(' ')[0],
-                        price: midPrice + (Math.random() - 0.5) * spread,
-                        qty: +(Math.random() * 1.5 + 0.05).toFixed(3),
-                        side: isBuy ? 'BUY' : 'SELL'
-                    });
-                }
-            }
+        _generateEstimatedBookDihapus() {
+            // Sengaja dikosongkan (bukan dihapus agar rujukan lama tidak error):
+            // fungsi ini dulu MENGARANG order book dengan Math.random() untuk instrumen
+            // non-kripto. Sekarang buku diambil dari server dengan label jujur
+            // 'perkiraan_mid' dan ditandai "PERKIRAAN" di UI, atau dikosongkan.
         },
         render() {
             const bookContainer = document.getElementById('orderBookContainer');
@@ -407,7 +441,7 @@
             const isReal = CRYPTO_OB_SYMBOLS.has(this.symbol) && this.ws && this.ws.readyState === 1;
             const sourceLabel = isReal
                 ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-bold flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-cyan-400 animate-ping"></span>BINANCE LIVE L2</span>`
-                : `<span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold" title="Pasar OTC tidak memiliki orderbook terpusat">OTC ESTIMASI</span>`;
+                : `<span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold" title="Pasar OTC tidak memiliki order book terpusat. Angka ini DIPERKIRAKAN dari harga tengah oleh server (label: perkiraan_mid) — bukan kedalaman order asli.">OTC ESTIMASI — bukan buku nyata</span>`;
 
             const spread = this.asks.length && this.bids.length
                 ? ((this.asks[0].price - this.bids[0].price) / this.asks[0].price * 100).toFixed(3)
@@ -433,7 +467,16 @@
         },
         renderTrades() {
             const tradesContainer = document.getElementById('timeSalesContainer');
-            if (!tradesContainer || !this.trades.length) return;
+            if (!tradesContainer) return;
+            // Tape transaksi (time & sales) TIDAK disediakan oleh sumber kedalaman.
+            // Sebelumnya di sini ditampilkan transaksi ACAK — itu dihapus. Bila kosong,
+            // katakan apa adanya daripada mengarang.
+            if (!this.trades.length) {
+                tradesContainer.innerHTML = '<div class="px-2 py-3 text-[10px] text-slate-500 text-center leading-relaxed">'
+                    + 'Tape transaksi (time &amp; sales) tidak disediakan oleh sumber data ini.<br>'
+                    + '<span class="text-slate-600">Tidak ditampilkan daripada menampilkan transaksi karangan.</span></div>';
+                return;
+            }
             const dp = this.symbol === 'EURUSD' ? 5 : 2;
             tradesContainer.innerHTML = this.trades.slice(0, 20).map(t => {
                 const isBuy = t.side === 'BUY';
@@ -778,11 +821,10 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
     /* ==========================================================================
        8. PAPER TRADING WALLET & TRADE JOURNAL (TIER S - PAPER TRADING)
        ========================================================================== */
-    // Global live price cache — updated by ticker WS + chart engine
-    const _livePrices = {
-        BTCUSDT: 68450.0, ETHUSDT: 3520.1, SOLUSDT: 184.5,
-        XAUUSD: 2654.2, EURUSD: 1.0895, BNBUSDT: 592.3,
-    };
+    // Cache harga live — hanya diisi saat data NYATA datang (poller / chart engine).
+    // Sengaja dikosongkan: sebelumnya diisi harga hardcoded (XAUUSD 2654, BTCUSDT 68450)
+    // yang lalu tampil seolah harga terkini padahal sudah jauh usang.
+    const _livePrices = {};
     window._livePrices = _livePrices;
 
     const QuantumPaperTrading = {
@@ -841,6 +883,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                         positions: this.positions,
                         history: this.history
                     })
+                }).then(r => r.json()).then(hasil => {
+                    // Server menolak harga/penutupan yang tidak wajar → beri tahu & sinkron ulang.
+                    if (hasil && Array.isArray(hasil.ditolak) && hasil.ditolak.length) {
+                        if (typeof window.showQuantumToast === 'function') window.showQuantumToast('Paper trading: ' + hasil.ditolak[0].alasan, 'warning', 6000);
+                        this._loadFromServer();
+                    }
                 }).catch(() => {});
             }, 800); // debounce — hindari spam saat auto-close SL/TP beruntun
         },
@@ -881,16 +929,30 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             }
 
             let price = this._getPrice(selectedSym);
-            if (!price || price <= 0) price = 2654.50;
+            if (!price || price <= 0) {
+                // Jangan membuka posisi dari harga tebakan — entry-nya akan salah total.
+                if (window.showQuantumToast) window.showQuantumToast(`Harga live ${selectedSym} belum tersedia — posisi tidak dibuka. Tunggu data harga masuk.`, 'warning');
+                return;
+            }
 
             const lots = parseFloat(document.getElementById('paperTradeLots')?.value || (selectedSym === 'XAUUSD' ? 0.5 : (selectedSym === 'BTCUSDT' ? 0.1 : 1.0)));
 
             const isLong = side === 'BUY';
-            const slMult = selectedSym === 'XAUUSD' ? 0.995 : (selectedSym === 'EURUSD' ? 0.998 : 0.99);
-            const tpMult = selectedSym === 'XAUUSD' ? 1.015 : (selectedSym === 'EURUSD' ? 1.005 : 1.025);
-            
-            const sl = isLong ? +(price * slMult).toFixed(2) : +(price * (2 - slMult)).toFixed(2);
-            const tp = isLong ? +(price * tpMult).toFixed(2) : +(price * (2 - tpMult)).toFixed(2);
+            // ── SL/TP DARI ATR NYATA (bukan multiplier tetap) ────────────────────
+            // PERBAIKAN (2026-10-13): sebelumnya SL/TP memakai pengali TETAP per simbol
+            // (XAU 0,995/1,015 · EUR 0,998/1,005 · lain 0,99/1,025) sehingga jaraknya selalu
+            // sama tanpa melihat volatilitas — dan win rate paper trading lahir dari level itu.
+            // Sekarang memakai ATR TradingView (H1) yang sama dengan panel Rencana Live:
+            // SL 1,2×ATR · TP 2,5×ATR. Bila ATR belum tersedia, posisi TIDAK dibuka.
+            const atrPaper = Number((window._qiAtrTerakhir && window._qiAtrTerakhir[selectedSym]) || 0);
+            if (!(atrPaper > 0)) {
+                if (window.showQuantumToast) window.showQuantumToast(`ATR TradingView untuk ${selectedSym} belum tersedia — posisi tidak dibuka supaya SL/TP tidak dikarang. Buka panel Rencana Live lebih dulu.`, 'warning');
+                return;
+            }
+            const slDistPaper = 1.2 * atrPaper;
+            const tpDistPaper = 2.5 * slDistPaper;
+            const sl = isLong ? +(price - slDistPaper).toFixed(5) : +(price + slDistPaper).toFixed(5);
+            const tp = isLong ? +(price + tpDistPaper).toFixed(5) : +(price - tpDistPaper).toFixed(5);
 
             const newPos = {
                 id: 'POS-' + Date.now().toString(36).toUpperCase(),
@@ -920,8 +982,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
 
             const currentPrice = this._getPrice(pos.symbol) || pos.entryPrice;
             const pnl = pos.side === 'BUY'
-                ? (currentPrice - pos.entryPrice) * pos.lots * this._pipMult(pos.symbol)
-                : (pos.entryPrice - currentPrice) * pos.lots * this._pipMult(pos.symbol);
+                ? (currentPrice - pos.entryPrice) * pos.lots * this._pipMult(pos.symbol, currentPrice)
+                : (pos.entryPrice - currentPrice) * pos.lots * this._pipMult(pos.symbol, currentPrice);
 
             this.balance += pnl;
             pos.closePrice = currentPrice;
@@ -946,11 +1008,23 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             }
             return _livePrices[sym] || 0;
         },
-        _pipMult(sym) {
-            if (sym === 'XAUUSD') return 100;
-            if (sym === 'BTCUSDT') return 1;
-            if (sym === 'EURUSD') return 100000;
-            return 1000;
+        _pipMult(sym, price) {
+            // Model tunggal: assets/js/qim-paper-math.js; switch di bawah = cadangan.
+            if (typeof window.qimPaperMult === 'function') return window.qimPaperMult(sym, price);
+            // HARUS identik dengan qi_paper_pip_mult() di api/_paper_math.php —
+            // kalau berbeda, P/L mengambang di browser tidak sama dengan P/L yang
+            // tersimpan saat posisi ditutup.
+            switch (sym) {
+                case 'XAUUSD':  return 100;      // 100 oz per lot
+                case 'BTCUSDT': return 1;        // 1 koin per lot
+                case 'ETHUSDT': return 1;        // 1 koin per lot
+                case 'SOLUSDT': return 1;        // 1 koin per lot
+                case 'XRPUSDT': return 1;        // 1 koin per lot
+                case 'BNBUSDT': return 1;        // 1 koin per lot
+                case 'DOGEUSDT': return 1;       // 1 koin per lot
+                case 'EURUSD':  return 100000;   // 100.000 unit per lot
+                default:        return 1000;     // konvensi aplikasi, bukan spesifikasi broker
+            }
         },
         updateFloatingPnL() {
             if (!this.positions.length) return;
@@ -960,7 +1034,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             this.positions.forEach(pos => {
                 const price = this._getPrice(pos.symbol);
                 if (price > 0) {
-                    const mult = this._pipMult(pos.symbol);
+                    const mult = this._pipMult(pos.symbol, price);
                     pos.floatingPnL = pos.side === 'BUY'
                         ? (price - pos.entryPrice) * pos.lots * mult
                         : (pos.entryPrice - price) * pos.lots * mult;
@@ -1047,54 +1121,70 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             };
             const label = pairLabels[symbol] || symbol;
 
+            // --- Kedalaman data historis ---
+            // Kripto bisa ribuan bar dari Binance (api/get-history.php). Forex/emas
+            // dibatasi sumber gratis, dan endpoint itu akan mengatakannya terus terang.
+            const mintaBars = parseInt(document.getElementById('backtestBars')?.value) || 1000;
+
             // --- Ambil candle data: cache jika symbol+interval match, fetch jika tidak ---
             const mgr = window.quantumTerminalManager;
             const cacheSymbol   = mgr?.currentSymbol;
             const cacheInterval = mgr?.currentInterval;
-            const cacheHit = mgr?._cachedCandles?.length >= 50
+            const panjangCache  = mgr?._cachedCandles?.length || 0;
+            const cacheHit = panjangCache >= 50
                           && cacheSymbol === symbol
-                          && cacheInterval === interval;
+                          && cacheInterval === interval
+                          && (mintaBars <= 1000 || panjangCache >= mintaBars);
 
             let candles    = null;
             let dataSource = 'live';
+            let barsDipakai = 0;
+            let dibatasi = false;
 
             if (cacheHit) {
                 candles = mgr._cachedCandles;
+                barsDipakai = candles.length;
             } else {
                 // Cache miss → fetch langsung dari API
                 const runBtn = document.querySelector('[onclick*="runBacktest"]');
                 if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Fetching...'; }
                 if (window.showQuantumToast)
-                    window.showQuantumToast(`📡 Mengambil data ${symbol} ${tfRaw} dari server…`, 'info', 2000);
+                    window.showQuantumToast(`📡 Mengambil ${mintaBars.toLocaleString('id-ID')} bar ${symbol} ${tfRaw}…`, 'info', 2000);
                 try {
-                    const res = await fetch(`api/get-chart-data.php?symbol=${symbol}&interval=${interval}`);
+                    const url = mintaBars > 1000
+                        ? `api/get-history.php?symbol=${symbol}&interval=${interval}&bars=${mintaBars}`
+                        : `api/get-chart-data.php?symbol=${symbol}&interval=${interval}`;
+                    const res = await fetch(url);
                     if (res.ok) {
                         const json = await res.json();
                         if (json.candles?.length >= 50) {
                             candles = json.candles;
+                            barsDipakai = candles.length;
+                            dataSource = json.source || 'api';
+                            dibatasi = !!json.limited;
                         }
                     }
                 } catch (e) { /* network error, handled below */ }
                 if (runBtn) { runBtn.disabled = false; runBtn.textContent = '▶ Run Backtest'; }
             }
 
+            // PENTING (perbaikan integritas): dulu, bila data real gagal, backtester
+            // MENGARANG candle dengan Math.random() lalu tetap menampilkan win rate &
+            // PnL dari angka acak itu. Hasil karangan seperti itu bisa membuat strategi
+            // tampak menguntungkan. Sekarang backtest DITOLAK kalau data real tidak ada.
             if (!candles || candles.length < 50) {
-                // Fallback: synthetic atau mock
-                if (mgr?._generateSyntheticCandles) {
-                    candles = mgr._generateSyntheticCandles(symbol, symbol === 'EURUSD' ? 4 : 2);
-                    dataSource = 'synthetic';
-                } else {
-                    candles = Array.from({length:100}, (_, i) => ({
-                        time: Math.floor(Date.now() / 1000) - (100 - i) * 3600,
-                        open: 4050 + Math.random() * 50, high: 4100 + Math.random() * 50,
-                        low: 4000 + Math.random() * 50, close: 4050 + Math.random() * 50, volume: 1000
-                    }));
-                    dataSource = 'mock';
-                }
-            }
-            if (dataSource !== 'live') {
                 if (window.showQuantumToast)
-                    window.showQuantumToast(`⚠️ Gagal ambil data real ${symbol} ${tfRaw}. Menggunakan ${dataSource} data.`, 'warning', 2500);
+                    window.showQuantumToast(`⛔ Backtest dibatalkan: data historis ${symbol} ${tfRaw} tidak tersedia. Kami tidak menjalankan backtest di atas data karangan.`, 'error', 5000);
+                const kotak = document.getElementById('backtestResultContainer');
+                if (kotak) {
+                    kotak.innerHTML = '<div class="p-3 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 text-xs">'
+                        + '⛔ <b>Backtest tidak dijalankan.</b> Data historis untuk ' + symbol + ' ' + tfRaw
+                        + ' tidak dapat diambil, dan hasil dari data karangan akan menyesatkan. Coba lagi atau pilih pasangan/timeframe lain.</div>';
+                }
+                return;
+            }
+            if (dibatasi && window.showQuantumToast) {
+                window.showQuantumToast(`ℹ️ ${symbol} hanya menyediakan ${barsDipakai} bar (sumber gratis membatasi riwayat). Untuk riwayat lebih dalam, pilih pasangan kripto.`, 'warning', 4000);
             }
 
             // --- Walk-forward / Out-of-Sample Split ---
@@ -1211,9 +1301,11 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                     // 2. Commission cost (% dari nilai notional, buka + tutup = 2x)
                     const notional = entryPrice * lotSize;
                     const thisCommCost = +(notional * (commissionPct / 100) * 2).toFixed(2);
-                    // 3. Slippage cost (deviasi acak ±slippagePct dari entry)
-                    const slippageDeviation = (Math.random() * 2 - 1) * (slippagePct / 100);
-                    const thisSlippageCost = +Math.abs(entryPrice * slippageDeviation * lotSize * (pipMultiplier / entryPrice)).toFixed(2);
+                    // 3. Slippage cost — KONSERVATIF & TETAP (dulu acak `Math.random()*2-1`).
+                    //    Slippage acak membuat hasil backtest tidak dapat direproduksi dan
+                    //    angkanya berubah setiap kali dijalankan. Dipakai nilai terburuk:
+                    //    seluruh slippagePct dikenakan pada setiap transaksi.
+                    const thisSlippageCost = +(entryPrice * (slippagePct / 100) * lotSize * (pipMultiplier / entryPrice)).toFixed(2);
 
                     const totalCost = thisSpreadCost + thisCommCost + thisSlippageCost;
                     const netPnl = +(grossPnl - totalCost).toFixed(2);
@@ -1301,6 +1393,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             this.lastBacktestResult = {
                 symbol, label, interval: tfRaw, engine,
                 spreadCost, commissionPct, slippagePct, oosPct,
+                bars: barsDipakai, sumber: dataSource, dibatasi,
                 inSample: isResult,
                 outOfSample: oosResult
             };
@@ -1310,7 +1403,9 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                 const wr = isResult.winRate;
                 const pnl = isResult.totalPnL;
                 const tag = oosResult ? ` | OOS WR: ${oosResult.winRate}%` : '';
-                window.showQuantumToast(`⚡ BACKTEST SELESAI: ${label} [${engine}] IS Win Rate: ${wr}% (Net PnL: ${pnl >= 0 ? '+' : ''}$${pnl})${tag}`, 'success');
+                // Sertakan kedalaman data yang BENAR-BENAR dipakai supaya hasil tidak
+                // pernah dibaca sebagai "diuji atas ribuan bar" padahal hanya ratusan.
+                window.showQuantumToast(`⚡ BACKTEST SELESAI: ${label} [${engine}] ${barsDipakai.toLocaleString('id-ID')} bar${dibatasi ? ' (dibatasi sumber)' : ''} | IS Win Rate: ${wr}% (Net PnL: ${pnl >= 0 ? '+' : ''}$${pnl})${tag}`, 'success', 6000);
             }
         },
         resetBacktestDefaults() {
@@ -1479,7 +1574,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
         analyzeCurrentSetup() {
             const sym = window.quantumTerminalManager?.currentSymbol || window.currentCleanSymbol || 'BTCUSDT';
             const tf = window.quantumTerminalManager?.currentInterval || '60';
-            const price = (_livePrices[sym] > 0 ? _livePrices[sym] : null) || window.quantumTerminalManager?.lastClosePrice || 68450;
+            const price = (_livePrices[sym] > 0 ? _livePrices[sym] : null) || window.quantumTerminalManager?.lastClosePrice || 0;
             const candles = window.quantumTerminalManager?._cachedCandles || [];
 
             const modal = document.getElementById('aiAnalystModal');
@@ -1487,6 +1582,11 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
 
             const contentEl = document.getElementById('aiAnalystContent');
             if (!contentEl) return;
+
+            if (!price || price <= 0) {
+                contentEl.innerHTML = '<div class="p-4 text-[11px] text-amber-300">Data harga live belum tersedia — analisa ditahan agar tidak memakai harga tebakan.</div>';
+                return;
+            }
 
             contentEl.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-8 space-y-3">
@@ -1497,25 +1597,44 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             setTimeout(() => {
                 // Real analysis from candle data
                 const analysis = QuantumConfluenceEngine._analyzeCandles(candles);
+                // Analisa yang DITAHAN (data candle kurang) tidak boleh ditampilkan sebagai
+                // sinyal. Dulu cabang itu menghasilkan "BUY 72% confidence" tanpa data.
+                if (!analysis || analysis.score === null || analysis.isBullish === null || analysis.isBullish === undefined) {
+                    contentEl.innerHTML = `<div class="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200 font-mono">
+                        ${analysis && analysis.detail ? analysis.detail : 'Analisa belum bisa dihitung.'}
+                    </div>`;
+                    return;
+                }
                 const isBullish = analysis.isBullish;
                 const score = analysis.score;
                 const bias = isBullish ? 'BULLISH CONTINUATION (BUY)' : 'BEARISH REVERSAL (SELL)';
                 const biasColor = isBullish ? 'text-emerald-400' : 'text-rose-400';
 
-                // Engine-specific SL/TP from locked values in terminal
-                const engineDetails = window.engineDetailsMap?.[window.currentQuantumEngine || 'SNR'] || { slPct: 0.008, tpPct: 0.027 };
-                const slDist = price * engineDetails.slPct;
-                const tpDist = price * engineDetails.tpPct;
-                const slPrice = isBullish ? +(price - slDist).toFixed(2) : +(price + slDist).toFixed(2);
-                const tpPrice = isBullish ? +(price + tpDist).toFixed(2) : +(price - tpDist).toFixed(2);
+                // ── LEVEL WAJIB DARI ATR NYATA ─────────────────────────────────────
+                // PERBAIKAN (2026-10-13): sebelumnya SL/TP memakai persentase TETAP
+                // (slPct 0,8% · tpPct 2,7%) dan "key support/resistance" dari 0,988/1,012 ×
+                // harga. `window.engineDetailsMap` bahkan TIDAK PERNAH didefinisikan, sehingga
+                // fallback persentase itu SELALU terpakai → level 100% karangan.
+                // Sekarang: bila ATR nyata tersedia (TradingView, mis. disimpan di
+                // window._qiAtrTerakhir[sym]) level dihitung dari ATR; bila TIDAK tersedia,
+                // level TIDAK ditampilkan sama sekali (hanya arah & skor dari candle nyata)
+                // dan tombol eksekusi dinonaktifkan agar tidak ada posisi dari level karangan.
+                const atrNyata = Number((window._qiAtrTerakhir && window._qiAtrTerakhir[sym]) || analysis.atr || 0);
+                const slDist = atrNyata > 0 ? 1.2 * atrNyata : null;
+                const tpDist = slDist !== null ? 2.5 * slDist : null;
                 const entryPrice = price;
-                const rrRatio = (tpDist / slDist).toFixed(1);
+                const slPrice = (slDist !== null) ? +((isBullish ? entryPrice - slDist : entryPrice + slDist)).toFixed(5) : null;
+                const tpPrice = (tpDist !== null) ? +((isBullish ? entryPrice + tpDist : entryPrice - tpDist)).toFixed(5) : null;
+                const rrRatio = (slDist !== null) ? '2.5' : null;
 
-                const keySup = +(price * 0.988).toFixed(2);
-                const keyRes = +(price * 1.012).toFixed(2);
+                // Level kunci memakai S/R NYATA dari candle (bukan 0,988/1,012 × harga).
+                const keySup = (analysis.lowest20 > 0) ? +analysis.lowest20.toFixed(5) : null;
+                const keyRes = (analysis.highest20 > 0) ? +analysis.highest20.toFixed(5) : null;
 
-                // Draw SL/TP/Entry lines on chart
-                this._drawSignalOnChart(entryPrice, slPrice, tpPrice, isBullish);
+                // Draw SL/TP/Entry lines on chart — hanya bila levelnya benar-benar ada.
+                if (slPrice !== null && tpPrice !== null) {
+                    this._drawSignalOnChart(entryPrice, slPrice, tpPrice, isBullish);
+                }
 
                 const dp = sym === 'EURUSD' ? 5 : 2;
                 contentEl.innerHTML = `
@@ -1533,12 +1652,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
 
                         <div class="grid grid-cols-2 gap-3">
                             <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                                <span class="text-[10px] text-slate-500 block">KEY SUPPORT ACCUMULATION</span>
-                                <strong class="text-emerald-400 text-xs">$${keySup.toLocaleString()}</strong>
+                                <span class="text-[10px] text-slate-500 block">KEY SUPPORT (dari candle nyata)</span>
+                                <strong class="text-emerald-400 text-xs">${keySup !== null ? '$' + keySup.toLocaleString() : '—'}</strong>
                             </div>
                             <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                                <span class="text-[10px] text-slate-500 block">KEY RESISTANCE LIQUIDITY</span>
-                                <strong class="text-rose-400 text-xs">$${keyRes.toLocaleString()}</strong>
+                                <span class="text-[10px] text-slate-500 block">KEY RESISTANCE (dari candle nyata)</span>
+                                <strong class="text-rose-400 text-xs">${keyRes !== null ? '$' + keyRes.toLocaleString() : '—'}</strong>
                             </div>
                         </div>
 
@@ -1550,29 +1669,36 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                             <div class="grid grid-cols-3 gap-2 text-[10px] font-mono pt-1">
                                 <div class="flex flex-col items-center p-2 rounded bg-slate-900 border border-emerald-500/40">
                                     <span class="text-slate-400 block mb-1">🎯 TP</span>
-                                    <span class="text-emerald-400 font-bold text-[11px]">${tpPrice.toFixed(dp)}</span>
-                                    <span class="text-emerald-300/60 mt-0.5">+${(Math.abs(tpPrice - entryPrice) / entryPrice * 100).toFixed(2)}%</span>
+                                    <span class="text-emerald-400 font-bold text-[11px]">${tpPrice !== null ? tpPrice.toFixed(dp) : '—'}</span>
+                                    <span class="text-emerald-300/60 mt-0.5">${tpPrice !== null ? '+' + (Math.abs(tpPrice - entryPrice) / entryPrice * 100).toFixed(2) + '%' : 'menunggu ATR'}</span>
                                 </div>
                                 <div class="flex flex-col items-center p-2 rounded bg-cyan-500/10 border border-cyan-500/50">
                                     <span class="text-slate-400 block mb-1">⚡ ENTRY</span>
                                     <span class="text-cyan-300 font-bold text-[11px]">${entryPrice.toFixed(dp)}</span>
-                                    <span class="text-cyan-300/60 mt-0.5">RR: 1:${rrRatio}</span>
+                                    <span class="text-cyan-300/60 mt-0.5">RR: ${rrRatio !== null ? '1:' + rrRatio : '—'}</span>
                                 </div>
                                 <div class="flex flex-col items-center p-2 rounded bg-slate-900 border border-rose-500/40">
                                     <span class="text-slate-400 block mb-1">🛑 SL</span>
-                                    <span class="text-rose-400 font-bold text-[11px]">${slPrice.toFixed(dp)}</span>
-                                    <span class="text-rose-300/60 mt-0.5">-${(Math.abs(slPrice - entryPrice) / entryPrice * 100).toFixed(2)}%</span>
+                                    <span class="text-rose-400 font-bold text-[11px]">${slPrice !== null ? slPrice.toFixed(dp) : '—'}</span>
+                                    <span class="text-rose-300/60 mt-0.5">${slPrice !== null ? '-' + (Math.abs(slPrice - entryPrice) / entryPrice * 100).toFixed(2) + '%' : 'menunggu ATR'}</span>
                                 </div>
                             </div>
                             <p class="text-slate-300 leading-relaxed font-sans text-xs pt-1 border-t border-slate-800/80">
-                                ${analysis.detail}. Garis ENTRY/SL/TP sudah digambar langsung di chart. Risiko invalidasi jika harga menembus SL ${slPrice.toFixed(dp)}.
+                                ${analysis.detail}.${slPrice !== null
+                                    ? ' Garis ENTRY/SL/TP sudah digambar langsung di chart. Risiko invalidasi jika harga menembus SL ' + slPrice.toFixed(dp) + '.'
+                                    : ' Level SL/TP TIDAK ditampilkan karena ATR nyata (TradingView) belum tersedia — level tidak dikarang. Arah dan skor di atas dihitung dari candle nyata.'}
                             </p>
                         </div>
 
                         <div class="flex gap-2">
-                            <button onclick="QuantumPaperTrading.executeOrder('${isBullish ? 'BUY' : 'SELL'}'); QuantumAIEngine.closeModal();" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-cyan-glow">
+                            ${slPrice !== null
+                                ? `<button onclick="QuantumPaperTrading.executeOrder('${isBullish ? 'BUY' : 'SELL'}'); QuantumAIEngine.closeModal();" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-cyan-glow">
                                 🚀 Eksekusi Setup AI (${isBullish ? 'BUY' : 'SELL'})
-                            </button>
+                            </button>`
+                                : `<button disabled title="Level SL/TP belum tersedia (ATR TradingView belum ada), jadi eksekusi diblokir agar tidak ada posisi dari level karangan."
+                                class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold cursor-not-allowed">
+                                ⛔ Eksekusi diblokir — SL/TP belum tersedia
+                            </button>`}
                             <button onclick="QuantumRRTool.copyTradePlan();" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold">
                                 📋 Salin Plan
                             </button>
@@ -1604,12 +1730,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
        9b. QUANTUM AI RADAR — Dynamic multi-pair signal scanner
        ========================================================================== */
     const RADAR_PAIRS = [
-        { sym: 'BTCUSDT', tv: 'BINANCE:BTCUSDT', label: 'BTC/USDT',  defaultPrice: 68450.2 },
-        { sym: 'XAUUSD',  tv: 'OANDA:XAUUSD',    label: 'XAU/USD',   defaultPrice: 2654.2  },
-        { sym: 'ETHUSDT', tv: 'BINANCE:ETHUSDT',  label: 'ETH/USDT',  defaultPrice: 3520.1  },
-        { sym: 'SOLUSDT', tv: 'BINANCE:SOLUSDT',  label: 'SOL/USDT',  defaultPrice: 184.5   },
-        { sym: 'BNBUSDT', tv: 'BINANCE:BNBUSDT',  label: 'BNB/USDT',  defaultPrice: 592.3   },
-        { sym: 'EURUSD',  tv: 'OANDA:EURUSD',     label: 'EUR/USD',   defaultPrice: 1.0895  },
+        { sym: 'BTCUSDT', tv: 'BINANCE:BTCUSDT', label: 'BTC/USDT' },
+        { sym: 'XAUUSD',  tv: 'OANDA:XAUUSD',    label: 'XAU/USD'  },
+        { sym: 'ETHUSDT', tv: 'BINANCE:ETHUSDT',  label: 'ETH/USDT'  },
+        { sym: 'SOLUSDT', tv: 'BINANCE:SOLUSDT',  label: 'SOL/USDT'   },
+        { sym: 'BNBUSDT', tv: 'BINANCE:BNBUSDT',  label: 'BNB/USDT'   },
+        { sym: 'EURUSD',  tv: 'OANDA:EURUSD',     label: 'EUR/USD'  },
     ];
 
     const QuantumAIRadar = {
@@ -1620,28 +1746,40 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             const currentSym = window.quantumTerminalManager?.currentSymbol || 'BTCUSDT';
             const cachedCandles = window.quantumTerminalManager?._cachedCandles || [];
 
-            const signals = RADAR_PAIRS.map(p => {
-                const livePrice = _livePrices[p.sym] || p.defaultPrice;
+            // Hanya simbol yang benar-benar punya harga live. Tanpa filter ini,
+            // livePrice jatuh ke defaultPrice sehingga priceRatio = 1 dan radar
+            // "mengarang" sinyal BUY ~55% dari harga yang sebenarnya tidak ada.
+            const signals = RADAR_PAIRS.filter(p => _livePrices[p.sym] > 0).map(p => {
+                const livePrice = _livePrices[p.sym];
                 // Use real candles for current symbol; EMA-based estimate for others
                 let analysis;
                 if (p.sym === currentSym && cachedCandles.length >= 20) {
                     analysis = QuantumConfluenceEngine._analyzeCandles(cachedCandles);
                 } else {
-                    // Derive trend from price vs moving average approximation using _livePrices
-                    const priceRatio = livePrice / p.defaultPrice;
-                    const isBullish = priceRatio >= 1.0;
-                    const score = Math.min(95, 55 + Math.round(Math.abs(priceRatio - 1) * 500));
-                    analysis = { isBullish, score, detail: isBullish ? 'Harga di atas referensi, momentum positif' : 'Harga di bawah referensi, tekanan jual' };
+                    // PERBAIKAN (2026-10-13): sebelumnya arah & skor dihitung dari
+                    // `livePrice / p.defaultPrice` (harga rujukan yang DITULIS TETAP di kode,
+                    // mis. 68450.2 / 2654.2 / 1.0895). Itu mengarang sinyal BUY/SELL beserta
+                    // persentasenya. Sekarang: tanpa candle nyata, radar MENAHAN sinyal dan
+                    // mengatakan sebabnya — tidak ada rekomendasi dari harga rujukan statis.
+                    analysis = { isBullish: null, score: null, lowest20: null, highest20: null,
+                                 detail: 'Butuh candle nyata untuk simbol ini — radar tidak mengarang sinyal.' };
                 }
-
-                const engineDetails = window.engineDetailsMap?.[window.currentQuantumEngine || 'SNR'] || { slPct: 0.008, tpPct: 0.027 };
-                const slPrice = analysis.isBullish ? +(livePrice * (1 - engineDetails.slPct)).toFixed(2) : +(livePrice * (1 + engineDetails.slPct)).toFixed(2);
-                const tpPrice = analysis.isBullish ? +(livePrice * (1 + engineDetails.tpPct)).toFixed(2) : +(livePrice * (1 - engineDetails.tpPct)).toFixed(2);
-                const rrRatio = (engineDetails.tpPct / engineDetails.slPct).toFixed(1);
+                // Level hanya bila ATR NYATA tersedia (TradingView). Persentase tetap 0,8%/2,7%
+                // sudah DIHAPUS karena `window.engineDetailsMap` tidak pernah ada → fallback itu
+                // selalu terpakai dan menghasilkan level karangan.
+                if (analysis.isBullish === null || analysis.isBullish === undefined) {
+                    return { ...p, livePrice, analysis, slPrice: null, tpPrice: null, rrRatio: null, dp: p.sym === 'EURUSD' ? 5 : 2 };
+                }
+                const atrRadar = Number((window._qiAtrTerakhir && window._qiAtrTerakhir[p.sym]) || 0);
+                const slDistR = atrRadar > 0 ? 1.2 * atrRadar : null;
+                const tpDistR = slDistR !== null ? 2.5 * slDistR : null;
+                const slPrice = (slDistR !== null) ? +((analysis.isBullish ? livePrice - slDistR : livePrice + slDistR)).toFixed(5) : null;
+                const tpPrice = (tpDistR !== null) ? +((analysis.isBullish ? livePrice + tpDistR : livePrice - tpDistR)).toFixed(5) : null;
+                const rrRatio = (slDistR !== null) ? '2.5' : null;
                 const dp = p.sym === 'EURUSD' ? 5 : (p.sym === 'XAUUSD' ? 2 : 2);
 
                 return { ...p, livePrice, analysis, slPrice, tpPrice, rrRatio, dp };
-            }).sort((a, b) => b.analysis.score - a.analysis.score);
+            }).sort((a, b) => ((b.analysis.score === null ? -1 : b.analysis.score) - (a.analysis.score === null ? -1 : a.analysis.score)));
 
             container.innerHTML = `
                 <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
@@ -1649,8 +1787,21 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                     <button onclick="QuantumAIRadar.render()" class="text-cyan-300 font-bold hover:text-cyan-200 transition-colors">↻ REFRESH</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs mt-2">
-                    ${signals.map(s => {
+                    ${signals.length === 0 ? '<div class="col-span-full p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-amber-300">Menunggu data harga live — radar tidak menampilkan sinyal agar tidak memberi rekomendasi dari harga tebakan.</div>' : signals.map(s => {
                         const isBull = s.analysis.isBullish;
+                        if (isBull === null || isBull === undefined || s.analysis.score === null) {
+                            // Tanpa candle nyata: tampilkan kartu NETRAL berisi sebabnya,
+                            // tanpa arah, tanpa skor, tanpa level (tidak ada yang dikarang).
+                            return `
+                            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <strong class="text-white">${s.label}</strong>
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-bold text-[10px]">TANPA SINYAL</span>
+                                </div>
+                                <div class="text-[10px] text-amber-300">${s.analysis.detail}</div>
+                                <div class="text-[10px] text-slate-500">Harga ${s.livePrice ? s.livePrice.toFixed(s.dp) : '—'} · TP/SL tidak ditampilkan</div>
+                            </div>`;
+                        }
                         const badgeClass = isBull ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-400';
                         const borderClass = isBull ? 'border-emerald-500/30' : 'border-rose-500/30';
                         const label = isBull ? `BUY ${s.analysis.score}%` : `SELL ${s.analysis.score}%`;
@@ -1663,12 +1814,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                                 <span class="px-1.5 py-0.5 rounded ${badgeClass} font-bold text-[10px]">${label}</span>
                             </div>
                             <div class="grid grid-cols-3 text-[10px] font-mono text-center gap-1">
-                                <div><span class="text-slate-500 block">TP</span><span class="text-emerald-400">${s.tpPrice.toFixed(s.dp)}</span></div>
+                                <div><span class="text-slate-500 block">TP</span><span class="text-emerald-400">${s.tpPrice !== null ? s.tpPrice.toFixed(s.dp) : '—'}</span></div>
                                 <div><span class="text-slate-500 block">ENTRY</span><span class="text-cyan-300">${s.livePrice.toFixed(s.dp)}</span></div>
-                                <div><span class="text-slate-500 block">SL</span><span class="text-rose-400">${s.slPrice.toFixed(s.dp)}</span></div>
+                                <div><span class="text-slate-500 block">SL</span><span class="text-rose-400">${s.slPrice !== null ? s.slPrice.toFixed(s.dp) : '—'}</span></div>
                             </div>
                             <div class="text-[10px] text-slate-400 truncate">${s.analysis.detail}</div>
-                            <div class="text-[10px] text-slate-500">RR 1:${s.rrRatio} · ${isCurrent ? '<span class="text-cyan-400">● LIVE CHART</span>' : 'Klik untuk load'}</div>
+                            <div class="text-[10px] text-slate-500">${s.rrRatio !== null ? 'RR 1:' + s.rrRatio + ' · ' : 'TP/SL menunggu ATR nyata · '}${isCurrent ? '<span class="text-cyan-400">● LIVE CHART</span>' : 'Klik untuk load'}</div>
                         </div>`;
                     }).join('')}
                 </div>
@@ -1729,7 +1880,14 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
         engines: ['SNR', 'SMC', 'EMA200', 'ICHI'],
         
         _analyzeCandles(candles) {
-            if (!candles || candles.length < 20) return { isBullish: true, score: 72, detail: 'Data terbatas' };
+            if (!candles || candles.length < 20) {
+                // PERBAIKAN (2026-10-13): sebelumnya cabang ini mengembalikan
+                // { isBullish: true, score: 72 } — arah BUY dan "72% confidence" TANPA data.
+                // Sekarang analisa DITAHAN dan dikatakan apa adanya; pemanggil WAJIB
+                // menanganinya dan tidak boleh menampilkan angka apa pun.
+                return { isBullish: null, score: null, dataKurang: true, lowest20: null, highest20: null,
+                         detail: 'Data candle belum cukup (butuh minimal 20) — analisa ditahan, bukan dikarang.' };
+            }
             const closes = candles.map(c => c.close);
             const highs = candles.map(c => c.high);
             const lows = candles.map(c => c.low);
@@ -1816,11 +1974,17 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             if (volumeUp) signals.push('Vol ↑');
             const detail = signals.length > 0 ? signals.join(' • ') : 'Mixed signals';
 
-            return { isBullish, score: +score.toFixed(0), detail };
+            // Level kunci = Support/Resistance NYATA dari candle (dulu 0,988/1,012 × harga).
+            return { isBullish, score: +score.toFixed(0), detail,
+                     lowest20: (isFinite(lowestLast20) && lowestLast20 > 0) ? lowestLast20 : null,
+                     highest20: (isFinite(highestLast20) && highestLast20 > 0) ? highestLast20 : null };
         },
         scanSymbol(symbol = 'XAUUSD') {
             const pair = symbol || window.quantumTerminalManager?.currentSymbol || 'XAUUSD';
-            const price = _livePrices[pair] || window.quantumTerminalManager?.lastClosePrice || (pair === 'XAUUSD' ? 2654.2 : 68450);
+            // Tanpa harga nyata, JANGAN memakai harga tebakan (dulu: 2654.2 / 68450).
+            // Level BSL/SSL tidak dihitung bila harga belum tersedia.
+            const livePx = Number(_livePrices[pair]) > 0 ? Number(_livePrices[pair]) : Number(window.quantumTerminalManager?.lastClosePrice);
+            const price = livePx > 0 ? livePx : 0;
             const cachedCandles = window.quantumTerminalManager?._cachedCandles || [];
 
             const matrix = this.timeframes.map((tf, i) => {
@@ -1835,24 +1999,38 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                     analysis = this._analyzeCandles(subset);
                 }
                 const { isBullish, score, detail } = analysis;
+                // PERBAIKAN: analisa yang DITAHAN (candle <20) tidak boleh dilaporkan sebagai
+                // BEARISH/BULLISH. Dilaporkan apa adanya sebagai TANPA DATA dengan warna netral.
+                const adaData = (isBullish === true || isBullish === false) && score !== null;
 
                 return {
                     tf, engine,
-                    bias: isBullish ? 'BULLISH' : 'BEARISH',
-                    color: isBullish ? 'text-emerald-400' : 'text-rose-400',
-                    bg: isBullish ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30',
-                    badge: isBullish ? 'BUY 🟢' : 'SELL 🔴',
+                    bias: adaData ? (isBullish ? 'BULLISH' : 'BEARISH') : 'TANPA DATA',
+                    color: adaData ? (isBullish ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-400',
+                    bg: adaData ? (isBullish ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30') : 'bg-slate-800/40 border-slate-700',
+                    badge: adaData ? (isBullish ? 'BUY 🟢' : 'SELL 🔴') : '— TANPA DATA',
                     score, detail
                 };
             });
 
-            const bullishCount = matrix.filter(m => m.bias === 'BULLISH').length;
-            const overallScore = Math.round((bullishCount / matrix.length) * 100);
-            const overallBias = overallScore >= 60 ? 'STRONG BULLISH' : (overallScore >= 40 ? 'NETRAL / MIXED' : 'BEARISH DOMINAN');
-            const overallColor = overallScore >= 60 ? 'text-emerald-400' : (overallScore >= 40 ? 'text-amber-400' : 'text-rose-400');
+            // Skor keseluruhan hanya dari timeframe yang BENAR-BENAR dinilai; bila tidak ada
+            // satu pun, skornya null (bukan 0% atau 100% yang menyesatkan).
+            const dinilai = matrix.filter(m => m.bias !== 'TANPA DATA');
+            const bullishCount = dinilai.filter(m => m.bias === 'BULLISH').length;
+            const overallScore = dinilai.length ? Math.round((bullishCount / dinilai.length) * 100) : null;
+            const overallBias = (overallScore === null) ? 'TANPA DATA (candle belum cukup)'
+                : (overallScore >= 60 ? 'STRONG BULLISH' : (overallScore >= 40 ? 'NETRAL / MIXED' : 'BEARISH DOMINAN'));
+            const overallColor = (overallScore === null) ? 'text-slate-400'
+                : (overallScore >= 60 ? 'text-emerald-400' : (overallScore >= 40 ? 'text-amber-400' : 'text-rose-400'));
 
-            const bsl = +(price * 1.012).toFixed(2);
-            const ssl = +(price * 0.988).toFixed(2);
+            // BSL/SSL (buy-side / sell-side liquidity) = high & low NYATA dari 20 candle terakhir.
+            // PERBAIKAN: sebelumnya price × 1,012 dan price × 0,988 — dua level karangan yang
+            // tidak berasal dari data mana pun.
+            const cnd20 = Array.isArray(cachedCandles) ? cachedCandles.slice(-20) : [];
+            const bslRaw = cnd20.length ? Math.max(...cnd20.map(c => Number(c.high) || 0)) : 0;
+            const sslRaw = cnd20.length ? Math.min(...cnd20.map(c => (Number(c.low) > 0 ? Number(c.low) : Infinity))) : 0;
+            const bsl = bslRaw > 0 ? +bslRaw.toFixed(5) : null;
+            const ssl = (sslRaw > 0 && isFinite(sslRaw)) ? +sslRaw.toFixed(5) : null;
 
             return {
                 symbol: pair,
@@ -1880,12 +2058,12 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                             <div class="text-[10px] text-slate-400">MULTI-TIMEFRAME CONFLUENCE (${data.symbol})</div>
                             <div class="text-sm sm:text-base font-bold ${data.overallColor} flex flex-wrap items-center gap-2">
                                 <span>⚡ ${data.overallBias} ALIGNMENT</span>
-                                <span class="px-2 py-0.5 rounded text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono">${data.overallScore}% ALIGNED</span>
+                                <span class="px-2 py-0.5 rounded text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono">${data.overallScore === null ? 'TANPA DATA' : data.overallScore + '% ALIGNED'}</span>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 text-[10px]">
-                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-rose-300">🔴 BSL (Stop Hunt): $${data.bsl}</span>
-                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-emerald-300">🟢 SSL (Discount): $${data.ssl}</span>
+                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-rose-300">🔴 BSL (Stop Hunt): ${data.bsl == null ? '—' : '$' + data.bsl}</span>
+                            <span class="px-2 py-1 rounded bg-slate-900 border border-slate-800 text-emerald-300">🟢 SSL (Discount): ${data.ssl == null ? '—' : '$' + data.ssl}</span>
                         </div>
                     </div>
 
@@ -1900,7 +2078,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                                     <span class="text-slate-300 text-xs font-semibold">Mesin ${m.engine}: ${m.detail}</span>
                                 </div>
                                 <div class="flex items-center justify-between sm:justify-end gap-3 text-[10px] text-slate-400 pt-0.5 sm:pt-0">
-                                    <span>CONFIDENCE: <strong class="text-white">${m.score}%</strong></span>
+                                    <span>CONFIDENCE: <strong class="text-white">${m.score === null ? '—' : m.score + '%'}</strong></span>
                                     <span class="text-cyan-400 hover:underline">LIHAT CHART ↗</span>
                                 </div>
                             </div>
@@ -2277,18 +2455,18 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-950 p-3 rounded-xl border border-cyan-500/30">
                             <div>
                                 <span class="text-[10px] text-slate-400 block">HISTORICAL WIN RATE</span>
-                                <strong class="text-emerald-400 font-bold text-sm sm:text-base">${m.win_rate}%</strong>
+                                <strong class="text-emerald-400 font-bold text-sm sm:text-base">${m.win_rate == null ? '—' : m.win_rate + '%'}</strong>
                                 <span class="text-[9px] text-slate-500 block">N=${m.completed_trades} Trades</span>
                             </div>
                             <div>
                                 <span class="text-[10px] text-slate-400 block">PROFIT FACTOR</span>
-                                <strong class="text-cyan-300 font-bold text-sm sm:text-base">${m.profit_factor}</strong>
-                                <span class="text-[9px] text-slate-500 block">Net PnL +$${m.net_pnl_usd}</span>
+                                <strong class="text-cyan-300 font-bold text-sm sm:text-base">${m.profit_factor == null ? '—' : m.profit_factor}</strong>
+                                <span class="text-[9px] text-slate-500 block">Net PnL ${(Number(m.net_pnl_usd) >= 0 ? '+$' : '-$') + Math.abs(Number(m.net_pnl_usd) || 0).toFixed(2)} · per 1 lot</span>
                             </div>
                             <div>
                                 <span class="text-[10px] text-slate-400 block">EXPECTANCY</span>
-                                <strong class="text-purple-300 font-bold text-sm sm:text-base">+$${m.expectancy}/trade</strong>
-                                <span class="text-[9px] text-slate-500 block">Avg R:R ${m.avg_rr}</span>
+                                <strong class="text-purple-300 font-bold text-sm sm:text-base">${m.expectancy == null ? '—' : '+$' + m.expectancy + '/trade'}</strong>
+                                <span class="text-[9px] text-slate-500 block">Avg R:R ${m.avg_rr == null ? '—' : m.avg_rr}</span>
                             </div>
                             <div>
                                 <span class="text-[10px] text-slate-400 block">MAX DRAWDOWN</span>
@@ -2337,8 +2515,8 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                                         </div>
 
                                         <div class="flex justify-between items-center text-[9px] text-slate-500 pt-0.5">
-                                            <span>Dibuat: ${esc(s.timestamp)}</span>
-                                            <span>Expiry: ${esc(s.expiry)}</span>
+                                            <span>Dibuat: ${esc(s.timestamp_epoch ? new Date(s.timestamp_epoch * 1000).toLocaleString('id-ID') : s.timestamp)}</span>
+                                            <span>Expiry: ${esc(s.expiry_epoch ? new Date(s.expiry_epoch * 1000).toLocaleString('id-ID') : s.expiry)}</span>
                                         </div>
                                     </div>
                                 `;

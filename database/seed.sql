@@ -3,7 +3,7 @@
 -- Password demo semua akun: quantum2026
 -- ============================================================
 
-USE `quantum_market_terminal`;
+-- Seed Data
 
 -- Akun Admin, VIP & PRO Demo (password: quantum2026)
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `role`, `is_active`, `status`) VALUES

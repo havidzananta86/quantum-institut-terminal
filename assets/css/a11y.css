@@ -1,0 +1,99 @@
+/* =====================================================================
+   Fondasi aksesibilitas & keterbacaan.
+   Berkas ini dimuat SEBELUM tailwind.css (lihat urutan <link> di halaman),
+   jadi setiap aturan override di sini memakai !important supaya tidak kalah
+   oleh utilitas Tailwind yang spesifisitasnya sama tetapi urutannya lebih akhir.
+
+   Catatan penting: prefers-reduced-motion SUDAH ditangani tokens.css dengan
+   lebih lengkap (termasuk mematikan animate-pulse/spin/bounce/ping), jadi
+   tidak diduplikasi di sini — satu sumber kebenaran untuk aturan itu.
+   ===================================================================== */
+
+/* ── 1. Fokus keyboard tidak boleh pernah tak terlihat ──────────────────
+   :focus-visible hanya aktif untuk navigasi keyboard, jadi klik mouse tetap
+   bersih. !important diperlukan karena ada elemen yang memakai
+   focus:outline-none (mis. tombol menu seluler di index.html). */
+:focus-visible {
+    outline: 2px solid var(--qi-cyan, var(--qi-cyan)) !important;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ── 2. Tautan "lewati ke konten utama" ────────────────────────────────
+   index.html sudah punya .skip-link sendiri (dari tokens.css); a11y.js tidak
+   menyisipkan yang kedua bila sudah ada. Gaya di bawah untuk halaman lain. */
+.qi-skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 10001;
+    padding: 10px 14px;
+    background: #0A182E;
+    color: var(--qi-cyan, var(--qi-cyan));
+    border: 1px solid var(--qi-cyan, var(--qi-cyan));
+    border-radius: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.qi-skip-link:focus { left: 0; }
+
+/* ── 3. Teks yang hanya dibaca pembaca layar ─────────────────────────── */
+.qi-sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── 4. Kontras teks sekunder — DIUKUR, bukan diperkirakan ─────────────
+   Hasil pengukuran WCAG pada tema bawaan (OLED #050505, kartu #111111,
+   navy #0D1629):
+     .text-slate-500 #64748B : 4,28:1 (OLED) / 3,79:1 (navy)  -> di bawah AA 4,5:1
+     .text-slate-600 #475569 : 2,69:1 (OLED) / 2,38:1 (navy)  -> gagal
+   Nilai pengganti dipilih sebagai abu-abu TERGELAP yang masih lulus 4,5:1 di
+   SEMUA latar (navy paling ketat), sambil menjaga hierarki: 500 lebih terang
+   daripada 600. Ini SATU-SATUNYA perubahan yang terlihat di berkas ini, dan
+   bisa dilepas cukup dengan menghapus blok ini. */
+.text-slate-500 { color: #8C9CB4 !important; } /* terburuk 6,47:1 */
+.text-slate-600 { color: #74839A !important; } /* terburuk 4,69:1 */
+
+/* ── 5. Label sumbu chart juga teks kecil ──────────────────────────────
+   #666666 di hitam hanya 3,66:1 dan #64748B di navy 3,79:1 — keduanya di
+   bawah ambang untuk teks kecil. Dipakai nilai yang sama untuk kedua tema. */
+:root,
+:root[data-theme="oled-black"],
+:root[data-theme="navy"] {
+    --qi-chart-text: #94A3B8; /* 7,95:1 di OLED, 7,04:1 di navy */
+}
+
+/* ── 6. Keterbacaan teks mikro (diukur: 683 pemakaian ukuran ≤10px —
+   494× 10px, 186× 9px, 3× 8px). Hanya di layar ≤640px, ukurannya dinaikkan
+   SATU tingkat dan diberi jarak baris minimum. Tata letak desktop tidak
+   berubah, dan blok ini bisa dilepas tanpa efek lain.
+   Selector memakai atribut class (bukan escape Tailwind) agar tahan terhadap
+   perubahan cara Tailwind menghasilkan nama kelas. */
+@media (max-width: 640px) {
+    [class~="text-[8px]"],
+    [class~="text-[9px]"] {
+        font-size: 10px !important;
+        line-height: 1.45 !important;
+    }
+    [class~="text-[10px]"] {
+        font-size: 11px !important;
+        line-height: 1.45 !important;
+    }
+}
+
+/* ── 7. Angka rata kolom (tabular) ─────────────────────────────────────
+   Digit berlebar sama sehingga harga dan P/L mudah dibandingkan antar baris.
+   Tidak mengubah ukuran maupun tata letak. */
+.font-mono {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}

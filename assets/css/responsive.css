@@ -91,3 +91,287 @@ html, body {
         padding-right: 1.5rem;
     }
 }
+
+/* ══════════════════════════════════════════════════════════
+   SAFE AREA ATAS — iPhone Dynamic Island / notch (spesifikasi Bagian 9)
+   Ditaruh di berkas INI karena responsive.css dimuat oleh dashboard.html;
+   berkas style.css TIDAK dimuat dashboard (hanya halaman index/pricing/register),
+   sehingga aturan di sana tidak akan berpengaruh — kesalahan yang sempat terjadi.
+   @supports memastikan perangkat tanpa area aman TIDAK berubah tampilannya.
+   ══════════════════════════════════════════════════════════ */
+@supports (padding: env(safe-area-inset-top)) {
+  /* Isi panel (area gulir utama) diberi jarak aman atas supaya judul panel
+     tidak pernah tertutup Dynamic Island. Tinggi body TIDAK dipaksa berubah,
+     jadi layout h-screen/overflow-hidden tetap utuh. */
+  .panel-content {
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PANEL CHART — RESPONSIF  (HANYA #panel-charts)
+   ══════════════════════════════════════════════════════════════════════════
+   JAMINAN BATASAN: SETIAP selektor di blok ini diawali "#panel-charts",
+   sehingga secara teknis mustahil mengenai Sidebar, Header Ticker, World Clock,
+   Strength Stack, MTF Bias, Live Market Tape, atau panel lain mana pun.
+
+   TIDAK ADA HTML/JS YANG DIUBAH. Tidak ada elemen yang dihapus — hanya tata
+   letak/ukuran/visibilitas. Nama id/class/variabel tidak disentuh.
+
+   Kenapa aman mengubah ukuran container: chart memakai autoSize:true
+   (assets/js/dashboard-app.js) DAN ResizeObserver pada container
+   (assets/js/chart-init.js), jadi chart otomatis mengikuti perubahan ukuran
+   yang berasal dari CSS ini (sudah diukur, bukan asumsi).
+
+   Akar masalah di HP yang diperbaiki:
+   #chartTopBar memakai justify-between TANPA min-width:0, sehingga wadah
+   tombol timeframe (yang overflow-x-auto) TIDAK dapat menyusut — akibatnya
+   baris atas meluber dan tombol di sisi kanan terpotong (panel overflow-hidden).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Safe area khusus panel chart (Dynamic Island atas, home indicator bawah) ──
+   Lebih spesifik daripada .panel-content, sehingga jarak atas panel chart
+   menjadi tepat sebesar area aman (tanpa tambahan 1rem) dan tidak berlipat. */
+#panel-charts {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ── Baris atas: biarkan menyusut & membungkus agar tidak ada tombol terpotong ── */
+#panel-charts #chartTopBar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+#panel-charts #chartTopBar > div {
+  min-width: 0;          /* kunci utama: wadah TF yang overflow-x-auto jadi bisa menyusut */
+}
+#panel-charts #chartTopBar > div:has(.chart-tf-btn) {
+  flex: 1 1 auto;        /* deretan timeframe mengambil ruang sisa, lalu digeser mendatar */
+}
+
+/* ── Baris OHLC: dapat digeser mendatar daripada meluber ── */
+#panel-charts #chartOhlcBar {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+/* ── Baris indikator & baris gambar ──────────────────────────────────────────
+   DIKENALI DARI ISI, BUKAN URUTAN ANAK.
+   PELAJARAN PENTING (13 Okt): versi pertama memakai '> div:nth-child(3/4/5)'.
+   Jumlah anak #panel-charts ternyata BERUBAH saat aplikasi berjalan (mis. saat
+   watchlist dibuka), sehingga 'nth-child(5)' yang dimaksudkan sebagai baris utama
+   MALAH mengenai baris DRAW → baris itu mendapat flex-direction:column dan
+   tombolnya menumpuk vertikal di HP (terlihat pada tangkapan layar pengujian,
+   sementara angka pengukuran tidak menangkapnya). ':has()' tidak bergantung urutan.
+   Bila peramban tidak mendukung ':has()', aturan ini TIDAK berlaku sama sekali —
+   artinya tampilan kembali ke aslinya (aman, tidak merusak). ── */
+#panel-charts > div:has(.ind-btn),
+#panel-charts > div:has(.lw-draw-btn) {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+/* ── Baris utama (yang memuat watchlist) & kolom chart di dalamnya ── */
+#panel-charts > div:has(#chartWatchlist) > div:has(> #tv_chart_container) {
+  min-width: 0;
+}
+
+/* ── Tinggi minimum area chart: desktop lega, HP tetap terlihat ── */
+#panel-charts #tv_chart_container,
+#panel-charts #tvChartWrap {
+  min-height: 400px;     /* Desktop ≥1024px (media query di bawah menyesuaikan) */
+}
+
+/* ── Panel samping watchlist: desktop tetap di kanan ── */
+#panel-charts #chartWatchlist {
+  min-width: 0;
+}
+
+/* ── Kepala watchlist: baris keterangan pembaruan data (mis.
+      "diperbarui 11s lalu · binance_ws(candle_mt…)") sebelumnya MELUBER keluar
+      kotaknya dan terpotong di tepi panel — terlihat pada tangkapan layar pengguna
+      maupun tangkapan pengujian saya. Dipotong rapi dengan elipsis, bukan dibiarkan
+      meluber. Teksnya tetap lengkap di DOM (tidak ada yang dihapus). ── */
+#panel-charts #watchlistFreshness {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TABLET  768px – 1023px
+   Panel chart tetap dominan; panel samping dipersempit (tidak disembunyikan
+   agar fiturnya tetap dapat dipakai).
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #panel-charts #chartWatchlist {
+    width: 11rem;        /* dari 13rem (w-52) → lebih banyak ruang untuk chart */
+  }
+  #panel-charts #tv_chart_container,
+  #panel-charts #tvChartWrap {
+    min-height: 320px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE  < 768px
+   Susunan: Toolbar di atas → Chart di tengah (min 250px) → Watchlist di bawah.
+   Panel boleh digulir vertikal supaya tidak ada bagian yang terpotong.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Panel digulir, bukan dipotong (sebelumnya overflow-hidden) */
+  #panel-charts {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Deretan alat: tidak membungkus, cukup digeser mendatar
+     (dikenali dari ISI, bukan urutan anak — lihat catatan pelajaran di atas). */
+  #panel-charts #chartTopBar,
+  #panel-charts #chartOhlcBar,
+  #panel-charts > div:has(.ind-btn),
+  #panel-charts > div:has(.lw-draw-btn) {
+    flex-wrap: nowrap;
+  }
+  /* Baris atas: SELURUH baris dapat digeser mendatar (opsi yang disarankan spesifikasi).
+     Dengan begitu tidak ada tombol yang terpotong/tak terjangkau — termasuk saat
+     sasaran sentuh 44×44 membuat total lebarnya melebihi lebar layar HP. */
+  #panel-charts #chartTopBar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #panel-charts #chartOhlcBar,
+  #panel-charts > div:has(.ind-btn),
+  #panel-charts > div:has(.lw-draw-btn) {
+    overflow-x: auto;
+  }
+
+  /* Susunan utama menjadi satu kolom: chart dulu, watchlist di bawah.
+     'div:has(#chartWatchlist)' = baris utama — TIDAK bergantung urutan anak,
+     jadi baris DRAW/INDICATORS tidak mungkin lagi terkena aturan ini. */
+  #panel-charts > div:has(#chartWatchlist) {
+    flex-direction: column;
+    flex: 0 0 auto;
+  }
+  #panel-charts > div:has(#chartWatchlist) > div:has(> #tv_chart_container) {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+  #panel-charts #tv_chart_container,
+  #panel-charts #tvChartWrap {
+    min-height: 250px;   /* syarat minimum agar chart tetap terbaca di HP */
+  }
+  #panel-charts #chartWatchlist {
+    width: 100%;
+    max-height: 260px;   /* tidak menelan seluruh layar; isinya tetap dapat digulir */
+    border-left: 0;
+    border-top: 1px solid var(--qi-border, #1e293b);
+  }
+
+  /* Sasaran sentuh ≥ 44px (syarat aksesibilitas) untuk semua tombol alat panel chart.
+     Padding visual dibuat tetap kecil supaya baris tidak boros tinggi. */
+  #panel-charts .chart-tf-btn,
+  #panel-charts .ind-btn,
+  #panel-charts .lw-draw-btn,
+  #panel-charts #chartTopBar button,
+  #panel-charts #chartTopBar select {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #panel-charts .chart-tf-btn {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* Baris atas: kelompok identitas pair TIDAK BOLEH menyusut (terukur: dengan
+     min-width:0 ia menyusut ke 70px padahal isinya 192px → isinya meluber ke luar
+     kotaknya). Yang boleh menyusut adalah deret timeframe (memang dirancang
+     overflow-x:auto). Teks & elemen tetap sama, hanya ukuran/jaraknya. */
+  #panel-charts #chartTopBar > div:has(#chartCurSym) {
+    gap: 6px;
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+  #panel-charts #chartCurSym {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #panel-charts #chartCurPrice {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  #panel-charts #chartCurChg {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  /* Kelompok tombol aksi (anak ke-3: Quantum/TradingView, bersih, layar penuh, Fit,
+     watchlist) tetap di aliran normal.
+     CATATAN PERCOBAAN YANG DIBATALKAN (diukur, bukan dugaan): memaksa kelompok ini
+     turun sebaris dengan flex-basis:100% / flex:0 0 100% TIDAK menyelesaikan luberan —
+     hasil ukur justru menunjukkan kelompok ini naik ke baris pertama dan mendorong dua
+     kelompok lain ke bawah (baris-y 77 vs 78/85), sementara scrollWidth baris atas tetap
+     614px vs 375px. Karena itu pendekatan yang dipakai adalah opsi yang memang
+     disarankan spesifikasi: SELURUH baris atas dapat digeser mendatar. */
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DESKTOP  ≥ 1024px — KERAPATAN BARIS ALAT (murni CSS, aman)
+   ══════════════════════════════════════════════════════════════════════════
+   Alasan: pada desktop, area chart SUDAH memakai seluruh sisa tinggi yang tersedia
+   (terukur 641px @1440 dan 673px @1708). Karena itu satu-satunya cara menambah
+   tinggi chart tanpa mengubah struktur adalah MERAPATKAN baris alat.
+
+   Yang dilakukan: mengurangi padding vertikal baris alat & tombolnya.
+   Yang TIDAK dilakukan (penting): tidak ada elemen yang dihapus, disembunyikan,
+   diganti nama, atau dipindah. Tidak ada logika yang disentuh. Semua tombol tetap
+   ada dan tetap dapat diklik — hanya jaraknya lebih rapat.
+
+   Hanya berlaku ≥1024px sehingga sasaran sentuh 44×44 di HP/tablet TIDAK terganggu.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  #panel-charts #chartTopBar {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+  #panel-charts #chartOhlcBar {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  #panel-charts > div:has(.ind-btn),
+  #panel-charts > div:has(.lw-draw-btn) {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  #panel-charts > div:has(.ind-btn) button,
+  #panel-charts > div:has(.lw-draw-btn) button {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SASARAN SENTUH ≥ 44px — HP & TABLET (< 1024px)
+   Dipisah dari blok tata letak di atas karena tablet (768–1023px) JUGA perangkat
+   sentuh: tata letaknya tetap mendatar, tetapi ukuran tombolnya tetap nyaman disentuh.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  #panel-charts .chart-tf-btn,
+  #panel-charts .ind-btn,
+  #panel-charts .lw-draw-btn,
+  #panel-charts #chartTopBar button,
+  #panel-charts #chartTopBar select {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

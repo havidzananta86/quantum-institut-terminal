@@ -7,6 +7,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_require_level('pro');   // Leaderboard — PRO
 qi_rate_limit(30, 60);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -47,16 +48,31 @@ $sql = "
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 $leaderboard = [];
 foreach ($rows as $i => $r) {
+    $reward = null;
+    $badge = null;
+    if ($i === 0) {
+        $reward = 'Free 1 Bulan Quantum+ PRO + Champion Trophy';
+        $badge = '🥇 Grand Master';
+    } elseif ($i === 1) {
+        $reward = 'Free 14 Hari PRO Pass';
+        $badge = '🥈 Master Trader';
+    } elseif ($i === 2) {
+        $reward = 'Free 7 Hari PRO Pass';
+        $badge = '🥉 Pro Trader';
+    } elseif ($r['win_rate'] >= 70) {
+        $badge = '🎯 Sniper Winrate';
+    }
+
     $leaderboard[] = [
         'rank'         => $i + 1,
         'name'         => qi_mask_name($r['full_name']),
         'win_rate'     => (float) $r['win_rate'],
         'total_pnl'    => (float) $r['total_pnl'],
         'total_trades' => (int)   $r['total_trades'],
+        'badge'        => $badge,
+        'prize'        => $reward,
     ];
 }
 

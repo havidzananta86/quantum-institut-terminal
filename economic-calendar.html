@@ -14,6 +14,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="assets/js/auth.js?v=1.4.3"></script>
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.2">
+    <script src="assets/js/a11y.js?v=1.0.3" defer></script>
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.4">
     <script src="assets/js/error-tracker.js?v=1.4.6"></script>
@@ -87,7 +90,7 @@
                    class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF);">
                     ⚡ Upgrade ke Quantum+ PRO
                 </a>
-                <a href="terminal.html" class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
+                <a href="dashboard.html" class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
                     Lanjut dengan Terminal Gratis →
                 </a>
             </div>
@@ -143,29 +146,29 @@
     <nav class="flex-1 px-2 py-3 space-y-4 text-xs">
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market Intelligence</div>
-            <a href="terminal.html#radar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
+            <a href="dashboard.html?panel=panel-radar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span>⚡</span> Quantum AI Radar
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">PRO</span>
             </a>
-            <a href="terminal.html#signals" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📡</span> Signal Matrix</a>
-            <a href="terminal.html#analysis" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔬</span> Technical Outlook</a>
+            <a href="dashboard.html?panel=panel-signal" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📡</span> Signal Matrix</a>
+            <a href="dashboard.html?panel=panel-outlook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔬</span> Technical Outlook</a>
             <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>🗓</span> Economic Heatmap</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
-            <a href="terminal.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📈</span> Charts</a>
-            <a href="terminal.html#orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📊</span> Order Book</a>
-            <a href="terminal.html#news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📰</span> News Feed</a>
+            <a href="dashboard.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📈</span> Charts</a>
+            <a href="dashboard.html?panel=panel-orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📊</span> Order Book</a>
+            <a href="dashboard.html?panel=panel-news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📰</span> News Feed</a>
             <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>📅</span> Economic Calendar</a>
             <a href="dashboard.html" id="ecSidebarDash1" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
             <a href="dashboard.html#strength" id="ecSidebarDash2" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
-            <a href="terminal.html#trading" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💼</span> Paper Trading</a>
-            <a href="terminal.html#backtest" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>⏪</span> Backtester</a>
-            <a href="terminal.html#track"   class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🏆</span> Track Record</a>
-            <a href="terminal.html#matrix"  class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔮</span> Correlation Matrix</a>
+            <a href="dashboard.html?panel=panel-paper" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💼</span> Paper Trading</a>
+            <a href="dashboard.html?panel=panel-screener" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>⏪</span> Backtester</a>
+            <a href="dashboard.html?panel=panel-track"   class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🏆</span> Track Record</a>
+            <a href="dashboard.html?panel=panel-signal"  class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔮</span> Correlation Matrix</a>
         </div>
     </nav>
 

@@ -2,6 +2,9 @@
 RewriteEngine On
 RewriteBase /
 
+# Set halaman utama otomatis ke index.html saat domain diakses
+DirectoryIndex index.html index.php
+
 # =============================================
 # FORCE HTTPS (production only, skip localhost)
 # =============================================
@@ -9,6 +12,14 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP_HOST} !^localhost [NC]
 RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# =============================================
+# TERMINAL DIPINDAH KE DASHBOARD
+# Halaman terminal.html dihapus. Semua area Terminal kini ada di Dashboard
+# (dashboard.html); sebagian area terbuka untuk paket FREE, sisanya berlangganan.
+# =============================================
+RewriteRule ^terminal\.html$ /dashboard.html [R=301,L]
+RewriteRule ^terminal/?$ /dashboard.html [R=301,L]
 
 # =============================================
 # PHP ERROR DISPLAY — off in production
@@ -28,10 +39,23 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 Options -Indexes
 
 # Blokir folder sensitif: config, engine, database, cache, scratch, .vercel
-RewriteRule ^(config|engine|database|cache|scratch|\.vercel)/ - [F,L]
+RewriteRule ^(config|engine|database|cache|scratch|tests|\.vercel)/ - [F,L]
 
 # Blokir file sensitif langsung
 RewriteRule \.sql$ - [F,L]
+
+# Pustaka internal API (prefix "_") HANYA untuk di-include oleh endpoint lain —
+# tidak boleh dipanggil langsung lewat web. Ditemukan saat verifikasi: memanggil
+# /api/_signal_stats.php langsung mengembalikan HTTP 200 (tidak berbahaya karena
+# tanpa keluaran, tetapi tetap tidak rapi). Rule ini hanya memengaruhi permintaan
+# HTTP; require/include di dalam PHP tetap bekerja seperti biasa.
+RewriteRule ^api/_.*\.php$ - [F,L]
+
+# Blokir berkas metadata proyek yang TIDAK boleh dibaca publik (bocor daftar
+# dependensi + skrip internal): package.json, package-lock.json, composer.*,
+# .env, .git*, dan berkas editor. Ditemukan saat verifikasi deploy: package.json
+# ternyata bisa diunduh siapa saja.
+RewriteRule ^(package(-lock)?\.json|composer\.(json|lock)|\.env(\..*)?|\.git.*|yarn\.lock|pnpm-lock\.yaml|\.editorconfig|\.eslintrc.*|tsconfig\.json)$ - [F,L]
 RewriteRule \.env$ - [F,L]
 RewriteRule \.log$ - [F,L]
 RewriteRule \.bak$ - [F,L]
@@ -59,7 +83,7 @@ RewriteRule \.bak$ - [F,L]
     Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 
     # Content Security Policy — Enforcing mode
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://api1.binance.com https://api2.binance.com https://api3.binance.com https://data-api.binance.vision https://api.binance.us https://fapi.binance.com wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app https://api.twelvedata.com https://biquote.io https://accounts.google.com https://api.alternative.me https://api.frankfurter.app https://api.coingecko.com; frame-src https://s3.tradingview.com https://*.tradingview.com https://www.tradingview-widget.com https://accounts.google.com; report-uri /api/csp-report.php;"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://api1.binance.com https://api2.binance.com https://api3.binance.com https://data-api.binance.vision https://api.binance.us https://fapi.binance.com wss://data-stream.binance.vision wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app https://api.twelvedata.com https://biquote.io https://accounts.google.com https://api.alternative.me https://api.frankfurter.app https://api.coingecko.com; frame-src https://s3.tradingview.com https://*.tradingview.com https://www.tradingview-widget.com https://accounts.google.com; report-uri /api/csp-report.php;"
 </IfModule>
 
 # =============================================

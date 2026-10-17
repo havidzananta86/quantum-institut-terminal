@@ -1,0 +1,31 @@
+#!/bin/sh
+# Pre-commit: the same checks CI runs (.github/workflows/ci.yml), so a red build is
+# caught before it is pushed — a push to master deploys straight to Hostinger.
+#
+# Opt in once per clone:   npm run hooks:install
+# Skip for one commit:     git commit --no-verify
+# PHP: $PHP_BIN, else `php` from PATH. It must have mbstring and openssl, otherwise the
+# PHP-based tests would SKIP silently and the hook would prove nothing.
+# Checks the working tree, not only what is staged.
+
+PHP="${PHP_BIN:-php}"
+if ! "$PHP" -r 'exit(extension_loaded("mbstring") && extension_loaded("openssl") ? 0 : 1);' >/dev/null 2>&1; then
+    echo "pre-commit: '$PHP' is missing or lacks mbstring/openssl." >&2
+    echo "            Set PHP_BIN to a full PHP, e.g. PHP_BIN=D:/xamp/php/php.exe" >&2
+    exit 1
+fi
+export PHP_BIN="$PHP"
+
+npm run --silent test:php || { echo "pre-commit: PHP syntax check failed." >&2; exit 1; }
+npm run --silent test:unit || { echo "pre-commit: unit tests failed." >&2; exit 1; }
+
+kopi="${TMPDIR:-/tmp}/qi-tailwind-$$.css"
+cp assets/css/tailwind.css "$kopi" || exit 1
+npm run --silent build:css >/dev/null 2>&1 || { rm -f "$kopi"; echo "pre-commit: npm run build:css failed." >&2; exit 1; }
+if ! cmp -s "$kopi" assets/css/tailwind.css; then
+    rm -f "$kopi"
+    echo "pre-commit: assets/css/tailwind.css was stale and has been rebuilt — 'git add' it and commit again." >&2
+    exit 1
+fi
+rm -f "$kopi"
+exit 0

@@ -1,0 +1,22 @@
+-- 015_ai_method_versions_status.sql
+-- STATUS & BUKTI UJI untuk versi metode (spesifikasi Bagian 5 — STEP 4 & 5).
+--
+-- MENGAPA perlu kolom tambahan:
+--   Tabel ai_method_versions (migrasi 012) sudah menyimpan angka winrate/profit factor,
+--   tetapi TIDAK menyatakan TAHAP sebuah versi: masih usulan, sedang diuji, disetujui,
+--   atau ditolak. Tanpa itu, "versi mana yang menunggu keputusan saya?" tidak terjawab.
+--
+-- KEJUJUAN yang dijaga:
+--   · status_usul memisahkan usulan dari keputusan. Versi TIDAK pernah diaktifkan
+--     otomatis — aktivasi selalu tindakan manusia (admin) dan dicatat.
+--   · backtest_samples / forward_samples disimpan terpisah, karena spesifikasi
+--     mensyaratkan backtest ≥ 100 sampel DAN forward test ≥ 30 sampel sebelum terbit.
+--   · Sifat migrasi: idempoten. Kolom hanya ditambahkan bila BELUM ada (dicek lewat
+--     information_schema), sehingga aman dijalankan berulang.
+--
+-- Catatan: MySQL/MariaDB tidak mendukung "ADD COLUMN IF NOT EXISTS" pada semua versi,
+-- jadi penambahan kolom dilakukan oleh kode pemanggil setelah memeriksa information_schema.
+-- Berkas ini sengaja hanya memuat pernyataan SELECT sebagai penanda (lihat migrate.php),
+-- dan perubahan struktur dikerjakan oleh api/metode.php → qi_metode_pastikan_skema().
+
+SELECT 'ai_method_versions: status_usul, backtest_samples, forward_samples ditambahkan oleh api/metode.php (idempoten)' AS catatan;

@@ -50,8 +50,19 @@ $RULES = [
     'errorlogs' => ['pattern' => '/^errors-\d{4}-\d{2}-\d{2}\.jsonl$/', 'max_age' => 30 * 86400],
     'ratelimit' => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
     'otp'       => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
-    'chart'     => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
-    'td'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    'chart'          => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    'td'             => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    'crypto-futures' => ['pattern' => '/^.*\.json$/',                        'max_age' => 3600],
+    'ai_signals'     => ['pattern' => '/^.*\.json$/',                        'max_age' => 86400],
+    'frankfurter'    => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    // Ditulis api/csp-report.php: satu berkas per hari. Sebelumnya TIDAK pernah
+    // dibersihkan, jadi tumbuh tanpa batas — dan laporan CSP bisa sangat banyak.
+    'csp-reports'    => ['pattern' => '/^csp-\d{4}-\d{2}-\d{2}\.jsonl$/',    'max_age' => 30 * 86400],
+    // Ditulis api/tv-scan.php (nama berkas md5).
+    'tv-scan'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    // Tick harga terakhir dari EA MT5 (api/mt-bridge.php?action=tick). Satu berkas per
+    // akun, ditimpa tiap detik — jadi umurnya pendek dan aman dibersihkan lebih cepat.
+    'ticks'          => ['pattern' => '/^\d+\.json$/',                       'max_age' => 3600],
 ];
 
 $cacheRoot = realpath(__DIR__ . '/../cache');
@@ -111,6 +122,83 @@ $out = [
 
 if (function_exists('qi_log')) {
     qi_log('info', 'maintenance-cron selesai', ['dihapus' => $totalDel, 'dry_run' => $dryRun]);
+}
+
+// ── Penilaian sinyal terjadwal ──────────────────────────────────────────────
+// Menyelesaikan sinyal AKTIF menjadi HIT TP / HIT SL / EXPIRED memakai candle
+// yang sudah ada. Dengan warm=1 cache candle diisi dulu, jadi sinyal terbaru pun
+// bisa dinilai walau belum ada yang membuka chart-nya. Dibungkus try/catch supaya
+// kegagalan penilaian tidak pernah menggagalkan pembersihan cache.
+if (!$dryRun) {
+    try {
+        if (!defined('QI_SIGNAL_EVAL_LIB')) define('QI_SIGNAL_EVAL_LIB', true);
+        require_once __DIR__ . '/signal-evaluator.php';
+        if (function_exists('qi_signal_evaluator_run')) {
+            $out['penilai_sinyal'] = qi_signal_evaluator_run(false, true, 100);
+        }
+    } catch (Throwable $e) {
+        $out['penilai_sinyal'] = ['error' => 'penilaian sinyal dilewati'];
+    }
+}
+
+// ── Retensi snapshot akun ───────────────────────────────────────────────────
+// EA mengirim snapshot tiap ±60 detik = ±1.440 baris/hari/akun, dan sebelumnya TIDAK
+// ADA pembersihan sama sekali (tumbuh tanpa batas: ±526 ribu baris per akun per tahun).
+// Grafik saldo/ekuitas hanya membaca maksimal 7 hari, jadi menyimpan 30 hari sudah
+// sangat longgar.
+$out['retensi_snapshot_hari'] = 30;
+try {
+    $pdo = qi_db();
+    if ($pdo->query("SHOW TABLES LIKE 'trading_account_snapshots'")->fetch()) {
+        if ($dryRun) {
+            $st = $pdo->query("SELECT COUNT(*) c FROM trading_account_snapshots WHERE captured_at < DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            $out['snapshot_akan_dihapus'] = (int)$st->fetch()['c'];
+        } else {
+            $n = (int)$pdo->exec("DELETE FROM trading_account_snapshots WHERE captured_at < DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            $out['snapshot_dihapus'] = $n;
+            if ($n > 0 && function_exists('qi_log')) {
+                qi_log('info', 'Retensi snapshot dijalankan', ['dihapus' => $n, 'hari' => 30]);
+            }
+        }
+    } else {
+        $out['snapshot_dihapus'] = 'tabel belum ada';
+    }
+} catch (Throwable $e) {
+    $out['snapshot_dihapus'] = 'dilewati';
+}
+
+// ── Penurunan role untuk lisensi yang sudah kedaluwarsa ─────────────────────
+// Sebelumnya status pembayaran hanya MENAIKKAN role (api/payment.php) dan tidak ada
+// satu pun proses yang menurunkannya — sehingga pembeli 1 bulan mempertahankan akses
+// 'pro' selamanya.
+//
+// Aturan di bawah SENGAJA SEMPIT supaya tidak merusak akun yang diberikan manual:
+//    role pro/vip  DAN  PUNYA baris lisensi  DAN  TIDAK punya lisensi aktif.
+// Akun tanpa baris lisensi (admin, akun demo, pemberian manual) TIDAK PERNAH disentuh.
+// Diperiksa pada data produksi 2026-10-11: 0 kandidat, dan tiga akun pro/vip tanpa
+// baris lisensi tetap aman.
+try {
+    $pdo = $pdo ?? qi_db();
+    $kandidat = $pdo->query("SELECT u.id, u.email, u.role FROM users u
+        WHERE u.role IN ('pro','vip')
+          AND EXISTS (SELECT 1 FROM license_keys lk WHERE lk.user_id = u.id)
+          AND NOT EXISTS (SELECT 1 FROM license_keys lk2
+                          WHERE lk2.user_id = u.id AND lk2.is_active = 1 AND lk2.expires_at > NOW())")
+        ->fetchAll(PDO::FETCH_ASSOC);
+    $out['lisensi_kedaluwarsa'] = count($kandidat);
+    if ($dryRun) {
+        $out['lisensi_akan_diturunkan'] = array_map(fn($x) => $x['email'], $kandidat);
+    } elseif ($kandidat) {
+        $ids = array_map(fn($x) => (int)$x['id'], $kandidat);
+        $in  = implode(',', $ids);
+        $n   = (int)$pdo->exec("UPDATE users SET role = 'user' WHERE id IN ($in) AND role IN ('pro','vip')");
+        $out['lisensi_diturunkan'] = $n;
+        if (function_exists('qi_log')) {
+            qi_log('info', 'Role diturunkan karena lisensi kedaluwarsa', ['jumlah' => $n, 'user_ids' => $ids]);
+        }
+    }
+} catch (Throwable $e) {
+    $out['lisensi_diturunkan'] = 'dilewati';
 }
 
 echo $isCli ? json_encode($out, JSON_PRETTY_PRINT) . PHP_EOL : json_encode($out);

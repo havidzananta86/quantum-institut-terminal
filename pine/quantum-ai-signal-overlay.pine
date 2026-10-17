@@ -1,0 +1,111 @@
+//@version=5
+// ============================================================================
+//  QUANTUM AI SIGNAL OVERLAY — Quantum Institut Market Terminal
+//  https://quantum-institut.com
+// ============================================================================
+//  FUNGSI: menggambar area ENTRY / SL / TP1 / TP2 / TP3 milik satu sinyal Quantum
+//          langsung di chart TradingView, lengkap dengan tabel keterangan
+//          (arah, mesin Quantum, metode, R:R, sumber).
+//
+//  CARA PAKAI SINGKAT:
+//    1. Buka chart pair yang sesuai (mis. OANDA:XAUUSD) pada timeframe sinyal.
+//    2. Pine Editor → tempel skrip ini → Add to chart.
+//    3. Isi input sesuai sinyal dari panel Quantum (Entry, SL, TP1..TP3, mesin, metode).
+//    4. (Opsional) Buat Alert dengan "Webhook URL" dari panel Quantum Signal Gateway,
+//       lalu pakai pesan alert dari bagian ALERT di bawah.
+//
+//  CATATAN KEJUJURAN:
+//    Skrip ini TIDAK menghitung sinyal dan TIDAK mengambil data dari server — ia hanya
+//    MENGGAMBAR level yang Anda masukkan. Jadi tidak ada angka yang "dikarang" di sini.
+//    Skrip ini juga BELUM dijalankan/diuji di TradingView dari sisi saya (lingkungan saya
+//    tidak bisa menjalankan Pine); sintaksnya memakai fungsi Pine v5 yang umum. Bila
+//    TradingView memberi peringatan versi, ubah baris //@version=5 sesuai anjuran editor.
+// ============================================================================
+
+indicator("Quantum AI Signal Overlay (Quantum Institut)", overlay = true, max_lines_count = 100, max_labels_count = 100)
+
+// ── INPUT ───────────────────────────────────────────────────────────────────
+gS = "1. Data Sinyal"
+iSimbol  = input.string("XAUUSD", "Simbol", options = ["XAUUSD","XAGUSD","EURUSD","GBPUSD","USDJPY","AUDUSD","USDCAD","USDCHF","NZDUSD","EURJPY","GBPJPY","BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"], group = gS)
+iArah    = input.string("BUY", "Arah", options = ["BUY", "SELL"], group = gS)
+iEntry   = input.float(0.0, "Entry", step = 0.00001, group = gS)
+iSL      = input.float(0.0, "Stop Loss", step = 0.00001, group = gS)
+iTP1     = input.float(0.0, "TP1", step = 0.00001, group = gS)
+iTP2     = input.float(0.0, "TP2", step = 0.00001, group = gS)
+iTP3     = input.float(0.0, "TP3", step = 0.00001, group = gS)
+iMesin   = input.string("SNR+MomentumNY", "Mesin Quantum", group = gS)
+iMetode  = input.string("SMC+ICT+FIB", "Metode Analisa", group = gS)
+iCatatan = input.string("Level dari panel Quantum", "Sumber level", group = gS)
+
+gT = "2. Tampilan"
+iPanjang = input.int(30, "Panjang garis (bar)", minval = 5, maxval = 200, group = gT)
+iTabel   = input.bool(true, "Tampilkan tabel keterangan", group = gT)
+iLebar   = input.int(2, "Tebal garis entry/SL", minval = 1, maxval = 5, group = gT)
+
+// ── WARNA ───────────────────────────────────────────────────────────────────
+cEntry = color.new(#00E5FF, 0)
+cSL    = color.new(#FF4D6D, 0)
+cTP    = color.new(#22C55E, 0)
+cNetral= color.new(#94A3B8, 0)
+
+// ── GAMBAR (hanya pada bar terakhir, setelah input diisi) ───────────────────
+var table info = table.new(position.top_right, 2, 7, border_width = 1)
+
+if barstate.islast and iEntry > 0
+    x1 = bar_index
+    x2 = bar_index + iPanjang
+
+    // Entry — garis putus-putus
+    line.new(x1, iEntry, x2, iEntry, color = cEntry, width = iLebar, style = line.style_dashed)
+    label.new(x2, iEntry, "ENTRY " + str.tostring(iEntry), color = cEntry, textcolor = color.black, style = label.style_label_left, size = size.small)
+
+    // Stop Loss
+    if iSL > 0
+        line.new(x1, iSL, x2, iSL, color = cSL, width = iLebar, style = line.style_dashed)
+        label.new(x2, iSL, "SL " + str.tostring(iSL), color = cSL, textcolor = color.white, style = label.style_label_left, size = size.small)
+
+    // Take Profit 1..3
+    if iTP1 > 0
+        line.new(x1, iTP1, x2, iTP1, color = cTP, width = 1, style = line.style_dotted)
+        label.new(x2, iTP1, "TP1 " + str.tostring(iTP1), color = cTP, textcolor = color.black, style = label.style_label_left, size = size.small)
+    if iTP2 > 0
+        line.new(x1, iTP2, x2, iTP2, color = color.new(cTP, 25), width = 1, style = line.style_dotted)
+        label.new(x2, iTP2, "TP2 " + str.tostring(iTP2), color = color.new(cTP, 25), textcolor = color.black, style = label.style_label_left, size = size.small)
+    if iTP3 > 0
+        line.new(x1, iTP3, x2, iTP3, color = color.new(cTP, 45), width = 1, style = line.style_dotted)
+        label.new(x2, iTP3, "TP3 " + str.tostring(iTP3), color = color.new(cTP, 45), textcolor = color.black, style = label.style_label_left, size = size.small)
+
+    // Tabel keterangan — R:R dihitung dari level yang Anda masukkan (bukan dari server).
+    if iTabel
+        rr = (iSL > 0 and iEntry > 0) ? math.abs(iTP1 - iEntry) / math.abs(iEntry - iSL) : 0.0
+        table.cell(info, 0, 0, "QUANTUM INSTITUT", bgcolor = color.new(#0B1329, 0), text_color = color.white, text_size = size.small)
+        table.cell(info, 1, 0, iSimbol, bgcolor = color.new(#0B1329, 0), text_color = cEntry, text_size = size.small)
+        table.cell(info, 0, 1, "ARAH", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 1, iArah, bgcolor = (iArah == "BUY" ? color.new(#22C55E, 30) : color.new(#FF4D6D, 30)), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 0, 2, "MESIN", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 2, iMesin, bgcolor = color.new(#334155, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 0, 3, "METODE", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 3, iMetode, bgcolor = color.new(#334155, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 0, 4, "R:R (TP1)", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 4, "1 : " + str.tostring(rr, "#.##"), bgcolor = color.new(#B45309, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 0, 5, "SUMBER", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 5, iCatatan, bgcolor = color.new(#334155, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 0, 6, "DISCLAIMER", bgcolor = color.new(#1E293B, 0), text_color = color.white, text_size = size.tiny)
+        table.cell(info, 1, 6, "Edukasi, bukan saran investasi", bgcolor = color.new(#334155, 0), text_color = color.new(color.white, 30), text_size = size.tiny)
+
+// ============================================================================
+//  ALERT / WEBHOOK — tempel pesan berikut di kotak "Message" alert TradingView.
+//  Ganti URL webhook dengan milik Anda dari panel Quantum → Signal Gateway
+//  (tombol "🔗 Salin URL webhook").
+//
+//  {"symbol":"{{ticker}}","timeframe":"{{interval}}","price":"{{close}}",
+//   "message":"Quantum {{strategy.order.comment}}"}
+//
+//  Catatan: TradingView TIDAK dapat menghitung tanda tangan HMAC pada alert-nya,
+//  jadi alert TradingView memakai kunci pada URL (?k=...). Tanda tangan HMAC
+//  (header X-QI-Signature) hanya untuk pengirim otomatis milik Anda sendiri.
+//
+//  Baris di bawah mengirim alert uji dari Pine (opsional, matikan bila tidak perlu):
+// ============================================================================
+if barstate.islast and iEntry > 0 and iSL > 0
+    alert("{\"symbol\":\"" + iSimbol + "\",\"timeframe\":\"" + timeframe.period + "\",\"price\":\"" + str.tostring(close) + "\",\"message\":\"Quantum " + iArah + " " + iSimbol + " entry " + str.tostring(iEntry) + " SL " + str.tostring(iSL) + " TP1 " + str.tostring(iTP1) + "\"}", alert.freq_once_per_bar_close)

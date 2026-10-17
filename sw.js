@@ -1,14 +1,16 @@
 /**
  * Quantum Institut Market Terminal — Service Worker
- * Versi: 2.1.0
+ * Versi: 3.0.0
  * #47 Improved cache strategy: stale-while-revalidate for assets, network-first for pages
+ * v3.0.0: cache lama dibuang paksa — halaman HTML lama yang tersangkut di cache
+ *         membuat antarmuka tampil beda dari build terbaru di server.
  */
 
-const CACHE_NAME = 'quantum-terminal-v2.1.0';
-const STATIC_CACHE = 'quantum-static-v2.1.0';
+const CACHE_NAME = 'quantum-terminal-v3.8.8';
+const STATIC_CACHE = 'quantum-static-v3.0.0';
 
 const CORE_ASSETS = [
-    'terminal.html',
+
     'index.html',
     'dashboard.html',
     'status.html',
@@ -99,22 +101,37 @@ function networkFirst(request, cacheName) {
             return caches.match(request).then(cached => {
                 if (cached) return cached;
                 if (request.mode === 'navigate') {
-                    return caches.match('terminal.html');
+                    return caches.match('dashboard.html');
                 }
                 return new Response('Network Error', { status: 503 });
             });
         });
 }
 
-// ── Push Notification ───────────────────────────────────────
+// ── Push Notification (Web Push dari api/_push.php — VAPID + aes128gcm) ─────
+// waitUntil menjaga service worker tetap hidup sampai notifikasi tampil; tag per sinyal
+// mencegah notifikasi ganda (tab terbuka juga memakai tag yang sama).
 self.addEventListener('push', (event) => {
-    if (!event.data) return;
-    const data = event.data.json();
-    self.registration.showNotification(data.title || 'Quantum Signal', {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (e) { data = { body: event.data ? event.data.text() : '' }; }
+    event.waitUntil(self.registration.showNotification(data.title || 'Quantum Signal', {
         body: data.body || 'Sinyal baru dari Quantum Institut Terminal',
         icon: 'assets/img/icon-192.png',
         badge: 'assets/img/icon-192.png',
-        tag: 'quantum-signal',
-        requireInteraction: false,
-    });
+        tag: data.tag || 'quantum-signal',
+        renotify: false,
+        data: { url: data.url || 'dashboard.html' },
+    }));
+});
+
+// Klik notifikasi → fokuskan dashboard yang sudah terbuka, atau buka yang baru.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const tujuan = new URL((event.notification.data && event.notification.data.url) || 'dashboard.html', self.registration.scope).href;
+    event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((daftar) => {
+        for (const c of daftar) {
+            if (c.url.startsWith(self.registration.scope) && 'focus' in c) return c.focus();
+        }
+        return clients.openWindow ? clients.openWindow(tujuan) : undefined;
+    }));
 });

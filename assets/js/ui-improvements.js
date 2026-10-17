@@ -245,20 +245,40 @@ function initSwipeGestures() {
     if (window.innerWidth > 768) return;
     var mainScroll = document.getElementById('mainScroll');
     if (!mainScroll) return;
-    var startX = 0, startY = 0, moved = false;
+    var startX = 0, startY = 0, moved = false, mulaiDiChart = false;
 
     var panelOrder = [];
     var navBtns = document.querySelectorAll('#dashNav button[data-panel]');
     navBtns.forEach(function(b){ panelOrder.push(b.getAttribute('data-panel')); });
 
+    // Apakah sentuhan dimulai di area yang MEMANG perlu geser mendatar sendiri?
+    // (chart, tabel gulir mendatar). Geser mendatar di area seperti itu adalah
+    // PAN/SCROLL milik elemen tersebut — BUKAN perintah ganti panel.
+    // ⚠️ Bug nyata yang diperbaiki: dulu `moved` hanya di-set pada gerakan VERTIKAL
+    // >30px, sehingga geser mendatar di atas chart (menggeser candle) ikut dianggap
+    // swipe dan panel tiba-tiba berganti — persis keluhan "geser ke samping, tab ganti".
+    function perluGeserSendiri(el) {
+        while (el && el !== document.body) {
+            try {
+                if (el.id === 'tv_chart_container') return true;
+                if (el.classList && (el.classList.contains('overflow-x-auto') || el.classList.contains('qi-zona-layer'))) return true;
+                var gaya = window.getComputedStyle(el);
+                if (gaya && (gaya.overflowX === 'auto' || gaya.overflowX === 'scroll')) return true;
+            } catch (e) {}
+            el = el.parentElement;
+        }
+        return false;
+    }
+
     mainScroll.addEventListener('touchstart', function(e){
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         moved = false;
+        mulaiDiChart = perluGeserSendiri(e.target);
     }, {passive:true});
 
     mainScroll.addEventListener('touchend', function(e){
-        if (moved) return;
+        if (moved || mulaiDiChart) return;
         var endX = e.changedTouches[0].clientX;
         var endY = e.changedTouches[0].clientY;
         var dx = endX - startX;
@@ -281,6 +301,8 @@ function initSwipeGestures() {
         var dx = Math.abs(e.touches[0].clientX - startX);
         var dy = Math.abs(e.touches[0].clientY - startY);
         if (dy > 30) moved = true;
+        // Gerakan mendatar yang jelas di area chart → batalkan swipe (itu panning chart).
+        if (mulaiDiChart && dx > 12) moved = true;
     }, {passive:true});
 }
 
@@ -496,7 +518,7 @@ function initRippleEffect() {
         ripple.className = 'qi-ripple';
         ripple.style.left = x + 'px';
         ripple.style.top = y + 'px';
-        btn.style.position = btn.style.position || 'relative';
+        if (!btn.style.position && getComputedStyle(btn).position === 'static') btn.style.position = 'relative';
         btn.style.overflow = 'hidden';
         btn.appendChild(ripple);
         setTimeout(function(){ ripple.remove(); }, 500);

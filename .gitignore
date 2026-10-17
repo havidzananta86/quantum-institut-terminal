@@ -2,12 +2,14 @@
 config/api_keys.php
 config/database.php
 
-# Cache files
-cache/*.json
+# Cache = runtime state. Everything in it is ignored, including secrets the
+# app writes there itself: telegram.json (bot token), notify_secret.json
+# (webhook encryption key), tv_webhook_secret.txt, referrals.json, api_keys.json.
+# calendar.json and news.json are still tracked as a cold-start fallback.
+cache/*
+!cache/.gitkeep
 !cache/calendar.json
 !cache/news.json
-cache/*.html
-!cache/.gitkeep
 
 # Uploads
 uploads/avatars/*
@@ -46,3 +48,11 @@ cache/errorlogs/
 
 # Claude Code local session config
 .claude/
+
+# Stray copies of top-level folders (api.3155/, config.5493/, .claude.8513/ ...)
+# left behind by an interrupted copy/rename. config.5493/ holds real credentials.
+/*.[0-9][0-9][0-9][0-9]/
+
+# Per-account EA downloads (qi-<id>/, qi-exec-<id>/) have a live bridge key
+# baked in. The tracked templates live in assets/mt-bridge/.
+/qi-*/

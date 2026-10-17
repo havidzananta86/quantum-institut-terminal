@@ -62,14 +62,38 @@ try {
         ':email' => strtolower($email),
         ':hash'  => $hash,
         ':phone' => $phone,
-        ':role'  => 'user' // 'user' biasa — upgrade ke 'pro' setelah pembayaran
+        ':role'  => 'pro'
     ]);
+    $newUserId = (int)$pdo->lastInsertId();
+
+    // FREE TRIAL OTOMATIS: Berikan 3-Day PRO Pass langsung saat akun dibuat
+    $trialKey = 'QI-TRIAL-' . strtoupper(bin2hex(random_bytes(4)));
+    // Kedaluwarsa dihitung MySQL (dibandingkan dengan NOW() MySQL); balikan: ISO dengan offset.
+    $trialExpires = date('c', time() + 3 * 86400);
+    try {
+        $lStmt = $pdo->prepare('INSERT INTO license_keys (user_id, license_key, plan_name, expires_at, is_active, created_at)
+                                VALUES (:uid, :key, "Quantum+ PRO (3-Day Trial)", DATE_ADD(NOW(), INTERVAL 3 DAY), 1, NOW())');
+        $lStmt->execute([
+            ':uid' => $newUserId,
+            ':key' => $trialKey,
+        ]);
+        // Set user role to pro temporarily
+        $uStmt = $pdo->prepare('UPDATE users SET role = "pro" WHERE id = :uid');
+        $uStmt->execute([':uid' => $newUserId]);
+    } catch (Exception $e) {
+        error_log('[QI Register] Free trial auto-grant notice: ' . $e->getMessage());
+    }
 
     http_response_code(201);
     echo json_encode([
         'status'  => 'success',
-        'message' => 'Akun berhasil dibuat. Silakan login untuk mulai, lalu upgrade ke Quantum+ PRO.',
-        'data'    => ['email' => strtolower($email), 'role' => 'user']
+        'message' => 'Akun berhasil dibuat! Anda mendapatkan Free Trial 3 Hari Quantum+ PRO.',
+        'data'    => [
+            'email'        => strtolower($email),
+            'role'         => 'pro',
+            'trial_key'    => $trialKey,
+            'trial_expires'=> $trialExpires
+        ]
     ]);
 
 } catch (PDOException $e) {

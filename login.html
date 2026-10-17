@@ -21,6 +21,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
+    <script src="assets/js/a11y.js?v=1.0.3" defer></script>
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.4">
     <script src="assets/js/error-tracker.js?v=1.4.6"></script>
@@ -192,12 +195,13 @@
                         <div class="relative">
                             <input type="text" id="licenseKey" placeholder="QI-89X2-90P1-K4MM" required
                                 class="w-full px-4 py-3.5 rounded-xl input-quantum font-mono text-sm tracking-wider uppercase placeholder:text-slate-600">
-                            <button type="button" onclick="fillDemoLicense()" class="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-mono bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/30 hover:bg-cyan-500/30">
-                                Demos
+                            <button type="button" onclick="fillDemoLicense()" title="Isi kunci DEMO paket FREE — untuk mencoba dashboard tanpa berlangganan (sebagian area terkunci)"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-mono bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/30 hover:bg-cyan-500/30">
+                                Demo FREE
                             </button>
                         </div>
                         <p class="text-[11px] text-slate-400 mt-1.5 font-mono">
-                            Dapatkan kunci lisensi otomatis setelah mendaftar paket Quantum+.
+                            Dapatkan kunci lisensi otomatis setelah mendaftar paket Quantum+. Kunci <b class="text-cyan-300">Demo FREE</b> hanya membuka sebagian area — sisanya khusus PRO/VIP.
                         </p>
                     </div>
 
@@ -285,8 +289,9 @@
 
 
     <!-- JAVASCRIPT AUTH LOGIC -->
-    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/main.js?v=1.4.1"></script>
     <script src="assets/js/auth.js?v=1.4.3"></script>
+    <script src="assets/js/qim-2fa-login.js?v=1.0.0"></script>
     <script>
         // --- 1. PARTICLES BACKGROUND ---
         const canvas = document.getElementById('particleCanvas');
@@ -458,9 +463,11 @@
 
             if (res.ok && data?.status === 'success' && data.data?.token) {
                 const { token, ...user } = data.data;
+                // Verifikasi dua langkah (bila aktif di akun ini) sebelum sesi dipakai.
+                if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { restore(); showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
                 QuantumAuth.saveSession(token, user, remember);
                 showQuantumToast('⚡ Otentikasi Berhasil! Mengalihkan ke Quantum Terminal Live Dashboard...', 'success');
-                let target = 'terminal.html';
+                let target = 'dashboard.html';
                 try {
                     const saved = sessionStorage.getItem('qi_redirect_after_login');
                     sessionStorage.removeItem('qi_redirect_after_login');
@@ -543,9 +550,10 @@
                 const data = await res.json();
                 if (res.ok && data?.status === 'success' && data.data?.token) {
                     const { token, ...user } = data.data;
+                    if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
                     QuantumAuth.saveSession(token, user, true);
                     showQuantumToast('⚡ Login Google Berhasil! Mengalihkan ke Terminal...', 'success');
-                    setTimeout(() => { window.location.href = 'terminal.html'; }, 800);
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
                 } else {
                     showQuantumToast(data?.message || 'Login Google gagal.', 'error');
                 }

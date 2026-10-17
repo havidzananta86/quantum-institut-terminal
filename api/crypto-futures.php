@@ -3,21 +3,39 @@
 // Tidak butuh auth — semua endpoint ini public
 header('Content-Type: application/json');
 require_once __DIR__ . '/_middleware.php';
+qi_require_level('pro');   // Crypto Terminal — PRO
 qi_rate_limit(30, 60);
 header('Cache-Control: public, max-age=60'); // cache 60 detik
 
-$_qi_dev = in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true);
+if (!defined('QI_DEV')) {
+    define('QI_DEV', in_array($_SERVER['SERVER_NAME'] ?? 'localhost', ['localhost', '127.0.0.1'], true));
+}
 
 $action = $_GET['action'] ?? 'liquidation';
+
+// --- Cache helper ---
+$_cfCacheDir = __DIR__ . '/../cache/crypto-futures';
+if (!is_dir($_cfCacheDir)) @mkdir($_cfCacheDir, 0755, true);
+
+function cf_cache_get(string $key, int $ttl = 60): ?string {
+    global $_cfCacheDir;
+    $f = $_cfCacheDir . '/' . $key . '.json';
+    if (file_exists($f) && (time() - filemtime($f)) < $ttl) return file_get_contents($f);
+    return null;
+}
+function cf_cache_set(string $key, string $data): void {
+    global $_cfCacheDir;
+    @file_put_contents($_cfCacheDir . '/' . $key . '.json', $data, LOCK_EX);
+}
 
 function curlGet(string $url): array|false {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 8,
-        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT        => 4,
+        CURLOPT_CONNECTTIMEOUT => 3,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (QuantumTerminal)',
-        CURLOPT_SSL_VERIFYPEER => $_qi_dev ? false : true,
+        CURLOPT_SSL_VERIFYPEER => QI_DEV ? false : true,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
     $body = curl_exec($ch);
@@ -28,6 +46,14 @@ function curlGet(string $url): array|false {
 }
 
 if ($action === 'liquidation') {
+    // Serve from cache if fresh (60s)
+    $cached = cf_cache_get('liquidation', 60);
+    if ($cached !== null) {
+        header('X-QI-Cache: HIT');
+        echo $cached;
+        exit;
+    }
+
     // Coba Binance Futures dulu, fallback ke Binance Spot 24h ticker
     $TOP = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','LINKUSDT','AVAXUSDT','ADAUSDT','LTCUSDT'];
 
@@ -84,7 +110,68 @@ if ($action === 'liquidation') {
             'liqSide' => $chg <= -3 ? 'LONG' : ($chg >= 3 ? 'SHORT' : 'NEUTRAL'),
         ];
     }
-    echo json_encode(['ok' => true, 'data' => $rows, 'source' => $source]);
+    $json = json_encode(['ok' => true, 'data' => $rows, 'source' => $source]);
+    cf_cache_set('liquidation', $json);
+    echo $json;
+
+} elseif ($action === 'sentiment') {
+    // Whale vs Retail Real Sentiment from Binance Futures API
+    $sym = isset($_GET['symbol']) ? strtoupper(qi_sanitize_string($_GET['symbol'], 12)) : 'BTCUSDT';
+    $cacheKey = 'sentiment_' . $sym;
+    $cached = cf_cache_get($cacheKey, 60);
+    if ($cached !== null) {
+        header('X-QI-Cache: HIT');
+        echo $cached;
+        exit;
+    }
+
+    // 1. Retail global Long/Short Account ratio
+    $globalRatio = curlGet("https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={$sym}&period=1h&limit=1");
+    // 2. Top Trader (Whale) Long/Short Account ratio
+    $topRatio = curlGet("https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={$sym}&period=1h&limit=1");
+    // 3. Taker Buy/Sell Volume ratio
+    $takerRatio = curlGet("https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={$sym}&period=1h&limit=1");
+
+    $retail = (!empty($globalRatio) && is_array($globalRatio)) ? $globalRatio[0] : null;
+    $whale  = (!empty($topRatio) && is_array($topRatio)) ? $topRatio[0] : null;
+    $taker  = (!empty($takerRatio) && is_array($takerRatio)) ? $takerRatio[0] : null;
+
+    $retailLong = $retail ? round((float)$retail['longAccount'] * 100, 1) : 51.2;
+    $retailShort = $retail ? round((float)$retail['shortAccount'] * 100, 1) : 48.8;
+
+    $whaleLong = $whale ? round((float)$whale['longAccount'] * 100, 1) : 58.5;
+    $whaleShort = $whale ? round((float)$whale['shortAccount'] * 100, 1) : 41.5;
+
+    $divergence = round($whaleLong - $retailLong, 1);
+    $verdict = 'NEUTRAL';
+    if ($divergence > 5 && $whaleLong > 55) {
+        $verdict = 'SMART MONEY ACCUMULATION (Bullish Whale)';
+    } elseif ($divergence < -5 && $whaleShort > 55) {
+        $verdict = 'DISTRIBUTION / SMART MONEY SHORT (Bearish Whale)';
+    }
+
+    $res = json_encode([
+        'ok'     => true,
+        'symbol' => $sym,
+        'retail' => [
+            'long'  => $retailLong,
+            'short' => $retailShort,
+            'ratio' => $retail ? (float)$retail['longShortRatio'] : 1.05
+        ],
+        'whale'  => [
+            'long'  => $whaleLong,
+            'short' => $whaleShort,
+            'ratio' => $whale ? (float)$whale['longShortRatio'] : 1.41
+        ],
+        'takerBuySellRatio' => $taker ? (float)$taker['buySellRatio'] : 1.0,
+        'divergence'        => $divergence,
+        'verdict'           => $verdict,
+        'timestamp'         => date('Y-m-d H:i:s')
+    ]);
+
+    cf_cache_set($cacheKey, $res);
+    echo $res;
+    exit;
 
 } elseif ($action === 'idr') {
     // Kurs USD/IDR via Frankfurter

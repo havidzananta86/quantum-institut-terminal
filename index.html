@@ -126,6 +126,9 @@
 
     <!-- Design tokens + theme (must load before Tailwind) -->
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
+    <script src="assets/js/a11y.js?v=1.0.3" defer></script>
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
 
     <!-- Fonts -->
@@ -336,7 +339,7 @@
                             </div>
                         </a>
                         <div style="border-top:1px solid #1a1a1a"></div>
-                        <a href="terminal.html" class="flex items-center gap-3 px-3.5 py-3 rounded-b-xl transition-colors hover:bg-white/5">
+                        <a href="dashboard.html" class="flex items-center gap-3 px-3.5 py-3 rounded-b-xl transition-colors hover:bg-white/5">
                             <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.25)">
                                 <svg class="w-4 h-4" style="color:#00E5FF" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             </span>
@@ -380,7 +383,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
                         Command Center
                     </a>
-                    <a href="terminal.html" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center gap-1.5">
+                    <a href="dashboard.html" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         Terminal
                     </a>
@@ -425,7 +428,7 @@
 
                     <!-- CTA: 2 tombol (primary + secondary) -->
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 pt-1">
-                        <a href="terminal.html" class="min-h-[48px] px-7 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-[0_0_28px_rgba(0,229,255,0.28)] transition-all flex items-center justify-center gap-2">
+                        <a href="dashboard.html" class="min-h-[48px] px-7 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-[0_0_28px_rgba(0,229,255,0.28)] transition-all flex items-center justify-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             Buka Terminal
                         </a>
@@ -505,7 +508,7 @@
                             </div>
 
                             <!-- CTA di bawah signal card -->
-                            <a href="terminal.html" class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 text-xs font-bold transition-all group">
+                            <a href="dashboard.html" class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 text-xs font-bold transition-all group">
                                 <span>Lihat Analisa Lengkap di Terminal →</span>
                                 <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                             </a>
@@ -884,7 +887,7 @@
                     </table>
                 </div>
                 <p class="text-center text-[11px] text-slate-400 mt-3 font-mono">
-                    <a href="terminal.html" class="text-cyan-400 hover:underline">→ Coba Terminal Gratis</a>
+                    <a href="dashboard.html" class="text-cyan-400 hover:underline">→ Coba Terminal Gratis</a>
                     &nbsp;·&nbsp;
                     <a href="pricing.html" class="text-purple-400 hover:underline">→ Lihat Paket PRO</a>
                 </p>
@@ -962,7 +965,7 @@
             <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
 
                 <!-- Idea Card 1 — BUY BTC -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
                     <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -982,7 +985,7 @@
                 </div>
 
                 <!-- Idea Card 2 — SELL XAU -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-rose-500/20 hover:border-rose-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl overflow-hidden border border-rose-500/20 hover:border-rose-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
                     <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 to-orange-500"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -1002,7 +1005,7 @@
                 </div>
 
                 <!-- Idea Card 3 — BUY ETH -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
                     <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -1022,7 +1025,7 @@
                 </div>
 
                 <!-- Idea Card 4 — EUR/USD -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-amber-500/20 hover:border-amber-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl overflow-hidden border border-amber-500/20 hover:border-amber-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
                     <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 to-yellow-400"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -1042,7 +1045,7 @@
                 </div>
 
                 <!-- Idea Card 5 — SOL -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
                     <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
@@ -1062,7 +1065,7 @@
                 </div>
 
                 <!-- CTA Card — Lihat Lebih Banyak -->
-                <div class="glass-card rounded-2xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all flex flex-col items-center justify-center p-8 cursor-pointer group" onclick="window.location.href='terminal.html'">
+                <div class="glass-card rounded-2xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all flex flex-col items-center justify-center p-8 cursor-pointer group" onclick="window.location.href='dashboard.html'">
                     <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 group-hover:bg-cyan-500/20 transition-all">
                         <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                     </div>
@@ -1193,7 +1196,7 @@
                 el = document.getElementById('idxTotalWins');
                 if (el) el.textContent = (m.wins || 0).toLocaleString();
                 el = document.getElementById('idxAvgRR');
-                if (el) el.textContent = m.avg_rr || '1:2.5';
+                if (el) el.textContent = m.avg_rr || '—';
                 // Stats counter section
                 var cntSignals = document.querySelector('[data-count-to="1247"]');
                 if (cntSignals && m.total_signals) cntSignals.setAttribute('data-count-to', m.total_signals);
@@ -1447,7 +1450,7 @@
                 <div class="space-y-2 text-xs">
                     <div class="font-bold text-white uppercase font-heading mb-2">Navigasi</div>
                     <div><a href="#mesin-kuantum" class="hover:text-cyan-400">Mesin Kuantum</a></div>
-                    <div><a href="terminal.html" class="hover:text-cyan-400">Terminal Pro</a></div>
+                    <div><a href="dashboard.html" class="hover:text-cyan-400">Terminal Pro</a></div>
                     <div><a href="pricing.html" class="hover:text-purple-400">Quantum+</a></div>
                     <div><a href="#download" class="hover:text-emerald-400">Download Aplikasi</a></div>
                     <div><a href="status.html" class="hover:text-cyan-400">Status API</a></div>
@@ -1480,7 +1483,7 @@
     </footer>
 
     <!-- JS Core -->
-    <script src="assets/js/main.js?v=1.4.0"></script>
+    <script src="assets/js/main.js?v=1.4.1"></script>
     <script src="assets/js/ticker.js?v=1.4.0"></script>
 
     <script>
@@ -1745,7 +1748,11 @@
     });
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
+            // Versi pada URL memaksa browser mengambil service worker terbaru;
+            // tanpa itu .js yang di-cache "immutable" bisa menahan versi lama.
+            navigator.serviceWorker.register('sw.js?v=3.0.0').then((reg) => {
+                if (reg && reg.update) reg.update();
+            }).catch(() => {});
         });
     }
     </script>

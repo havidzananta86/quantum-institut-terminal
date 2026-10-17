@@ -107,7 +107,17 @@ function removeAlert(id) {
 function renderAlerts() {
     var el = document.getElementById('alertList');
     if (!el) return;
-    if (_priceAlerts.length === 0) { el.innerHTML = '<div class="text-center text-slate-600 text-xs py-6">Belum ada price alert aktif</div>'; return; }
+    if (_priceAlerts.length === 0) {
+        // Keadaan kosong yang BERGUNA (bukan sekadar "belum ada"): beri arah tindakan.
+        el.innerHTML = '<div class="text-center py-6">'
+            + '<div class="text-3xl mb-2">🔔</div>'
+            + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada price alert aktif</div>'
+            + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Alert muncul di sini dan dikirim sebagai notifikasi saat harga menyentuh target Anda.</div>'
+            + '<button type="button" onclick="var i=document.getElementById(\'alertPrice\');if(i){i.focus();i.scrollIntoView({behavior:\'smooth\',block:\'center\'});}" '
+            + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">＋ Buat alert pertama</button>'
+            + '</div>';
+        return;
+    }
     var html = '';
     _priceAlerts.forEach(function(a) {
         var dirLabel = a.direction === 'above' ? '&#9650; Above' : '&#9660; Below';
@@ -293,82 +303,137 @@ function renderMonthlyCalendar(history) {
 
 /* ═══════════════════════════════════════════════════════════
    #7  RETAIL SENTIMENT GAUGE
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya menampilkan posisi ritel HARDCODED
+   (XAUUSD 72% long, EURUSD 44% long, dst.) yang tampak seperti data positioning
+   nyata. Data posisi ritel TIDAK tersedia dari sumber yang kami pakai, jadi
+   tabelnya dikosongkan dengan penjelasan — bukan diisi angka karangan. */
 function renderSentimentGauge() {
     var el = document.getElementById('sentimentGauge');
     if (!el) return;
-    var pairs = [
-        { sym: 'XAUUSD', longPct: 72, label: 'XAU/USD' },
-        { sym: 'EURUSD', longPct: 44, label: 'EUR/USD' },
-        { sym: 'GBPUSD', longPct: 58, label: 'GBP/USD' },
-        { sym: 'USDJPY', longPct: 35, label: 'USD/JPY' },
-        { sym: 'BTCUSDT', longPct: 68, label: 'BTC/USDT' },
-        { sym: 'ETHUSDT', longPct: 61, label: 'ETH/USDT' },
-    ];
-    var html = '';
-    pairs.forEach(function(p) {
-        var shortPct = 100 - p.longPct;
-        html += '<div class="flex items-center gap-2 text-[10px]">' +
-            '<span class="w-16 text-slate-400 font-mono shrink-0">' + p.label + '</span>' +
-            '<span class="text-qi-green w-8 text-right font-mono">' + p.longPct + '%</span>' +
-            '<div class="flex-1 h-2 rounded-full overflow-hidden flex">' +
-            '<div class="h-full bg-qi-green/80" style="width:' + p.longPct + '%"></div>' +
-            '<div class="h-full bg-qi-red/80" style="width:' + shortPct + '%"></div>' +
-            '</div>' +
-            '<span class="text-qi-red w-8 font-mono">' + shortPct + '%</span>' +
-            '</div>';
-    });
-    el.innerHTML = html;
+    el.innerHTML = '<div class="text-[10px] text-slate-500 leading-relaxed">'
+        + 'Data <b class="text-slate-400">posisi ritel (long/short)</b> tidak tersedia dari sumber data yang kami pakai.<br>'
+        + '<span class="text-slate-600">Tabel ini sengaja dikosongkan — menampilkan persentase contoh akan menyesatkan. '
+        + 'Bila Anda menghubungkan EA MT5 (bridge), data posisi akun Anda sendiri bisa ditampilkan di sini.</span></div>';
 }
 
 
 /* ═══════════════════════════════════════════════════════════
-   #8  VOLATILITY DASHBOARD
-   ═══════════════════════════════════════════════════════════ */
+   #8  VOLATILITY DASHBOARD — ATR NYATA dari TradingView Scanner
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya memakai tabel ATR/spread HARDCODED
+   (XAUUSD ATR 28,5 · spread 0,20, dst.) beserta kolom "best session" yang juga
+   tebakan. Sekarang:
+     · ATR & ATR%   → dari indikator NYATA pemindai (api/tv-scan.php)
+     · SPREAD       → nyata untuk kripto (order book Binance); "—" untuk FX/logam
+     · kolom terakhir → SESI YANG SEDANG AKTIF (dihitung dari jam, bukan tebakan)
+   Baris tanpa data ditampilkan "—" dan tidak dikarang. */
+function _sesiAktifSekarang() {
+    var jamUtc = new Date().getUTCHours();
+    var aktif = [];
+    if (jamUtc >= 0 && jamUtc < 9)  aktif.push('Tokyo');
+    if (jamUtc >= 7 && jamUtc < 16) aktif.push('London');
+    if (jamUtc >= 12 && jamUtc < 21) aktif.push('New York');
+    if (jamUtc >= 21 || jamUtc < 6) aktif.push('Sydney');
+    return aktif.length ? aktif.join('-') : '—';
+}
 function renderVolatilityDash() {
     var el = document.getElementById('volBody');
     if (!el) return;
-    var data = [
-        { sym: 'XAUUSD', atr: 28.5, atrPct: 1.08, spread: 0.20, bestSession: 'London-NY Overlap' },
-        { sym: 'EURUSD', atr: 0.0065, atrPct: 0.60, spread: 0.1, bestSession: 'London' },
-        { sym: 'GBPUSD', atr: 0.0082, atrPct: 0.65, spread: 0.2, bestSession: 'London' },
-        { sym: 'USDJPY', atr: 0.92, atrPct: 0.62, spread: 0.1, bestSession: 'Tokyo-London' },
-        { sym: 'BTCUSDT', atr: 2850, atrPct: 4.2, spread: 5.0, bestSession: 'NY' },
-        { sym: 'ETHUSDT', atr: 145, atrPct: 5.8, spread: 0.5, bestSession: 'London-NY' },
-        { sym: 'AUDUSD', atr: 0.0052, atrPct: 0.78, spread: 0.2, bestSession: 'Sydney-London' },
-        { sym: 'SOLUSDT', atr: 8.5, atrPct: 6.1, spread: 0.02, bestSession: 'NY' },
-    ];
-    var html = '';
-    data.forEach(function(d) {
-        var volColor = d.atrPct > 3 ? 'text-qi-red' : d.atrPct > 1 ? 'text-qi-gold' : 'text-qi-green';
-        var barW = Math.min(d.atrPct * 12, 100);
-        html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50">' +
-            '<td class="px-3 py-2 font-mono font-semibold text-white">' + d.sym + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right">' + d.atr + '</td>' +
-            '<td class="px-3 py-2 text-right"><div class="flex items-center justify-end gap-2">' +
-            '<div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full rounded-full ' + (d.atrPct > 3 ? 'bg-qi-red' : d.atrPct > 1 ? 'bg-qi-gold' : 'bg-qi-green') + '" style="width:' + barW + '%"></div></div>' +
-            '<span class="font-mono ' + volColor + '">' + d.atrPct.toFixed(2) + '%</span></div></td>' +
-            '<td class="px-3 py-2 font-mono text-right text-slate-400">' + d.spread + '</td>' +
-            '<td class="px-3 py-2 text-slate-400 text-right">' + d.bestSession + '</td></tr>';
-    });
-    el.innerHTML = html;
+    el.innerHTML = '<tr><td colspan="5" class="px-3 py-3 text-center text-[10px] text-slate-500">Memuat ATR nyata dari pemindai…</td></tr>';
+
+    var sesi = _sesiAktifSekarang();
+    var baris = function (sym, atr, atrPct) {
+        var volColor = (atrPct === null) ? 'text-slate-500' : (atrPct > 3 ? 'text-qi-red' : (atrPct > 1 ? 'text-qi-gold' : 'text-qi-green'));
+        var barW = (atrPct === null) ? 0 : Math.min(atrPct * 12, 100);
+        var atrTeks = (atr === null) ? '—' : (atr >= 100 ? atr.toFixed(1) : atr.toFixed(atr < 1 ? 5 : 2));
+        var pctTeks = (atrPct === null) ? '—' : atrPct.toFixed(2) + '%';
+        return '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50">'
+            + '<td class="px-3 py-2 font-mono font-semibold text-white">' + sym + '</td>'
+            + '<td class="px-3 py-2 font-mono text-right">' + atrTeks + '</td>'
+            + '<td class="px-3 py-2 text-right"><div class="flex items-center justify-end gap-2">'
+            + '<div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full rounded-full bg-qi-cyan/70" style="width:' + barW + '%"></div></div>'
+            + '<span class="font-mono ' + volColor + '">' + pctTeks + '</span></div></td>'
+            + '<td class="px-3 py-2 font-mono text-right text-slate-400" title="spread nyata hanya untuk kripto (order book Binance)">—</td>'
+            + '<td class="px-3 py-2 text-slate-400 text-right text-[10px]">' + sesi + '</td></tr>';
+    };
+
+    fetch('api/tv-scan.php', { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+            var data = (j && j.data) ? j.data : null;
+            if (!data) throw new Error('kosong');
+            var kunci = Object.keys(data).slice(0, 12);
+            el.innerHTML = kunci.map(function (sym) {
+                var d = data[sym] || {};
+                var ind = d.indicators || {};
+                var atr = (typeof ind.atr === 'number' && ind.atr > 0) ? ind.atr : null;
+                var atrPct = (atr !== null && typeof d.price === 'number' && d.price > 0) ? (atr / d.price * 100) : null;
+                return baris(sym, atr, atrPct);
+            }).join('');
+            // Spread NYATA hanya untuk kripto (order book Binance). FX/logam dibiarkan "—".
+            kunci.forEach(function (sym, idx) {
+                if (['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'].indexOf(sym) === -1) return;
+                fetch('api/orderbook.php?symbol=' + sym + '&limit=1', { cache: 'no-store' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (ob) {
+                        var bid = (ob && ob.bids && ob.bids[0]) ? parseFloat(ob.bids[0][0]) : null;
+                        var ask = (ob && ob.asks && ob.asks[0]) ? parseFloat(ob.asks[0][0]) : null;
+                        if (!bid || !ask || ask <= bid) return;
+                        var sp = ((ask - bid) / ((ask + bid) / 2)) * 10000;
+                        var tr = el.children[idx];
+                        var td = tr ? tr.children[3] : null;
+                        if (td) { td.textContent = sp.toFixed(2) + ' bps'; td.title = 'BINANCE nyata'; }
+                    })
+                    .catch(function () {});
+            });
+        })
+        .catch(function () {
+            el.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-500 leading-relaxed">'
+                + 'Data volatilitas tidak tersedia (sumber tidak merespons).<br>'
+                + '<span class="text-slate-600">Kami tidak menampilkan angka ATR contoh sebagai gantinya.</span></td></tr>';
+        });
 }
 
 
 /* ═══════════════════════════════════════════════════════════
-   #11  DXY TRACKER
-   ═══════════════════════════════════════════════════════════ */
+   #11  DXY TRACKER — memakai DATA NYATA (TradingView Scanner: TVC:DXY)
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya menampilkan angka DXY ACAK
+   (104,25 + Math.random()). Sekarang diambil dari api/tv-scan.php; bila gagal,
+   nilainya dikosongkan menjadi "—" dan alasannya ditulis — bukan dikarang. */
+var _dxyTerakhir = 0;
 function renderDxyTracker() {
     var el = document.getElementById('dxyValue');
     if (!el) return;
-    var val = 104.25 + (Math.random() - 0.5) * 0.3;
-    el.textContent = val.toFixed(2);
-    var chg = (Math.random() - 0.5) * 0.4;
+    // Cache 60 detik: DXY tidak berubah cepat dan pemindai ini satu permintaan untuk
+    // semua instrumen (dipakai bersama Market Screener).
+    if (Date.now() - _dxyTerakhir < 60000 && el.dataset.terisi === '1') return;
     var chgEl = document.getElementById('dxyChange');
-    if (chgEl) {
-        chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
-        chgEl.className = 'text-xs font-mono ' + (chg >= 0 ? 'text-qi-green' : 'text-qi-red');
-    }
+
+    fetch('api/tv-scan.php', { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+            var d = (j && j.data && j.data.DXY) ? j.data.DXY : null;
+            if (!d || typeof d.price !== 'number') throw new Error('DXY tidak tersedia');
+            _dxyTerakhir = Date.now();
+            el.dataset.terisi = '1';
+            el.textContent = d.price.toFixed(2);
+            if (chgEl) {
+                var chg = (typeof d.change === 'number') ? d.change : null;
+                chgEl.textContent = (chg === null) ? 'perubahan tidak tersedia'
+                    : ((chg >= 0 ? '+' : '') + chg.toFixed(2) + '%');
+                chgEl.className = 'text-xs font-mono ' + (chg === null ? 'text-slate-500' : (chg >= 0 ? 'text-qi-green' : 'text-qi-red'));
+                chgEl.title = 'Sumber: TradingView Scanner (TVC:DXY)';
+            }
+        })
+        .catch(function () {
+            el.textContent = '—';
+            if (chgEl) {
+                chgEl.textContent = 'data DXY tidak tersedia';
+                chgEl.className = 'text-xs font-mono text-slate-500';
+            }
+        });
 }
 
 
@@ -412,7 +477,19 @@ function deleteJournalEntry(id) {
 function renderJournal() {
     var el = document.getElementById('journalBody');
     if (!el) return;
-    if (_journalEntries.length === 0) { el.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-600 text-xs">Belum ada catatan trading</td></tr>'; return; }
+    if (_journalEntries.length === 0) {
+        // Keadaan kosong yang BERGUNA: sebut dari mana catatan datang + tombol tindakan.
+        el.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center">'
+            + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada catatan trading</div>'
+            + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Catatan terisi otomatis dari posisi yang Anda tutup di Paper Trading, atau bisa ditambah sendiri.</div>'
+            + '<span class="flex items-center justify-center gap-2 flex-wrap">'
+            + '<button type="button" onclick="if(typeof switchPanel===\'function\')switchPanel(\'panel-paper\')" '
+            + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">Buka Paper Trading</button>'
+            + '<button type="button" onclick="var i=document.getElementById(\'jnlSymbol\');if(i){i.focus();i.scrollIntoView({behavior:\'smooth\',block:\'center\'});}" '
+            + 'class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold hover:bg-slate-700">＋ Tambah manual</button>'
+            + '</span></td></tr>';
+        return;
+    }
     var html = '';
     _journalEntries.slice(0, 50).forEach(function(e) {
         var pnlCls = e.pnl > 0 ? 'text-qi-green' : e.pnl < 0 ? 'text-qi-red' : 'text-slate-400';
@@ -472,94 +549,151 @@ function calcPivotPoints() {
 
 
 /* ═══════════════════════════════════════════════════════════
-   #16  MARKET SCREENER
-   ═══════════════════════════════════════════════════════════ */
+   #16  MARKET SCREENER — memakai DATA NYATA (TradingView Scanner)
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya MENGARANG RSI, tren, volume, dan
+   posisi EMA200 dengan Math.random() lalu menampilkannya seolah hasil pemindaian
+   pasar. Sekarang seluruh angka diambil dari api/tv-scan.php (sumber nyata).
+   Bila sebuah angka tidak tersedia, ditampilkan "—" — bukan dikarang. */
 function runScreener() {
     var el = document.getElementById('screenerBody');
     if (!el) return;
-    el.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-600 text-xs">Scanning pasar...</td></tr>';
-    setTimeout(function() {
-        var instruments = typeof SYMBOLS !== 'undefined' ? SYMBOLS : ['XAUUSD', 'EURUSD', 'GBPUSD', 'BTCUSDT'];
-        var html = '';
-        instruments.forEach(function(sym) {
-            var lbl = (typeof SYMBOL_LABELS !== 'undefined' && SYMBOL_LABELS[sym]) ? SYMBOL_LABELS[sym] : sym;
-            var rsi = 30 + Math.random() * 40;
-            var trend = rsi > 55 ? 'BULLISH' : rsi < 45 ? 'BEARISH' : 'NEUTRAL';
-            var trendCls = trend === 'BULLISH' ? 'sent-bull' : trend === 'BEARISH' ? 'sent-bear' : 'sent-neut';
-            var vol = ['LOW', 'MED', 'HIGH'][Math.floor(Math.random() * 3)];
-            var volCls = vol === 'HIGH' ? 'badge-high' : vol === 'MED' ? 'badge-med' : 'badge-low';
-            var ema = Math.random() > 0.5 ? 'Above' : 'Below';
-            var emaCls = ema === 'Above' ? 'text-qi-green' : 'text-qi-red';
-            html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')">' +
-                '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl + '</td>' +
-                '<td class="px-3 py-2"><span class="' + trendCls + '">' + trend + '</span></td>' +
-                '<td class="px-3 py-2 font-mono text-right text-slate-300">' + rsi.toFixed(1) + '</td>' +
-                '<td class="px-3 py-2 text-right"><span class="' + emaCls + '">' + ema + ' EMA200</span></td>' +
-                '<td class="px-3 py-2 text-center"><span class="' + volCls + '">' + vol + '</span></td>' +
-                '<td class="px-3 py-2 text-right text-slate-400 text-[10px]">Klik untuk chart →</td></tr>';
+    el.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-500 text-xs">Memindai data pasar nyata…</td></tr>';
+
+    fetch('api/tv-scan.php', { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+            var data = (j && j.data) ? j.data : null;
+            var kunci = data ? Object.keys(data) : [];
+            if (!kunci.length) throw new Error('kosong');
+
+            var html = '';
+            kunci.forEach(function (sym) {
+                var d = data[sym] || {};
+                var ind = d.indicators || {};
+                var tf = d.timeframes || {};
+
+                // Tren = hitungan sinyal per-timeframe yang NYATA (bukan acak).
+                var beli = 0, jual = 0;
+                Object.keys(tf).forEach(function (k) {
+                    var s = (tf[k] && tf[k].signal) ? String(tf[k].signal).toUpperCase() : '';
+                    if (s.indexOf('BUY') !== -1) beli++;
+                    else if (s.indexOf('SELL') !== -1) jual++;
+                });
+                var trend = beli > jual ? 'BULLISH' : (jual > beli ? 'BEARISH' : 'NEUTRAL');
+                var trendCls = trend === 'BULLISH' ? 'sent-bull' : trend === 'BEARISH' ? 'sent-bear' : 'sent-neut';
+
+                var rsiTeks = (typeof ind.rsi === 'number') ? ind.rsi.toFixed(1) : '—';
+                var emaTeks = (typeof ind.ema200 === 'number' && typeof d.price === 'number')
+                    ? (d.price >= ind.ema200 ? 'Above' : 'Below') : '—';
+                var emaCls = emaTeks === 'Above' ? 'text-qi-green' : (emaTeks === 'Below' ? 'text-qi-red' : 'text-slate-500');
+                var volTeks = (typeof d.volume === 'number' && d.volume > 0)
+                    ? (d.volume >= 1000000 ? 'HIGH' : (d.volume >= 100000 ? 'MED' : 'LOW')) : '—';
+                var volCls = volTeks === 'HIGH' ? 'badge-high' : (volTeks === 'MED' ? 'badge-med' : 'badge-low');
+                var lbl = (typeof SYMBOL_LABELS !== 'undefined' && SYMBOL_LABELS[sym]) ? SYMBOL_LABELS[sym] : sym;
+                var chg = (typeof d.change === 'number') ? d.change : null;
+
+                html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')">' +
+                    '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl +
+                        (chg === null ? '' : '<div class="text-[9px] ' + (chg >= 0 ? 'text-qi-green' : 'text-qi-red') + '">' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</div>') + '</td>' +
+                    '<td class="px-3 py-2"><span class="' + trendCls + '">' + trend + '</span>' +
+                        '<div class="text-[9px] text-slate-500">' + beli + ' naik / ' + jual + ' turun</div></td>' +
+                    '<td class="px-3 py-2 font-mono text-right text-slate-300">' + rsiTeks + '</td>' +
+                    '<td class="px-3 py-2 text-right"><span class="' + emaCls + '">' + emaTeks + (emaTeks === '—' ? '' : ' EMA200') + '</span></td>' +
+                    '<td class="px-3 py-2 text-center"><span class="' + volCls + '">' + volTeks + '</span></td>' +
+                    '<td class="px-3 py-2 text-right text-slate-400 text-[10px]">Klik untuk chart →</td></tr>';
+            });
+            // Sebutkan sumbernya apa adanya — pembaca berhak tahu dari mana angkanya.
+            el.innerHTML = html + '<tr><td colspan="6" class="px-3 py-2 text-[9px] text-slate-600 border-t border-qi-border/40">'
+                + 'Sumber: ' + (j.source || 'tidak diketahui') + ' · ' + kunci.length + ' instrumen · angka "—" berarti data tidak tersedia (tidak dikarang).</td></tr>';
+        })
+        .catch(function () {
+            el.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-500 text-xs leading-relaxed">'
+                + 'Pemindaian tidak tersedia saat ini (sumber data tidak merespons).<br>'
+                + '<span class="text-slate-600">Kami tidak menampilkan angka karangan sebagai gantinya.</span></td></tr>';
         });
-        el.innerHTML = html;
-    }, 300);
 }
 
 
 /* ═══════════════════════════════════════════════════════════
-   #17  SPREAD MONITOR
-   ═══════════════════════════════════════════════════════════ */
+   #17  SPREAD MONITOR — spread NYATA untuk kripto, "—" untuk lainnya
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya memakai TABEL SPREAD HARDCODED
+   (EURUSD 0.1/0.3 "Tight", dst.) yang tampak seperti pemantauan langsung.
+   Sekarang: spread kripto dihitung dari order book BINANCE yang nyata
+   (api/orderbook.php). Untuk FX/logam, sumber gratis tidak menyediakan bid/ask,
+   jadi ditampilkan "—" beserta alasannya — bukan angka karangan.
+   Ambang Tight/Normal/Wide adalah KONVENSI KAMI sendiri (1 bps / 3 bps). */
 function renderSpreadMonitor() {
     var el = document.getElementById('spreadBody');
     if (!el) return;
-    var data = [
-        { sym: 'EURUSD', spread: 0.1, avg: 0.3, status: 'Tight' },
-        { sym: 'GBPUSD', spread: 0.3, avg: 0.5, status: 'Tight' },
-        { sym: 'USDJPY', spread: 0.1, avg: 0.3, status: 'Tight' },
-        { sym: 'XAUUSD', spread: 0.25, avg: 0.35, status: 'Normal' },
-        { sym: 'BTCUSDT', spread: 5.0, avg: 8.0, status: 'Tight' },
-        { sym: 'AUDUSD', spread: 0.3, avg: 0.4, status: 'Normal' },
-        { sym: 'ETHUSDT', spread: 0.5, avg: 1.0, status: 'Tight' },
-        { sym: 'NZDUSD', spread: 0.4, avg: 0.6, status: 'Normal' },
-    ];
-    var html = '';
-    data.forEach(function(d) {
-        var ratio = d.spread / d.avg;
-        var sCls = ratio < 0.7 ? 'text-qi-green' : ratio < 1.2 ? 'text-qi-gold' : 'text-qi-red';
-        var stCls = d.status === 'Tight' ? 'sent-bull' : d.status === 'Wide' ? 'sent-bear' : 'sent-neut';
-        html += '<tr class="border-b border-qi-border/50">' +
-            '<td class="px-3 py-2 font-mono font-semibold text-white">' + d.sym + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right ' + sCls + '">' + d.spread + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right text-slate-400">' + d.avg + '</td>' +
-            '<td class="px-3 py-2 text-center"><span class="' + stCls + '">' + d.status + '</span></td></tr>';
+    var kripto = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
+    var fx = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD'];
+    var baris = function (sym, spreadBps, sumber) {
+        var sCls = 'text-slate-500', stCls = 'sent-neut', status = '—';
+        if (spreadBps !== null) {
+            status = spreadBps < 1 ? 'Tight' : (spreadBps < 3 ? 'Normal' : 'Wide');
+            sCls = spreadBps < 1 ? 'text-qi-green' : (spreadBps < 3 ? 'text-qi-gold' : 'text-qi-red');
+            stCls = status === 'Tight' ? 'sent-bull' : (status === 'Wide' ? 'sent-bear' : 'sent-neut');
+        }
+        return '<tr class="border-b border-qi-border/50">'
+            + '<td class="px-3 py-2 font-mono font-semibold text-white">' + sym + '</td>'
+            + '<td class="px-3 py-2 font-mono text-right ' + sCls + '">' + (spreadBps === null ? '—' : spreadBps.toFixed(2)) + '</td>'
+            + '<td class="px-3 py-2 text-right text-slate-500 text-[10px]">' + sumber + '</td>'
+            + '<td class="px-3 py-2 text-center"><span class="' + stCls + '">' + status + '</span></td></tr>';
+    };
+    // Daftar pasar bisa panjang → dirender progresif (hanya sebagian masuk DOM).
+    // Bila qiRenderProgresif tidak ada, jatuh kembali ke render penuh seperti semula.
+    if (typeof qiRenderProgresif === 'function') {
+        qiRenderProgresif(el, kripto, function (s) { return baris(s, null, 'memuat…'); }, { awal: 40, tambah: 40 });
+    } else {
+        el.innerHTML = kripto.map(function (s) { return baris(s, null, 'memuat…'); }).join('');
+    }
+        + fx.map(function (s) { return baris(s, null, 'tidak tersedia'); }).join('');
+
+    // Ambil order book NYATA (Binance) untuk kripto; hitung spread dalam bps.
+    kripto.forEach(function (sym, i) {
+        fetch('api/orderbook.php?symbol=' + sym + '&limit=1', { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                var tr = el.children[i];
+                if (!tr) return;
+                var bid = (d && d.bids && d.bids[0]) ? parseFloat(d.bids[0][0]) : null;
+                var ask = (d && d.asks && d.asks[0]) ? parseFloat(d.asks[0][0]) : null;
+                var spread = (bid && ask && ask > bid) ? ((ask - bid) / ((ask + bid) / 2)) * 10000 : null;
+                tr.outerHTML = baris(sym, spread, d && d.source === 'binance' ? 'BINANCE nyata' : 'tidak nyata');
+            })
+            .catch(function () {
+                var tr = el.children[i];
+                if (tr) tr.outerHTML = baris(sym, null, 'gagal dimuat');
+            });
     });
-    el.innerHTML = html;
+    // Catatan sumber di bawah tabel (elemen terpisah agar tidak mengacaukan baris).
+    var cat = document.getElementById('spreadCatatan');
+    if (cat) {
+        cat.textContent = 'Spread kripto dihitung dari order book Binance yang nyata (satuan bps). '
+            + 'FX/logam tidak ditampilkan karena sumber gratis tidak menyediakan bid/ask — '
+            + 'spread nyata FX hanya ada bila EA MT5 Anda terhubung. Angka karangan tidak dipakai. '
+            + 'Ambang Tight <1 bps · Normal <3 bps · Wide ≥3 bps (konvensi kami).';
+    }
 }
 
 
 /* ═══════════════════════════════════════════════════════════
    #19  SWAP / ROLLOVER RATES
-   ═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════
+   ⚠️ Perbaikan integritas: versi sebelumnya menampilkan TABEL SWAP HARDCODED
+   (EURUSD −6,50/1,20, XAUUSD −38,50/12,00, dst.) yang tampak seperti suku bunga
+   rollover broker. Angka seperti itu HANYA sah datang dari broker Anda sendiri
+   (EA MT5 → api/mt-bridge.php), jadi sekarang tabel dikosongkan dengan penjelasan
+   — bukan diisi angka karangan. */
 function renderSwapRates() {
     var el = document.getElementById('swapBody');
     if (!el) return;
-    var data = [
-        { sym: 'EURUSD', swapLong: -6.50, swapShort: 1.20 },
-        { sym: 'GBPUSD', swapLong: -4.80, swapShort: 0.50 },
-        { sym: 'USDJPY', swapLong: 8.20, swapShort: -12.50 },
-        { sym: 'XAUUSD', swapLong: -38.50, swapShort: 12.00 },
-        { sym: 'AUDUSD', swapLong: -3.20, swapShort: 0.10 },
-        { sym: 'BTCUSDT', swapLong: -0.01, swapShort: -0.01 },
-        { sym: 'USDCHF', swapLong: 5.50, swapShort: -9.80 },
-        { sym: 'NZDUSD', swapLong: -2.10, swapShort: -0.50 },
-    ];
-    var html = '';
-    data.forEach(function(d) {
-        var lCls = d.swapLong >= 0 ? 'text-qi-green' : 'text-qi-red';
-        var sCls = d.swapShort >= 0 ? 'text-qi-green' : 'text-qi-red';
-        html += '<tr class="border-b border-qi-border/50">' +
-            '<td class="px-3 py-2 font-mono font-semibold text-white">' + d.sym + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right ' + lCls + '">' + (d.swapLong >= 0 ? '+' : '') + d.swapLong.toFixed(2) + '</td>' +
-            '<td class="px-3 py-2 font-mono text-right ' + sCls + '">' + (d.swapShort >= 0 ? '+' : '') + d.swapShort.toFixed(2) + '</td></tr>';
-    });
-    el.innerHTML = html;
+    el.innerHTML = '<tr><td colspan="3" class="px-3 py-4 text-center text-[10px] text-slate-500 leading-relaxed">'
+        + 'Swap / rollover rate <b>hanya</b> bisa diketahui dari broker Anda.<br>'
+        + '<span class="text-slate-600">Hubungkan EA MT5 (bridge) dan angkanya akan tampil di sini. '
+        + 'Kami tidak menampilkan tabel contoh karena akan menyesatkan.</span></td></tr>';
 }
 
 
@@ -640,6 +774,10 @@ if (!window.showQuantumToast) {
             container.id = 'qiToastContainer';
             document.body.appendChild(container);
         }
+        // Diumumkan ke pembaca layar (idempoten: dipasang walau container sudah ada).
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'false');
         var colors = { success: 'border-qi-green bg-qi-green/10 text-qi-green',
             error: 'border-qi-red bg-qi-red/10 text-qi-red',
             warning: 'border-qi-gold bg-qi-gold/10 text-qi-gold',
@@ -648,6 +786,8 @@ if (!window.showQuantumToast) {
         var cls = colors[type] || colors.info;
         var icon = icons[type] || icons.info;
         var toast = document.createElement('div');
+        // Galat diumumkan segera; pesan lain memakai aliran sopan dari container.
+        if (type === 'error') toast.setAttribute('role', 'alert');
         toast.className = 'qi-toast flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold shadow-lg ' + cls;
         toast.style.cssText = 'background:var(--qi-card);min-width:200px;max-width:380px;';
         toast.innerHTML = '<span class="text-base">' + icon + '</span><span class="flex-1">' + msg + '</span>';
@@ -701,19 +841,64 @@ function makeSortable(tableId) {
    #29  FULLSCREEN PANEL TOGGLE
    ═══════════════════════════════════════════════════════════ */
 var _panelFullscreen = false;
-function togglePanelFullscreen() {
+
+/**
+ * Tombol KELUAR yang mengapung.
+ *
+ * ⚠️ Kenapa ini penting: mode layar penuh memakai `position:fixed; inset:0; z-index:90`
+ * sehingga panel MENUTUPI seluruh halaman — termasuk bilah judul yang memuat tombol
+ * keluarnya. Akibatnya pengguna terjebak dan hanya bisa keluar lewat pintasan
+ * tersembunyi "F". Sekarang selalu ada tombol yang terlihat (z-index di atas panel),
+ * ditambah tombol Esc.
+ */
+function tampilkanTombolKeluarFullscreen(aksi) {
+    var btn = document.getElementById('qiKeluarFullscreen');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'qiKeluarFullscreen';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Keluar dari mode layar penuh');
+        btn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:100000;display:flex;align-items:center;gap:6px;'
+            + 'padding:9px 14px;border-radius:12px;background:rgba(2,6,23,.94);border:1px solid rgba(0,229,255,.45);'
+            + 'color:#00E5FF;font:700 12px/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.55)';
+        document.body.appendChild(btn);
+    }
+    btn.innerHTML = '✕ Keluar Fullscreen <span style="opacity:.6;font-weight:500">(Esc)</span>';
+    btn.onclick = function (e) {
+        e.preventDefault(); e.stopPropagation();
+        if (typeof aksi === 'function') { aksi(); }
+        else { togglePanelFullscreen(false); }
+    };
+    btn.style.display = 'flex';
+}
+function sembunyikanTombolKeluarFullscreen() {
+    var b = document.getElementById('qiKeluarFullscreen');
+    if (b) b.style.display = 'none';
+}
+
+function togglePanelFullscreen(paksa) {
     var activeId = (typeof _activePanel !== 'undefined') ? _activePanel : 'panel-overview';
     var panel = document.getElementById(activeId);
     if (!panel) return;
-    _panelFullscreen = !_panelFullscreen;
-    if (_panelFullscreen) {
+    var masuk = (typeof paksa === 'boolean') ? paksa : !_panelFullscreen;
+    _panelFullscreen = masuk;
+    if (masuk) {
         panel.classList.add('panel-fullscreen');
-        panel.dataset.wasHidden = panel.classList.contains('hidden') ? '1' : '0';
         panel.classList.remove('hidden');
+        tampilkanTombolKeluarFullscreen(function () { togglePanelFullscreen(false); });
     } else {
         panel.classList.remove('panel-fullscreen');
+        sembunyikanTombolKeluarFullscreen();
     }
 }
+
+// Esc juga mengakhiri mode layar penuh (sebelumnya hanya pintasan F yang bisa).
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && _panelFullscreen) {
+        e.preventDefault();
+        togglePanelFullscreen(false);
+    }
+});
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -822,13 +1007,71 @@ function showShortcutsModal() {
    #36  SIDEBAR PANEL SEARCH / FILTER
    ═══════════════════════════════════════════════════════════ */
 function filterSidebarPanels(q) {
-    q = (q || '').toLowerCase();
+    q = (q || '').toLowerCase().trim();
     var nav = document.getElementById('dashNav');
-    if (!nav) return;
-    nav.querySelectorAll('[data-panel]').forEach(function(btn) {
-        var text = btn.textContent.toLowerCase();
-        btn.style.display = (!q || text.indexOf(q) >= 0) ? '' : 'none';
+    if (!nav) return 0;
+
+    var semua = Array.prototype.slice.call(nav.querySelectorAll('[data-panel]'));
+    var aktif  = nav.querySelector('[data-panel].active');
+    var terlihat = 0;
+    var cocokAsli = 0; // kecocokan SEBENARNYA, tanpa menghitung tab aktif yang dipaksa tampil
+
+    semua.forEach(function (btn) {
+        var teks = (btn.textContent || '').toLowerCase();
+        var cocok = !q || teks.indexOf(q) >= 0;
+        if (cocok && q) cocokAsli++;
+        // Tab yang sedang aktif SELALU terlihat: kalau ikut tersembunyi, pengguna
+        // kehilangan penanda posisinya (dan tablist jadi tanpa tab terpilih).
+        if (!cocok && btn === aktif) cocok = true;
+        btn.style.display = cocok ? '' : 'none';
+        if (cocok) terlihat++;
     });
+
+    // Judul grup yang tidak menyisakan satu pun tombol terlihat ikut disembunyikan,
+    // supaya tidak ada judul menggantung tanpa isi. Sebuah tombol dianggap milik
+    // judul terdekat di atasnya.
+    var judul = Array.prototype.slice.call(nav.querySelectorAll('div.uppercase.tracking-widest'));
+    judul.forEach(function (h) {
+        var adaIsi = false;
+        var n = h.nextElementSibling;
+        while (n) {
+            if (n.matches && n.matches('div.uppercase.tracking-widest')) break; // judul berikutnya
+            if (n.matches && n.matches('[data-panel]') && n.style.display !== 'none') { adaIsi = true; break; }
+            if (n.querySelectorAll) {
+                var dalam = n.querySelectorAll('[data-panel]');
+                for (var i = 0; i < dalam.length; i++) {
+                    if (dalam[i].style.display !== 'none') { adaIsi = true; break; }
+                }
+                if (adaIsi) break;
+            }
+            n = n.nextElementSibling;
+        }
+        h.style.display = adaIsi ? '' : 'none';
+    });
+
+    // Pembungkus grup yang sudah kosong disembunyikan agar tidak menyisakan jarak.
+    Array.prototype.forEach.call(nav.children, function (grup) {
+        if (!grup.querySelectorAll) return;
+        var isi = grup.querySelectorAll('[data-panel]');
+        if (!isi.length) return; // mis. kotak pencarian — jangan disentuh
+        var ada = false;
+        for (var i = 0; i < isi.length; i++) {
+            if (isi[i].style.display !== 'none') { ada = true; break; }
+        }
+        grup.style.display = ada ? '' : 'none';
+    });
+
+    // Beri tahu pengguna pembaca layar berapa panel yang cocok. Dihitung dari
+    // kecocokan sebenarnya, bukan jumlah yang tampil — kalau tidak, tab aktif yang
+    // dipaksa tampil akan membuat status berkata "1 panel cocok" padahal tidak ada
+    // satu pun panel yang cocok (menyesatkan).
+    var status = document.getElementById('qiNavFilterStatus');
+    if (status) {
+        status.textContent = q
+            ? (cocokAsli === 0 ? 'Tidak ada panel yang cocok dengan ' + q : cocokAsli + ' panel cocok dengan ' + q)
+            : '';
+    }
+    return cocokAsli;
 }
 
 

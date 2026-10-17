@@ -72,6 +72,21 @@ foreach ($contracts as $code => $meta) {
     if ($netPct > 5 || ($netPct > 0 && $wf > 0.3)) $bias = 'BULLISH';
     if ($netPct < -5 || ($netPct < 0 && $wf < -0.3)) $bias = 'BEARISH';
 
+    $history = [];
+    foreach (array_slice($data, 0, 8) as $row) {
+        $rOi = (int)($row['open_interest_all'] ?? 0);
+        $rL  = (int)($row['noncomm_positions_long_all'] ?? 0);
+        $rS  = (int)($row['noncomm_positions_short_all'] ?? 0);
+        $history[] = [
+            'date'     => substr($row['report_date_as_yyyy_mm_dd'] ?? '', 0, 10),
+            'longs'    => $rL,
+            'shorts'   => $rS,
+            'net'      => $rL - $rS,
+            'pctLong'  => $rOi > 0 ? round($rL / $rOi * 100, 1) : 0,
+            'pctShort' => $rOi > 0 ? round($rS / $rOi * 100, 1) : 0,
+        ];
+    }
+
     $currencies[$meta['label']] = [
         'label'      => $meta['label'],
         'name'       => $meta['name'],
@@ -90,6 +105,7 @@ foreach ($contracts as $code => $meta) {
         'netPct'     => $netPct,
         'weekFlow'   => $wf,
         'bias'       => $bias,
+        'history'    => array_reverse($history),
     ];
 }
 

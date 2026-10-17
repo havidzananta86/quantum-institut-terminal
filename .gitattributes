@@ -1,0 +1,2 @@
+# Shell hooks must keep LF endings: with core.autocrlf=true a CRLF checkout breaks sh.
+.githooks/* text eol=lf

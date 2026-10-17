@@ -1,7 +1,8 @@
 <?php
 /**
  * Quantum Institut — AI Trading Assistant
- * Uses Groq API (free tier, llama-3.3-70b-versatile)
+ * Uses Groq API (free tier). Model aktif: qwen/qwen3.8-27b — dapat diganti lewat
+ * konstanta GROQ_CHAT_MODEL / GROQ_VISION_MODEL di config/api_keys.php.
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
@@ -9,7 +10,7 @@ qi_rate_limit(20, 60);
 
 // Tiap panggilan membakar kuota Groq API, jadi endpoint ini wajib login.
 // Rate limit per-IP saja tidak cukup — rotasi IP bisa menguras kuota.
-qi_require_auth();
+qi_require_level('pro');            // AI Assistant — PRO
 
 // Load Groq API key from config (add GROQ_API_KEY to config/api_keys.php)
 $groqKey = '';
@@ -19,13 +20,32 @@ if (file_exists($apiKeysFile)) {
     $groqKey = defined('GROQ_API_KEY') ? GROQ_API_KEY : '';
 }
 
+// Nama model ditaruh di config supaya penggantian model (Groq rutin mempensiunkan
+// model) tidak perlu mengubah kode. GROQ_VISION_MODEL hanya diisi bila akun benar-benar
+// punya model vision — model teks akan menolak gambar dengan HTTP 400.
+$chatModel   = defined('GROQ_CHAT_MODEL') ? GROQ_CHAT_MODEL : 'qwen/qwen3.8-27b';
+$visionModel = defined('GROQ_VISION_MODEL') ? GROQ_VISION_MODEL : '';
+
 $body = qi_get_json_body();
 if (!$body) { http_response_code(400); echo json_encode(['error'=>'Invalid JSON']); exit; }
 $message  = trim($body['message'] ?? '');
 $history  = array_slice((array)($body['history'] ?? []), -12);
 $context  = $body['context'] ?? [];  // real-time market data from dashboard
 
-if (!$message) { echo json_encode(['error'=>'Pesan kosong']); exit; }
+$image    = $body['image'] ?? null; // base64 / data:image/png;base64,...
+
+if (!$message && !$image) { echo json_encode(['error'=>'Pesan atau gambar kosong']); exit; }
+
+// Tanpa model vision, gambar tidak dikirim ke model teks: API akan menolaknya dan
+// pengguna hanya melihat error umum. Jawab jelas supaya tidak terkesan AI-nya rusak.
+if ($image && !$visionModel) {
+    echo json_encode([
+        'reply'    => 'Analisis gambar chart belum tersedia: model AI yang aktif sekarang hanya membaca teks. Kirim pertanyaannya dalam bentuk teks — sebutkan simbol, harga entry, level kunci, serta SL/TP — dan saya analisa dari data tersebut.',
+        'fallback' => true,
+        'vision'   => false,
+    ]);
+    exit;
+}
 
 // Build market context block if provided
 $ctxBlock = '';
@@ -53,17 +73,11 @@ if (!empty($context['signals']) && is_array($context['signals'])) {
 }
 
 $systemPrompt = 'Kamu adalah QUANTUM AI — asisten trading cerdas dari Quantum Institut. '
-    . 'Kamu memiliki akses ke data pasar live dan sinyal multi-timeframe dari TradingView Scanner. '
-    . 'Keahlianmu meliputi: analisa teknikal mendalam (RSI, MACD, EMA, Bollinger, Fibonacci, Ichimoku, '
-    . 'pola candlestick, support/resistance, SMC — Smart Money Concepts, SNR — Supply & Demand, '
-    . 'ICT — Inner Circle Trader, struktur pasar, order block, FVG, liquidity sweep), '
-    . 'analisa fundamental forex dan kripto, kalender ekonomi, sentimen pasar, '
-    . 'psikologi trading, manajemen risiko (position sizing, risk:reward, drawdown), '
-    . 'dan strategi trading (scalping, swing, position). '
-    . 'Ketika user bertanya tentang pair/instrumen tertentu, gunakan data pasar live yang tersedia untuk analisa kontekstual. '
-    . 'Format jawaban: gunakan markdown (bold, list, tabel) untuk kejelasan. '
-    . 'Selalu sertakan: kondisi teknikal saat ini, level kunci, bias directional, dan langkah analisa selanjutnya. '
-    . 'DISCLAIMER: Semua analisa bersifat edukatif — bukan saran investasi. Trading memiliki risiko, gunakan manajemen risiko yang ketat.'
+    . 'Kamu memiliki kemampuan analisa teknikal profesional' . ($visionModel ? ' dan penglihatan chart (Vision)' : '') . '. '
+    . 'Keahlianmu meliputi: Smart Money Concepts (SMC), Order Block, Fair Value Gap (FVG), Support/Resistance, '
+    . 'analisa pola candlestick, Fibonacci, dan manajemen risiko ketat. '
+    . 'Ketika user mengirim gambar screenshot chart, bedah strukturnya: 1) Market Trend/Bias, 2) Level Entry & S/R, 3) Rekomendasi SL dan TP terukur. '
+    . 'DISCLAIMER: Edukasi analisa trading, bukan anjuran finansial mutlak.'
     . ($ctxBlock ? $ctxBlock : '');
 
 $messages = [['role'=>'system','content'=>$systemPrompt]];
@@ -71,7 +85,17 @@ foreach ($history as $h) {
     $role = $h['role'] === 'assistant' ? 'assistant' : 'user';
     $messages[] = ['role'=>$role,'content'=>mb_substr(trim($h['content']??''),0,2000)];
 }
-$messages[] = ['role'=>'user','content'=>mb_substr($message,0,3000)];
+
+if ($image) {
+    // Multimodal format for vision-capable models (e.g. llama-3.2-11b-vision-preview / gpt-4o / gemini)
+    $userContent = [
+        ['type' => 'text', 'text' => $message ?: 'Tolong analisa screenshot chart trading ini secara mendalam (Bias, Support/Resistance, Setup Entry, SL, TP).'],
+        ['type' => 'image_url', 'image_url' => ['url' => $image]]
+    ];
+    $messages[] = ['role' => 'user', 'content' => $userContent];
+} else {
+    $messages[] = ['role' => 'user', 'content' => mb_substr($message, 0, 3000)];
+}
 
 if (!$groqKey) {
     // Fallback: simple educational responses without API key
@@ -103,7 +127,7 @@ curl_setopt_array($ch, [
         'Authorization: Bearer ' . $groqKey,
     ],
     CURLOPT_POSTFIELDS => json_encode([
-        'model'       => 'llama-3.3-70b-versatile',
+        'model'       => ($image && $visionModel) ? $visionModel : $chatModel,
         'messages'    => $messages,
         'max_tokens'  => 700,
         'temperature' => 0.65,
@@ -132,4 +156,4 @@ if (!$result || $http !== 200) {
 
 $data  = json_decode($result, true);
 $reply = $data['choices'][0]['message']['content'] ?? 'Tidak ada respons.';
-echo json_encode(['reply'=>trim($reply),'model'=>($data['model']??'llama-3.3-70b')]);
+echo json_encode(['reply'=>trim($reply),'model'=>($data['model']??$chatModel)]);

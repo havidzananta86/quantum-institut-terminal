@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
+qi_require_level('pro');   // Order Book — PRO
 qi_rate_limit(120, 10);
 
 if (!function_exists('qi_http_get')) {
@@ -62,7 +63,18 @@ if (isset($fxSymbols[$symbol])) {
             $asks[] = [number_format($mid + $offset, $dp, '.', ''), (string)$vol];
         }
         header('Cache-Control: no-store');
-        echo json_encode(['status' => 'success', 'symbol' => $symbol, 'source' => 'tradingview', 'bids' => $bids, 'asks' => $asks]);
+        // KEJUJURAN LABEL: buku ini BUKAN order book nyata — ia diperkirakan dari harga
+        // tengah karena sumber tidak menyediakan kedalaman untuk instrumen ini.
+        // Sebelumnya labelnya 'tradingview' sehingga tampak seperti data bursa asli.
+        echo json_encode([
+            'status'  => 'success',
+            'symbol'  => $symbol,
+            'source'  => 'perkiraan_mid',
+            'nyata'   => false,
+            'catatan' => 'Order book ini DIPERKIRAKAN dari harga tengah: sumber tidak menyediakan kedalaman nyata untuk instrumen ini.',
+            'bids'    => $bids,
+            'asks'    => $asks,
+        ]);
         exit;
     }
 }

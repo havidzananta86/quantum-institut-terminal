@@ -168,8 +168,9 @@ tests/          Lint PHP, unit, smoke
 
 ## Keterbatasan yang diketahui
 
-- `api/payment.php` masih **stub**. Tidak menyentuh database, tidak memberi
-  lisensi, dan `qr_string`-nya placeholder. Belum ada handler webhook.
-  Integrasi gateway nyata masih harus dikerjakan.
+- Payment gateway masih belum dapat dipakai sampai adapter provider nyata
+  diimplementasikan. Endpoint kini fail-closed: tidak menerbitkan QR/invoice
+  palsu, dan webhook hanya diproses jika signature HMAC serta migrasi database
+  sudah tersedia.
 - Rate limit dan cache berbasis file, jadi hanya benar untuk **satu server**.
   Perlu Redis/Memcached sebelum pindah ke multi-server.

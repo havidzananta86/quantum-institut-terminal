@@ -8,8 +8,10 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 
-// Rate limit ketat untuk login: 5 request per 15 menit
-qi_rate_limit(5, 900);
+// Batas dari percobaan GAGAL per akun+IP / akun / IP — dihitung bersama api/auth.php,
+// jadi endpoint ini tidak bisa dipakai untuk melewati batas itu (api/_login_guard.php).
+require_once __DIR__ . '/_login_guard.php';
+qi_rate_limit(60, 900);
 
 $input = qi_get_json_body();
 if (!$input) {
@@ -26,8 +28,10 @@ $password = isset($input['password']) ? $input['password'] : '';
 if (!empty($license)) {
     try {
         $pdo = qi_db();
+        $subjek = qi_login_subjek('license', $license);
+        qi_login_cek($pdo, $subjek);
 
-        $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role 
+        $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role
                                FROM license_keys lk 
                                JOIN users u ON u.id = lk.user_id 
                                WHERE lk.license_key = :key AND lk.is_active = 1 AND lk.expires_at > NOW()');
@@ -36,6 +40,7 @@ if (!empty($license)) {
 
         if ($row) {
             // Token harus disimpan ke user_sessions, kalau tidak qi_validate_token() selalu menolak
+            qi_login_catat($pdo, $subjek, true);
             $token = createSession($pdo, $row['user_id'])['token'];
             echo json_encode([
                 'status' => 'success',
@@ -48,6 +53,7 @@ if (!empty($license)) {
                 ]
             ]);
         } else {
+            qi_login_catat($pdo, $subjek, false);
             usleep(random_int(1000000, 2000000));
             http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Kunci lisensi tidak valid atau sudah kadaluarsa.']);
@@ -68,12 +74,15 @@ if (!empty($license)) {
 
     try {
         $pdo = qi_db();
+        $subjek = qi_login_subjek('email', $email);
+        qi_login_cek($pdo, $subjek);
 
         $stmt = $pdo->prepare('SELECT id, email, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => strtolower($email)]);
         $user = $stmt->fetch();
 
         if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
+            qi_login_catat($pdo, $subjek, true);
             $token = createSession($pdo, $user['id'])['token'];
             echo json_encode([
                 'status' => 'success',
@@ -82,6 +91,7 @@ if (!empty($license)) {
                 'user' => ['email' => $user['email'], 'role' => $user['role']]
             ]);
         } else {
+            qi_login_catat($pdo, $subjek, false);
             usleep(random_int(1000000, 2000000));
             http_response_code(401);
             echo json_encode(['status' => 'error', 'message' => 'Email atau kata sandi tidak valid.']);

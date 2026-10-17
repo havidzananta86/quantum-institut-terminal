@@ -29,8 +29,11 @@ if ($type === 'verify_token') {
     exit();
 }
 
-// Rate limit ketat untuk auth: 5 request per 15 menit (anti brute force)
-qi_rate_limit(5, 900);
+// Anti brute force: batas dari percobaan GAGAL per akun+IP / akun / IP (api/_login_guard.php).
+// Batas kasar per IP tetap ada untuk banjir permintaan, tapi cukup longgar agar pengguna
+// satu jaringan (kantor, warnet) tidak saling mengunci.
+require_once __DIR__ . '/_login_guard.php';
+qi_rate_limit(60, 900);
 
 if (!$input) {
     http_response_code(400);
@@ -52,9 +55,11 @@ if ($type === 'license') {
 
     try {
         $pdo = qi_db();
+        $subjek = qi_login_subjek('license', $licenseKey);
+        qi_login_cek($pdo, $subjek);
 
         // Cari lisensi di database
-        $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role 
+        $stmt = $pdo->prepare('SELECT lk.*, u.id as user_id, u.email, u.role, u.full_name 
                                FROM license_keys lk 
                                JOIN users u ON u.id = lk.user_id 
                                WHERE lk.license_key = :key AND lk.is_active = 1 AND lk.expires_at > NOW()');
@@ -63,21 +68,35 @@ if ($type === 'license') {
 
         if ($license) {
             // Lisensi valid — buat session
+            qi_login_catat($pdo, $subjek, true);
             $session = createSession($pdo, $license['user_id']);
 
+            // ⚠️ PERBAIKAN PENTING: respons ini DULU tidak menyertakan 'role'.
+            // Akibatnya seluruh antarmuka menganggap pengguna kunci lisensi sebagai
+            // non-PRO (role undefined) — dahulu bahkan membuat mereka diblokir total
+            // oleh gerbang dashboard, padahal lisensinya sah. Sekarang role (dan nama)
+            // ikut dikirim, sehingga paket yang benar langsung berlaku tanpa menunggu
+            // verifikasi ulang: kunci PRO → PRO, kunci demo FREE → FREE.
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Kunci Lisensi Terverifikasi.',
                 'data' => [
                     'user_id' => (int)$license['user_id'],
                     'email' => $license['email'],
-                    'plan' => $license['plan_name'] ?? 'Quantum+ PRO',
+                    'role' => $license['role'] ?? 'user',
+                    'full_name' => $license['full_name'] ?? null,
+                    // Nama paket harus JUJUR: akun gratis tidak boleh menampilkan
+                    // "6 Bulan" (nama paket di baris lisensi) karena itu menyesatkan.
+                    'plan' => in_array(strtolower((string)($license['role'] ?? 'user')), ['pro', 'vip', 'admin'], true)
+                        ? ($license['plan_name'] ?? 'Quantum+ PRO')
+                        : 'FREE (Demo)',
                     'expires_at' => $license['expires_at'],
                     'token' => $session['token'],
                     'token_expires' => $session['expires_at']
                 ]
             ]);
         } else {
+            qi_login_catat($pdo, $subjek, false);
             // Delay 1-2 detik untuk anti brute force timing attack
             usleep(random_int(1000000, 2000000));
             http_response_code(401);
@@ -112,6 +131,8 @@ if ($type === 'license') {
 
     try {
         $pdo = qi_db();
+        $subjek = qi_login_subjek('email', $email);
+        qi_login_cek($pdo, $subjek);
 
         // Cari user berdasarkan email
         $stmt = $pdo->prepare('SELECT id, email, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');
@@ -120,6 +141,7 @@ if ($type === 'license') {
 
         if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
             // Login berhasil — buat session
+            qi_login_catat($pdo, $subjek, true);
             $session = createSession($pdo, $user['id']);
 
             echo json_encode([
@@ -134,6 +156,7 @@ if ($type === 'license') {
                 ]
             ]);
         } else {
+            qi_login_catat($pdo, $subjek, false);
             // Delay untuk anti timing attack (selalu delay, apapun hasilnya)
             usleep(random_int(1000000, 2000000));
             http_response_code(401);
@@ -163,6 +186,11 @@ if ($type === 'license') {
         echo json_encode(['status' => 'error', 'message' => 'Login Google belum dikonfigurasi di server.']);
         exit();
     }
+
+    // Akun baru diketahui setelah Google memverifikasi token, jadi kegagalan dihitung per IP.
+    $pdoBatas = qi_db();
+    $subjek = qi_login_subjek('google', qi_login_ip());
+    qi_login_cek($pdoBatas, $subjek);
 
     $credential = isset($input['credential']) ? trim($input['credential']) : '';
     if ($credential === '' || strlen($credential) > 4096) {
@@ -200,6 +228,7 @@ if ($type === 'license') {
     $issOk   = isset($p['iss']) && in_array($p['iss'], ['accounts.google.com', 'https://accounts.google.com'], true);
 
     if (!$audOk || !$emailOk || !$issOk) {
+        qi_login_catat($pdoBatas, $subjek, false);
         usleep(random_int(1000000, 2000000));
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Verifikasi Google gagal.']);

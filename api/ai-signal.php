@@ -4,11 +4,18 @@
  * GET ?symbol=BTCUSDT  → AI analysis + trade decision
  * Auth required. Cached 15 min per symbol.
  */
+// ── PELINDUNG LIBRARY ─────────────────────────────────────────────────────
+// Berkas ini bisa DIPAKAI ULANG oleh endpoint lain (mis. webhook TradingView)
+// dengan mendefinisikan QI_AI_SIGNAL_LIB lebih dulu. Saat itu terjadi, hanya
+// fungsi analisa di bawah yang dimuat — titik masuk HTTP (auth/rate-limit/cache)
+// dan pemanggilan Groq TIDAK dijalankan. Perilaku sebagai endpoint HTTP tetap
+// sama persis seperti sebelumnya.
+if (!defined('QI_AI_SIGNAL_LIB')) {
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(15, 60);
 
-$user = qi_require_auth();
+$user = qi_require_level('pro');  // AI Radar — PRO
 
 $symbol = isset($_GET['symbol']) ? strtoupper(qi_sanitize_string($_GET['symbol'], 12)) : 'BTCUSDT';
 
@@ -32,14 +39,22 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 900) {
         exit;
     }
 }
+} // ── akhir titik masuk ─────────────────────────────────────────────────────
 
 // ── Signal calculation (EMA / RSI / MACD) ─────────────────────────────────
+/**
+ * Ambil candle untuk analisa.
+ * Mengembalikan ['candles' => array, 'simulated' => bool]. Penanda simulated WAJIB
+ * diteruskan ke pemanggil: get-chart-data.php menghasilkan candle ACAK bila sumber
+ * harga gagal, dan candle acak tidak boleh dipakai untuk mengambil keputusan.
+ */
 function ai_load_candles(string $sym, string $interval): array {
     $cacheDir  = __DIR__ . '/../cache/chart';
     $cacheFile = $cacheDir . '/' . md5($sym . '_' . $interval) . '.json';
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
         $d = json_decode(file_get_contents($cacheFile), true);
-        return $d['candles'] ?? [];
+        // Cache hanya menyimpan data nyata (candle simulasi tidak pernah di-cache).
+        return ['candles' => $d['candles'] ?? [], 'simulated' => false];
     }
     if (!defined('QI_INCLUDED_BY_SIGNALS')) define('QI_INCLUDED_BY_SIGNALS', true);
     ob_start();
@@ -50,7 +65,8 @@ function ai_load_candles(string $sym, string $interval): array {
     $raw = ob_get_clean();
     $_GET = $origGet;
     $d = json_decode($raw, true);
-    return $d['candles'] ?? [];
+    if (!is_array($d)) return ['candles' => [], 'simulated' => false];
+    return ['candles' => $d['candles'] ?? [], 'simulated' => !empty($d['simulated'])];
 }
 
 function ai_ema(array $closes, int $period): ?float {
@@ -92,7 +108,10 @@ function ai_macd_hist(array $closes): float {
 }
 
 function ai_analyze(string $sym, string $iv): ?array {
-    $candles = ai_load_candles($sym, $iv);
+    $loaded = ai_load_candles($sym, $iv);
+    // Data simulasi = candle acak: jangan dianalisa sama sekali.
+    if (!empty($loaded['simulated'])) return null;
+    $candles = $loaded['candles'];
     if (count($candles) < 55) return null;
     $closes = array_column($candles, 'close');
     $last   = end($closes);
@@ -123,6 +142,9 @@ function ai_analyze(string $sym, string $iv): ?array {
     ];
 }
 
+// ── Bagian ini hanya berjalan saat dipanggil sebagai endpoint HTTP ────────
+if (!defined('QI_AI_SIGNAL_LIB')) {
+
 // ── Collect multi-TF data ─────────────────────────────────────────────────
 $tfs = [];
 foreach (['15' => 'M15', '60' => 'H1', '240' => 'H4', 'D' => 'D1'] as $iv => $label) {
@@ -137,6 +159,18 @@ foreach (['H1','H4','D1','M15'] as $pf) {
 $bullTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BULLISH'));
 $bearTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BEARISH'));
 $overall = $bullTfs >= 3 ? 'BULLISH' : ($bearTfs >= 3 ? 'BEARISH' : 'NEUTRAL');
+
+// Tidak ada satu pun timeframe dengan data nyata → jangan panggil AI dan jangan
+// simpan hasilnya. Tanpa penjaga ini prompt berisi "NO_DATA" dengan harga 0, dan
+// model bisa mengarang keputusan yang tampak valid.
+if (!array_filter($tfs)) {
+    echo json_encode([
+        'status'  => 'error',
+        'code'    => 'PRICE_UNAVAILABLE',
+        'message' => 'Data harga live belum tersedia, analisa AI ditahan agar tidak memakai data kosong atau simulasi. Coba lagi sebentar lagi.',
+    ]);
+    exit;
+}
 
 // ── Build Groq prompt ─────────────────────────────────────────────────────
 $tfLines = [];
@@ -194,7 +228,10 @@ curl_setopt_array($ch, [
         'Authorization: Bearer ' . $groqKey,
     ],
     CURLOPT_POSTFIELDS => json_encode([
-        'model'       => 'llama-3.3-70b-versatile',
+        // Model aktif. Groq rutin mempensiunkan model, jadi nama model disimpan di
+        // konstanta GROQ_SIGNAL_MODEL (config/api_keys.php) agar bisa diganti tanpa
+        // menyentuh kode. Default di bawah sudah diverifikasi aktif.
+        'model'       => defined('GROQ_SIGNAL_MODEL') ? GROQ_SIGNAL_MODEL : 'qwen/qwen3.8-27b',
         'messages'    => [
             ['role' => 'system', 'content' => 'You are a professional trading analyst. Always respond with valid JSON only. No markdown, no explanation outside the JSON.'],
             ['role' => 'user',   'content' => $prompt],
@@ -253,4 +290,107 @@ $response = [
 // Cache 15 min
 file_put_contents($cacheFile, json_encode($response));
 
+// ── CATAT SINYAL AI KE REKOR (hanya bila benar-benar layak) ────────────────
+// Berada DI DALAM penjaga QI_AI_SIGNAL_LIB, jadi pemakaian sebagai library
+// (pembangkit otomatis & webhook TradingView) TIDAK ikut mencatat — keduanya
+// sudah punya label mesinnya sendiri dan pagarnya sendiri.
+//
+// Pagar lengkap ada di api/_signal_record.php (teruji di tests/signal-record.test.php):
+// hanya ENTRY_BUY/ENTRY_SELL, level wajib konsisten, tidak menduplikasi sinyal
+// AKTIF sejenis, cooldown 4 jam per simbol, jeda global 20 menit per mesin, dan
+// klaim atomik saat menulis. Endpoint ini TIDAK BOLEH gagal karena pencatatan →
+// semuanya dibungkus dan kesalahannya hanya dicatat ke log.
+require_once __DIR__ . '/_signal_record.php';
+try {
+    $response['dicatat'] = false;
+    $response['catatan_rekor'] = 'Tidak ada sinyal untuk dicatat (keputusan AI: ' . $action . ').';
+
+    if (in_array($action, ['ENTRY_BUY', 'ENTRY_SELL'], true)) {
+        $arahRek = ($action === 'ENTRY_BUY') ? 'BUY' : 'SELL';
+        $epRek   = (float)$response['entry_price'];
+        $tpRek   = (float)$response['tp'];
+        $slRek   = (float)$response['sl'];
+        $basisLevel = 'level dari AI';
+
+        // Bila AI memberi arah tetapi levelnya tidak konsisten, level diturunkan
+        // dari ATR14 candle H1 NYATA — bukan dikarang. Arah tetap dari AI, jarak
+        // dari volatilitas nyata, dan asal level ditulis apa adanya di 'basis'.
+        if (!qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
+            $muatRek = ai_load_candles($symbol, '60');
+            if (!empty($muatRek['candles']) && empty($muatRek['simulated'])) {
+                $cndRek = $muatRek['candles'];
+                $nRek = count($cndRek);
+                $atrRek = 0.0;
+                $pcRek = (float)($cndRek[$nRek - 1]['close'] ?? 0);
+                if ($nRek >= 16 && $pcRek > 0) {
+                    $trRek = [];
+                    for ($i = $nRek - 14; $i < $nRek; $i++) {
+                        $hh = (float)($cndRek[$i]['high'] ?? 0);
+                        $ll = (float)($cndRek[$i]['low'] ?? 0);
+                        $pp = (float)($cndRek[$i - 1]['close'] ?? 0);
+                        $trRek[] = max($hh - $ll, abs($hh - $pp), abs($ll - $pp));
+                    }
+                    $atrRek = $trRek ? array_sum($trRek) / count($trRek) : 0.0;
+                }
+                if ($atrRek > 0) {
+                    $epRek = round($pcRek, 5);
+                    $slRek = round($arahRek === 'BUY' ? $pcRek - 1.2 * $atrRek : $pcRek + 1.2 * $atrRek, 5);
+                    $tpRek = round($arahRek === 'BUY' ? $pcRek + 3.0 * $atrRek : $pcRek - 3.0 * $atrRek, 5);
+                    $basisLevel = 'level dari ATR14 (AI tidak memberi level yang konsisten)';
+                }
+            }
+        }
+
+        if (qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
+            // Filter berita High impact: tahan pencatatan (bukan menahan analisa).
+            $boRek = function_exists('qi_berita_blackout') ? qi_berita_blackout(30, true) : ['aktif' => false];
+            if (!empty($boRek['aktif'])) {
+                $response['catatan_rekor'] = 'Ditahan filter berita berdampak tinggi (' . ($boRek['event']['judul'] ?? '-') . ').';
+            } else {
+                $jarakRek = abs($epRek - $slRek);
+                $rrRek = $jarakRek > 0 ? abs($tpRek - $epRek) / $jarakRek : 0;
+                $rek = [
+                    'id'               => 'SIG-AI-' . date('Ymd') . '-' . substr(bin2hex(random_bytes(3)), 0, 6),
+                    'timestamp'        => qi_sig_waktu_utc(),                 // ISO 8601 UTC (api/_signal_time.php)
+                    'expiry'           => qi_sig_waktu_utc(time() + 12 * 3600),
+                    'symbol'           => $symbol,
+                    'engine'           => 'AI',
+                    'engine_name'      => 'Analisa AI (Groq)',
+                    'timeframe'        => 'MTF',
+                    'side'             => $arahRek,
+                    'entry'            => round($epRek, 5),
+                    'sl'               => round($slRek, 5),
+                    'tp'               => round($tpRek, 5),
+                    'rr'               => '1 : ' . number_format($rrRek, 2),
+                    'atr'              => 0,
+                    'invalidation'     => $response['reason'] !== '' ? $response['reason'] : 'Level TP/SL tersentuh',
+                    'status'           => 'AKTIF',
+                    'pnl'              => 0,
+                    'pnl_usd'          => 0,
+                    'mtf_aligned'      => ($overall === ($arahRek === 'BUY' ? 'BULLISH' : 'BEARISH')),
+                    'confluence_score' => (int)$response['confidence'],
+                    'confidence'       => (int)$response['confidence'],
+                    'sumber'           => 'ai_signal',
+                    'basis'            => 'Arah dari AI (keyakinan ' . (int)$response['confidence'] . '); ' . $basisLevel,
+                    'ai_rr'            => (float)$response['risk_reward'],
+                    'konsensus'        => ['bull' => $bullTfs, 'bear' => $bearTfs, 'overall' => $overall],
+                ];
+                $catat = qi_signal_catat($rek, 4, 20);
+                $response['dicatat'] = (bool)$catat['dicatat'];
+                $response['catatan_rekor'] = $catat['dicatat']
+                    ? ('Masuk rekor publik sebagai ' . $rek['id'] . ' dan akan dinilai otomatis saat TP/SL tersentuh.')
+                    : ('Tidak dicatat: ' . $catat['alasan'] . (isset($catat['detail']['sisa_menit']) ? (' (sisa ' . $catat['detail']['sisa_menit'] . ' menit)') : ''));
+                if ($catat['dicatat']) $response['id_sinyal'] = $rek['id'];
+            }
+        } else {
+            $response['catatan_rekor'] = 'Tidak dicatat: level tidak dapat dibentuk dari data nyata.';
+        }
+    }
+} catch (Throwable $eRek) {
+    error_log('[AI Signal] pencatatan rekor gagal: ' . $eRek->getMessage());
+    $response['catatan_rekor'] = 'Pencatatan rekor dilewati karena kesalahan internal (analisa tetap sah).';
+}
+
 echo json_encode($response);
+
+} // ── akhir bagian endpoint HTTP ────────────────────────────────────────────

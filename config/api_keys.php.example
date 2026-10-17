@@ -2,11 +2,34 @@
 /**
  * API Keys — SALIN file ini menjadi `api_keys.php` lalu isi nilainya.
  * `api_keys.php` sudah di .gitignore (jangan commit nilai asli).
+ *
+ * Nilai kosong ('') = fitur itu nonaktif; kode memeriksa setiap konstanta
+ * sebelum memakainya. `api/health.php` melaporkan kunci yang belum terisi.
  */
 
 // Twelve Data — forex & metals (XAUUSD, EURUSD)
 // Daftar gratis di https://twelvedata.com (800 credits/hari, 8/menit)
-define('TWELVE_DATA_KEY', 'ISI_API_KEY_TWELVE_DATA_ANDA');
+define('TWELVE_DATA_KEY', '');
+
+// Groq — AI chat, verdict sinyal AI. Kosong = AI chat memakai jawaban cadangan.
+define('GROQ_API_KEY', '');
+// Opsional, bawaan di kode: qwen/qwen3.8-27b
+// define('GROQ_CHAT_MODEL', '');
+// define('GROQ_SIGNAL_MODEL', '');
+// define('GROQ_VISION_MODEL', '');
+
+// Kunci cron untuk pemanggilan lewat HTTP (?key=... atau header X-Cron-Key).
+// Kosong = cron hanya bisa jalan lewat CLI (`php api/...`). Isi >= 32 karakter acak:
+//   php -r "echo bin2hex(random_bytes(24)), PHP_EOL;"
+define('CRON_SECRET_KEY', '');
+
+// Alamat publik situs, dipakai untuk tautan di notifikasi sinyal
+// (mis. https://quantum-institut.com). Kosong = diturunkan dari request.
+define('QI_PUBLIC_BASE', '');
+
+// Jumlah perangkat yang boleh login bersamaan per akun (1–10). Bawaan 1 = satu perangkat:
+// login baru mengakhiri sesi lain (anti berbagi akun). Lebih dari 1: sesi terlama yang diakhiri.
+// define('QI_SESI_MAKS', 1);
 
 // Google Sign-In OAuth Client ID (PUBLIC — aman di sisi klien).
 // Cara membuat:
@@ -24,4 +47,28 @@ define('GOOGLE_CLIENT_ID', '');
 //   2. Kirim /newbot, ikuti instruksi, salin token yang diberikan
 //   3. User harus start chat dengan bot lebih dahulu untuk mendapat chat_id
 // Biarkan kosong untuk menonaktifkan fitur Telegram alert.
+// Admin juga bisa mengisinya dari dashboard (disimpan di cache/telegram.json).
 define('TELEGRAM_BOT_TOKEN', '');
+define('TELEGRAM_CHAT_ID', '');
+
+// Kunci enkripsi URL webhook notifikasi pengguna (AES-256-GCM), >= 32 karakter.
+// Kosong = kunci dibuat otomatis di cache/notify_secret.json. Jika kunci itu
+// hilang, pengguna harus menempel ulang URL webhook mereka — jadi di produksi
+// lebih aman diisi di sini dan dicadangkan bersama berkas ini.
+define('QI_NOTIFY_KEY', '');
+
+// Email SMTP (OTP + notifikasi email). Kosong = email tidak dikirim.
+// SMTP_SECURE: 'tls' (port 587) | 'ssl' (port 465) | 'none' (hanya localhost).
+// Hostinger Email: smtp.hostinger.com, 465/ssl, user = alamat email lengkap.
+define('SMTP_HOST', '');
+define('SMTP_PORT', 587);
+define('SMTP_SECURE', 'tls');
+define('SMTP_USER', '');
+define('SMTP_PASS', '');
+define('SMTP_FROM', '');
+define('SMTP_FROM_NAME', 'Quantum Institut');
+
+// Payment gateway remains disabled until a reviewed provider adapter is added.
+// Never use a placeholder value in production.
+define('QI_PAYMENT_PROVIDER', '');
+define('QI_PAYMENT_WEBHOOK_SECRET', '');

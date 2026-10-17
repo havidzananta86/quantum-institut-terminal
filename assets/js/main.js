@@ -11,8 +11,14 @@ function showQuantumToast(message, type = 'info', duration = 3500) {
         container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none px-4 sm:px-0';
         document.body.appendChild(container);
     }
+    // Diumumkan ke pembaca layar (idempoten: dipasang walau container sudah ada).
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'false');
 
     const toast = document.createElement('div');
+    // Galat diumumkan segera; pesan lain memakai aliran sopan dari container.
+    if (type === 'error') toast.setAttribute('role', 'alert');
     const typeStyles = {
         success: 'bg-[#0A182E]/95 border-emerald-500/60 text-emerald-300 shadow-emerald-500/20',
         error:   'bg-[#0A182E]/95 border-rose-500/60 text-rose-300 shadow-rose-500/20',

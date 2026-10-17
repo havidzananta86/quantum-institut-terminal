@@ -2,12 +2,13 @@
   "name": "Quantum Institut Market Terminal",
   "short_name": "QuantumTerminal",
   "description": "Terminal Analisa Pasar Kuantum Realtime 9 Mesin & TradingView Chart",
-  "start_url": "./terminal.html",
+  "id": "/dashboard.html",
+  "start_url": "./dashboard.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#050A1A",
-  "theme_color": "#00E5FF",
+  "theme_color": "#000000",
   "categories": ["finance", "utilities"],
   "icons": [
     {
@@ -20,7 +21,13 @@
       "src": "assets/img/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [],

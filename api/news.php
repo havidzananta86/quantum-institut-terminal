@@ -45,39 +45,72 @@ if (!function_exists('qi_http_get')) {
 
 // Feed RSS publik (tanpa kunci). Masing-masing diberi kategori default.
 $feeds = [
-    ['url' => 'https://www.coindesk.com/arc/outboundfeeds/rss/', 'source' => 'CoinDesk',       'cat' => 'CRYPTO'],
-    ['url' => 'https://cointelegraph.com/rss',                   'source' => 'CoinTelegraph',  'cat' => 'CRYPTO'],
-    ['url' => 'https://www.investing.com/rss/news_285.rss',      'source' => 'Investing Forex','cat' => 'FOREX'],
-    ['url' => 'https://www.investing.com/rss/news_1.rss',        'source' => 'Investing Macro','cat' => 'MACRO'],
+    ['url' => 'https://www.coindesk.com/arc/outboundfeeds/rss/', 'source' => 'CoinDesk',          'cat' => 'CRYPTO'],
+    ['url' => 'https://cointelegraph.com/rss',                   'source' => 'CoinTelegraph',     'cat' => 'CRYPTO'],
+    ['url' => 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=EURUSD=X,GBPUSD=X,GC=F,USDJPY=X&region=US&lang=en-US', 'source' => 'Yahoo Finance', 'cat' => 'FOREX'],
+    ['url' => 'https://www.forexlive.com/feed/news',             'source' => 'ForexLive',         'cat' => 'MACRO'],
+    ['url' => 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=CL=F,BZ=F,SI=F&region=US&lang=en-US', 'source' => 'Yahoo Commodities', 'cat' => 'COMMODITY'],
 ];
+
+/**
+ * Gambar mini artikel (media:content / media:thumbnail / enclosure / <img> pertama).
+ * Hanya https supaya halaman HTTPS tidak memuat konten campuran; null bila tidak ada.
+ */
+function qi_news_gambar($e) {
+    $kandidat = [];
+    $media = $e->children('http://search.yahoo.com/mrss/');
+    if ($media) {
+        foreach ([$media->content, $media->thumbnail] as $m) {
+            if ($m && isset($m->attributes()->url)) $kandidat[] = (string)$m->attributes()->url;
+        }
+        if (isset($media->group->content) && isset($media->group->content->attributes()->url)) {
+            $kandidat[] = (string)$media->group->content->attributes()->url;
+        }
+    }
+    if (isset($e->enclosure) && stripos((string)$e->enclosure['type'], 'image') === 0) $kandidat[] = (string)$e->enclosure['url'];
+    $isi = (string)($e->children('http://purl.org/rss/1.0/modules/content/')->encoded ?? '') . (string)($e->description ?? '');
+    if (preg_match('/<img[^>]+src=["\']([^"\']+)/i', $isi, $m)) $kandidat[] = html_entity_decode($m[1]);
+    foreach ($kandidat as $u) {
+        $u = trim($u);
+        if (strpos($u, 'https://') === 0 && strlen($u) < 600 && !preg_match('/[\s"<>]/', $u)) return $u;
+    }
+    return null;
+}
 
 function qi_detect_category($text, $default) {
     $t = strtolower($text);
-    if (preg_match('/\b(gold|xau|bullion|precious metal)\b/', $t))                       return 'GOLD';
+    if (preg_match('/\b(gold|xau|bullion|precious metal|emas|silver)\b/', $t))            return 'GOLD';
     if (preg_match('/\b(bitcoin|btc|ethereum|eth|crypto|blockchain|solana|altcoin|defi)\b/', $t)) return 'CRYPTO';
-    if (preg_match('/\b(fed|inflation|cpi|interest rate|gdp|central bank|treasury|fomc)\b/', $t))  return 'MACRO';
-    if (preg_match('/\b(dollar|euro|eur\/usd|forex|currency|yen|pound|gbp|usd)\b/', $t))  return 'FOREX';
+    if (preg_match('/\b(fed|inflation|cpi|interest rate|gdp|central bank|treasury|fomc)\b/', $t)) return 'MACRO';
+    if (preg_match('/\b(crude|oil|wti|brent|petroleum|gas)\b/', $t))                     return 'COMMODITY';
+    if (preg_match('/\b(dollar|euro|eur\/usd|forex|currency|yen|pound|gbp|usd|cad|aud)\b/', $t)) return 'FOREX';
     return $default;
 }
 
 function qi_detect_sentiment($text) {
     $t = strtolower($text);
-    $bull = preg_match_all('/\b(surge|soar|jump|rally|gain|rise|rises|high|boom|bullish|record|breakout|inflow|rebound|climb|advance)\b/', $t);
-    $bear = preg_match_all('/\b(plunge|crash|fall|falls|drop|decline|slump|bearish|selloff|sell-off|loss|fear|dump|outflow|tumble|sink|warning)\b/', $t);
-    if ($bull > $bear) return 'bullish';
-    if ($bear > $bull) return 'bearish';
-    return 'neutral';
+    $bull = preg_match_all('/\b(surge|soar|jump|rally|gain|rise|rises|high|boom|bullish|record|breakout|inflow|rebound|climb|advance|positive|boost|profit|uptrend)\b/', $t);
+    $bear = preg_match_all('/\b(plunge|crash|fall|falls|drop|decline|slump|bearish|selloff|sell-off|loss|fear|dump|outflow|tumble|sink|warning|negative|recession|downtrend)\b/', $t);
+    $total = $bull + $bear;
+    $score = ($total > 0) ? round(($bull - $bear) / $total, 2) : 0.0;
+    $label = ($score >= 0.2) ? 'bullish' : (($score <= -0.2) ? 'bearish' : 'neutral');
+    return ['label' => $label, 'score' => $score, 'bull' => $bull, 'bear' => $bear];
 }
 
 // Deteksi pair/asset yang relevan (untuk filter & marker chart)
 function qi_detect_symbols($text) {
     $t = strtolower($text);
     $syms = [];
-    if (preg_match('/\b(bitcoin|btc)\b/', $t))            $syms[] = 'BTCUSDT';
-    if (preg_match('/\b(ethereum|eth)\b/', $t))           $syms[] = 'ETHUSDT';
-    if (preg_match('/\b(solana|sol)\b/', $t))             $syms[] = 'SOLUSDT';
-    if (preg_match('/\b(gold|xau|bullion)\b/', $t))       $syms[] = 'XAUUSD';
-    if (preg_match('/\b(euro|eur\/usd|eurusd)\b/', $t))   $syms[] = 'EURUSD';
+    if (preg_match('/\b(bitcoin|btc)\b/', $t))                 $syms[] = 'BTCUSDT';
+    if (preg_match('/\b(ethereum|eth)\b/', $t))                $syms[] = 'ETHUSDT';
+    if (preg_match('/\b(solana|sol)\b/', $t))                  $syms[] = 'SOLUSDT';
+    if (preg_match('/\b(gold|xau|bullion|emas)\b/', $t))       $syms[] = 'XAUUSD';
+    if (preg_match('/\b(euro|eur\/usd|eurusd)\b/', $t))        $syms[] = 'EURUSD';
+    if (preg_match('/\b(pound|gbp|gbp\/usd|gbpusd)\b/', $t))   $syms[] = 'GBPUSD';
+    if (preg_match('/\b(yen|jpy|usd\/jpy|usdjpy)\b/', $t))     $syms[] = 'USDJPY';
+    if (preg_match('/\b(cad|loonie|usd\/cad|usdcad)\b/', $t))  $syms[] = 'USDCAD';
+    if (preg_match('/\b(aussie|aud|aud\/usd|audusd)\b/', $t))  $syms[] = 'AUDUSD';
+    if (preg_match('/\b(crude|oil|wti|brent)\b/', $t))         $syms[] = 'USOIL';
     return array_values(array_unique($syms));
 }
 
@@ -121,16 +154,19 @@ foreach ($feeds as $fi => $feed) {
         if (isset($seen[$key])) continue;
         $seen[$key] = true;
 
+        $sent = qi_detect_sentiment($blob);
         $bucket[] = [
-            'id'           => 'news_' . substr($key, 0, 10),
-            'source'       => $feed['source'],
-            'title'        => mb_substr($title, 0, 180),
-            'url'          => (strpos($link, 'http') === 0) ? $link : '#',
-            'category'     => qi_detect_category($blob, $feed['cat']),
-            'published_at' => date('c', $ts),
-            'ts'           => $ts,
-            'sentiment'    => qi_detect_sentiment($blob),
-            'symbols'      => qi_detect_symbols($blob),
+            'id'              => 'news_' . substr($key, 0, 10),
+            'source'          => $feed['source'],
+            'title'           => mb_substr($title, 0, 180),
+            'url'             => (strpos($link, 'http') === 0) ? $link : '#',
+            'category'        => qi_detect_category($blob, $feed['cat']),
+            'published_at'    => date('c', $ts),
+            'ts'              => $ts,
+            'sentiment'       => $sent['label'],
+            'sentiment_score' => $sent['score'],
+            'symbols'         => qi_detect_symbols($blob),
+            'image'           => qi_news_gambar($e),
         ];
         $perFeed++;
     }

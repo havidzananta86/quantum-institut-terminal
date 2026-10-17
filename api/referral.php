@@ -31,13 +31,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $myRef = $allRefs[$userId];
+    $totalCount = count($myRef['referrals']);
+
+    // REFERRAL TIERING LOGIC:
+    // Bronze: 1-5 referrals (15% komisi)
+    // Silver: 6-20 referrals (25% komisi)
+    // Gold:   21+ referrals (35% komisi + VIP Badge)
+    $tier = 'Bronze Partner';
+    $commissionRate = 15;
+    if ($totalCount >= 21) {
+        $tier = 'Gold Partner (VIP)';
+        $commissionRate = 35;
+    } elseif ($totalCount >= 6) {
+        $tier = 'Silver Partner';
+        $commissionRate = 25;
+    }
+
+    $estimatedCommissionIdr = $totalCount * 270000 * ($commissionRate / 100);
+
     echo json_encode([
         'status' => 'success',
         'referral' => [
-            'code' => $myRef['code'],
-            'total_referrals' => count($myRef['referrals']),
-            'rewards_earned' => $myRef['rewards'],
-            'referral_link' => 'https://quantum-institut.com/register.html?ref=' . $myRef['code'],
+            'code'                   => $myRef['code'],
+            'total_referrals'        => $totalCount,
+            'rewards_earned'         => $myRef['rewards'],
+            'tier'                   => $tier,
+            'commission_rate_pct'    => $commissionRate,
+            'commission_earned_idr'  => $estimatedCommissionIdr,
+            'referral_link'          => 'https://quantum-institut.com/register.html?ref=' . $myRef['code'],
         ]
     ]);
     exit();

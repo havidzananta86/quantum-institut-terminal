@@ -38,6 +38,9 @@ if (!$isCli) {
     require_once __DIR__ . '/_middleware.php';
 }
 
+// Model P/L yang sama dengan sisi klien (lihat api/_paper_math.php).
+require_once __DIR__ . '/_paper_math.php';
+
 $pdo = qi_db();
 
 $SYMBOLS = ['BTCUSDT','ETHUSDT','XAUUSD','EURUSD','GBPUSD','USDJPY','BNBUSDT','XRPUSDT'];
@@ -274,10 +277,8 @@ foreach ($openPositions as $pos) {
     if (!$hitTP && !$hitSL) continue;
 
     $closeAt = $hitTP ? $tp : $sl;
-    $isCrypto = in_array($sym, ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT']);
-    $pipVal   = $isCrypto ? ($lots * 1) : ($lots * 10);
-    $pips     = $dir === 'BUY' ? ($closeAt - $ep) : ($ep - $closeAt);
-    $pnl      = round($pips * $pipVal, 2);
+    // P/L memakai model yang sama dengan sisi klien (_pipMult).
+    $pnl      = qi_paper_pnl((string)$sym, (string)$dir, (float)$ep, (float)$closeAt, (float)$lots);
     $reason   = $hitTP ? 'TP Hit' : 'SL Hit';
 
     $pdo->prepare(
