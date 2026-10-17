@@ -3321,6 +3321,8 @@ async function lwFetchAndSetData() {
         }
         if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','30':'30m','60':'H1','240':'H4','D':'D1','W':'W1','MN':'MN1'}[_tvInterval]||_tvInterval) + ' · ' + candles.length + ' bar';
         drawAutoIndicators(candles);
+        // Modul lain (mis. panel Setup Analisa) membersihkan gambarnya saat data chart diganti.
+        try { window.dispatchEvent(new CustomEvent('qi-chart-data', { detail: { symbol: found.key, interval: _tvInterval } })); } catch (e) {}
     } catch(e) {
         // Pesan ramah untuk pengguna; detail teknis cukup di konsol agar tidak
         // membocorkan internal dan tidak membingungkan.
@@ -3328,6 +3330,16 @@ async function lwFetchAndSetData() {
         if (st) st.textContent = 'Gagal memuat data chart. Coba ganti timeframe atau muat ulang.';
     }
 }
+
+/** Akses baca chart quantum untuk modul lain (panel Setup Analisa). */
+window.qiChartKonteks = function () {
+    const found = WL_GROUPS.flatMap(g => g.syms).find(s => s.tv === _tvSymbol);
+    return {
+        chart: _lwChart, series: _lwSeries, candles: _lwLastCandles,
+        symbol: found ? found.key : '', label: _tvSymLabel, interval: _tvInterval,
+        source: _lwCandlesMeta ? _lwCandlesMeta.source : '',
+    };
+};
 
 // ─── Auto Indicator State ────────────────────────────────────────────────────
 let _lwEma20 = null, _lwEma50 = null, _lwEma200 = null;
