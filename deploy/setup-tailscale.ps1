@@ -126,15 +126,16 @@ if (-not ($okMt5 -and $okTv)) { Warn 'Periksa tugas QIM MT5 Bridge / QIM TV Brid
 
 # ---------------------------------------------------------------- 3. Tailscale Funnel
 Step '3. Tailscale Funnel -> 127.0.0.1:8080'
+Write-Host '   Jika muncul tautan login.tailscale.com: buka di browser, klik Enable, lalu tunggu di sini.'
 $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-$out = (& $ts funnel --bg 8080 2>&1 | Out-String)
+# Jangan tangkap keluarannya: bila Funnel belum diizinkan, perintah ini menampilkan tautan lalu MENUNGGU.
+& $ts funnel --bg 8080
 $funnelExit = $LASTEXITCODE
+$status = (& $ts funnel status 2>&1 | Out-String)
 $ErrorActionPreference = $prev
-Write-Host ($out.Trim() -replace '(?m)^', '   ')
-if ($funnelExit -ne 0 -or $out -match 'login\.tailscale\.com' -or $out -match 'not enabled') {
-    Warn 'Funnel perlu diizinkan sekali di akun Tailscale-mu.'
-    Write-Host '   Buka tautan login.tailscale.com yang tertulis di atas (di browser mana saja, login akun Tailscale-mu),'
-    Write-Host '   klik Enable / Izinkan, lalu jalankan skrip ini lagi.'
+if ($funnelExit -ne 0 -or $status -notmatch 'Funnel on|Available on the internet') {
+    Write-Host ($status.Trim() -replace '(?m)^', '   ')
+    Warn 'Funnel belum aktif. Buka tautan login.tailscale.com di atas, klik Enable, lalu jalankan skrip ini lagi.'
     return
 }
 Ok "Funnel aktif: https://$hostName"
