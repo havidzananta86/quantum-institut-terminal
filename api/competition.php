@@ -116,7 +116,8 @@ function qi_comp_teman(int $uid): array
  */
 function qi_comp_agregat(PDO $pdo, ?DateTimeImmutable $mulai, ?DateTimeImmutable $selesai, string $pasar = 'semua', ?array $hanyaUser = null, ?string $negara = null): array
 {
-    $syarat = "pp.status = 'closed'" . qi_comp_filter_pasar($pasar);
+    // Posisi 'auto' (Ikuti Auto Analisa) tidak ikut peringkat: hadiahnya untuk keterampilan trader manual.
+    $syarat = "pp.status = 'closed' AND pp.source <> 'auto'" . qi_comp_filter_pasar($pasar);
     $param = [];
     if ($mulai && $selesai) {
         // closed_at ditulis dalam zona sesi MySQL (NOW()/FROM_UNIXTIME); batas periode (WIB)

@@ -39,7 +39,7 @@ $sql = "
         ROUND(SUM(pp.pnl_usd), 2)                                                        AS total_pnl
     FROM paper_positions pp
     JOIN users u ON u.id = pp.user_id
-    WHERE pp.status = 'closed'
+    WHERE pp.status = 'closed' AND pp.source <> 'auto'   -- 'auto' (Ikuti Auto Analisa) tidak ikut peringkat
     GROUP BY pp.user_id
     HAVING COUNT(pp.id) >= 3
     ORDER BY total_pnl DESC
@@ -89,7 +89,7 @@ if ($me) {
             ROUND(SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) / COUNT(id) * 100, 1)        AS win_rate,
             ROUND(SUM(pnl_usd), 2)                                                            AS total_pnl
         FROM paper_positions
-        WHERE user_id = :uid AND status = 'closed'
+        WHERE user_id = :uid AND status = 'closed' AND source <> 'auto'
     ");
     $meStmt->execute([':uid' => $uid]);
     $meRow = $meStmt->fetch(PDO::FETCH_ASSOC);
@@ -101,7 +101,7 @@ if ($me) {
             FROM (
                 SELECT SUM(pnl_usd) AS pnl
                 FROM paper_positions
-                WHERE status = 'closed'
+                WHERE status = 'closed' AND source <> 'auto'
                 GROUP BY user_id
                 HAVING COUNT(id) >= 3
             ) sub

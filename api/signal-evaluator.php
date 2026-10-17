@@ -470,6 +470,25 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
             @error_log('[sl-learn] hook penilai gagal: ' . $e->getMessage());
         }
     }
+
+    // ── AUTO ANALISA → AKUN SIMULASI ────────────────────────────────────────────
+    // Posisi simulasi pengguna yang mengaktifkan "Ikuti Auto Analisa" ditutup mengikuti hasil sinyal
+    // (HIT TP → saldo bertambah, HIT SL → berkurang). Idempoten dan dibungkus try/catch.
+    if (!$dry && function_exists('qi_db')) {
+        try {
+            require_once __DIR__ . '/_auto_paper.php';
+            $hargaTerakhir = function (string $simbol): ?float {
+                $d = qi_sig_ambil_candle($simbol, ['5', '15', '60']);
+                if (!$d || empty($d['candles'])) return null;
+                $c = end($d['candles']);
+                return isset($c['close']) ? (float)$c['close'] : null;
+            };
+            $ap = qi_ap_sinkron(qi_db(), $history, null, $hargaTerakhir);
+            $laporan['auto_paper'] = ['dibuka' => $ap['dibuka'], 'ditutup' => $ap['ditutup'], 'dibatalkan' => $ap['dibatalkan']];
+        } catch (Throwable $e) {
+            @error_log('[auto-paper] hook penilai gagal: ' . $e->getMessage());
+        }
+    }
     return $laporan;
 }
 endif;

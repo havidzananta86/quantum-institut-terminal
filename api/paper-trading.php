@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'sl'         => $r['stop_loss']   !== null ? (float)$r['stop_loss']   : null,
             'tp'         => $r['take_profit'] !== null ? (float)$r['take_profit'] : null,
             'openedAt'   => $iso($r['opened_ts']),   // ISO-8601 UTC, tanggal + jam lengkap
+            'src'        => $r['source'] ?? 'manual',  // 'auto' = dari Ikuti Auto Analisa, 'ai' = AI Auto-Trade
         ];
         if ($r['status'] === 'open') {
             $obj['floatingPnL'] = 0;
@@ -149,7 +150,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ditolak = [];
     try {
         $pdo->beginTransaction();
-        $st = $pdo->prepare("SELECT *, UNIX_TIMESTAMP(opened_at) AS opened_ts FROM paper_positions WHERE user_id = :uid AND status = 'open' AND source <> 'ai' FOR UPDATE");
+        // Posisi otomatis (source 'ai' / 'auto') dikelola server: tidak boleh diubah, ditutup, atau digandakan
+        // lewat simpan snapshot klien (klien memuatnya lewat GET lalu mengirimnya kembali apa adanya).
+        $st = $pdo->prepare("SELECT id FROM paper_positions WHERE user_id = :uid AND status = 'open' AND source IN ('ai', 'auto')");
+        $st->execute([':uid' => $uid]);
+        $dilindungi = array_fill_keys(array_map(static fn($id) => 'POS-' . $id, $st->fetchAll(PDO::FETCH_COLUMN)), true);
+        $st = $pdo->prepare("SELECT *, UNIX_TIMESTAMP(opened_at) AS opened_ts FROM paper_positions WHERE user_id = :uid AND status = 'open' AND source NOT IN ('ai', 'auto') FOR UPDATE");
         $st->execute([':uid' => $uid]);
         $terbuka = [];   // id DB → baris
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
@@ -195,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                VALUES (:uid, :sym, :dir, :lots, :entry, :sl, :tp, 'open', COALESCE(FROM_UNIXTIME(:ots), NOW()), 'manual')");
         $dipakai = [];
         foreach ($positions as $p) {
+            if (isset($dilindungi[(string)($p['id'] ?? '')])) continue;   // posisi otomatis: dilewati, tidak digandakan
             $sym = $normSym($p['symbol'] ?? '');
             $entry = $num($p['entryPrice'] ?? null);
             $lots = $num($p['lots'] ?? null);
@@ -215,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // 3) Posisi terbuka MANUAL tersimpan yang tidak dikirim lagi → dibatalkan (bukan dihapus, tanpa P/L).
-        //    Posisi milik AI auto-trade (source=ai) tidak pernah disentuh endpoint ini.
+        //    Posisi otomatis (source=ai / auto) tidak pernah disentuh endpoint ini.
         $batal = $pdo->prepare("UPDATE paper_positions SET status = 'cancelled', closed_at = NOW() WHERE id = :id AND user_id = :uid AND status = 'open'");
         foreach ($terbuka as $dbId => $_) if (!isset($dipakai[$dbId])) $batal->execute([':id' => $dbId, ':uid' => $uid]);
 

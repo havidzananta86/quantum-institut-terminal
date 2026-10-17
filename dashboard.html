@@ -42,7 +42,7 @@
     <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.6">
     <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=1.2.5">
     <link rel="stylesheet" href="assets/css/qim-pages.css?v=1.7.5">
-    <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.12">
+    <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.13">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -2401,6 +2401,30 @@ document.addEventListener('keydown', e => {
                 </div>
             </div>
         </div>
+        <!-- Ikuti Auto Analisa: posisi simulasi otomatis dari sinyal Auto Analisa (uang virtual) -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden" id="autoPaperCard">
+            <div class="qap-head">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">🤖 Ikuti Auto Analisa</span>
+                <span class="qap-sub">akun simulasi · uang virtual · tanpa order sungguhan</span>
+                <div class="qap-ctrl">
+                    <label for="apRisiko" class="qap-sub">Risiko per sinyal</label>
+                    <select id="apRisiko" class="qap-select" aria-label="Risiko per sinyal">
+                        <option value="0.5">0,5%</option><option value="1" selected>1%</option><option value="2">2%</option><option value="3">3%</option>
+                    </select>
+                    <button id="apToggle" type="button" class="qap-switch" role="switch" aria-checked="false" disabled><i></i><span>Nonaktif</span></button>
+                </div>
+            </div>
+            <div class="qap-stats" id="apStats">
+                <div><small>Saldo simulasi</small><b id="apSaldo">—</b></div>
+                <div><small>Bertambah hari ini</small><b id="apTambah" class="qap-up">—</b></div>
+                <div><small>Berkurang hari ini</small><b id="apKurang" class="qap-down">—</b></div>
+                <div><small>Bersih hari ini</small><b id="apBersih">—</b></div>
+            </div>
+            <div class="qap-total" id="apTotal">Memuat…</div>
+            <div class="qap-open" id="apPosisi" hidden></div>
+            <div class="qap-list" id="apRiwayat"></div>
+            <p class="qap-note" id="apCatatan">Tiap sinyal baru Auto Analisa dibuka otomatis di akun simulasi dengan level yang sama persis (entry, SL, TP). Kena SL → saldo berkurang sebesar risiko; kena TP → saldo bertambah sebesar risiko × R:R. Lot dihitung dari saldo terbaru.</p>
+        </div>
         <!-- Mini Chart (TradingView) untuk uji strategi -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
             <div class="px-4 py-3 border-b border-qi-border flex items-center gap-3">
@@ -3138,6 +3162,11 @@ document.addEventListener('keydown', e => {
                 <button onclick="refreshAutoSignals()" class="px-3 py-1.5 rounded-lg border border-qi-cyan/40 text-qi-cyan text-[10px] font-semibold hover:bg-qi-cyan/10">↻ Refresh</button>
                 <button onclick="switchPanel('panel-track')" class="px-3 py-1.5 rounded-lg border border-qi-border text-slate-400 text-[10px] hover:text-white">📋 Riwayat</button>
             </div>
+        </div>
+        <!-- Ikuti Auto Analisa (ringkas): status akun simulasi otomatis -->
+        <div class="qap-banner" id="apBanner" hidden>
+            <span id="apBannerTeks"></span>
+            <a href="dashboard.html?panel=panel-paper" onclick="switchPanel('panel-paper'); return false;" id="apBannerTaut">Atur →</a>
         </div>
         <!-- Summary -->
         <div class="grid grid-cols-3 gap-3" id="asSummaryGrid">
@@ -4250,7 +4279,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 ═══════════════════════════════════════════════════════════ -->
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.23"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.24"></script>
 <script src="assets/js/qim-dashboard.js?v=1.7.3"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
@@ -4297,6 +4326,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-setups.js?v=1.0.0"></script>
 <script src="assets/js/qim-setup-panel.js?v=1.0.3"></script>
 <script src="assets/js/qim-header.js?v=1.0.0"></script>
+<script src="assets/js/qim-auto-paper.js?v=1.0.0"></script>
 <script src="assets/js/dashboard-pro.js?v=1.0.1"></script>
 <script src="assets/js/advanced-trading.js?v=3.2.0"></script>
 <script src="assets/js/perf-upgrades.js?v=2.2.1"></script>

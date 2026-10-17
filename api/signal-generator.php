@@ -298,6 +298,13 @@ if ($dibuat > 0) {
     if (count($history) > 500) $history = array_slice($history, 0, 500);
     @copy($historyFile, __DIR__ . '/../cache/signal_history.backup.json');
     @file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
+    // Pengguna yang mengaktifkan "Ikuti Auto Analisa" langsung mendapat posisi simulasi untuk sinyal baru.
+    try {
+        require_once __DIR__ . '/_auto_paper.php';
+        qi_ap_sinkron(qi_db(), $history);
+    } catch (Throwable $e) {
+        @error_log('[auto-paper] hook pembangkit gagal: ' . $e->getMessage());
+    }
 }
 if ($auto) @file_put_contents($penandaAuto, (string)time(), LOCK_EX);
 

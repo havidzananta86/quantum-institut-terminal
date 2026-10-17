@@ -247,3 +247,44 @@
     .qim-hdr-status { padding: 0 2px; }
     .qim-header-actions { gap: 2px; padding: 0 4px; }
 }
+
+/* Ikuti Auto Analisa (akun simulasi otomatis) */
+.qap-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-bottom: 1px solid #16243d; }
+.qap-sub { color: #64748b; font-size: 10.5px; }
+.qap-ctrl { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.qap-select { padding: 4px 8px; border: 1px solid #1c2c47; border-radius: 8px; background: #0d1829; color: #dbe6f7; font-size: 12px; }
+.qap-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 12px 4px 6px; border: 1px solid #1c2c47; border-radius: 999px; background: #0d1829; color: #94a3b8; font-size: 12px; font-weight: 700; cursor: pointer; }
+.qap-switch i { width: 22px; height: 14px; border-radius: 999px; background: #334155; position: relative; transition: background .15s; }
+.qap-switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #e2e8f0; transition: transform .15s; }
+.qap-switch.on { border-color: #1b5f4b; color: #3dd9a6; }
+.qap-switch.on i { background: #1fae7e; }
+.qap-switch.on i::after { transform: translateX(8px); }
+.qap-switch:disabled { opacity: .5; cursor: not-allowed; }
+.qap-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qap-stats > div { padding: 12px 16px; border-right: 1px solid #16243d; }
+.qap-stats > div:last-child { border-right: 0; }
+.qap-stats small { display: block; margin-bottom: 2px; color: #64748b; font-size: 10px; }
+.qap-stats b { font: 700 15px/1.2 'JetBrains Mono', ui-monospace, monospace; color: #e2e8f0; }
+.qap-up { color: #3dd9a6 !important; }
+.qap-down { color: #ff7a85 !important; }
+.qap-muted { color: #8394ad; }
+.qap-total { padding: 8px 16px; border-top: 1px solid #16243d; color: #aab8cf; font-size: 12px; }
+.qap-open { display: flex; flex-direction: column; gap: 4px; padding: 0 16px 8px; }
+.qap-pos, .qap-trade { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 0; border-top: 1px solid #101c31; font-size: 11.5px; color: #cbd5e1; }
+.qap-list { padding: 0 16px; max-height: 300px; overflow-y: auto; }
+.qap-trade strong { margin-left: auto; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.qap-badge { padding: 1px 7px; border: 1px solid #334155; border-radius: 5px; font-size: 10px; font-weight: 800; color: #94a3b8; }
+.qap-badge.tp { border-color: #1b5f4b; color: #3dd9a6; background: #0f3a3014; }
+.qap-badge.sl { border-color: #7a1f2a; color: #ff7a85; background: #ef444414; }
+.qap-kosong { padding: 10px 0; color: #64748b; font-size: 12px; }
+.qap-note { margin: 0; padding: 10px 16px 14px; color: #64748b; font-size: 10.5px; line-height: 1.5; }
+.qap-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px 12px; border: 1px dashed #1c2c47; border-radius: 10px; background: #0a1322; color: #aab8cf; font-size: 12px; }
+.qap-banner[hidden] { display: none; }
+.qap-banner.on { border-style: solid; border-color: #1b5f4b; background: #0f3a3012; color: #cfeee3; }
+.qap-banner a { margin-left: auto; color: #6cc4ff; font-weight: 700; text-decoration: none; white-space: nowrap; }
+@media (max-width: 640px) {
+    .qap-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .qap-stats > div:nth-child(2) { border-right: 0; }
+    .qap-stats > div:nth-child(-n+2) { border-bottom: 1px solid #16243d; }
+    .qap-ctrl { margin-left: 0; width: 100%; }
+}

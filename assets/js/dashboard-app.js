@@ -5364,7 +5364,9 @@ function ptRender() {
                     <td class="px-3 py-2.5 text-center text-[10px] text-slate-500">${p.sl||'—'} / ${p.tp||'—'}</td>
                     <td class="px-3 py-2.5 text-center text-[11px] tabular-nums font-bold ${pnlCls}">${pnlRaw>=0?'+$':'-$'}${Math.abs(pnlRaw).toFixed(2)}<br><span class="text-[9px] opacity-60">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</span></td>
                     <td class="px-3 py-2.5 text-center">
-                        <button onclick="ptClosePosition('${p.id}')" class="text-[10px] text-qi-red hover:underline font-mono">Tutup</button>
+                        ${(p.src && p.src !== 'manual')
+                            ? `<span class="text-[9px] font-mono text-qi-cyan" title="Dikelola otomatis: ditutup saat sinyal kena TP/SL">${p.src === 'auto' ? 'AUTO' : 'AI'}</span>`
+                            : `<button onclick="ptClosePosition('${p.id}')" class="text-[10px] text-qi-red hover:underline font-mono">Tutup</button>`}
                     </td>
                 </tr>`;
             }).join('');
@@ -5479,6 +5481,7 @@ async function ptLoadFromServer() {
             symbol: p.symbol, side: p.side, lots: p.lots,
             entryPrice: p.entryPrice, sl: p.sl, tp: p.tp,
             openTime: jam(p.openedAt, p.openTime), openedAt: p.openedAt || null,
+            src: p.src || 'manual',   // 'auto' = Ikuti Auto Analisa, 'ai' = AI Auto-Trade (dikelola server)
         }));
         // Baris server membawa realizedPnL (bukan pnl) → samakan dengan baris yang ditutup di klien
         _ptHistory  = (data.data.history || []).map(h => {
