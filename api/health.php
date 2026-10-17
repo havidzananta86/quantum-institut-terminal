@@ -42,13 +42,17 @@ if (file_exists($cfgPath)) {
     require_once $cfgPath;
     $checks['api_keys'] = true;
     $missing = [];
-    if (!defined('TELEGRAM_BOT_TOKEN') || TELEGRAM_BOT_TOKEN === '') $missing[] = 'telegram';
-    if (!defined('GOOGLE_CLIENT_ID') || GOOGLE_CLIENT_ID === '') $missing[] = 'google';
     if (!defined('TWELVE_DATA_KEY') || TWELVE_DATA_KEY === '') $missing[] = 'twelvedata';
     if ($missing) {
         $checks['api_keys_missing'] = $missing;
         $status = 'degraded';
     }
+    // Fitur opsional (bot Telegram global, login Google): kosong = fitur mati, bukan situs rusak.
+    // Dulu ikut membuat 503 permanen sehingga pemantau uptime selalu melapor "down".
+    $opsional = [];
+    if (!defined('TELEGRAM_BOT_TOKEN') || TELEGRAM_BOT_TOKEN === '') $opsional[] = 'telegram';
+    if (!defined('GOOGLE_CLIENT_ID') || GOOGLE_CLIENT_ID === '') $opsional[] = 'google';
+    if ($opsional) $checks['api_keys_optional_missing'] = $opsional;
 } else {
     $checks['api_keys'] = false;
     $checks['api_keys_missing'] = ['file_not_found'];

@@ -85,6 +85,14 @@ $FX_SYMS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','NZDUSD','USDCHF','USDC
 // rantai sumber lama di bawah (Binance / Twelve Data / PAXG / Frankfurter).
 $mt5Rows = $tingkatMt5 ? qi_mt5_quotes($symbols) : [];   // prioritas: feed broker MT5 (VPS) untuk yang berhak
 $result = $mt5Rows + qi_tv_bridge_quotes(array_values(array_diff($symbols, array_keys($mt5Rows)))) + $result;
+// Kripto 24/7: bila OANDA/broker sedang tutup (akhir pekan) atau tick-nya basi, harganya membeku —
+// lepaskan supaya diisi Binance di bawah (sama dengan get-chart-data.php).
+foreach ($result as $s => $row) {
+    if (str_ends_with((string)$s, 'USDT') && is_array($row)
+        && (($row['market'] ?? '') === 'closed' || (int)($row['tick_age'] ?? 0) > 900)) {
+        unset($result[$s]);
+    }
+}
 
 // ─── CRYPTO via Binance (multi-symbol ticker) ───────────────────────────────
 // Lewati simbol yang sudah dari OANDA. BTCUSDT tetap boleh ke Binance bila OANDA gagal;

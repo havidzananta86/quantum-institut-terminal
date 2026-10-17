@@ -5289,13 +5289,15 @@ async function ptUpdateLivePrice() {
     // If price not in cache, fetch directly
     if (!d) {
         try {
+            // Lewat server (api.binance.com diblokir DNS di Indonesia).
             const url = (sym.endsWith('USDT') && sym !== 'BTCUSDT')
-                ? `https://api.binance.com/api/v3/ticker/price?symbol=${sym}`
+                ? `api/live-price.php?symbols=${encodeURIComponent(sym)}`
                 : `api/get-chart-data.php?symbol=${encodeURIComponent(sym)}&tf=1&limit=2`;
             const r = await fetch(url);
             const j = await r.json();
             const candles = j.candles || (Array.isArray(j) ? j : []);
-            const price = j.price ? parseFloat(j.price) : candles.length ? candles.slice(-1)[0]?.close : null;
+            const lp = j.prices && j.prices[sym];
+            const price = lp ? parseFloat(lp.price) : j.price ? parseFloat(j.price) : candles.length ? candles.slice(-1)[0]?.close : null;
             if (price) { d = { price }; _lastPrices[sym] = d; }
         } catch(e) {}
     }
@@ -7338,10 +7340,12 @@ async function fetchIDRRates() {
         const idrEl = document.getElementById('ctUSDIDR');
         if (idrEl) idrEl.textContent = usdIdr > 0 ? 'Rp ' + usdIdr.toLocaleString('id-ID', {maximumFractionDigits:0}) : '—';
 
-        const cryptoR = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SOLUSDT"]');
+        // Lewat server: api.binance.com diblokir DNS di Indonesia (dulu selalu ERR_NAME_NOT_RESOLVED).
+        const cryptoR = await fetch('api/live-price.php?symbols=BTCUSDT,ETHUSDT,SOLUSDT');
         const cryptoJ = await cryptoR.json();
-        if (!Array.isArray(cryptoJ)) return;
-        const prices = Object.fromEntries(cryptoJ.map(p => [p.symbol, parseFloat(p.price)]));
+        if (!cryptoJ || !cryptoJ.prices) return;
+        const prices = Object.fromEntries(Object.entries(cryptoJ.prices).map(([s, p]) => [s, parseFloat(p && p.price)]));
+        if (!(prices.BTCUSDT > 0 && prices.ETHUSDT > 0 && prices.SOLUSDT > 0)) return;
         if (usdIdr > 0) {
             const btcEl = document.getElementById('ctBTCIDR');
             const ethEl = document.getElementById('ctETHIDR');

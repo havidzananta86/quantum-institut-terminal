@@ -175,6 +175,8 @@ if ($balance === null || $equity === null || $margin === null || $balance < 0 ||
 
 try {
     $pdo = qi_db();
+    require_once __DIR__ . '/_posisi_akun.php';
+    $adaTabelPosisi = qi_posisi_akun_siapkan($pdo);   // sebelum beginTransaction (DDL = commit implisit)
     $hash = hash('sha256', $bridgeKey);
     $account = $pdo->prepare("SELECT a.id FROM trading_account_bridge_keys k INNER JOIN trading_accounts a ON a.id = k.trading_account_id WHERE k.key_hash = :hash AND k.revoked_at IS NULL AND a.connection_status IN ('pending', 'active') LIMIT 1 FOR UPDATE");
     $pdo->beginTransaction();
@@ -195,8 +197,8 @@ try {
     $update = $pdo->prepare("UPDATE trading_accounts SET connection_status = 'active', last_synced_at = NOW() WHERE id = :id");
     $update->execute([':id' => $accountId]);
     // Daftar posisi disimpan terpisah (satu baris per akun, ditimpa tiap snapshot).
-    // Bila migrasi 006 belum dijalankan, snapshot tetap diterima tanpa gagal.
-    if (is_array($rawPositions) && $pdo->query("SHOW TABLES LIKE 'trading_account_positions'")->fetch()) {
+    // Bila tabelnya belum bisa dibuat (hak DB terbatas), snapshot tetap diterima tanpa gagal.
+    if (is_array($rawPositions) && $adaTabelPosisi) {
         $store = $pdo->prepare('INSERT INTO trading_account_positions (trading_account_id, positions_json, open_count, captured_at) VALUES (:id, :json, :count, NOW()) ON DUPLICATE KEY UPDATE positions_json = VALUES(positions_json), open_count = VALUES(open_count), captured_at = NOW()');
         $store->execute([':id' => $accountId, ':json' => json_encode($positionList, JSON_UNESCAPED_SLASHES), ':count' => count($positionList)]);
     }

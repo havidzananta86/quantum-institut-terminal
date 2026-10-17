@@ -115,7 +115,7 @@ $overall = count($bullCount) >= 3 ? 'BULLISH' : (count($bearCount) >= 3 ? 'BEARI
 echo json_encode([
     'status'     => 'success',
     'timestamp'  => date('Y-m-d H:i:s'),
-    'timezone'   => 'Asia/Jakarta (WIB)',
+    'timezone'   => date_default_timezone_get(),   // dulu tertulis WIB padahal server memakai UTC
     'symbol'     => $symbol,
     'overall'    => $overall,
     'timeframes' => $tf_results,

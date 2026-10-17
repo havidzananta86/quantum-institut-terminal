@@ -236,6 +236,14 @@ if (empty($candles) && qi_tv_bridge_symbol($symbol) !== null) {
     $candles = qi_tv_bridge_candles($symbol, $interval);
     if ($candles) $source = 'oanda_tv';
 }
+// Kripto diperdagangkan 24/7, tetapi BTC di OANDA (dan sebagian broker MT5) tutup akhir pekan:
+// candle terakhir tertinggal >1 hari sehingga chart BTC membeku Sabtu–Minggu. Bila candle
+// terakhir lebih tua dari satu batang + 2 jam, pakai Binance di bawah (24/7).
+if ($candles && str_ends_with($symbol, 'USDT')) {
+    $durasiBatang = ['1' => 60, '5' => 300, '15' => 900, '30' => 1800, '60' => 3600, '240' => 14400, 'D' => 86400, 'W' => 604800, 'M' => 2678400][$interval] ?? 3600;
+    $akhir = end($candles);
+    if ((time() - (int)($akhir['time'] ?? 0)) > $durasiBatang + 7200) { $candles = []; $source = ''; }
+}
 
 // 1. CRYPTO via Binance — pakai mirror Vision dulu (paling jarang ke-blok di ID)
 if (empty($candles) && in_array($symbol, ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT'])) {

@@ -8,6 +8,13 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(20, 60);
 
+// Cek hidup untuk status.html: tanpa login, tanpa memanggil Groq (dulu dicek lewat POST
+// anonim yang selalu 401 dan memunculkan galat merah di konsol).
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ping'])) {
+    echo json_encode(['status' => 'ok']);
+    exit;
+}
+
 // Tiap panggilan membakar kuota Groq API, jadi endpoint ini wajib login.
 // Rate limit per-IP saja tidak cukup — rotasi IP bisa menguras kuota.
 qi_require_level('pro');            // AI Assistant — PRO

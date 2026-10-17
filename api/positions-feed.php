@@ -31,7 +31,8 @@ function qi_decode_positions($json): array {
 $pdo = qi_db();
 
 try {
-    if (!$pdo->query("SHOW TABLES LIKE 'trading_account_positions'")->fetch()) {
+    require_once __DIR__ . '/_posisi_akun.php';
+    if (!qi_posisi_akun_siapkan($pdo)) {
         echo json_encode(['status' => 'success', 'notice' => 'MIGRATION_REQUIRED', 'server_now' => date('Y-m-d H:i:s'), 'can_see_others' => $canSeeOthers, 'mine' => [], 'community' => []]);
         exit();
     }

@@ -45,7 +45,8 @@ try {
     }
 
     if ($action === 'share') {
-        if (!$pdo->query("SHOW COLUMNS FROM trading_accounts LIKE 'share_positions'")->fetch()) {
+        require_once __DIR__ . '/_posisi_akun.php';
+        if (!qi_posisi_akun_siapkan($pdo)) {
             qi_bridge_fail(503, 'Modul berbagi posisi belum diaktifkan. Jalankan migrasi database.', 'MIGRATION_REQUIRED');
         }
         $accountId = filter_var($input['account_id'] ?? null, FILTER_VALIDATE_INT);

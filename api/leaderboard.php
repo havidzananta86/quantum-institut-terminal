@@ -48,6 +48,8 @@ $sql = "
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $leaderboard = [];
 foreach ($rows as $i => $r) {
     $reward = null;

@@ -17,9 +17,13 @@ $cacheFile = $cacheDir . '/currency-strength.json';
 $cacheTtl  = 30;
 
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-    header('X-QI-Cache: HIT');
-    echo file_get_contents($cacheFile);
-    exit;
+    // Di Windows, file yang sedang ditulis (LOCK_EX) gagal dibaca → hitung ulang saja.
+    $cached = @file_get_contents($cacheFile);
+    if ($cached !== false && $cached !== '') {
+        header('X-QI-Cache: HIT');
+        echo $cached;
+        exit;
+    }
 }
 
 // ── HTTP helper (same as live-price.php) ──────────────────────────────────
