@@ -1,0 +1,6 @@
+.env
+logs/
+nginx/certs/
+__pycache__/
+.pytest_cache/
+.venv/
