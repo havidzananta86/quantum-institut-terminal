@@ -189,9 +189,13 @@
         }
         list.innerHTML = bagian.join('');
         list.scrollTop = 0;
-        list.querySelectorAll('.qim-setup-item').forEach(btn => btn.addEventListener('click', () => {
+        list.querySelectorAll('.qim-setup-item').forEach(btn => btn.addEventListener('click', ev => {
             const s = hasilTerakhir[Number(btn.dataset.idx)];
-            if (s && gambar(s)) btn.classList.add('terpilih');
+            if (s && gambar(s)) {
+                btn.classList.add('terpilih');
+                // Di layar penuh kartu ini dipinjam popover: tutup setelah pengguna memilih agar chart terlihat.
+                if (ev.isTrusted && document.querySelector('.qch-pop-setup') && typeof window.qimTutupPopoverChart === 'function') window.qimTutupPopoverChart();
+            }
         }));
         const pertama = list.querySelector('.qim-setup-item');
         if (pertama) pertama.click();

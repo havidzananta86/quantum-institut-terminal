@@ -687,3 +687,14 @@ body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
 @media (max-width: 899px) and (pointer: coarse) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
 }
+
+/* Layar penuh chart: #panel-charts dipasang fixed dengan z-index 99999, sehingga popover (body)
+   dan toast harus berada di atasnya — dulu Indikator/Template/Alert/Bandingkan terbuka di BELAKANG
+   panel dan tampak "tidak bisa dipakai". */
+.qch-pop { z-index: 100001; }
+#quantumToastContainer { z-index: 100002 !important; }
+.qch-setup-btn { display: none; }
+#panel-charts.chart-fullscreen-mode .qch-setup-btn { display: inline-flex; }
+.qch-pop.qch-pop-setup { padding: 0; max-height: min(78vh, 640px); }
+.qch-pop-setup .qim-card { margin: 0; border: 0; border-radius: 10px; background: transparent; }
+.qch-pop-setup .qim-setup-list { max-height: none; }

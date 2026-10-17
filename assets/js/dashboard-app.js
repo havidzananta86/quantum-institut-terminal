@@ -4238,6 +4238,7 @@ function segarkanWidgetTvBilaPerlu() {
 try { localStorage.removeItem('qi-chart-mode'); } catch (e) {}
 
 let _chartFullscreen = false;
+let _wlDisembunyikanOtomatis = false;   // watchlist disembunyikan oleh layar penuh → dipulihkan saat keluar
 
 function toggleChartWatchlist() {
     _wlVisible = !_wlVisible;
@@ -4282,9 +4283,17 @@ function toggleChartFullscreenMode() {
         fsBtn.classList.toggle('bg-qi-cyan/10', _chartFullscreen);
     }
 
-    // Auto-hide watchlist when entering fullscreen for maximum trading view width
+    // Popover chart (Indikator, Template, Alert, Setup, ...) ikut ditutup saat mode berganti.
+    try { if (typeof window.qimTutupPopoverChart === 'function') window.qimTutupPopoverChart(); } catch (e) {}
+
+    // Masuk layar penuh: watchlist disembunyikan supaya chart selebar mungkin.
+    // Keluar: dipulihkan (dulu tetap tersembunyi sehingga watchlist "hilang").
     if (_chartFullscreen && _wlVisible) {
         toggleChartWatchlist();
+        _wlDisembunyikanOtomatis = true;
+    } else if (!_chartFullscreen && _wlDisembunyikanOtomatis) {
+        _wlDisembunyikanOtomatis = false;
+        if (!_wlVisible) toggleChartWatchlist();
     }
 
     // Tombol keluar mengapung: jaring pengaman agar pengguna TIDAK PERNAH terjebak.

@@ -838,7 +838,7 @@
         custom2: { label: 'Custom 2', custom: true }
     };
     const TF_LABEL = { '1': '1m', '5': '5m', '15': '15m', '30': '30m', '60': '1h', '240': '4h', D: '1D', W: '1W', MN: '1M' };
-    const SEMUA_IND = ['indEMA20', 'indEMA50', 'indEMA200', 'indIchi', 'indSR', 'indFib', 'indGX', 'indSND', 'indVP', 'indPSAR', 'indKC', 'indST', 'indLIQ', 'indCDL'];
+    const SEMUA_IND = ['indEMA20', 'indEMA50', 'indEMA200', 'indBB', 'indRSI', 'indVOL', 'indIchi', 'indSR', 'indFib', 'indGX', 'indSND', 'indVP', 'indPSAR', 'indKC', 'indST', 'indLIQ', 'indCDL'];
     const gbr = { mgr: null, lepas: [], pilih: null, siap: false, jaga: null };
 
     function mgr() { return g('_lwDrawings') || null; }
@@ -1293,6 +1293,7 @@
                 + '<button type="button" class="qch-btn" data-ch="alert">' + ikon('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>') + 'Alert</button>'
                 + '<button type="button" class="qch-btn" data-ch="banding">' + ikon('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>') + 'Bandingkan</button>'
                 + '<button type="button" class="qch-btn" data-ch="replay">' + ikon('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>') + 'Replay</button>'
+                + '<button type="button" class="qch-btn qch-setup-btn" data-ch="setup" title="Setup Analisa: SMC, ICT, Fibonacci, S&amp;D">' + ikon('<path d="M4 19h16"/><path d="M6 15h12v-4H6z"/><path d="M6 11V7h12v4"/>') + 'Setup</button>'
                 + '<span class="qch-spacer"></span>'
                 + '<button type="button" class="qch-icon" data-ch="setelan" title="Pengaturan chart" aria-label="Pengaturan chart">' + ikon(I.gear) + '</button>'
                 + '<button type="button" class="qch-icon" data-ch="layar" title="Layar penuh" aria-label="Layar penuh">' + ikon('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>') + '</button>';
@@ -1418,6 +1419,8 @@
         return p;
     }
 
+    window.qimTutupPopoverChart = tutupPopover;
+
     function klikKepala(e) {
         const tfb = e.target.closest('.qch-tf[data-iv]');
         if (tfb) { if (typeof window.setChartInterval === 'function') window.setChartInterval(tfb.dataset.iv); tutupPopover(); segarkanKepala(false); return; }
@@ -1448,7 +1451,7 @@
             return;
         }
         if (aksi === 'indikator') {
-            const p = bukaPopover(b, '<div class="qch-pop-title">Indikator di chart</div><div class="qch-indgrid"></div><p class="qim-note" style="margin:8px 0 0">Bollinger Bands (20, 2) selalu tampil sebagai acuan volatilitas.</p>', 320);
+            const p = bukaPopover(b, '<div class="qch-pop-title">Indikator di chart</div><div class="qch-indgrid"></div><p class="qim-note" style="margin:8px 0 0">Chart dimulai bersih: nyalakan hanya indikator yang dibutuhkan.</p>', 320);
             if (!p) return;
             const grid = p.querySelector('.qch-indgrid');
             SEMUA_IND.forEach(id => { const t = $(id); if (t) grid.appendChild(t); });
@@ -1501,6 +1504,19 @@
                 tutupPopover();
             });
             p.querySelector('#qchAlertKelola').addEventListener('click', () => { tutupPopover(); window.switchPanel && window.switchPanel('panel-alerts'); });
+            return;
+        }
+        if (aksi === 'setup') {
+            // Layar penuh menutupi kolom kanan, jadi kartu Setup Analisa dipinjamkan ke popover
+            // (fungsi dan tombolnya sama) lalu dikembalikan ke kolom kanan saat popover ditutup.
+            const kartu = document.querySelector('.qim-setup-card');
+            if (!kartu) { toast('Panel Setup Analisa tidak ditemukan.', 'error'); return; }
+            const p = bukaPopover(b, '<div class="qch-setup-host"></div>', 370);
+            if (!p) return;
+            p.classList.add('qch-pop-setup');
+            const asal = kartu.parentElement, sesudah = kartu.nextElementSibling;
+            p.querySelector('.qch-setup-host').appendChild(kartu);
+            p.qimSebelumTutup = () => { if (asal) asal.insertBefore(kartu, sesudah && sesudah.parentElement === asal ? sesudah : null); };
             return;
         }
         if (aksi === 'banding') return popoverBanding(b);
