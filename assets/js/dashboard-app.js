@@ -3300,7 +3300,7 @@ window.qiChartKonteks = function () {
     const found = WL_GROUPS.flatMap(g => g.syms).find(s => s.tv === _tvSymbol);
     return {
         chart: _lwChart, series: _lwSeries, candles: _lwLastCandles,
-        symbol: found ? found.key : '', label: _tvSymLabel, interval: _tvInterval,
+        symbol: found ? found.key : '', tv: _tvSymbol, label: _tvSymLabel, interval: _tvInterval,
         source: _lwCandlesMeta ? _lwCandlesMeta.source : '',
     };
 };

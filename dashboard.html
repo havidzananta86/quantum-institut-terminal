@@ -42,7 +42,7 @@
     <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.6">
     <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=1.2.5">
     <link rel="stylesheet" href="assets/css/qim-pages.css?v=1.7.5">
-    <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.11">
+    <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.12">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -787,6 +787,8 @@ document.addEventListener('keydown', e => {
         <span id="qimNewsTickerCountdown" class="font-bold text-amber-200 shrink-0">--:--</span>
     </div>
     <div class="qim-header-actions">
+        <div class="qim-hdr-status" id="qimDataStatus" data-tingkat="idle" role="status" aria-live="polite" title="Status sumber data"><i aria-hidden="true"></i><span id="qimDataStatusText">MEMUAT</span></div>
+        <div class="qim-sessions" id="qimSessions" role="group" aria-label="Sesi pasar"></div>
         <button class="qim-icon-button" onclick="openCommandPalette()" aria-label="Cari" title="Cari">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
         </button>
@@ -801,6 +803,7 @@ document.addEventListener('keydown', e => {
             <button class="qim-balance-button" type="button" onclick="document.getElementById('qimBalanceMenu').classList.toggle('hidden')">$10,000 SIM <span>⌄</span></button>
             <div id="qimBalanceMenu" class="qim-dropdown hidden">Simulation account · Paper trading</div>
         </div>
+        <a class="qim-plan-badge free" id="qimPlanBadge" href="pricing.html" hidden>Upgrade</a>
         <a class="qim-profile" href="profile.html">
             <span class="qim-avatar" aria-hidden="true">HA</span>
             <span id="qimUserName">Trader</span>
@@ -4247,8 +4250,8 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 ═══════════════════════════════════════════════════════════ -->
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.21"></script>
-<script src="assets/js/qim-dashboard.js?v=1.7.1"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.22"></script>
+<script src="assets/js/qim-dashboard.js?v=1.7.2"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
 <script src="assets/js/qim-mt5-socket.js?v=1.0.1"></script>
@@ -4293,6 +4296,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/engine-nine.js?v=1.2.0"></script>
 <script src="assets/js/qim-setups.js?v=1.0.0"></script>
 <script src="assets/js/qim-setup-panel.js?v=1.0.3"></script>
+<script src="assets/js/qim-header.js?v=1.0.0"></script>
 <script src="assets/js/dashboard-pro.js?v=1.0.0"></script>
 <script src="assets/js/advanced-trading.js?v=3.2.0"></script>
 <script src="assets/js/perf-upgrades.js?v=2.2.1"></script>

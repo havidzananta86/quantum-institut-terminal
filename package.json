@@ -7,7 +7,7 @@
     "watch:css": "tailwindcss -i assets/css/tailwind-input.css -o assets/css/tailwind.css --watch",
     "test": "npm run test:php && npm run test:unit",
     "test:php": "node tests/php-syntax.test.js",
-    "test:unit": "node tests/correlation.test.js && node tests/panels-dom.test.js && node tests/security-contracts.test.js && node tests/notif.test.js && node tests/paper-math.test.js && node tests/signal-time.test.js && node tests/push.test.js && node tests/kompetisi.test.js && node tests/mt5-socket.test.js && node tests/realtime-candle.test.js && node tests/setups.test.js && node tests/chart-bersih.test.js && node tests/chart-fullscreen.test.js",
+    "test:unit": "node tests/correlation.test.js && node tests/panels-dom.test.js && node tests/security-contracts.test.js && node tests/notif.test.js && node tests/paper-math.test.js && node tests/signal-time.test.js && node tests/push.test.js && node tests/kompetisi.test.js && node tests/mt5-socket.test.js && node tests/realtime-candle.test.js && node tests/setups.test.js && node tests/chart-bersih.test.js && node tests/chart-fullscreen.test.js && node tests/header.test.js",
     "test:smoke": "node tests/api-smoke.test.js",
     "hooks:install": "git config core.hooksPath .githooks"
   },

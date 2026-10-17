@@ -205,6 +205,8 @@
             const result = await response.json();
             if (!result || result.status !== 'success' || !result.prices) throw new Error('Format data harga tidak valid');
             prices = result.prices;
+            // Penunjuk status data di header (qim-header.js) membaca harga yang sama.
+            try { window.dispatchEvent(new CustomEvent('qim-prices', { detail: { prices } })); } catch (e) {}
             renderWatchlist();
             updateMarketBadge();
             const selected = document.getElementById('chartCurSym');
