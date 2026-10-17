@@ -3194,47 +3194,11 @@ async function buildLwChart() {
         wickDownColor:  '#ef5350',
     });
 
-    // ── PANEL VOLUME ────────────────────────────────────────────────────────
-    // Ditambahkan agar setara dengan chart pembanding: histogram volume di bagian
-    // bawah chart, warna mengikuti arah candle. Bila sumber data tidak punya volume
-    // (mis. forex/emas → semua 0), panel volume DISEMBUNYIKAN — lebih baik tidak ada
-    // daripada menampilkan panel kosong yang membingungkan.
-    try {
-        _lwVolume = _lwChart.addSeries(HistogramSeries, {
-            priceFormat: { type: 'volume' },
-            priceScaleId: 'volume',
-            lastValueVisible: false,
-            priceLineVisible: false,
-        }, 1);
-        _lwVolume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0.02 } });
-    } catch (e) {
-        _lwVolume = null;
-        console.warn('[QI] Panel volume tidak dapat dibuat — chart tetap berjalan.');
-    }
-    try {
-        const { LineSeries } = window._lwModules;
-        _lwRsi = _lwChart.addSeries(LineSeries, {
-            color: '#b56cff',
-            lineWidth: 1,
-            title: 'RSI 14',
-            priceScaleId: 'rsi',
-            lastValueVisible: true,
-            priceLineVisible: false,
-            crosshairMarkerVisible: false,
-        }, 2);
-        _lwRsi.priceScale().applyOptions({ autoScale: true, scaleMargins: { top: 0.08, bottom: 0.08 } });
-        _lwRsi.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) });
-        [30, 70].forEach(level => _lwRsi.createPriceLine({
-            price: level, color: '#6b7280aa', lineWidth: 1, lineStyle: 2,
-            axisLabelVisible: false, title: ''
-        }));
-        const panes = _lwChart.panes();
-        if (panes[1] && typeof panes[1].setHeight === 'function') panes[1].setHeight(72);
-        if (panes[2] && typeof panes[2].setHeight === 'function') panes[2].setHeight(84);
-    } catch (e) {
-        _lwRsi = null;
-        console.warn('[QI] Panel RSI tidak dapat dibuat — chart tetap berjalan.');
-    }
+    // Chart BERSIH saat awal masuk: panel volume, RSI, Bollinger dan semua indikator lain
+    // baru muncul bila tombolnya dinyalakan (semua tombol bawaan = mati). Bila chart dibangun
+    // ulang (ganti pasangan/tema), panel yang sedang dinyalakan pengguna ikut dibuat lagi.
+    if (_indAktif('indVOL')) qiPanelVolume(true);
+    if (_indAktif('indRSI')) qiPanelRsi(true);
 
     // Terapkan penghalusan tampilan (zona WIB, presisi per instrumen, watermark).
     // Dijaga: bila modul gaya belum siap, chart tetap tampil tanpa penghalusan.
@@ -3350,7 +3314,7 @@ let _lwSDLines = [];
 let _qimSupplyDemandZones = [];
 let _qimZoneOverlay = null;
 let _qimZoneResizeBound = false;
-let _indicatorsEnabled = true;
+let _indicatorsEnabled = false;   // chart bersih saat awal masuk
 let _lwLastCandles = [];
 
 /**
@@ -3386,6 +3350,67 @@ function pasangMarker(series, markers) {
     }
     return false;
 }
+
+function _indAktif(id) { const el = document.getElementById(id); return !!el && el.dataset.on === 'true'; }
+
+/** Panel volume (histogram di bawah chart). Dibuat/dibuang menurut tombol Volume. */
+function qiPanelVolume(on) {
+    if (!_lwChart || !window._lwModules) return;
+    if (on && !_lwVolume) {
+        try {
+            const { HistogramSeries } = window._lwModules;
+            const idx = _lwChart.panes().length;
+            _lwVolume = _lwChart.addSeries(HistogramSeries, {
+                priceFormat: { type: 'volume' }, priceScaleId: 'volume', lastValueVisible: false, priceLineVisible: false,
+            }, idx);
+            _lwVolume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0.02 } });
+            const pane = _lwChart.panes()[idx];
+            if (pane && typeof pane.setHeight === 'function') pane.setHeight(72);
+            perbaruiVolume(_lwLastCandles);
+        } catch (e) {
+            _lwVolume = null;
+            console.warn('[QI] Panel volume tidak dapat dibuat — chart tetap berjalan.');
+        }
+    } else if (!on && _lwVolume) {
+        try { _lwChart.removeSeries(_lwVolume); } catch (e) {}
+        _lwVolume = null;
+    }
+}
+
+/** Panel RSI 14. Dibuat/dibuang menurut tombol RSI. */
+function qiPanelRsi(on) {
+    if (!_lwChart || !window._lwModules) return;
+    if (on && !_lwRsi) {
+        try {
+            const { LineSeries } = window._lwModules;
+            const idx = _lwChart.panes().length;
+            _lwRsi = _lwChart.addSeries(LineSeries, {
+                color: '#b56cff', lineWidth: 1, title: 'RSI 14', priceScaleId: 'rsi',
+                lastValueVisible: true, priceLineVisible: false, crosshairMarkerVisible: false,
+            }, idx);
+            _lwRsi.priceScale().applyOptions({ autoScale: true, scaleMargins: { top: 0.08, bottom: 0.08 } });
+            _lwRsi.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }) });
+            [30, 70].forEach(level => _lwRsi.createPriceLine({ price: level, color: '#6b7280aa', lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: '' }));
+            const pane = _lwChart.panes()[idx];
+            if (pane && typeof pane.setHeight === 'function') pane.setHeight(84);
+            if (_lwLastCandles.length) _lwRsi.setData(_calcRSI(_lwLastCandles, 14));
+        } catch (e) {
+            _lwRsi = null;
+            console.warn('[QI] Panel RSI tidak dapat dibuat — chart tetap berjalan.');
+        }
+    } else if (!on && _lwRsi) {
+        try { _lwChart.removeSeries(_lwRsi); } catch (e) {}
+        _lwRsi = null;
+    }
+}
+
+function qiTogglePanelBtn(btn, jenis) {
+    const on = btn.dataset.on !== 'true';
+    btn.dataset.on = on ? 'true' : 'false';
+    btn.classList.toggle('active', on);
+    if (jenis === 'rsi') qiPanelRsi(on); else qiPanelVolume(on);
+}
+window.qiTogglePanelBtn = qiTogglePanelBtn;
 
 function perbaruiVolume(candles) {    try {
         if (!_lwVolume || !Array.isArray(candles) || !candles.length) return;
@@ -3583,10 +3608,12 @@ async function drawAutoIndicators(candles) {
     if (_getIndSetting('indEMA20'))  _lwEma20  = addLine(_calcEMA(candles, 20),  '#F59E0B', 1, 'EMA20');
     if (_getIndSetting('indEMA50'))  _lwEma50  = addLine(_calcEMA(candles, 50),  '#3B82F6', 1, 'EMA50');
     if (_getIndSetting('indEMA200')) _lwEma200 = addLine(_calcEMA(candles, 200), '#F97316', 2, 'EMA200');
-    const bb = _calcBollingerBands(candles, 20, 2);
-    _lwBbUpper = addLine(bb.upper, '#7088a888', 1, 'BB Upper');
-    _lwBbMiddle = addLine(bb.middle, '#8795a688', 1, 'BB Basis');
-    _lwBbLower = addLine(bb.lower, '#7088a888', 1, 'BB Lower');
+    if (_getIndSetting('indBB')) {
+        const bb = _calcBollingerBands(candles, 20, 2);
+        _lwBbUpper = addLine(bb.upper, '#7088a888', 1, 'BB Upper');
+        _lwBbMiddle = addLine(bb.middle, '#8795a688', 1, 'BB Basis');
+        _lwBbLower = addLine(bb.lower, '#7088a888', 1, 'BB Lower');
+    }
 
     if (_getIndSetting('indIchi')) {
         const ichi = _calcIchimoku(candles);
@@ -3750,7 +3777,7 @@ function clearIndicators() {
 }
 
 function applyIndSettings() {
-    const anyOn = ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX','indSND','indVP'].some(id => _getIndSetting(id));
+    const anyOn = ['indEMA20','indEMA50','indEMA200','indBB','indIchi','indSR','indFib','indGX','indSND','indVP'].some(id => _getIndSetting(id));
     _indicatorsEnabled = anyOn;
     const btn = document.getElementById('lwIndBtn');
     if (btn) btn.classList.toggle('text-qi-cyan', anyOn);
@@ -3766,10 +3793,15 @@ function applyIndSettings() {
 }
 
 function setAllInds(on) {
-    ['indEMA20','indEMA50','indEMA200','indIchi','indSR','indFib','indGX','indSND','indVP'].forEach(id => {
+    ['indEMA20','indEMA50','indEMA200','indBB','indIchi','indSR','indFib','indGX','indSND','indVP'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.dataset.on = on ? 'true' : 'false'; el.classList.toggle('active', on); }
     });
+    ['indRSI', 'indVOL'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.dataset.on = on ? 'true' : 'false'; el.classList.toggle('active', on); }
+    });
+    qiPanelRsi(on); qiPanelVolume(on);
     applyIndSettings();
 }
 

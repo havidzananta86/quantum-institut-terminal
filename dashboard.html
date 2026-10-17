@@ -1594,6 +1594,9 @@ document.addEventListener('keydown', e => {
             <button id="indFib"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Auto Fibonacci Retracements"><span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0"></span>Fibo</button>
             <button id="indGX"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Golden / Death Cross Markers"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>G.Cross</button>
             <button id="indSND"    data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Supply & Demand Fresh Zones (Order Blocks)"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span>S&amp;D Zones</button>
+            <button id="indBB"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Bollinger Bands (20, 2)"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>Bollinger</button>
+            <button id="indRSI"    data-on="false" onclick="qiTogglePanelBtn(this,'rsi')" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Panel RSI 14"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#b56cff"></span>RSI</button>
+            <button id="indVOL"    data-on="false" onclick="qiTogglePanelBtn(this,'vol')" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Panel volume"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#26a69a"></span>Volume</button>
             <button id="indVP"     data-on="false" onclick="toggleIndBtn(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Volume Profile & POC (Point of Control)"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0"></span>VPVR / POC</button>
             <button id="indPSAR"   data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Parabolic SAR (0.02 / 0.2) — titik hijau di bawah = trend naik, merah di atas = trend turun"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#26a69a"></span>PSAR</button>
             <button id="indKC"     data-on="false" onclick="QIMIndicators.toggle(this)" class="ind-btn shrink-0 flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-semibold transition-all" title="Keltner Channel (EMA20 ± 2×ATR10)"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#38bdf8"></span>Keltner</button>
@@ -4244,7 +4247,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 ═══════════════════════════════════════════════════════════ -->
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.19"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.20"></script>
 <script src="assets/js/qim-dashboard.js?v=1.7.1"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
