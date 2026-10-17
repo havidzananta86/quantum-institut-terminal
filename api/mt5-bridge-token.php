@@ -21,6 +21,7 @@ qi_rate_limit(30, 60);
 
 $_apiKeysFile = __DIR__ . '/../config/api_keys.php';
 if (file_exists($_apiKeysFile)) require_once $_apiKeysFile;
+qi_load_bridge_config();
 
 $user = qi_require_auth();
 

@@ -1,6 +1,7 @@
 # API keys & config (JANGAN push ke public repo!)
 config/api_keys.php
 config/database.php
+config/bridge.php
 
 # Cache = runtime state. Everything in it is ignored, including secrets the
 # app writes there itself: telegram.json (bot token), notify_secret.json

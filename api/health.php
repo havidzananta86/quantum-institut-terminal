@@ -58,6 +58,8 @@ if (file_exists($cfgPath)) {
 // ?bridges=1 : uji koneksi Hostinger -> bridge VPS. Hanya alamat publik, kode HTTP, dan galat curl;
 // kunci tidak pernah ditampilkan. Tidak dijalankan pada pemanggilan biasa (monitor uptime).
 if (isset($_GET['bridges'])) {
+    $bridgeCfg = __DIR__ . '/../config/bridge.php';
+    if (!defined('QI_TV_BRIDGE_URL') && !defined('QI_MT5_BRIDGE_URL') && is_file($bridgeCfg)) require_once $bridgeCfg;
     $probe = function (string $url, array $header = []): array {
         $ch = curl_init($url);
         curl_setopt_array($ch, [

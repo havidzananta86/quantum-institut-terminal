@@ -772,14 +772,25 @@ if (!function_exists('qi_tv_bridge_symbol')) {
 // Konfigurasi di config/api_keys.php: QI_MT5_BRIDGE_URL (wss://…), QI_MT5_BRIDGE_SECRET (≥32 karakter,
 // sama dengan BRIDGE_JWT_SECRET di bridge), QI_MT5_BRIDGE_AUDIENCE ('pro' | 'owner'), QI_MT5_BRIDGE_ACCOUNT.
 // Opsional: QI_MT5_BRIDGE_API_URL (https://…) bila alamat REST berbeda dari URL WebSocket.
+if (!function_exists('qi_load_bridge_config')) {
+    /**
+     * Muat konstanta bridge: config/api_keys.php, lalu config/bridge.php (berkas terpisah yang
+     * cukup berisi blok dari hostinger-config.txt) bila api_keys.php belum mendefinisikannya.
+     */
+    function qi_load_bridge_config(): void {
+        static $dimuat = false;
+        if ($dimuat) return;
+        $dimuat = true;
+        $f = __DIR__ . '/../config/api_keys.php';
+        if (!defined('QI_TV_BRIDGE_URL') && !defined('QI_MT5_BRIDGE_URL') && is_file($f)) require_once $f;
+        $b = __DIR__ . '/../config/bridge.php';
+        if (!defined('QI_TV_BRIDGE_URL') && !defined('QI_MT5_BRIDGE_URL') && is_file($b)) require_once $b;
+    }
+}
+
 if (!function_exists('qi_mt5_configured')) {
     function qi_mt5_configured(): bool {
-        static $dimuat = false;
-        if (!$dimuat) {
-            $dimuat = true;
-            $f = __DIR__ . '/../config/api_keys.php';
-            if (!defined('QI_MT5_BRIDGE_URL') && is_file($f)) require_once $f;
-        }
+        qi_load_bridge_config();
         return defined('QI_MT5_BRIDGE_URL') && (string)QI_MT5_BRIDGE_URL !== ''
             && defined('QI_MT5_BRIDGE_SECRET') && strlen((string)QI_MT5_BRIDGE_SECRET) >= 32;
     }
@@ -912,12 +923,7 @@ if (!function_exists('qi_tv_bridge_request')) {
      * @return array{0: string|false, 1: int} [isi, kode HTTP]; isi = false bila gagal / bukan 2xx
      */
     function qi_tv_bridge_request(string $method, string $path, ?string $body = null, int $timeout = 10): array {
-        static $konfigDimuat = false;
-        if (!$konfigDimuat) {
-            $konfigDimuat = true;
-            $f = __DIR__ . '/../config/api_keys.php';
-            if (!defined('QI_TV_BRIDGE_URL') && is_file($f)) require_once $f;
-        }
+        qi_load_bridge_config();
         $penanda = __DIR__ . '/../cache/tv_bridge_down.txt';
         if (is_file($penanda) && (time() - (int)@filemtime($penanda)) < 20) return [false, 0];
 
