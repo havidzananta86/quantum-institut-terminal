@@ -41,6 +41,12 @@ Options -Indexes
 # Blokir folder sensitif: config, engine, database, cache, scratch, .vercel
 RewriteRule ^(config|engine|database|cache|scratch|tests|\.vercel)/ - [F,L]
 
+# Bridge data (kode & skrip setup VPS), alat deploy, dan dokumentasi internal: hanya untuk repo/VPS,
+# tidak boleh diunduh lewat web. Folder assets/mt-bridge (unduhan EA MT5) sengaja TIDAK diblokir.
+RewriteRule ^(mt5-bridge|tv-bridge|deploy|pine|\.github|\.githooks)/ - [F,L]
+RewriteRule ^(PANDUAN-DEPLOY-VPS|README)\.md$ - [F,L]
+RewriteRule \.(ps1|cmd|vbs|py)$ - [F,L]
+
 # Blokir file sensitif langsung
 RewriteRule \.sql$ - [F,L]
 
@@ -83,7 +89,7 @@ RewriteRule \.bak$ - [F,L]
     Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 
     # Content Security Policy — Enforcing mode
-    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://api1.binance.com https://api2.binance.com https://api3.binance.com https://data-api.binance.vision https://api.binance.us https://fapi.binance.com wss://data-stream.binance.vision wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app https://api.twelvedata.com https://biquote.io https://accounts.google.com https://api.alternative.me https://api.frankfurter.app https://api.coingecko.com; frame-src https://s3.tradingview.com https://*.tradingview.com https://www.tradingview-widget.com https://accounts.google.com; report-uri /api/csp-report.php;"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.binance.com https://api1.binance.com https://api2.binance.com https://api3.binance.com https://data-api.binance.vision https://api.binance.us https://fapi.binance.com wss://data-stream.binance.vision wss://stream.binance.com:9443 wss://stream.binance.vision https://xaus.com https://nfs.faireconomy.media https://*.vercel.app https://api.twelvedata.com https://biquote.io https://accounts.google.com https://api.alternative.me https://api.frankfurter.app https://api.coingecko.com wss://feed.quantum-institut.com https://feed.quantum-institut.com; frame-src https://s3.tradingview.com https://*.tradingview.com https://www.tradingview-widget.com https://accounts.google.com; report-uri /api/csp-report.php;"
 </IfModule>
 
 # =============================================

@@ -129,3 +129,63 @@ Respon streaming:
   }
 }
 ```
+
+---
+
+## 5. Deploy: shared hosting (Hostinger) + bridge di server lain
+
+Bridge adalah proses **Node.js yang harus terus hidup** — shared hosting (PHP saja) tidak bisa
+menjalankannya. Susunannya:
+
+```
+Browser ──> Hostinger shared hosting (PHP)  ──HTTPS + X-Bridge-Key──>  Bridge di VPS (Node.js)  ──> TradingView
+```
+
+Bila bridge tidak terjangkau, PHP otomatis memakai sumber cadangan (Binance / Twelve Data /
+biquote / PAXG), jadi aplikasi tetap jalan — hanya datanya tidak lagi dari OANDA.
+
+### A. Di VPS (Ubuntu/Debian) — jalankan bridge
+
+```bash
+# Node.js 18+ (mis. via nodesource), lalu:
+git clone <repo-anda> && cd <repo>/tv-bridge
+npm ci --omit=dev          # atau: npm install
+
+cat > .env <<'ENV'
+TV_BRIDGE_PORT=3001
+TV_BRIDGE_HOST=127.0.0.1   # tetap loopback; reverse proxy yang membuka ke luar
+BRIDGE_KEY=ISI_DENGAN_KUNCI_ACAK_PANJANG
+ENV
+
+npm i -g pm2
+pm2 start server.js --name qim-bridge && pm2 save && pm2 startup
+```
+
+Buka ke luar lewat **HTTPS** (shared hosting biasanya hanya boleh keluar lewat port 80/443).
+Contoh Caddy (sertifikat otomatis), domain/subdomain mengarah ke IP VPS:
+
+```
+bridge.contoh-anda.com {
+    reverse_proxy 127.0.0.1:3001
+}
+```
+
+Cek: `curl https://bridge.contoh-anda.com/health` → `{"status":"ok",...}`;
+`curl https://bridge.contoh-anda.com/quotes?symbols=XAUUSD` → harus **401** (tanpa kunci).
+
+### B. Di Hostinger — arahkan PHP ke bridge
+
+Edit `config/api_keys.php` di hosting (file ini tidak ikut git):
+
+```php
+define('QI_TV_BRIDGE_URL', 'https://bridge.contoh-anda.com');
+define('QI_TV_BRIDGE_KEY', 'KUNCI_YANG_SAMA_DENGAN_BRIDGE_KEY');
+```
+
+Tes: buka `https://situs-anda/api/get-chart-data.php?symbol=XAUUSD&interval=60` →
+`"source":"oanda_tv"`. Bila `"source"` lain, bridge tidak terjangkau atau kuncinya salah
+(periksa `error_log` PHP: pesan `[tv-bridge] 401`).
+
+### Catatan
+- `cache/` di hosting harus bisa ditulis (pemutus sirkuit memakai `cache/tv_bridge_down.txt`).
+- Library TradingView-API tidak resmi dan melanggar ketentuan TradingView; IP server bisa dibatasi.

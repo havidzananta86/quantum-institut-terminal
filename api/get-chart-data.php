@@ -28,7 +28,12 @@ $cacheTtl = $cacheTtlMap[$interval] ?? 30;
 
 $cacheDir = __DIR__ . '/../cache/chart';
 if (!is_dir($cacheDir)) { @mkdir($cacheDir, 0755, true); }
-$cacheFile = $cacheDir . '/' . md5($symbol . '_' . $interval) . '.json';
+// Pengguna yang berhak feed bridge MT5 memakai cache TERPISAH (suffix _mt5) supaya candle broker
+// tidak sampai ke pengguna lain lewat cache bersama.
+$useMt5 = qi_tv_bridge_symbol($symbol) !== null && qi_mt5_allowed();
+$cacheFile = $cacheDir . '/' . md5($symbol . '_' . $interval . ($useMt5 ? '_mt5' : '')) . '.json';
+$cacheScope = $useMt5 ? 'private' : 'public';
+if (!defined('QI_INCLUDED_BY_SIGNALS')) header('Vary: Authorization');
 
 // Sajikan dari cache kalau masih segar.
 // Saat di-include signals.php, pakai `return` (bukan exit) supaya kontrol
@@ -36,7 +41,7 @@ $cacheFile = $cacheDir . '/' . md5($symbol . '_' . $interval) . '.json';
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
     if (!defined('QI_INCLUDED_BY_SIGNALS')) {
         header('X-QI-Cache: HIT');
-        header('Cache-Control: public, max-age=' . $cacheTtl);
+        header('Cache-Control: ' . $cacheScope . ', max-age=' . $cacheTtl);
     }
     echo file_get_contents($cacheFile);
     if (defined('QI_INCLUDED_BY_SIGNALS')) return;
@@ -222,7 +227,12 @@ $source = '';
 
 // 0. XAUUSD, BTCUSDT & semua forex: OANDA lewat tv-bridge (TradingView-API). Bila bridge
 // mati/kosong, rantai sumber lama (Binance / Twelve Data / biquote / PAXG) tetap jadi fallback.
-if (qi_tv_bridge_symbol($symbol) !== null) {
+if ($useMt5) {
+    // Prioritas tertinggi: candle dari feed broker MT5 (bridge di Windows VPS) untuk pengguna berhak.
+    $candles = qi_mt5_candles($symbol, $interval);
+    if ($candles) $source = 'mt5';
+}
+if (empty($candles) && qi_tv_bridge_symbol($symbol) !== null) {
     $candles = qi_tv_bridge_candles($symbol, $interval);
     if ($candles) $source = 'oanda_tv';
 }
@@ -540,7 +550,7 @@ if (!$simulated && ($interval === 'W' || $interval === 'MN')) {
 // RANGKAI RIWAYAT (hanya untuk data nyata): lihat qi_merge_candle_history().
 // OANDA sudah memberi 1.000 bar penuh; jangan campur dengan riwayat cache dari sumber
 // lain (level harga Binance/Twelve Data/PAXG berbeda dari OANDA).
-if (!$simulated && $source !== 'oanda_tv') {
+if (!$simulated && !in_array($source, ['oanda_tv', 'mt5'], true)) {
     $candles = qi_merge_candle_history($cacheFile, $candles);
 }
 
@@ -566,5 +576,5 @@ if (!empty($qiChartLock)) {
 }
 
 header('X-QI-Cache: MISS');
-if (!$simulated) header('Cache-Control: public, max-age=' . $cacheTtl);
+if (!$simulated) header('Cache-Control: ' . $cacheScope . ', max-age=' . $cacheTtl);
 echo $payload;

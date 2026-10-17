@@ -56,3 +56,6 @@ cache/errorlogs/
 # Per-account EA downloads (qi-<id>/, qi-exec-<id>/) have a live bridge key
 # baked in. The tracked templates live in assets/mt-bridge/.
 /qi-*/
+qim-vps-bundle.zip
+deploy/caddy_*.zip
+deploy/caddy_*_checksums.txt

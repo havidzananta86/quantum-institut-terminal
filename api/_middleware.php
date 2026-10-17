@@ -768,6 +768,190 @@ if (!function_exists('qi_tv_bridge_symbol')) {
         return $map[strtoupper($symbol)] ?? null;
     }
 }
+// ── MT5 bridge (Windows VPS, paket MetaTrader5): feed broker untuk pengguna yang berhak ──────────
+// Konfigurasi di config/api_keys.php: QI_MT5_BRIDGE_URL (wss://…), QI_MT5_BRIDGE_SECRET (≥32 karakter,
+// sama dengan BRIDGE_JWT_SECRET di bridge), QI_MT5_BRIDGE_AUDIENCE ('pro' | 'owner'), QI_MT5_BRIDGE_ACCOUNT.
+// Opsional: QI_MT5_BRIDGE_API_URL (https://…) bila alamat REST berbeda dari URL WebSocket.
+if (!function_exists('qi_mt5_configured')) {
+    function qi_mt5_configured(): bool {
+        static $dimuat = false;
+        if (!$dimuat) {
+            $dimuat = true;
+            $f = __DIR__ . '/../config/api_keys.php';
+            if (!defined('QI_MT5_BRIDGE_URL') && is_file($f)) require_once $f;
+        }
+        return defined('QI_MT5_BRIDGE_URL') && (string)QI_MT5_BRIDGE_URL !== ''
+            && defined('QI_MT5_BRIDGE_SECRET') && strlen((string)QI_MT5_BRIDGE_SECRET) >= 32;
+    }
+}
+if (!function_exists('qi_mt5_allowed')) {
+    /**
+     * Boleh pemanggil ini memakai feed MT5? Aturan SAMA dengan api/mt5-bridge-token.php:
+     *   admin → ya · audience 'pro' → PRO/VIP · audience 'owner' → pemilik akun bridge.
+     * Pemanggil dikenali dari header Authorization (non-fatal: tanpa token = tidak berhak).
+     */
+    function qi_mt5_allowed(): bool {
+        static $memo = null;
+        if ($memo !== null) return $memo;
+        $memo = false;
+        if (!qi_mt5_configured()) return false;
+        try { $u = qi_validate_token(); } catch (Throwable $e) { $u = null; }
+        if (!is_array($u) || empty($u['user_id'])) return false;
+        $level = qi_tingkat_peran($u['role'] ?? null);
+        if ($level >= 3) return $memo = true;
+        $audience = (defined('QI_MT5_BRIDGE_AUDIENCE') && QI_MT5_BRIDGE_AUDIENCE === 'pro') ? 'pro' : 'owner';
+        if ($audience === 'pro') return $memo = ($level >= 1);
+        $akun = defined('QI_MT5_BRIDGE_ACCOUNT') ? trim((string)QI_MT5_BRIDGE_ACCOUNT) : '';
+        if ($akun === '') return false;
+        try {
+            $stmt = qi_db()->prepare("SELECT 1 FROM trading_accounts WHERE user_id = :u AND account_reference = :a AND LOWER(provider) LIKE 'mt%' AND connection_status IN ('pending','active') LIMIT 1");
+            $stmt->execute([':u' => (int)$u['user_id'], ':a' => $akun]);
+            return $memo = (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+}
+if (!function_exists('qi_mt5_request')) {
+    /**
+     * GET ke REST bridge MT5 dengan JWT HS256 berumur 60 detik (scope ticks+candles).
+     * Pemutus sirkuit 20 detik bila bridge tidak terjangkau.
+     * @return string|false isi JSON, atau false bila gagal / bukan 2xx
+     */
+    function qi_mt5_request(string $path, int $timeout = 6) {
+        if (!qi_mt5_configured()) return false;
+        $penanda = __DIR__ . '/../cache/mt5_bridge_down.txt';
+        if (is_file($penanda) && (time() - (int)@filemtime($penanda)) < 20) return false;
+
+        $base = defined('QI_MT5_BRIDGE_API_URL') && (string)QI_MT5_BRIDGE_API_URL !== ''
+            ? (string)QI_MT5_BRIDGE_API_URL
+            : preg_replace('#^ws#i', 'http', (string)QI_MT5_BRIDGE_URL);
+        $b64 = static fn(string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        $now = time();
+        $input = $b64(json_encode(['alg' => 'HS256', 'typ' => 'JWT'])) . '.' . $b64(json_encode([
+            'iss' => 'qim', 'aud' => 'qim-mt5-bridge', 'sub' => 'server', 'scope' => 'ticks candles',
+            'iat' => $now, 'nbf' => $now - 5, 'exp' => $now + 60, 'jti' => bin2hex(random_bytes(8)),
+        ]));
+        $jwt = $input . '.' . $b64(hash_hmac('sha256', $input, (string)QI_MT5_BRIDGE_SECRET, true));
+
+        $ch = curl_init(rtrim($base, '/') . $path);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json', 'Authorization: Bearer ' . $jwt],
+            CURLOPT_SSL_VERIFYPEER => !(defined('QI_DEV') && QI_DEV),
+        ]);
+        $raw = curl_exec($ch);
+        $kode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($raw === false || $kode === 0 || $kode === 503 || $kode === 504) {
+            @file_put_contents($penanda, (string)time(), LOCK_EX);
+            return false;
+        }
+        if ($kode === 401) @error_log('[mt5-bridge] 401: QI_MT5_BRIDGE_SECRET tidak cocok dengan BRIDGE_JWT_SECRET.');
+        @unlink($penanda);
+        return ($kode >= 200 && $kode < 300) ? $raw : false;
+    }
+}
+if (!function_exists('qi_mt5_candles')) {
+    /** Candle feed broker MT5 (oldest-first) atau [] bila tidak tersedia → pemanggil fallback. */
+    function qi_mt5_candles(string $symbol, string $interval, int $limit = 1000): array {
+        $raw = qi_mt5_request('/api/candles?symbol=' . rawurlencode(strtoupper($symbol)) . '&tf=' . rawurlencode($interval) . '&count=' . $limit, 8);
+        if (!$raw) return [];
+        $d = json_decode($raw, true);
+        if (!is_array($d) || empty($d['candles']) || !is_array($d['candles'])) return [];
+        $out = [];
+        foreach ($d['candles'] as $c) {
+            if (!isset($c['time'], $c['open'], $c['high'], $c['low'], $c['close'])) continue;
+            $out[] = ['time' => (int)$c['time'], 'open' => (float)$c['open'], 'high' => (float)$c['high'],
+                      'low' => (float)$c['low'], 'close' => (float)$c['close'], 'volume' => (float)($c['volume'] ?? 0)];
+        }
+        return count($out) >= 5 ? $out : [];
+    }
+}
+if (!function_exists('qi_mt5_quotes')) {
+    /** Harga feed broker MT5 dalam format live-price.php (price = Bid, seperti garis harga MT5). */
+    function qi_mt5_quotes(array $symbols): array {
+        $symbols = array_values(array_unique(array_map('strtoupper', array_map('strval', $symbols))));
+        if (!$symbols) return [];
+        $raw = qi_mt5_request('/api/quotes?symbols=' . rawurlencode(implode(',', $symbols)), 6);
+        if (!$raw) return [];
+        $d = json_decode($raw, true);
+        if (!is_array($d) || empty($d['ticks']) || !is_array($d['ticks'])) return [];
+        $out = [];
+        foreach ($d['ticks'] as $t) {
+            $sym = strtoupper((string)($t['s'] ?? ''));
+            $bid = (float)($t['bid'] ?? 0); $ask = (float)($t['ask'] ?? 0);
+            if ($sym === '' || $bid <= 0 || $ask < $bid) continue;
+            $day = is_array($t['day'] ?? null) ? $t['day'] : [];
+            $prev = (float)($day['prev_close'] ?? 0);
+            $age = (float)($t['age'] ?? 0);
+            $out[$sym] = [
+                'price'  => $bid, 'bid' => $bid, 'ask' => $ask, 'spread' => round($ask - $bid, 10),
+                'open'   => (float)($day['open'] ?? $bid), 'high' => (float)($day['high'] ?? $bid), 'low' => (float)($day['low'] ?? $bid),
+                'chgPct' => $prev > 0 ? round(($bid - $prev) / $prev * 100, 3) : 0,
+                'vol'    => (float)($day['volume'] ?? 0),
+                'source' => 'mt5_bridge',
+                'market' => $age > 180 ? 'closed' : 'open',   // tick basi > 3 menit: pasar broker tutup / feed berhenti
+                'tick_age' => (int)$age,
+            ];
+        }
+        return $out;
+    }
+}
+
+if (!function_exists('qi_tv_bridge_request')) {
+    /**
+     * Satu pintu ke tv-bridge (library TradingView-API, Node.js). Alamat & kunci dibaca dari
+     * config/api_keys.php: QI_TV_BRIDGE_URL (default http://127.0.0.1:3001) dan QI_TV_BRIDGE_KEY.
+     * Di shared hosting (tanpa Node) isi URL bridge yang berjalan di VPS/server lain.
+     *
+     * Pemutus sirkuit: bila bridge tidak terjangkau, panggilan dilewati 20 detik supaya setiap
+     * request API tidak menunggu timeout; pemanggil langsung memakai sumber cadangan.
+     * @return array{0: string|false, 1: int} [isi, kode HTTP]; isi = false bila gagal / bukan 2xx
+     */
+    function qi_tv_bridge_request(string $method, string $path, ?string $body = null, int $timeout = 10): array {
+        static $konfigDimuat = false;
+        if (!$konfigDimuat) {
+            $konfigDimuat = true;
+            $f = __DIR__ . '/../config/api_keys.php';
+            if (!defined('QI_TV_BRIDGE_URL') && is_file($f)) require_once $f;
+        }
+        $penanda = __DIR__ . '/../cache/tv_bridge_down.txt';
+        if (is_file($penanda) && (time() - (int)@filemtime($penanda)) < 20) return [false, 0];
+
+        $base = rtrim(defined('QI_TV_BRIDGE_URL') ? (string)QI_TV_BRIDGE_URL : 'http://127.0.0.1:3001', '/');
+        $header = ['Accept: application/json'];
+        if (defined('QI_TV_BRIDGE_KEY') && (string)QI_TV_BRIDGE_KEY !== '') $header[] = 'X-Bridge-Key: ' . QI_TV_BRIDGE_KEY;
+        $ch = curl_init($base . $path);
+        $opsi = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_SSL_VERIFYPEER => !(defined('QI_DEV') && QI_DEV),
+        ];
+        if ($method === 'POST') {
+            $header[] = 'Content-Type: application/json';
+            $opsi[CURLOPT_POST] = true;
+            $opsi[CURLOPT_POSTFIELDS] = (string)$body;
+        }
+        $opsi[CURLOPT_HTTPHEADER] = $header;
+        curl_setopt_array($ch, $opsi);
+        $raw  = curl_exec($ch);
+        $kode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // Tidak terjangkau / timeout / gateway bermasalah → tandai mati sebentar.
+        if ($raw === false || $kode === 0 || $kode === 503 || $kode === 504) {
+            @file_put_contents($penanda, (string)time(), LOCK_EX);
+            return [false, $kode];
+        }
+        if ($kode === 401) @error_log('[tv-bridge] 401: QI_TV_BRIDGE_KEY tidak cocok dengan BRIDGE_KEY di bridge.');
+        @unlink($penanda);
+        return [($kode >= 200 && $kode < 300) ? $raw : false, $kode];
+    }
+}
 if (!function_exists('qi_tv_bridge_quotes')) {
     /**
      * Harga tick OANDA untuk banyak simbol sekaligus (satu panggilan ke tv-bridge /quotes).
@@ -781,8 +965,7 @@ if (!function_exists('qi_tv_bridge_quotes')) {
             if ($o !== null) $peta[$o] = strtoupper((string)$s);
         }
         if (!$peta) return [];
-        $base = defined('QI_TV_BRIDGE_URL') ? QI_TV_BRIDGE_URL : 'http://127.0.0.1:3001';
-        $raw = qi_http_get($base . '/quotes?exchange=OANDA&symbols=' . implode(',', array_keys($peta)), $timeout);
+        [$raw] = qi_tv_bridge_request('GET', '/quotes?exchange=OANDA&symbols=' . implode(',', array_keys($peta)), null, $timeout);
         if (!$raw) return [];
         $d = json_decode($raw, true);
         if (!is_array($d) || empty($d['ok']) || empty($d['quotes']) || !is_array($d['quotes'])) return [];
@@ -801,6 +984,11 @@ if (!function_exists('qi_tv_bridge_quotes')) {
                 'vol'    => (float)($q['volume'] ?? 0),
                 'source' => 'oanda_tv',
             ];
+            // Status pasar dari TradingView: out_of_session = pasar tutup (akhir pekan / di luar jam).
+            if (!empty($q['session'])) {
+                $row['market'] = ($q['session'] === 'out_of_session') ? 'closed' : 'open';
+                if (isset($q['age'])) $row['tick_age'] = (int)$q['age'];   // detik sejak tick terakhir
+            }
             if (isset($q['bid'], $q['ask']) && (float)$q['bid'] > 0 && (float)$q['ask'] > 0) {
                 $row['bid'] = (float)$q['bid']; $row['ask'] = (float)$q['ask'];
             }
@@ -820,8 +1008,7 @@ if (!function_exists('qi_tv_bridge_candles')) {
         if ($oanda === null) return [];
         $tfMap = ['1' => '1m', '5' => '5m', '15' => '15m', '30' => '30m', '60' => '1h', '240' => '4h', 'D' => '1D', 'W' => '1W', 'MN' => '1M'];
         if (!isset($tfMap[$interval])) return [];
-        $base = defined('QI_TV_BRIDGE_URL') ? QI_TV_BRIDGE_URL : 'http://127.0.0.1:3001';
-        $raw = qi_http_get($base . '/candles?exchange=OANDA&symbol=' . $oanda . '&tf=' . $tfMap[$interval] . '&limit=' . $limit, $timeout);
+        [$raw] = qi_tv_bridge_request('GET', '/candles?exchange=OANDA&symbol=' . $oanda . '&tf=' . $tfMap[$interval] . '&limit=' . $limit, null, $timeout);
         if (!$raw) return [];
         $d = json_decode($raw, true);
         if (!is_array($d) || empty($d['ok']) || empty($d['candles']) || !is_array($d['candles'])) return [];
@@ -862,8 +1049,7 @@ if (!function_exists('qi_tv_scan')) {
             curl_close($ch);
             return [$raw, $kode];
         };
-        $base = defined('QI_TV_BRIDGE_URL') ? QI_TV_BRIDGE_URL : 'http://127.0.0.1:3001';
-        [$raw, $kode] = $post($base . '/scan', $timeout);
+        [$raw, $kode] = qi_tv_bridge_request('POST', '/scan', $body, $timeout);
         if ($raw !== false && $kode === 200) {
             $j = json_decode((string)$raw, true);
             if (is_array($j) && !empty($j['data'])) return [$raw, $kode, 'bridge'];
@@ -882,8 +1068,7 @@ if (!function_exists('qi_tv_bridge_ta')) {
     function qi_tv_bridge_ta(array $symbols, int $timeout = 10): array {
         $symbols = array_values(array_unique(array_map('strtoupper', array_map('strval', $symbols))));
         if (!$symbols) return [];
-        $base = defined('QI_TV_BRIDGE_URL') ? QI_TV_BRIDGE_URL : 'http://127.0.0.1:3001';
-        $raw = qi_http_get($base . '/ta?symbols=' . rawurlencode(implode(',', $symbols)), $timeout);
+        [$raw] = qi_tv_bridge_request('GET', '/ta?symbols=' . rawurlencode(implode(',', $symbols)), null, $timeout);
         if (!$raw) return [];
         $d = json_decode($raw, true);
         return (is_array($d) && !empty($d['ok']) && is_array($d['ta'] ?? null)) ? $d['ta'] : [];

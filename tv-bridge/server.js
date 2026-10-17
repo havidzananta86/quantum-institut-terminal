@@ -16,21 +16,37 @@ const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const url = require('url');
 
-const {
-  getCandles,
-  searchMarkets,
-  getQuotes,
-  getTechnicalAnalysis,
-  getScreener,
-  watchCandles,
-  TradingViewError
-} = require('@mathieuc/tradingview');
+// Library TradingView-API v4 adalah modul ESM. require() hanya bisa memuat ESM di Node >= 22.12 (dan
+// 20.19+), jadi dimuat dengan import() dinamis supaya jalan di semua Node 18+ (mis. 20.18 di VPS).
+// Fungsi dipakai hanya saat ada permintaan; server baru listen setelah library selesai dimuat.
+let getCandles, searchMarkets, getQuotes, watchQuotes, getTechnicalAnalysis, getScreener, watchCandles, TradingViewError;
+const tradingViewReady = import('@mathieuc/tradingview').then((mod) => {
+  ({ getCandles, searchMarkets, getQuotes, watchQuotes, getTechnicalAnalysis, getScreener, watchCandles, TradingViewError } = mod);
+});
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.TV_BRIDGE_PORT || 3001;
+// Default hanya menerima koneksi dari mesin ini. Untuk bridge di VPS yang dipanggil PHP dari
+// hosting lain: pasang reverse proxy HTTPS di depannya (lihat README) dan WAJIB isi BRIDGE_KEY.
+const HOST = process.env.TV_BRIDGE_HOST || '127.0.0.1';
+const BRIDGE_KEY = process.env.BRIDGE_KEY || '';
+const crypto = require('crypto');
 
-app.use(cors());
+function keyOk(provided) {
+  if (!BRIDGE_KEY) return true;
+  const a = Buffer.from(String(provided || ''));
+  const b = Buffer.from(BRIDGE_KEY);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Tanpa BRIDGE_KEY (pengembangan lokal) CORS tetap terbuka seperti semula; dengan kunci,
+// bridge hanya untuk panggilan server-ke-server dari PHP.
+if (!BRIDGE_KEY) app.use(cors());
+app.use((req, res, next) => {
+  if (req.path === '/health' || keyOk(req.get('x-bridge-key'))) return next();
+  res.status(401).json({ ok: false, error: 'Kunci bridge salah atau tidak ada' });
+});
 app.use(express.json());
 
 // ── Mapping Exchange ──────────────────────────────────────────────────────────
@@ -98,6 +114,8 @@ function buildFullSymbol(symbol, exchange) {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
+    quoteStream: quoteWatcherReady,
+    quoteAgeMs: quoteLastData ? Date.now() - quoteLastData : null,
     engine: '@mathieuc/tradingview v4',
     port: PORT,
     timestamp: new Date().toISOString()
@@ -154,47 +172,108 @@ app.get('/candles', async (req, res) => {
   }
 });
 
-// ── REST: GET /quotes?exchange=OANDA&symbols=EURUSD,XAUUSD,BTCUSD ───────────
-// Harga tick terkini banyak simbol dalam SATU koneksi TradingView (getQuotes), lengkap
-// dengan bid/ask. Di-cache 2 detik supaya polling dashboard tidak membuka sesi baru terus.
+// ── Harga tick: watcher permanen + REST /quotes ─────────────────────────────
+// Dulu setiap panggilan /quotes membuka koneksi TradingView baru (getQuotes) → 1–3 detik per
+// permintaan. Sekarang SATU koneksi streaming (watchQuotes) dibiarkan terbuka untuk semua
+// pasangan OANDA; /quotes membaca tick terakhir dari memori (milidetik) dan getQuotes hanya
+// dipakai sebagai cadangan untuk simbol di luar daftar / saat watcher belum siap.
+const WATCH_BASE = ['XAUUSD', 'BTCUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD', 'USDCHF',
+                    'USDCAD', 'GBPJPY', 'EURJPY', 'EURGBP', 'AUDNZD', 'CHFJPY', 'CADJPY'];
+const WATCH_SYMBOLS = WATCH_BASE.map(s => 'OANDA:' + s);
+let quoteWatcher = null;
+let quoteWatcherReady = false;
+let quoteWatcherBackoff = 2000;
+let quoteLastData = 0;
+
+function formatQuote(full, q) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const num = v => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+  const lpTime = num(q.lp_time);
+  return {
+    symbol: full,
+    price: Number(q.lp),
+    bid: num(q.bid), ask: num(q.ask),
+    open: num(q.open_price), high: num(q.high_price), low: num(q.low_price),
+    prevClose: num(q.prev_close_price),
+    change: num(q.ch), chgPct: num(q.chp), volume: num(q.volume),
+    time: lpTime,
+    age: lpTime != null ? Math.max(0, nowSec - lpTime) : null,   // detik sejak tick terakhir
+    session: q.current_session || null                            // market | out_of_session | pre_market …
+  };
+}
+
+async function startQuoteWatcher() {
+  quoteWatcherReady = false;
+  try { if (quoteWatcher) await quoteWatcher.stop(); } catch (_) {}
+  quoteWatcher = null;
+  try {
+    const w = await watchQuotes({ symbols: WATCH_SYMBOLS, fields: 'all', timeoutMs: 20000 }, {
+      onData() { quoteLastData = Date.now(); },
+      onError(err) {
+        const msg = err && (err.message || err.code) || String(err);
+        console.warn('[quote-watcher]', msg);
+        if (/DISCONNECT|CLOSED/i.test(msg) && quoteWatcher === w) scheduleWatcherRestart();
+      }
+    });
+    quoteWatcher = w;
+    quoteWatcherReady = true;
+    quoteWatcherBackoff = 2000;
+    quoteLastData = Date.now();
+    console.log(`[quote-watcher] streaming ${WATCH_SYMBOLS.length} simbol OANDA`);
+  } catch (err) {
+    console.error('[quote-watcher] gagal mulai:', err.message || err);
+    scheduleWatcherRestart();
+  }
+}
+let watcherRestartTimer = null;
+function scheduleWatcherRestart() {
+  quoteWatcherReady = false;
+  if (watcherRestartTimer) return;
+  watcherRestartTimer = setTimeout(() => { watcherRestartTimer = null; startQuoteWatcher(); }, quoteWatcherBackoff);
+  quoteWatcherBackoff = Math.min(quoteWatcherBackoff * 2, 60000);
+}
+// Pengaman: bila pasar buka tetapi tidak ada tick >2 menit, sambungkan ulang.
+setInterval(() => {
+  if (!quoteWatcherReady || !quoteWatcher) return;
+  const latest = quoteWatcher.latest || {};
+  const open = Object.values(latest).some(q => q && q.current_session === 'market');
+  if (open && Date.now() - quoteLastData > 120000) { console.warn('[quote-watcher] tick macet, sambung ulang'); scheduleWatcherRestart(); }
+}, 30000);
+
 const quoteCache = new Map();
 app.get('/quotes', async (req, res) => {
   const { exchange = 'OANDA', symbols = '' } = req.query;
   const list = [...new Set(String(symbols).split(',').map(s => s.trim().toUpperCase()).filter(Boolean))].slice(0, 30);
   if (!list.length) return res.status(400).json({ ok: false, error: 'Parameter symbols diperlukan' });
+  const fulls = list.map(s => buildFullSymbol(s, exchange));
 
+  // 1) Dari watcher permanen (tanpa jaringan) bila semua simbol yang diminta sudah ada.
+  if (quoteWatcherReady && quoteWatcher && quoteWatcher.latest) {
+    const latest = quoteWatcher.latest;
+    if (fulls.every(f => latest[f] && Number(latest[f].lp) > 0)) {
+      const quotes = {};
+      list.forEach((s, i) => { quotes[s] = formatQuote(fulls[i], latest[fulls[i]]); });
+      return res.json({ ok: true, count: list.length, via: 'stream', quotes });
+    }
+  }
+
+  // 2) Cadangan: satu getQuotes (snapshot), di-cache 2 detik.
   const key = resolveExchange(exchange) + '|' + list.join(',');
   const hit = quoteCache.get(key);
   if (hit && Date.now() - hit.at < 2000) return res.json(hit.body);
-
   try {
-    const fulls = list.map(s => buildFullSymbol(s, exchange));
     const raw = await getQuotes({ symbols: fulls, fields: 'all', timeoutMs: 12000 });
     const quotes = {};
     list.forEach((s, i) => {
       const q = raw && raw[fulls[i]];
-      if (!q || !(Number(q.lp) > 0)) return;
-      quotes[s] = {
-        symbol: fulls[i],
-        price: Number(q.lp),
-        bid: q.bid != null ? Number(q.bid) : null,
-        ask: q.ask != null ? Number(q.ask) : null,
-        open: q.open_price != null ? Number(q.open_price) : null,
-        high: q.high_price != null ? Number(q.high_price) : null,
-        low: q.low_price != null ? Number(q.low_price) : null,
-        prevClose: q.prev_close_price != null ? Number(q.prev_close_price) : null,
-        change: q.ch != null ? Number(q.ch) : null,
-        chgPct: q.chp != null ? Number(q.chp) : null,
-        volume: q.volume != null ? Number(q.volume) : null,
-        time: q.lp_time != null ? Number(q.lp_time) : null
-      };
+      if (q && Number(q.lp) > 0) quotes[s] = formatQuote(fulls[i], q);
     });
-    const body = { ok: true, count: Object.keys(quotes).length, quotes };
+    const body = { ok: true, count: Object.keys(quotes).length, via: 'snapshot', quotes };
     quoteCache.set(key, { at: Date.now(), body });
     res.json(body);
   } catch (err) {
     console.error('[REST /quotes] Error:', err.message || err);
-    if (hit) return res.json(hit.body); // lebih baik data 2 menit lalu daripada kosong
+    if (hit) return res.json(hit.body);
     res.status(500).json({ ok: false, error: err.message || 'Gagal mengambil quote' });
   }
 });
@@ -317,7 +396,11 @@ app.get('/search', async (req, res) => {
 });
 
 // ── WebSocket: /ws ───────────────────────────────────────────────────────────
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({
+  server,
+  path: '/ws',
+  verifyClient: (info) => keyOk(info.req.headers['x-bridge-key'] || new URLSearchParams(url.parse(info.req.url).query).get('key'))
+});
 
 wss.on('connection', (ws, req) => {
   const params = new URLSearchParams(url.parse(req.url).query);
@@ -434,12 +517,22 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // ── Jalankan Server ──────────────────────────────────────────────────────────
-server.listen(PORT, () => {
+tradingViewReady.then(() => {
+server.listen(PORT, HOST, () => {
+  startQuoteWatcher();
+  if (HOST !== '127.0.0.1' && HOST !== 'localhost' && !BRIDGE_KEY) {
+    console.warn('  ! PERINGATAN: bridge terbuka di ' + HOST + ' tanpa BRIDGE_KEY. Isi BRIDGE_KEY di .env.');
+  }
   console.log(`\n=================================================`);
   console.log(`  QIM TradingView Engine v4 (@mathieuc/tradingview)`);
   console.log(`=================================================`);
+  console.log(`  Listen: ${HOST}:${PORT}  ·  kunci: ${BRIDGE_KEY ? 'AKTIF' : 'tidak dipakai'}`);
   console.log(`  REST  : http://localhost:${PORT}/candles`);
   console.log(`  REST  : http://localhost:${PORT}/search`);
   console.log(`  WS    : ws://localhost:${PORT}/ws`);
   console.log(`=================================================\n`);
+});
+}).catch((err) => {
+  console.error('[tv-bridge] gagal memuat library @mathieuc/tradingview:', err && err.message || err);
+  process.exit(1);
 });

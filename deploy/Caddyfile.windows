@@ -1,0 +1,30 @@
+# Reverse proxy HTTPS untuk Windows VPS: SATU subdomain, dua bridge.
+#   https://feed.GANTI-DOMAIN-ANDA.com/tv/...  ->  tv-bridge (Node.js, 127.0.0.1:3001), dipanggil PHP
+#   https://feed.GANTI-DOMAIN-ANDA.com/...     ->  mt5-bridge (Python, 127.0.0.1:8000), PHP dan WebSocket browser
+# Sertifikat Let's Encrypt diurus Caddy otomatis (port 80 dan 443 harus terbuka dari internet).
+# Ganti "feed.GANTI-DOMAIN-ANDA.com" di bawah, simpan sebagai C:\caddy\Caddyfile.
+
+feed.GANTI-DOMAIN-ANDA.com {
+	# Bridge TradingView-API: awalan /tv dibuang sebelum diteruskan (/tv/quotes menjadi /quotes).
+	handle_path /tv/* {
+		reverse_proxy 127.0.0.1:3001
+	}
+
+	# Bridge MT5: WebSocket /ws/harga, REST /api/candles dan /api/quotes, /health.
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Strict-Transport-Security "max-age=31536000"
+	}
+
+	# Log akses ke berkas bergulir. Kunci/token tidak pernah ada di URL (dikirim lewat header), jadi tidak perlu disaring.
+	log {
+		output file C:\caddy\access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

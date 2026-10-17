@@ -14,20 +14,60 @@ $symbols = array_filter(array_map('trim', explode(',', $reqSyms)));
 
 $result = [];
 
+/**
+ * Harga broker dari EA MT5 milik PEMANGGIL (bila tick-nya segar, ≤20 detik) menimpa sumber lain.
+ * 🔒 Hanya untuk pemanggil terautentikasi dan akun miliknya sendiri; tanpa token tidak ada
+ * perubahan. Dipisah dari cache bersama: balasan yang di-cache TIDAK PERNAH memuat harga broker
+ * seseorang (dulu cache ditulis SETELAH override sehingga pengguna lain dalam jendela cache
+ * bisa menerima harga broker orang lain).
+ */
+function qi_lp_broker_override(array $result): array
+{
+    if (!function_exists('qi_broker_tick') || !function_exists('qi_validate_token')) return $result;
+    $idPemanggil = 0;
+    try {
+        $sesiPemanggil = qi_validate_token();
+        if (is_array($sesiPemanggil) && !empty($sesiPemanggil['user_id'])) {
+            $idPemanggil = (int)$sesiPemanggil['user_id'];
+        }
+    } catch (Throwable $e) { $idPemanggil = 0; }
+    if ($idPemanggil <= 0) return $result;
+    foreach (array_keys($result) as $symBroker) {
+        $bt = qi_broker_tick((string)$symBroker, 20, $idPemanggil);
+        if (!$bt) continue;
+        $result[$symBroker]['price']       = $bt['price'];
+        $result[$symBroker]['bid']         = $bt['bid'];
+        $result[$symBroker]['ask']         = $bt['ask'];
+        $result[$symBroker]['spread']      = $bt['spread'];
+        $result[$symBroker]['source']      = 'mt5_broker';
+        $result[$symBroker]['broker_umur'] = $bt['umur'];
+        // Proksi emas (PAXG) TIDAK berlaku lagi saat harga broker tersedia.
+        unset($result[$symBroker]['anchor_source']);
+    }
+    return $result;
+}
+
 // ─── CACHE RESPONS BERSAMA (SANGAT SINGKAT) ─────────────────────────────────
 // Diukur: permintaan 9 simbol butuh ~4,7 detik (terlalu berat bila dipanggil tiap
 // 3–15 detik oleh banyak pengguna, dan bisa memicu timeout/permintaan gagal).
 // Karena balasan ini berisi DATA PASAR saja (tidak ada data pribadi), hasilnya boleh
 // dibagi antar pengguna. TTL sengaja 3 detik: tetap segar untuk chart, tetapi satu
 // perhitungan dipakai bersama — beban server turun drastis.
-$kunciCache = md5('lp|' . implode(',', $symbols));
+// Tingkat MT5 (pengguna berhak feed bridge) dan umum punya cache terpisah supaya harga MT5 tidak bocor.
+$tingkatMt5 = qi_mt5_allowed();
+$kunciCache = md5('lp|' . implode(',', $symbols) . '|' . ($tingkatMt5 ? 'mt5' : 'std'));
 $dirCache   = __DIR__ . '/../cache/live-price';
 if (!is_dir($dirCache)) @mkdir($dirCache, 0755, true);
 $fileCache  = $dirCache . '/' . $kunciCache . '.json';
-if (file_exists($fileCache) && (time() - filemtime($fileCache)) < 3) {
+if (file_exists($fileCache) && (time() - filemtime($fileCache)) < 1) {
     header('X-QI-Cache: HIT');
-    echo (string)file_get_contents($fileCache);
-    exit();
+    header('Vary: Authorization');
+    $cacheLama = json_decode((string)file_get_contents($fileCache), true);
+    if (is_array($cacheLama) && isset($cacheLama['prices']) && is_array($cacheLama['prices'])) {
+        $cacheLama['prices'] = qi_lp_broker_override($cacheLama['prices']);
+        echo json_encode($cacheLama);
+        exit();
+    }
 }
 header('X-QI-Cache: MISS');
 // Bersihkan berkas cache lama sesekali (1 dari 20 permintaan) supaya tidak menumpuk.
@@ -43,7 +83,8 @@ $FX_SYMS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','NZDUSD','USDCHF','USDC
 // ─── OANDA (tv-bridge / TradingView-API): emas, BTC, dan semua forex — SATU panggilan ──
 // Harga tick + bid/ask. Simbol yang gagal diambil tidak masuk $result dan jatuh ke
 // rantai sumber lama di bawah (Binance / Twelve Data / PAXG / Frankfurter).
-$result = qi_tv_bridge_quotes($symbols) + $result;
+$mt5Rows = $tingkatMt5 ? qi_mt5_quotes($symbols) : [];   // prioritas: feed broker MT5 (VPS) untuk yang berhak
+$result = $mt5Rows + qi_tv_bridge_quotes(array_values(array_diff($symbols, array_keys($mt5Rows)))) + $result;
 
 // ─── CRYPTO via Binance (multi-symbol ticker) ───────────────────────────────
 // Lewati simbol yang sudah dari OANDA. BTCUSDT tetap boleh ke Binance bila OANDA gagal;
@@ -83,7 +124,7 @@ if (!empty($cryptoSyms)) {
 // (terukur 2026-10-11: nilai API tidak berubah sama sekali selama 60+ detik).
 // Pengukuran sumber: candle M1 biquote berubah ~3x per 60 detik, sedangkan
 // xaus.com/api/v1/spot hanya ~1x per 60 detik — jadi M1 adalah yang tercepat.
-if (in_array('XAUUSD', $symbols) && ($result['XAUUSD']['source'] ?? '') !== 'oanda_tv') {
+if (in_array('XAUUSD', $symbols) && !in_array(($result['XAUUSD']['source'] ?? ''), ['oanda_tv', 'mt5_bridge'], true)) {
     // Primary: Twelve Data (sumber sama dengan analismarket.com)
     $td = qi_twelvedata_price('XAU/USD', 'xauusd');
     if (!empty($td['price']) && $td['price'] > 100) {
@@ -157,7 +198,7 @@ if (in_array('XAUUSD', $symbols) && ($result['XAUUSD']['source'] ?? '') !== 'oan
     // 'binance_paxg_selaras' + 'anchor_source' supaya tetap jujur: level dari sumber
     // emas, gerakan dari proksi. Pengaman: delta > 0,6% diabaikan (data proksi rusak),
     // dan jangkar lebih tua dari 10 menit tidak dipakai.
-    if (in_array('XAUUSD', $symbols, true) && ($result['XAUUSD']['source'] ?? '') !== 'oanda_tv') {
+    if (in_array('XAUUSD', $symbols, true) && !in_array(($result['XAUUSD']['source'] ?? ''), ['oanda_tv', 'mt5_bridge'], true)) {
         $proksi = qi_proksi_emas();
         $paxgSkrg = $proksi ? (float)$proksi['harga'] : null;
         if ($paxgSkrg !== null && $paxgSkrg > 100) {
@@ -416,45 +457,8 @@ if (!empty($fxNeedFrankfurter)) {
     }
 }
 
-// ── PRIORITAS TERTINGGI: HARGA BROKER dari EA MT5 (bila tick-nya SEGAR) ──────
-// Rantai ini sebelumnya TERPUTUS: api/mt-bridge.php menerima & menyimpan tick EA,
-// tetapi TIDAK ADA berkas yang membacanya — sehingga meski EA berjalan, chart dan
-// sinyal tetap memakai sumber gratis (bukan harga broker pengguna). Sekarang tick
-// broker yang segar (≤20 detik) menimpa harga sumber lain, lengkap dengan SPREAD
-// nyata dan label jujur source='mt5_broker'.
-//
-// 🔒 KEAMANAN: harga broker hanya dipakai bila pemanggil terautentikasi DAN akun
-// yang mengirim tick itu memang miliknya. Tanpa token → $idPemanggil = 0 → fungsi
-// mengembalikan null, sehingga harga broker siapa pun tidak pernah bocor.
-//
-// Fail-safe: bila EA mati / tick basi / berkas rusak → TIDAK ada perubahan; harga
-// tetap dari sumber biasa. Tidak pernah mengarang harga.
-if (function_exists('qi_broker_tick') && function_exists('qi_validate_token')) {
-    $idPemanggil = 0;
-    try {
-        $sesiPemanggil = qi_validate_token();
-        if (is_array($sesiPemanggil) && !empty($sesiPemanggil['user_id'])) {
-            $idPemanggil = (int)$sesiPemanggil['user_id'];
-        }
-    } catch (Throwable $e) { $idPemanggil = 0; }
-
-    if ($idPemanggil > 0) {
-        foreach (array_keys($result) as $symBroker) {
-            $bt = qi_broker_tick((string)$symBroker, 20, $idPemanggil);
-            if (!$bt) continue;
-            $result[$symBroker]['price']       = $bt['price'];
-            $result[$symBroker]['bid']         = $bt['bid'];
-            $result[$symBroker]['ask']         = $bt['ask'];
-            $result[$symBroker]['spread']      = $bt['spread'];
-            $result[$symBroker]['source']      = 'mt5_broker';
-            $result[$symBroker]['broker_umur'] = $bt['umur'];
-            // Proksi emas (PAXG) TIDAK berlaku lagi saat harga broker tersedia.
-            unset($result[$symBroker]['anchor_source']);
-        }
-    }
-}
-
+// Cache bersama ditulis SEBELUM override per-pengguna; override dijalankan lagi tiap permintaan.
 $balasan = json_encode(['status' => 'success', 'ts' => time(), 'prices' => $result]);
-// Simpan untuk dibagi ke permintaan berikutnya dalam 3 detik ke depan.
 @file_put_contents($fileCache, $balasan, LOCK_EX);
-echo $balasan;
+header('Vary: Authorization');
+echo json_encode(['status' => 'success', 'ts' => time(), 'prices' => qi_lp_broker_override($result)]);

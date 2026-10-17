@@ -163,6 +163,36 @@
         if (volume) volume.textContent = data && Number(data.vol) > 0 ? Number(data.vol).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
     }
 
+    // Lencana status pasar di kepala chart: bila OANDA tutup (akhir pekan / di luar jam), harga memang
+    // diam — itu bukan kerusakan data. Ditampilkan supaya jelas kenapa tidak bergerak seperti MT5.
+    function ageText(seconds) {
+        const s = Number(seconds) || 0;
+        if (s < 90) return `${s}d`;
+        if (s < 5400) return `${Math.round(s / 60)}m`;
+        return s < 172800 ? `${Math.round(s / 3600)}j` : `${Math.round(s / 86400)}h`;
+    }
+    function updateMarketBadge() {
+        const host = document.querySelector('.qch-price');
+        if (!host) return;
+        let badge = document.getElementById('qimMarketBadge');
+        if (!badge) { badge = node('span', 'qim-market-badge'); badge.id = 'qimMarketBadge'; host.append(badge); }
+        const symbol = currentChartSymbol() || 'XAUUSD';
+        const data = prices[symbol];
+        if (data && data.market === 'closed') {
+            badge.hidden = false;
+            badge.className = 'qim-market-badge is-closed';
+            badge.textContent = 'PASAR TUTUP · tick terakhir ' + ageText(data.tick_age) + ' lalu';
+            badge.title = 'Sumber (OANDA via TradingView) sedang di luar sesi perdagangan, jadi harga tidak bergerak.';
+        } else if (data && data.source === 'oanda_tv') {
+            badge.hidden = false;
+            badge.className = 'qim-market-badge is-live';
+            badge.textContent = 'LIVE · OANDA';
+            badge.title = 'Tick real-time OANDA lewat TradingView-API';
+        } else {
+            badge.hidden = true;
+        }
+    }
+
     let pricesInFlight = false;
     async function refreshPrices() {
         if (pricesInFlight) return;
@@ -176,6 +206,7 @@
             if (!result || result.status !== 'success' || !result.prices) throw new Error('Format data harga tidak valid');
             prices = result.prices;
             renderWatchlist();
+            updateMarketBadge();
             const selected = document.getElementById('chartCurSym');
             const pair = selected ? selected.textContent.replace(/[^A-Z0-9]/gi, '').toUpperCase() : 'XAUUSD';
             setPairSummary(pair);
@@ -685,7 +716,7 @@
         if (!hasPanelRoute && typeof window.switchPanel === 'function') {
             window.setTimeout(() => window.switchPanel('panel-charts'), 450);
         }
-        window.setInterval(refreshPrices, 15000);
+        window.setInterval(refreshPrices, 4000);
         window.setInterval(refreshNews, 300000);
         window.setInterval(refreshBrokerStatus, 60000);
         window.setInterval(() => refreshAnalysis(), 120000);

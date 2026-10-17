@@ -6026,6 +6026,29 @@ function renderOhlcFromCandle(candle, isHover) {
 // Kalau kedua aliran mati, polling 15 detik yang sudah ada tetap menjadi sumber harga.
 let _rtTerakhirGambar = 0;
 
+/**
+ * Candle untuk sebuah tick, seperti MT5: bila periode candle terakhir sudah lewat, tick membuka
+ * candle BARU (open = harga tick) alih-alih terus memanjangkan candle lama sampai sinkronisasi
+ * berikutnya. Aturan jujur:
+ *  - hanya interval intraday (1/5/15/30/60/240); D/W/MN mengikuti sinkronisasi data;
+ *  - waktu candle baru melanjutkan GRID candle terakhir (last.time + k·interval), sehingga
+ *    sejajar dengan batas jam server broker (penting untuk H4/D1) — bukan dibulatkan ke UTC;
+ *  - hanya bila harga BERUBAH: saat pasar tutup harga diam, jadi tidak ada candle kosong.
+ * @returns {{bar: object, baru: boolean}}
+ */
+function qiBarUntukTick(last, harga, nowSec, interval) {
+    const detik = { '1': 60, '5': 300, '15': 900, '30': 1800, '60': 3600, '240': 14400 }[String(interval)];
+    if (detik && harga !== last.close && nowSec >= last.time + detik) {
+        const waktu = last.time + Math.floor((nowSec - last.time) / detik) * detik;
+        return { bar: { time: waktu, open: harga, high: harga, low: harga, close: harga, volume: 0 }, baru: true };
+    }
+    return {
+        bar: { time: last.time, open: last.open, high: Math.max(last.high, harga), low: Math.min(last.low, harga), close: harga, volume: last.volume || 0 },
+        baru: false
+    };
+}
+if (typeof window !== 'undefined') window.qiBarUntukTick = qiBarUntukTick;
+
 window.qiRealtimeTick = function (sym, price, meta) {
     try {
         if (!_lastPrices) return;
@@ -6057,16 +6080,11 @@ window.qiRealtimeTick = function (sym, price, meta) {
         if (!_lwSeries || !_lwLastCandles || !_lwLastCandles.length) return;
 
         const last = _lwLastCandles[_lwLastCandles.length - 1];
-        const upd = {
-            time: last.time,
-            open: last.open,
-            high: Math.max(last.high, harga),
-            low: Math.min(last.low, harga),
-            close: harga,
-            volume: last.volume || 0
-        };
+        const hasil = qiBarUntukTick(last, harga, Math.floor(Date.now() / 1000), _tvInterval);
+        const upd = hasil.bar;
         _lwSeries.update(upd);
-        _lwLastCandles[_lwLastCandles.length - 1] = upd;
+        if (hasil.baru) _lwLastCandles.push(upd);
+        else _lwLastCandles[_lwLastCandles.length - 1] = upd;
         // Panel volume ikut bergerak pada candle berjalan (bila sumber punya volume).
         if (_lwVolume) {
             try {

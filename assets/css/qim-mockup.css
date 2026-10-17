@@ -162,3 +162,10 @@
 /* Logo atom menggantikan tanda ⌁ lama di semua ukuran layar. */
 .qim-brand-mark { display: none !important; }
 @media (max-width: 899px) { .qim-logo { width: 28px; height: 28px; } }
+
+/* Lencana status pasar di kepala chart */
+.qim-market-badge { align-self: center; margin-left: 4px; padding: 3px 9px; border: 1px solid; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+.qim-market-badge[hidden] { display: none; }
+.qim-market-badge.is-closed { border-color: #6b4a14; color: #f5c443; background: #f5b83d14; }
+.qim-market-badge.is-live { border-color: #1b5f4b; color: #3dd9a6; background: #0f3a3014; }
+.qim-market-badge.is-live::before { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #3dd9a6; box-shadow: 0 0 6px #3dd9a6; content: ""; vertical-align: 1px; }

@@ -1,0 +1,25 @@
+# Development stack: mock bridge + nginx with a self-signed TLS cert.
+#   docker compose up --build
+#   → wss://localhost:8443/ws/harga   (accept the self-signed cert once in the browser)
+# Production does NOT use this file: the bridge must run on Windows next to MT5.
+services:
+  bridge:
+    build: .
+    env_file: .env
+    environment:
+      BRIDGE_ENV: development
+      MT5_MOCK: "1"
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - bridge
+    ports:
+      - "8443:443"
+    volumes:
+      - ./nginx/qim-bridge.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    restart: unless-stopped

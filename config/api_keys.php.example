@@ -72,3 +72,22 @@ define('SMTP_FROM_NAME', 'Quantum Institut');
 // Never use a placeholder value in production.
 define('QI_PAYMENT_PROVIDER', '');
 define('QI_PAYMENT_WEBHOOK_SECRET', '');
+
+// ── tv-bridge (library TradingView-API, Node.js) — data OANDA untuk chart, harga & sinyal ──
+// Lokal (XAMPP): kosongkan keduanya; bridge dijalankan di mesin yang sama (http://127.0.0.1:3001).
+// Shared hosting (tanpa Node.js): jalankan bridge di VPS lain, lalu isi alamat HTTPS-nya dan
+// kunci yang SAMA dengan BRIDGE_KEY di .env bridge. Bila bridge tidak terjangkau, aplikasi
+// otomatis memakai sumber cadangan (Binance / Twelve Data / biquote / PAXG).
+// define('QI_TV_BRIDGE_URL', 'https://bridge.contoh-anda.com');
+// define('QI_TV_BRIDGE_KEY', '');   // php -r "echo bin2hex(random_bytes(24)), PHP_EOL;"
+
+// ── MT5 bridge (Windows VPS + MetaTrader 5) — feed broker realtime untuk pengguna berhak ──
+// Prioritas data: MT5 bridge → OANDA (tv-bridge) → sumber cadangan. Detail: mt5-bridge/README.md.
+// URL = alamat WebSocket publik bridge (wss:// di produksi). SECRET = BRIDGE_JWT_SECRET di bridge (≥32 karakter).
+// AUDIENCE 'pro' = semua PRO/VIP/admin memakai feed ini (periksa ketentuan broker soal membagikan harga);
+//          'owner' (bawaan) = hanya admin dan pemilik akun MT5 yang tercatat di ACCOUNT.
+// define('QI_MT5_BRIDGE_URL', 'wss://mt5.contoh-anda.com');
+// define('QI_MT5_BRIDGE_SECRET', '');          // python -c "import secrets; print(secrets.token_urlsafe(48))"
+// define('QI_MT5_BRIDGE_AUDIENCE', 'pro');
+// define('QI_MT5_BRIDGE_ACCOUNT', '');         // nomor login MT5 (dipakai bila AUDIENCE = 'owner')
+// define('QI_MT5_BRIDGE_API_URL', '');         // opsional: https://… bila REST berbeda dari URL WebSocket
