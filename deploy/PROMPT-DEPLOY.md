@@ -12,8 +12,11 @@ KONTEKS
 - Repo: https://github.com/havidzananta86/quantum-institut-terminal  (remote "origin")
 - Folder lokal: D:\xamp\htdocs\webapp
 - Versi baru ada di cabang  feat/oanda-tv-bridge  (commit terakhir c852475 atau yang lebih baru di cabang yang sama).
-- Produksi saat ini = origin/master di commit 0596c5c. Perbedaan: 202 file, 20 migrasi database baru (003-021, 023),
-  5 file lama dihapus (terminal.html, api/otp.php, api/subscribe.php, api/get-signals.php, api/session-log.php).
+- Produksi saat ini = origin/master di commit 0596c5c (belum pernah di-deploy dari cabang baru; situs live masih
+  memuat dashboard-app.js?v=2.0.8 dan qim-mockup.css masih 404).
+  Perbedaan terhadap produksi: 229 file (+42.650 / -11.565 baris), 20 migrasi database baru (003-021, 023),
+  dan 7 file lama dihapus: terminal.html, api/otp.php, api/subscribe.php, api/get-signals.php,
+  api/session-log.php, assets/js/chart-init.js, assets/css/terminal.css.
 - Hostinger menarik repo otomatis dari cabang "master"; PUSH KE master = LANGSUNG TAYANG, tanpa staging.
 - Jangan memakai FTP/unggah manual untuk kode (bisa bentrok dengan penarikan Git).
 - File rahasia TIDAK ada di git dan jangan ditimpa: config/api_keys.php, config/database.php, isi cache/, uploads/avatars/.
