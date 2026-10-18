@@ -1466,6 +1466,8 @@
             // Saat popover ditutup, tombol dikembalikan ke barisnya (tetap tersembunyi) supaya id-nya selalu ada di DOM.
             const baris = document.querySelector('.qch-indrow');
             p.qimSebelumTutup = () => { if (baris) Array.from(grid.children).forEach(t => baris.appendChild(t)); };
+            // Indikator hasil port Pine Script (qim-indikator-kustom.js): centang + pengaturan.
+            if (window.QIMIndikatorKustom) { try { p.appendChild(window.QIMIndikatorKustom.bagianMenu()); } catch (er) {} }
             return;
         }
         if (aksi === 'template') {
@@ -1666,6 +1668,8 @@
             try { if (typeof asli.vol === 'function') asli.vol(potong); } catch (e) {}
             // Garis pembanding juga dipotong di titik replay (tanpa data masa depan).
             ch.banding.forEach(x => { try { x.seri.setData(x.data.filter(p => p.time <= data[n].time)); } catch (e) {} });
+            // Indikator kustom (port Pine) dihitung hanya sampai bar replay — tidak membocorkan masa depan.
+            try { window.dispatchEvent(new CustomEvent('qim:replay-bar', { detail: { time: data[n].time } })); } catch (e) {}
             const info = $('qchReplayInfo'); if (info) info.textContent = new Date(data[n].time * 1000).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' · ' + (n + 1) + '/' + data.length;
         };
         try { if (typeof window.clearIndicators === 'function') window.clearIndicators(); } catch (e) {}
@@ -1796,6 +1800,7 @@
         window.perbaruiVolume = r.asli.vol;
         r.bar.remove();
         ch.replay = null;
+        try { window.dispatchEvent(new CustomEvent('qim:replay-bar', { detail: { time: null } })); } catch (e) {}
         ch.banding.forEach(x => { try { x.seri.setData(x.data); } catch (e) {} });
         // Muat ulang data penuh + indikator dari server.
         if (typeof window.lwFetchAndSetData === 'function') window.lwFetchAndSetData();

@@ -145,3 +145,39 @@ body.qbt-terbuka { overflow: hidden; }
     .qim-header .qim-header-actions { flex: 0 0 auto; }
     #qimUserName { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* ── Indikator Pine (port): tabel BUY/SELL + bagian menu (qim-indikator-kustom.js) ── */
+.qim-pk { position: absolute; inset: 0; z-index: 7; pointer-events: none; font: 600 11px/1.2 "Inter", system-ui, sans-serif; }
+.qim-pk[hidden] { display: none; }
+.qim-pk-t { position: absolute; right: 74px; min-width: 150px; border-collapse: collapse; background: rgba(0, 0, 0, .95); color: #fff; pointer-events: auto; }
+.qim-pk-t.buy { top: 8px; outline: 1px solid #089981; }
+.qim-pk-t.sell { bottom: 34px; outline: 1px solid #F23645; }
+.qim-pk-t th, .qim-pk-t td { padding: 5px 9px; border: 1px solid #787B86; text-align: left; font-weight: 600; white-space: nowrap; }
+.qim-pk-t td:last-child, .qim-pk-t th:last-child { text-align: center; }
+.qim-pk-t thead th { cursor: pointer; text-align: center; }
+.qim-pk-t.buy thead th { background: rgba(8, 153, 129, .85); }
+.qim-pk-t.sell thead th { background: rgba(242, 54, 69, .85); }
+.qim-pk-t.buy .e { background: rgba(8, 153, 129, .20); } .qim-pk-t.buy .t1, .qim-pk-t.buy .t2 { background: rgba(8, 153, 129, .15); } .qim-pk-t.buy .t3 { background: rgba(8, 153, 129, .25); }
+.qim-pk-t.sell .e { background: rgba(242, 54, 69, .20); } .qim-pk-t.sell .t1, .qim-pk-t.sell .t2 { background: rgba(242, 54, 69, .15); } .qim-pk-t.sell .t3 { background: rgba(242, 54, 69, .25); }
+.qim-pk-t .sl { background: rgba(242, 54, 69, .30); }
+.qim-pk-t .st.valid { background: rgba(76, 175, 80, .75); } .qim-pk-t .st.tunggu { background: rgba(255, 152, 0, .75); }
+.qim-pk-info { position: absolute; left: 8px; bottom: 58px; max-width: 60%; color: #64748b; font-weight: 500; font-size: 10px; pointer-events: none; text-shadow: 0 0 3px #000; }
+.qim-pk.ringkas .r { display: none; }
+.qim-pk.ringkas .qim-pk-t { min-width: 110px; }
+@media (max-width: 599px) {
+    .qim-pk-t { right: 62px; min-width: 112px; font-size: 10px; }
+    .qim-pk-t.buy { top: 46px; }   /* di bawah legenda OHLC yang melebar di layar sempit */
+    .qim-pk-t th, .qim-pk-t td { padding: 4px 6px; }
+    .qim-pk-info { display: none; }
+}
+.qim-pk-menu .qch-item input { margin-right: 4px; }
+.qim-pk-set { margin-top: 4px; font-size: 11.5px; }
+.qim-pk-set summary { padding: 6px 8px; cursor: pointer; color: #a5c8ff; font-weight: 600; }
+.qim-pk-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; padding: 6px 4px; }
+.qim-pk-f { display: flex; flex-direction: column; gap: 2px; color: #8b98ad; font-size: 10.5px; font-weight: 600; }
+.qim-pk-f input[type="number"] { min-height: 30px; padding: 3px 6px; border: 1px solid #22314f; border-radius: 6px; background: #0d1830; color: #f1f5f9; font-size: 12px; }
+.qim-pk-f.cek { flex-direction: row; align-items: center; gap: 6px; color: #cbd5e1; }
+.qim-pk-aksi { grid-column: 1 / -1; display: flex; gap: 8px; }
+.qim-pk-aksi button { flex: 1; min-height: 34px; border: 1px solid #22314f; border-radius: 7px; background: #12203a; color: #e3e9f3; font-weight: 600; cursor: pointer; }
+.qim-pk-aksi button[data-pk="terapkan"] { border-color: #1677ff; background: #1677ff; color: #fff; }
+@media (pointer: coarse) { .qim-pk-aksi button, .qim-pk-f input[type="number"] { min-height: 44px; } }

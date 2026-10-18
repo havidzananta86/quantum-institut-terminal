@@ -276,6 +276,23 @@ async function cekDashboard(lebar, tinggi, label) {
         QIMMultiChart.atur(1); await tidur(500);
         if (QIMMultiChart._sel().length) hasil.fitur.push('multi-chart: kembali ke 1 chart gagal');
       }
+      // Indikator Pine (port): harus mulai MATI (chart bersih), bisa menyala dengan tabel & zona, dan bersih saat dimatikan.
+      if (window.QIMIndikatorKustom) {
+        const K = window.QIMIndikatorKustom;
+        if (K.aktif() || document.querySelector('.qim-pk')) hasil.fitur.push('indikator Pine: tidak mulai dalam keadaan mati');
+        K.nyalakan();
+        let h = null;
+        for (let i = 0; i < 60 && !(h && h.ok); i++) { await tidur(500); h = K.hasil(); }
+        if (!h || !h.ok) hasil.fitur.push('indikator Pine: tidak menghasilkan data — ' + (h && h.pesan));
+        else {
+          if (document.querySelectorAll('.qim-pk-t').length !== 2) hasil.fitur.push('indikator Pine: tabel BUY/SELL tidak muncul');
+          if (!document.querySelector('.qim-pk-t.buy .st td:last-child').textContent.trim()) hasil.fitur.push('indikator Pine: status BUY kosong');
+          if (h.n < 500) hasil.fitur.push('indikator Pine: hanya ' + h.n + ' bar dipakai');
+          if (!(h.zona.supply.length + h.zona.demand.length)) hasil.fitur.push('indikator Pine: tidak ada zona sama sekali');
+        }
+        K.matikan(); await tidur(300);
+        if (K.aktif() || document.querySelector('.qim-pk')) hasil.fitur.push('indikator Pine: masih ada sisa setelah dimatikan');
+      }
       if (window.QIMBacktestUI) {
         document.getElementById('qimBacktestBuka').click(); await tidur(400);
         document.getElementById('qbtSimbol').value = 'BTCUSDT'; document.getElementById('qbtTf').value = '240';
