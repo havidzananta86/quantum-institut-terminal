@@ -6,7 +6,8 @@
  * cache/logs grows one file per day forever, and the rate-limit sweep in
  * _middleware.php only runs on ~1% of requests, so it stalls on a quiet site.
  *
- * Run from cron (every 6 hours is plenty):
+ * Run from cron every 15 minutes: besides cache cleanup it also evaluates
+ * active signals (TP/SL) and runs the structure-based shadow scan.
  *   php /home/.../public_html/webapp/api/maintenance-cron.php
  *
  * Or over HTTP with the shared secret:
@@ -50,7 +51,12 @@ $RULES = [
     'errorlogs' => ['pattern' => '/^errors-\d{4}-\d{2}-\d{2}\.jsonl$/', 'max_age' => 30 * 86400],
     'ratelimit' => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
     'otp'       => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
-    'chart'          => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
+    // .json.lock: berkas kunci single-flight get-chart-data.php — dulu tidak pernah dibersihkan.
+    'chart'          => ['pattern' => '/^[0-9a-f]{32}\.json(\.lock)?$/',     'max_age' => 86400],
+    // Ditulis api/live-price.php (TTL 1 dtk; sapuan sendiri hanya 1 dari 20 permintaan).
+    'live-price'     => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
+    // Ditulis api/get-history.php untuk backtest (data historis panjang).
+    'history'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 7 * 86400],
     'td'             => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
     'crypto-futures' => ['pattern' => '/^.*\.json$/',                        'max_age' => 3600],
     'ai_signals'     => ['pattern' => '/^.*\.json$/',                        'max_age' => 86400],

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-push: uji e2e menyeluruh (tests/e2e/klik.test.mjs) di XAMPP lokal sebelum kode naik —
+# push ke master langsung ter-deploy ke Hostinger.
+#   - Semua API baca, semua halaman, semua panel dashboard, simbol watchlist, timeframe,
+#     layar penuh (desktop & iPhone), plus PHP Warning/Fatal baru di log server.
+#   - Bila XAMPP/Edge/PHP tidak tersedia, uji dilewati dengan peringatan (E2E_WAJIB=1 untuk mewajibkan).
+# Aktifkan sekali per clone:  npm run hooks:install
+# Lewati sekali:              git push --no-verify
+if [ -z "$PHP_BIN" ] && [ -x "D:/xamp/php/php.exe" ]; then export PHP_BIN="D:/xamp/php/php.exe"; fi
+echo "pre-push: menjalankan uji e2e (± 3 menit)…" >&2
+npm run --silent test:e2e || { echo "pre-push: uji e2e GAGAL — push dibatalkan. Lihat daftar masalah di atas." >&2; exit 1; }
+exit 0

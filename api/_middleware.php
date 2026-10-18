@@ -883,6 +883,20 @@ if (!function_exists('qi_mt5_request')) {
         return ($kode >= 200 && $kode < 300) ? $raw : false;
     }
 }
+if (!function_exists('qi_candle_kripto_basi')) {
+    /**
+     * Kripto diperdagangkan 24/7, tetapi BTC di OANDA (dan sebagian broker MT5) tutup akhir pekan.
+     * true bila $symbol kripto (…USDT) dan candle terakhirnya lebih tua dari satu batang + 2 jam
+     * → pemanggil sebaiknya memakai Binance. Simbol non-kripto selalu false (pasar memang tutup).
+     */
+    function qi_candle_kripto_basi(string $symbol, string $interval, array $candles, ?int $kini = null): bool {
+        if (!str_ends_with(strtoupper($symbol), 'USDT') || !$candles) return false;
+        $durasi = ['1' => 60, '5' => 300, '15' => 900, '30' => 1800, '60' => 3600, '240' => 14400,
+                   'D' => 86400, 'W' => 604800, 'M' => 2678400, 'MN' => 2678400][$interval] ?? 3600;
+        $akhir = end($candles);
+        return (($kini ?? time()) - (int)($akhir['time'] ?? 0)) > $durasi + 7200;
+    }
+}
 if (!function_exists('qi_mt5_candles')) {
     /** Candle feed broker MT5 (oldest-first) atau [] bila tidak tersedia → pemanggil fallback. */
     function qi_mt5_candles(string $symbol, string $interval, int $limit = 1000): array {

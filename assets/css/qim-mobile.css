@@ -28,6 +28,8 @@ div:has(> #qimChartSkel) { position: relative; }
     transition: opacity .25s ease, visibility 0s linear 0s;
 }
 .qim-skel-chart.hilang { opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility 0s linear .25s; }
+/* Animasi kilau tetap berjalan pada elemen tersembunyi (visibility) → hitung ulang gaya terus-menerus. */
+.qim-skel-chart.hilang i { animation: none; }
 .qim-skel-chart i { flex: 1 1 0; border-radius: 2px; }
 .qim-skel-chart i:nth-child(2) { height: 38%; } .qim-skel-chart i:nth-child(3) { height: 52%; } .qim-skel-chart i:nth-child(4) { height: 44%; }
 .qim-skel-chart i:nth-child(5) { height: 61%; } .qim-skel-chart i:nth-child(6) { height: 55%; } .qim-skel-chart i:nth-child(7) { height: 70%; }

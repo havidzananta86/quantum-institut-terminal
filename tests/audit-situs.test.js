@@ -26,7 +26,7 @@ cek('positions-feed & berbagi posisi memakai skema yang sama', /qi_posisi_akun_s
 
 console.log('Kripto 24/7');
 const gc = read('api/get-chart-data.php'), lp = read('api/live-price.php');
-cek('chart kripto: candle OANDA/MT5 yang basi (akhir pekan) diganti Binance', /str_ends_with\(\$symbol, 'USDT'\)/.test(gc) && /\$durasiBatang \+ 7200/.test(gc) && gc.indexOf('$durasiBatang + 7200') < gc.indexOf("in_array($symbol, ['BTCUSDT'"));
+cek('chart kripto: candle OANDA/MT5 yang basi (akhir pekan) diganti Binance', /qi_candle_kripto_basi\(\$symbol, \$interval, \$candles\)/.test(gc) && gc.indexOf('qi_candle_kripto_basi(') < gc.indexOf("in_array($symbol, ['BTCUSDT'"));
 cek('harga kripto: quote OANDA/MT5 yang tutup/basi dilepas supaya diisi Binance', /'closed' \|\| \(int\)\(\$row\['tick_age'\] \?\? 0\) > 900/.test(lp) && lp.indexOf("=== 'closed'") < lp.indexOf('CRYPTO via Binance'));
 
 console.log('Browser');

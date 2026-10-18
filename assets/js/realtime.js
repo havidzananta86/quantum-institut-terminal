@@ -41,7 +41,8 @@
     var DELAY_MAKS = 30000;
 
     // ── Bagian 2: tick broker (EA MT5) ──────────────────────────────────────
-    var INTERVAL_BROKER = 1500;   // ms
+    var INTERVAL_BROKER = 1500;   // ms — saat EA benar-benar mengalirkan tick
+    var INTERVAL_BROKER_DIAM = 15000; // ms — tidak ada aliran (EA mati / akhir pekan): dulu tetap 1,5 dtk
     var MAKS_UMUR_BROKER = 5000;  // tick lebih tua dari ini tidak dianggap streaming
 
     var keadaanWs = 'idle';       // idle | mencoba | stream | mati
@@ -211,12 +212,20 @@
         return {};
     }
 
+    function jadwalBroker(ms) {
+        clearTimeout(brokerTimer);
+        if (!brokerJalan || dijeda) return;
+        brokerTimer = setTimeout(ambilTickBroker, ms);
+    }
+
     function ambilTickBroker() {
         if (!brokerJalan || dijeda) return;
+        var berikut = INTERVAL_BROKER_DIAM;
         try {
             fetch('api/tick.php', { headers: headerAuth(), cache: 'no-store' })
                 .then(function (r) { return r.json(); })
                 .then(function (j) {
+                    if (j && j.streaming) berikut = INTERVAL_BROKER;
                     if (!j || j.status !== 'success' || !j.ticks) return;
                     var jumlah = 0;
                     for (var sym in j.ticks) {
@@ -237,7 +246,8 @@
                         laporkan();
                     }
                 })
-                .catch(function () { /* diamkan: polling 15 detik tetap berjalan */ });
+                .catch(function () { /* diamkan: polling 15 detik tetap berjalan */ })
+                .then(function () { jadwalBroker(berikut); });
         } catch (e) { /* fetch tidak tersedia: abaikan */ }
     }
 
@@ -245,13 +255,12 @@
         if (brokerJalan) return;
         if (!punyaToken()) return;            // belum login: jangan memanggil endpoint ber-auth
         brokerJalan = true;
-        ambilTickBroker();
-        brokerTimer = setInterval(ambilTickBroker, INTERVAL_BROKER);
+        ambilTickBroker();   // menjadwalkan dirinya sendiri (cepat bila streaming, lambat bila tidak)
     }
 
     function hentikanBroker() {
         brokerJalan = false;
-        clearInterval(brokerTimer);
+        clearTimeout(brokerTimer);
         brokerTimer = null;
     }
 

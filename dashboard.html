@@ -45,7 +45,7 @@
     <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=1.2.5">
     <link rel="stylesheet" href="assets/css/qim-pages.css?v=1.7.5">
     <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.13">
-    <link rel="stylesheet" href="assets/css/qim-mobile.css?v=1.0.0">
+    <link rel="stylesheet" href="assets/css/qim-mobile.css?v=1.0.1">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -363,13 +363,10 @@
         // sampai halaman dimuat ulang ("harus refresh dulu"). Kini dipisah: chart wajib,
         // alat gambar boleh gagal tanpa mematikan chart.
         import { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode } from 'lightweight-charts';
-        let DrawingManager = null;
-        try {
-            const alatGambar = await import('https://cdn.jsdelivr.net/npm/lightweight-charts-drawing@0.5.1/dist/lightweight-charts-drawing.es.js');
-            DrawingManager = alatGambar.DrawingManager || null;
-        } catch (e) {
-            console.warn('[QI] Library alat gambar gagal dimuat — chart tetap berjalan tanpa alat gambar.');
-        }
+        // Alat gambar (±81 KB dari CDN) dimuat SETELAH chart siap: dulu chart menunggu library
+        // opsional ini selesai diunduh sebelum bisa digambar. Saat tiba, ia dipasang ke chart
+        // yang sudah ada lewat peristiwa 'lc-drawing-ready' (lihat dashboard-app.js).
+        const DrawingManager = null;
         // Di v5, `series.setMarkers()` DIHAPUS dan diganti `createSeriesMarkers()`.
         // Ketiadaan fungsi itu TIDAK boleh menggagalkan import (import bernama yang tidak
         // ada = error saat modul ditautkan), jadi diambil lewat import dinamis dan
@@ -382,6 +379,15 @@
         } catch (e) { /* biarkan null: jalur v4 tetap tersedia */ }
         window._lwModules = { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode, DrawingManager, createSeriesMarkers };
         window.dispatchEvent(new CustomEvent('lc-modules-ready'));
+        try {
+            const alatGambar = await import('https://cdn.jsdelivr.net/npm/lightweight-charts-drawing@0.5.1/dist/lightweight-charts-drawing.es.js');
+            if (alatGambar.DrawingManager) {
+                window._lwModules.DrawingManager = alatGambar.DrawingManager;
+                window.dispatchEvent(new CustomEvent('lc-drawing-ready'));
+            }
+        } catch (e) {
+            console.warn('[QI] Library alat gambar gagal dimuat — chart tetap berjalan tanpa alat gambar.');
+        }
     </script>
 </head>
 
@@ -4289,8 +4295,8 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-chart-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.26"></script>
-<script src="assets/js/qim-dashboard.js?v=1.7.3"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.28"></script>
+<script src="assets/js/qim-dashboard.js?v=1.7.4"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
 <script src="assets/js/qim-mt5-socket.js?v=1.0.1"></script>
@@ -4326,7 +4332,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 })();
 </script>
 <script src="assets/js/pro-features.js?v=2.5.2"></script>
-<script src="assets/js/pro-trading-tools.js?v=2.4.3"></script>
+<script src="assets/js/pro-trading-tools.js?v=2.4.4"></script>
 <!-- GAYA CHART — sumber tunggal penghalusan tampilan (zona WIB, presisi, watermark) -->
 <script src="assets/js/chart-style.js?v=1.2.0"></script>
 <!-- ZONA POSISI — kotak entry/TP/SL di atas chart (overlay HTML, tidak menyentuh data) -->
@@ -4338,15 +4344,15 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-header.js?v=1.0.0"></script>
 <script src="assets/js/qim-auto-paper.js?v=1.0.0"></script>
 <script src="assets/js/qim-mobile.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-pro.js?v=1.0.1"></script>
+<script src="assets/js/dashboard-pro.js?v=1.0.2"></script>
 <script src="assets/js/advanced-trading.js?v=3.2.0"></script>
 <script src="assets/js/perf-upgrades.js?v=2.2.1"></script>
-<script src="assets/js/ui-improvements.js?v=3.2.2"></script>
+<script src="assets/js/ui-improvements.js?v=3.2.3"></script>
 <script src="assets/js/main.js?v=1.4.1" defer></script>
 <!-- Fondasi aksesibilitas: peran tab, operasi keyboard, perangkap fokus, skip link -->
-<script src="assets/js/a11y.js?v=1.0.3"></script>
+<script src="assets/js/a11y.js?v=1.0.4"></script>
 <!-- Aliran harga realtime (WebSocket kripto) + status yang jujur di bar atas -->
-<script src="assets/js/realtime.js?v=1.0.3" defer></script>
+<script src="assets/js/realtime.js?v=1.0.4" defer></script>
 <script src="assets/js/dashboard-tema.js?v=1.0.1"></script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 <script>

@@ -333,6 +333,10 @@
         _connectRealFeed(sym, basePrice) {
             // Stop previous poll
             if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+            // Widget ini hanya hidup bila wadahnya ada di halaman. Dashboard sekarang tidak memuat
+            // #orderBookContainer (panel Order Book punya pemuatnya sendiri), tetapi polling 1,5 dtk
+            // tetap berjalan — ±40 permintaan/menit ke server & Binance tanpa ditampilkan di mana pun.
+            if (!document.getElementById('orderBookContainer')) return;
 
             if (!CRYPTO_OB_SYMBOLS.has(sym)) {
                 // Instrumen non-kripto: sumber tidak menyediakan kedalaman order book nyata.

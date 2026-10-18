@@ -242,7 +242,8 @@ function initSidebarCollapse() {
 // #27 — Swipe Gesture Between Panels (mobile)
 // ═══════════════════════════════════════════════════════════
 function initSwipeGestures() {
-    if (window.innerWidth > 768) return;
+    // matchMedia, bukan innerWidth: membaca innerWidth saat muat memaksa layout seluruh halaman.
+    if (window.matchMedia ? !window.matchMedia('(max-width: 768px)').matches : window.innerWidth > 768) return;
     var mainScroll = document.getElementById('mainScroll');
     if (!mainScroll) return;
     var startX = 0, startY = 0, moved = false, mulaiDiChart = false;

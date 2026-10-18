@@ -101,8 +101,9 @@
             btn.setAttribute('aria-selected', aktif ? 'true' : 'false');
             btn.setAttribute('tabindex', '-1');
         });
-        var fokus = semua.filter(function (b) { return b.classList.contains('active') && tabTerlihat(b); })[0]
-                 || semua.filter(tabTerlihat)[0];
+        var fokus = null;
+        for (var i = 0; i < semua.length && !fokus; i++) if (semua[i].classList.contains('active') && tabTerlihat(semua[i])) fokus = semua[i];
+        for (var j = 0; j < semua.length && !fokus; j++) if (tabTerlihat(semua[j])) fokus = semua[j];
         if (fokus) fokus.setAttribute('tabindex', '0');
     }
 
@@ -111,11 +112,20 @@
     function bungkusSwitchPanel() {
         if (typeof window.switchPanel !== 'function' || window.switchPanel.__qiA11y) return;
         var asli = window.switchPanel;
+        var dijadwalkan = false;
         var terbungkus = function () {
             var hasil = asli.apply(this, arguments);
-            aman(sinkronkanTab);
-            // Panel yang baru dirender memuat emoji baru — tandai lagi (murah, sekali per pindah panel).
-            aman(tandaiEmojiDekoratif);
+            // Ditunda ke frame berikutnya (digabung): sinkronkanTab membaca tata letak, dan memanggilnya
+            // langsung di tengah pergantian panel memaksa hitung ulang layout berkali-kali saat muat.
+            if (!dijadwalkan) {
+                dijadwalkan = true;
+                (window.requestAnimationFrame || setTimeout)(function () {
+                    dijadwalkan = false;
+                    aman(sinkronkanTab);
+                    // Panel yang baru dirender memuat emoji baru — tandai lagi (sekali per pindah panel).
+                    aman(tandaiEmojiDekoratif);
+                });
+            }
             return hasil;
         };
         terbungkus.__qiA11y = true;
@@ -203,7 +213,30 @@
     // Saat dialog muncul, simpan elemen fokus sebelumnya; saat hilang, kembalikan.
     function pantauDialog() {
         if (!window.MutationObserver) return;
-        var observer = new MutationObserver(function () {
+        // Halaman ini mengubah class/style ratusan kali per menit (tick harga). Dulu SETIAP perubahan
+        // memicu getComputedStyle pada dialog (hitung ulang gaya paksa) — ±0,6 dtk CPU saat muat di HP
+        // dan baterai terkuras. Sekarang hanya perubahan yang menyentuh dialog (atau leluhurnya) yang
+        // diperiksa, paling sering sekali per frame.
+        var tertunda = false;
+        var relevan = function (catatan) {
+            if (fokusSebelumDialog) return true;   // ada dialog terbuka: tunggu ia tertutup
+            var dialogs = document.querySelectorAll(SELEKTOR_DIALOG);
+            if (!dialogs.length) return false;
+            for (var i = 0; i < catatan.length; i++) {
+                var t = catatan[i].target;
+                if (!t || t.nodeType !== 1) continue;
+                for (var j = 0; j < dialogs.length; j++) {
+                    if (t === dialogs[j] || t.contains(dialogs[j])) return true;
+                }
+            }
+            return false;
+        };
+        var observer = new MutationObserver(function (catatan) {
+            if (tertunda || !relevan(catatan)) return;
+            tertunda = true;
+            (window.requestAnimationFrame || setTimeout)(function () { tertunda = false; periksaDialog(); });
+        });
+        function periksaDialog() {
             var dialog = dialogTerbuka();
             if (dialog && !dialog.__qiFokus) {
                 dialog.__qiFokus = true;
@@ -215,7 +248,7 @@
                 fokusSebelumDialog = null;
                 aman(function () { if (target && target.focus) target.focus(); });
             }
-        });
+        }
         observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
     }
 

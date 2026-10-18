@@ -9,6 +9,8 @@
 # Checks the working tree, not only what is staged.
 
 PHP="${PHP_BIN:-php}"
+# XAMPP di Windows: php biasanya tidak ada di PATH.
+if ! "$PHP" -v >/dev/null 2>&1 && [ -x "D:/xamp/php/php.exe" ]; then PHP="D:/xamp/php/php.exe"; fi
 if ! "$PHP" -r 'exit(extension_loaded("mbstring") && extension_loaded("openssl") ? 0 : 1);' >/dev/null 2>&1; then
     echo "pre-commit: '$PHP' is missing or lacks mbstring/openssl." >&2
     echo "            Set PHP_BIN to a full PHP, e.g. PHP_BIN=D:/xamp/php/php.exe" >&2

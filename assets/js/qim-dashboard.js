@@ -80,13 +80,19 @@
                 const disabled = item.chartSupported === false;
                 const row = node('div', 'qim-watch-row');
                 row.setAttribute('role', 'button');
-                row.tabIndex = disabled ? -1 : 0;
+                row.tabIndex = 0;   // tetap bisa difokus: baris nonaktif menjelaskan dirinya saat dipilih
                 if (disabled) row.setAttribute('aria-disabled', 'true');
                 row.title = disabled ? item.label + ' · feed saham belum tersedia' : item.label;
                 row.setAttribute('aria-label', item.symbol + ', ' + priceText(data && data.price) + ', ' + (hasChange ? change.toFixed(2) + '%' : 'harga belum tersedia'));
                 if (item.symbol === active) row.classList.add('is-active');
                 const select = () => {
-                    if (disabled || typeof window.setChartSymbolFull !== 'function') return;
+                    if (disabled) {
+                        // Di layar sentuh tidak ada tooltip; dulu ketukan pada saham tidak memberi tanggapan apa pun.
+                        const pesan = item.symbol + ': feed harga saham belum tersedia — chart & Paper Trading saham menyusul.';
+                        if (typeof window.showToast === 'function') window.showToast(pesan, 'info', 3500);
+                        return;
+                    }
+                    if (typeof window.setChartSymbolFull !== 'function') return;
                     window.switchPanel('panel-charts');
                     window.setChartSymbolFull(item.symbol, item.tv, pairLabel(item.symbol));
                 };
@@ -99,7 +105,7 @@
                 name.append(node('b', '', item.symbol), node('small', '', item.label.replace(' · ', ' / ')));
                 asset.append(name);
                 const quote = node('span', 'qim-watch-quote');
-                quote.append(node('span', 'qim-watch-price', priceText(data && data.price)));
+                quote.append(node('span', 'qim-watch-price', disabled ? 'Segera' : priceText(data && data.price)));
                 quote.append(node('span', 'qim-watch-change ' + (hasChange ? (change >= 0 ? 'qim-positive' : 'qim-negative') : ''),
                     hasChange ? (change >= 0 ? '+' : '') + change.toFixed(2) + '%' : '—'));
                 const spark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

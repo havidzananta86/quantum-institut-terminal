@@ -33,8 +33,17 @@ const TZ_SESSIONS = {
 const DAYS_ID = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
+// Formatter per zona disimpan: toLocaleString(..., {timeZone}) membuat formatter Intl baru di setiap
+// panggilan (5 zona × tiap detik) dan termasuk fungsi termahal saat profil muat awal di HP.
+const _fmtZona = {};
 function getZoneTime(tz) {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+    const f = _fmtZona[tz] || (_fmtZona[tz] = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric'
+    }));
+    const p = {};
+    for (const x of f.formatToParts(new Date())) p[x.type] = x.value;
+    return new Date(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
 }
 function zeroPad(n) { return String(n).padStart(2,'0'); }
 
@@ -510,11 +519,24 @@ fetchMarketData();
 fetchCalendarCount();
 fetchStrengthStack();
 fetchCalendarHeatmap();
-fetchMtfBias('XAUUSD');
+// MTF bias mengunduh 5 timeframe sekaligus (±480 KB). Dulu dijalankan saat halaman dibuka dan
+// tiap 2 menit walau Overview/MTF tidak sedang dilihat (±14 MB/jam kuota HP). Sekarang hanya bila
+// widgetnya tampil, paling sering sekali per menit.
+let _mtfTerakhir = 0;
+function mtfBiasBilaTerlihat() {
+    const p = (typeof _activePanel !== 'undefined') ? _activePanel : '';
+    if (p !== 'panel-overview' && p !== 'panel-mtf') return;
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - _mtfTerakhir < 60000) return;
+    _mtfTerakhir = Date.now();
+    fetchMtfBias(document.getElementById('mtfPairSelect')?.value || document.getElementById('mtfSymbol')?.value || 'XAUUSD');
+}
+document.addEventListener('qim:panel-change', () => mtfBiasBilaTerlihat());
+window.addEventListener('load', () => setTimeout(mtfBiasBilaTerlihat, 300));
 setInterval(fetchMarketData,      15000);
 setInterval(fetchStrengthStack,   30000);
 setInterval(fetchCalendarHeatmap, 300000);
-setInterval(() => fetchMtfBias(document.getElementById('mtfPairSelect')?.value || 'XAUUSD'), 120000);
+setInterval(mtfBiasBilaTerlihat, 60000);
 // Auto-refresh P&L paper trading + live price display (5s)
 setInterval(() => {
     if (_activePanel === 'panel-paper') { ptUpdateLivePrice(); ptRender(); }
@@ -576,17 +598,19 @@ function switchPanel(id) {
         return;
     }
     // Loading bar animation
+    // Animasi dimulai ulang lewat frame berikutnya, BUKAN dengan membaca offsetWidth: membaca tata
+    // letak di sini memaksa layout seluruh halaman (±0,2 dtk saat muat awal di HP).
     const bar = document.getElementById('panelLoadBar');
-    if (bar) { bar.className = 'loading'; bar.offsetWidth; }
+    if (bar) { bar.className = ''; requestAnimationFrame(() => { bar.className = 'loading'; }); }
 
     // Hide current
     document.querySelectorAll('.panel-content').forEach(p => p.classList.add('hidden'));
     // Show new with fade-in animation
     const el = document.getElementById(id);
     if (el) {
+        // Panel baru keluar dari display:none, jadi animasinya mulai sendiri — tanpa membaca
+        // offsetWidth (memaksa layout) dan tanpa jeda satu frame (berkedip).
         el.classList.remove('hidden');
-        el.classList.remove('panel-fade-in');
-        void el.offsetWidth; // force reflow
         el.classList.add('panel-fade-in');
     }
     // Finish loading bar
@@ -1591,7 +1615,7 @@ function initPanel(id) {
    ═══════════════════════════════════════════════════════════════════════════ */
 const QI_SEGAR_MS = 12000;          // agresif: 12 detik (permintaan pengguna)
 const QI_PANEL_SEGAR = {
-    'panel-overview':    [() => fetchMarketData()],
+    'panel-overview':    [() => fetchMarketData(), () => mtfBiasBilaTerlihat()],
     'panel-account':     [() => loadOpenPositions(), () => loadBalanceHistory(), () => loadAccountAnalytics()],
     'panel-signal':      [() => fetchSignalMatrix()],
     'panel-outlook':     [() => fetchOutlook()],
@@ -1610,7 +1634,7 @@ const QI_PANEL_SEGAR = {
     'panel-sentiment':   [() => renderSentimentGauge()],
     'panel-heatmap':     [() => fetchCalendarHeatmap()],
     'panel-community':   [() => { if (typeof renderChat === 'function') renderChat(); }],
-    'panel-mtf':         [() => fetchMtfBias((document.getElementById('mtfPairSelect') || {}).value || 'XAUUSD')],
+    'panel-mtf':         [() => mtfBiasBilaTerlihat()],
 };
 let _qiSegarJalan = false;
 function qiSegarkanPanelAktif() {
@@ -3042,6 +3066,25 @@ let _lwSeries    = null;
 let _lwVolume    = null;   // seri histogram volume (panel bawah chart)
 let _lwRsi       = null;
 let _lwDrawings  = null;
+// Pasang alat gambar ke chart yang ada. Dipanggil saat chart dibangun DAN saat library alat
+// gambar baru tiba (dimuat setelah chart supaya chart tidak menunggu unduhan opsional).
+function pasangAlatGambar() {
+    const DM = window._lwModules && window._lwModules.DrawingManager;
+    if (typeof DM !== 'function' || !_lwChart || !_lwSeries || _lwDrawings) return;
+    try {
+        _lwDrawings = new DM(_lwChart, _lwSeries, { magnet: 'weak' });
+        // Restore drawings for this symbol from localStorage
+        const drawKey = 'qi_lw_' + _tvSymbol.replace(/[^a-z0-9]/gi, '_');
+        try { const saved = localStorage.getItem(drawKey); if (saved) _lwDrawings.importJSON(saved); } catch(e){}
+        _lwDrawings.on('change', () => {
+            try { localStorage.setItem(drawKey, _lwDrawings.exportJSON()); } catch(e){}
+        });
+    } catch (e) {
+        console.warn('[QI] Alat gambar tidak dapat diaktifkan — chart tetap berjalan.');
+        _lwDrawings = null;
+    }
+}
+window.addEventListener('lc-drawing-ready', () => pasangAlatGambar());
 let _lwTool      = null;
 let _tvSymbol    = 'OANDA:BTCUSD';
 let _tvSymLabel  = 'BTC/USDT';
@@ -3213,22 +3256,7 @@ async function buildLwChart() {
     // Alat gambar bersifat OPSIONAL: bila library-nya tidak ada, chart harus tetap
     // tampil (dulu baris ini dipanggil tanpa penjaga sehingga kegagalannya
     // menghentikan seluruh penyiapan chart dan hasilnya chart kosong).
-    let drawKey = null;
-    if (typeof DrawingManager === 'function') {
-        try {
-            _lwDrawings = new DrawingManager(_lwChart, _lwSeries, { magnet: 'weak' });
-
-            // Restore drawings for this symbol from localStorage
-            drawKey = 'qi_lw_' + _tvSymbol.replace(/[^a-z0-9]/gi, '_');
-            try { const saved = localStorage.getItem(drawKey); if (saved) _lwDrawings.importJSON(saved); } catch(e){}
-            _lwDrawings.on('change', () => {
-                try { localStorage.setItem(drawKey, _lwDrawings.exportJSON()); } catch(e){}
-            });
-        } catch (e) {
-            console.warn('[QI] Alat gambar tidak dapat diaktifkan — chart tetap berjalan.');
-            _lwDrawings = null;
-        }
-    }
+    pasangAlatGambar();
 
     // ─── Legenda OHLC mengikuti kursor (#1) ──────────────────────────────────
     // Tanpa ini, bar OHLC hanya menampilkan candle terakhir sehingga pengguna tidak
@@ -6055,7 +6083,9 @@ function updateOhlcSourceBadge() {
     const simulasi = _lwCandlesMeta.source === 'simulasi';
     let umur = '';
     if (_lwCandlesMeta.generatedAt) {
-        const detik = Math.max(0, Math.round((Date.now() - Date.parse(_lwCandlesMeta.generatedAt)) / 1000));
+        // Candle terakhir diperbarui tiap tick (lihat updateOhlcBar), jadi umur = yang terbaru dari keduanya.
+        const t = Math.max(Date.parse(_lwCandlesMeta.generatedAt) || 0, _lwCandlesMeta.tickAt || 0);
+        const detik = Math.max(0, Math.round((Date.now() - t) / 1000));
         if (Number.isFinite(detik)) umur = ' · ' + (detik <= 5 ? 'baru' : detik + 's');
     }
     el.textContent = (OHLC_SOURCE_LABELS[_lwCandlesMeta.source] || String(_lwCandlesMeta.source).toUpperCase()) + umur;
@@ -6248,6 +6278,7 @@ window.qiRealtimeState = function (state, host, info) {
     } catch (e) {}
 };
 
+const _ohlcSync = { kunci: '', boleh: 0 };   // jadwal sinkron candle penuh (lihat updateOhlcBar)
 async function updateOhlcBar() {
     updateOhlcSourceBadge();
     if (_ohlcHover) return; // jangan timpa tampilan candle yang sedang ditunjuk kursor
@@ -6272,6 +6303,7 @@ async function updateOhlcBar() {
             try {
                 _lwSeries.update(updatedCandle);
                 _lwLastCandles[_lwLastCandles.length - 1] = updatedCandle;
+                if (_lwCandlesMeta) _lwCandlesMeta.tickAt = Date.now();
             } catch(e) {}
 
             // Update Header & HUD Immediately
@@ -6309,7 +6341,17 @@ async function updateOhlcBar() {
         }
     }
 
-    // 2. Periodic sync from get-chart-data API to capture newly closed bars
+    // 2. Periodic sync from get-chart-data API to capture newly closed bars.
+    // Hanya saat batang baru MEMANG sudah waktunya (dulu: 1000 candle diunduh ulang tiap ±10 dtk,
+    // ±30 MB/jam kuota HP). Bila pasar tutup / batang belum berganti, jeda bertahap s.d. 5 menit.
+    const kini = Date.now() / 1000;
+    const durBatang = ({ '1': 60, '5': 300, '15': 900, '30': 1800, '60': 3600, '240': 14400, 'D': 86400, 'W': 604800, 'MN': 2592000 })[_tvInterval] || 3600;
+    const akhirLokal = _lwLastCandles && _lwLastCandles.length ? _lwLastCandles[_lwLastCandles.length - 1] : null;
+    const kunciSync = found.key + '|' + _tvInterval;
+    if (_ohlcSync.kunci !== kunciSync) { _ohlcSync.kunci = kunciSync; _ohlcSync.boleh = 0; }
+    if (akhirLokal && kini < akhirLokal.time + durBatang) return;
+    if (kini < _ohlcSync.boleh) return;
+    _ohlcSync.boleh = kini + 15;
     try {
         const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
         const data = await res.json();
@@ -6322,6 +6364,8 @@ async function updateOhlcBar() {
         if (_lwLastCandles.length && candles.length >= _lwLastCandles.length) {
             const lastApi = candles[candles.length - 1];
             const lastLocal = _lwLastCandles[_lwLastCandles.length - 1];
+            // Belum ada batang baru (pasar tutup / data tertunda): jangan tanya lagi terlalu cepat.
+            if (lastApi.time === lastLocal.time) _ohlcSync.boleh = kini + Math.min(300, Math.max(30, durBatang / 4));
             if (lastApi.time !== lastLocal.time) {
                 _lwSeries.setData(candles);
                 perbaruiVolume(candles);

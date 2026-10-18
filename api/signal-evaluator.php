@@ -94,18 +94,27 @@ function qi_sig_ambil_candle(string $symbol, array $intervals): ?array {
         // jauh lebih basi daripada cache umum (OANDA/sumber lama) — misalnya bridge VPS mati.
         $umum = $dir . '/' . md5(strtoupper($symbol) . '_' . $iv) . '.json';
         $mt5  = $dir . '/' . md5(strtoupper($symbol) . '_' . $iv . '_mt5') . '.json';
-        $urutan = [$umum];
-        if (is_file($mt5) && (!is_file($umum) || (int)@filemtime($mt5) >= (int)@filemtime($umum) - 300)) {
-            $urutan = [$mt5, $umum];
-        }
-        foreach ($urutan as $file) {
+        // Dibandingkan menurut WAKTU CANDLE TERAKHIR, bukan waktu berkas: berkas MT5 bisa baru ditulis
+        // padahal isinya beku (broker tutup kripto di akhir pekan) — dulu itu mengalahkan Binance.
+        $kandidat = [];
+        foreach (['mt5' => $mt5, 'umum' => $umum] as $jenis => $file) {
             if (!is_file($file)) continue;
             $data = json_decode((string)@file_get_contents($file), true);
             if (!is_array($data) || !empty($data['simulated'])) continue; // data palsu: jangan dipakai
             $candles = $data['candles'] ?? null;
             if (!is_array($candles) || count($candles) < 3) continue;
-            return ['interval' => $iv, 'candles' => $candles, 'source' => (string)($data['source'] ?? '')];
+            $akhir = end($candles);
+            $kandidat[$jenis] = ['interval' => $iv, 'candles' => $candles, 'source' => (string)($data['source'] ?? ''),
+                                 'akhir' => (int)($akhir['time'] ?? 0)];
         }
+        if (!$kandidat) continue;
+        $pilih = $kandidat['mt5'] ?? $kandidat['umum'];
+        if (isset($kandidat['mt5'], $kandidat['umum'])
+            && $kandidat['mt5']['akhir'] < $kandidat['umum']['akhir'] - qi_sig_durasi_interval($iv)) {
+            $pilih = $kandidat['umum'];   // MT5 tertinggal > 1 batang (bridge mati / broker tutup)
+        }
+        unset($pilih['akhir']);
+        return $pilih;
     }
     return null;
 }
@@ -121,6 +130,8 @@ function qi_sig_hangatkan_mt5(string $symbol, string $iv): bool {
     if (qi_tv_bridge_symbol($symbol) === null || !qi_mt5_configured()) return false;
     $candles = qi_mt5_candles($symbol, $iv);
     if (!$candles) return false;
+    // Broker tutup akhir pekan untuk kripto: candle beku jangan menimpa cache (Binance dipakai).
+    if (function_exists('qi_candle_kripto_basi') && qi_candle_kripto_basi($symbol, $iv, $candles)) return false;
     $dir = __DIR__ . '/../cache/chart';
     if (!is_dir($dir)) @mkdir($dir, 0755, true);
     $payload = json_encode([

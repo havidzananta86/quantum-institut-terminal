@@ -28,6 +28,12 @@
     }
     function simbolSekarang() {
         const s = (typeof _tvSymbol !== 'undefined' && _tvSymbol) ? String(_tvSymbol) : 'XAUUSD';
+        // Kunci data dari watchlist: kode TradingView tidak selalu sama dengan kunci API
+        // (BTC = OANDA:BTCUSD tetapi datanya BTCUSDT; dulu "BTCUSD" → candle SIMULASI → bias H4 ditolak).
+        try {
+            const entri = WL_GROUPS.flatMap(g => g.syms).find(x => x.tv === s);
+            if (entri && entri.key) return String(entri.key).toUpperCase();
+        } catch (e) {}
         return s.replace(/^[A-Z]+:/, '').toUpperCase();
     }
 
