@@ -177,6 +177,60 @@ if (!$dryRun) {
     }
 }
 
+// ── Sinyal VALID dari indikator Pine "SMC+SnD BUY SELL COMBO" ───────────────
+// Port PHP indikator (api/_pine_smcsnd.php) dipindai per bar H4 yang sudah tutup (lihat api/_pine_sinyal.php):
+// transisi ke VALID BUY/SELL dicatat di cache/pine_signals.json dan diberitahukan SEKALI ke pengguna yang
+// mengaktifkan kanal notifikasi. Catatan terpisah dari riwayat sinyal resmi. Matikan notifikasinya dengan
+// define('QI_PINE_NOTIF', false) di config/api_keys.php (pencatatan tetap jalan).
+if (!$dryRun) {
+    try {
+        $penandaPine = __DIR__ . '/../cache/pine_scan_auto.txt';
+        if (is_file($penandaPine) && (time() - (int)@filemtime($penandaPine)) < 600) {
+            $out['sinyal_pine'] = ['dilewati' => 'baru dijalankan <10 menit lalu'];
+        } else {
+            if (!defined('QI_SERVER_MT5')) define('QI_SERVER_MT5', true);
+            if (!defined('QI_AI_SIGNAL_LIB')) define('QI_AI_SIGNAL_LIB', 1);
+            require_once __DIR__ . '/_pine_sinyal.php';
+            require_once __DIR__ . '/ai-signal.php';
+            if (function_exists('ai_load_candles') && function_exists('qi_pine_pindai')) {
+                @file_put_contents($penandaPine, (string)time(), LOCK_EX);
+                $notifPine = (!defined('QI_PINE_NOTIF') || QI_PINE_NOTIF)
+                    ? static function (array $rek) {
+                        if (!function_exists('qi_notif_sebar_sinyal')) require_once __DIR__ . '/_notif.php';
+                        $h = qi_notif_sebar_sinyal($rek);
+                        return ['ok' => $h['ok'], 'pengguna' => $h['pengguna']];
+                    }
+                    : null;
+                $p = qi_pine_pindai([
+                    'muat'  => fn(string $simbol, string $iv): array => ai_load_candles($simbol, $iv),
+                    'notif' => $notifPine,
+                ]);
+                $out['sinyal_pine'] = ['dinilai' => $p['dinilai'], 'dibuat' => $p['dibuat'], 'dipindai' => $p['dipindai'], 'total_rekor' => $p['total_rekor'] ?? null];
+            }
+        }
+    } catch (Throwable $e) {
+        $out['sinyal_pine'] = ['error' => 'pemindai sinyal Pine dilewati'];
+    }
+}
+
+// ── Brief pasar harian ──────────────────────────────────────────────────────
+// Disiapkan lebih awal (mulai 06:00 WIB) supaya pengguna pertama tidak menunggu AI dan biaya AI tetap satu
+// panggilan per hari. Gagal tidak mengganggu cron; dashboard membuatnya sendiri bila belum ada.
+if (!$dryRun) {
+    try {
+        require_once __DIR__ . '/_brief_harian.php';
+        $jamWib = (int)(new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta')))->format('G');
+        if ($jamWib >= 6) {
+            $b = qi_brief_ambil(time());
+            $out['brief_harian'] = ['tanggal' => $b['tanggal'], 'sumber' => $b['sumber'], 'dari_cache' => $b['cache']];
+        } else {
+            $out['brief_harian'] = ['dilewati' => 'belum 06:00 WIB'];
+        }
+    } catch (Throwable $e) {
+        $out['brief_harian'] = ['error' => 'brief harian dilewati'];
+    }
+}
+
 // ── Retensi snapshot akun ───────────────────────────────────────────────────
 // EA mengirim snapshot tiap ±60 detik = ±1.440 baris/hari/akun, dan sebelumnya TIDAK
 // ADA pembersihan sama sekali (tumbuh tanpa batas: ±526 ribu baris per akun per tahun).

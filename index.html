@@ -94,7 +94,7 @@
           "name": "Berapa akurasi sinyal secara real?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Win rate bervariasi per mesin dan per instrumen — rata-rata 60–80% berdasarkan data historis. Anda bisa melihat track record transparan langsung di dashboard. Namun, akurasi masa lalu tidak menjamin hasil di masa depan."
+            "text": "Win rate bervariasi per mesin dan per instrumen — kami tidak menjanjikan angka tetap. Angka sebenarnya — termasuk sinyal yang kalah dan interval keyakinannya — tampil apa adanya di halaman Transparansi dan berubah seiring sinyal baru; saat sampelnya masih kecil, kami menulisnya. Namun, akurasi masa lalu tidak menjamin hasil di masa depan."
           }
         },
         {
@@ -138,7 +138,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.4">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
 
     <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
     <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.0">
@@ -220,6 +220,12 @@
         a:hover > .qi-logo-mark { filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)); }
     </style>
     <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+    <meta property="og:site_name" content="Quantum Institut Market Terminal">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
 </head>
 <body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
 
@@ -304,6 +310,7 @@
             <!-- Menu Horizontal Desktop (≥1024px) & Compact Tablet (768-1024px) -->
             <nav class="hidden md:flex items-center gap-4 lg:gap-8 text-xs lg:text-sm font-medium text-slate-300">
                 <a href="#mesin-kuantum" class="hover:text-cyan-400 transition-colors py-1">Mesin Kuantum</a>
+                <a href="transparansi.html" class="hover:text-cyan-400 transition-colors py-1">Transparansi</a>
                 <a href="#terminal" class="hover:text-cyan-400 transition-colors py-1">Terminal</a>
                 <a href="#panduan" class="hover:text-cyan-400 transition-colors py-1">Panduan</a>
                 <a href="#quantum-plus" class="hover:text-purple-400 transition-colors py-1 font-semibold text-purple-300 flex items-center gap-1">
@@ -370,6 +377,7 @@
         <!-- Mobile Menu Drawer (<768px) -->
         <div id="mobileMenu" class="hidden md:hidden bg-black/95 backdrop-blur-xl border-b border-white/[0.06] px-4 sm:px-6 py-6 space-y-4">
             <a href="#mesin-kuantum" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Mesin Kuantum</a>
+            <a href="transparansi.html" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Transparansi</a>
             <a href="#terminal" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Terminal</a>
             <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>
             <a href="#quantum-plus" class="mobile-nav-link block py-2 text-purple-300 hover:text-purple-400 font-medium">Quantum+ (PRO)</a>
@@ -449,7 +457,7 @@
                         <span class="text-slate-700">·</span>
                         <span class="qi-trust">
                             <svg class="text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            78% Akurasi
+                            <a href="transparansi.html" class="hover:text-white transition-colors">Track record terbuka</a>
                         </span>
                         <span class="text-slate-700">·</span>
                         <span class="qi-trust">
@@ -530,13 +538,14 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
                 <!-- Stat 1 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-cyan-500 tabular-nums" data-count-to="1247" data-count-suffix="" data-count-format="true">0</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Sinyal Bulan Ini</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-cyan-500 tabular-nums" id="idxStatSinyal">—</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Sinyal Tercatat</div>
                 </div>
                 <!-- Stat 2 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-emerald-300 to-emerald-500 tabular-nums" data-count-to="78" data-count-suffix="%">0%</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Akurasi Rata-rata</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-emerald-300 to-emerald-500 tabular-nums" id="idxStatWr">—</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Win Rate Sinyal Selesai</div>
+                    <div id="idxStatWrN" class="text-[10px] text-slate-500 mt-1 font-mono leading-snug">memuat…</div>
                 </div>
                 <!-- Stat 3 -->
                 <div class="reveal">
@@ -552,48 +561,31 @@
         </div>
     </section>
 
-    <!-- TESTIMONIAL SECTION — terpisah dari stats -->
+    <!-- BUKTI, BUKAN JANJI — pengganti testimoni. Testimoni bernama yang tidak bisa diverifikasi dihapus;
+         tambahkan lagi HANYA bila berasal dari pengguna nyata dan sudah seizin mereka. -->
     <section class="relative z-10 py-12 md:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
             <div class="text-center max-w-2xl mx-auto mb-10 space-y-3 reveal">
-                <div class="qi-eyebrow qi-eyebrow-amber"><span class="qi-dot"></span>Kata Trader</div>
-                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">Dipakai trader lintas pasar</h2>
-                <p class="text-slate-400 text-sm sm:text-base">Dari kripto, emas, hingga forex — ini kata mereka tentang mesin kuantum.</p>
+                <div class="qi-eyebrow qi-eyebrow-amber"><span class="qi-dot"></span>Transparansi</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">Bukti, bukan janji</h2>
+                <p class="text-slate-400 text-sm sm:text-base">Kami tidak memajang testimoni atau angka akurasi tetap. Yang kami tampilkan adalah catatan sinyal sungguhan — termasuk yang kalah.</p>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-                <div class="qi-card p-5 text-sm reveal">
-                    <div class="flex items-center gap-2.5 mb-3">
-                        <div class="w-9 h-9 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs">RD</div>
-                        <div>
-                            <div class="text-white font-bold text-xs">Rizky D.</div>
-                            <div class="text-slate-400 text-[10px] font-mono">Trader Kripto · Jakarta</div>
-                        </div>
-                        <div class="ml-auto text-amber-400 text-xs">★★★★★</div>
-                    </div>
-                    <p class="text-slate-400 leading-relaxed text-[13px]">"SNR + SMC engine sangat membantu. Setup langsung keliatan entry-nya."</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 reveal">
+                <div class="qi-card p-5">
+                    <div class="font-heading font-bold text-white text-sm mb-2">Setiap sinyal dicatat</div>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Waktu terbit, arah, entry, SL, dan TP tercatat otomatis saat sinyal keluar, lalu dinilai dari candle sesudahnya.</p>
                 </div>
-                <div class="qi-card p-5 text-sm reveal">
-                    <div class="flex items-center gap-2.5 mb-3">
-                        <div class="w-9 h-9 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs">AF</div>
-                        <div>
-                            <div class="text-white font-bold text-xs">Arif F.</div>
-                            <div class="text-slate-400 text-[10px] font-mono">Trader Emas · Surabaya</div>
-                        </div>
-                        <div class="ml-auto text-amber-400 text-xs">★★★★★</div>
-                    </div>
-                    <p class="text-slate-400 leading-relaxed text-[13px]">"MomentumNY buat XAUUSD akurat. H1 paling konsisten dari 9 mesin."</p>
+                <div class="qi-card p-5">
+                    <div class="font-heading font-bold text-white text-sm mb-2">Yang kalah ikut tampil</div>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Win rate disertai interval keyakinan 95% dan hasil dalam R. Jika sampelnya masih kecil, kami menulisnya terang-terangan.</p>
                 </div>
-                <div class="qi-card p-5 text-sm reveal">
-                    <div class="flex items-center gap-2.5 mb-3">
-                        <div class="w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">SN</div>
-                        <div>
-                            <div class="text-white font-bold text-xs">Sari N.</div>
-                            <div class="text-slate-400 text-[10px] font-mono">Trader Forex · Bandung</div>
-                        </div>
-                        <div class="ml-auto text-amber-400 text-xs">★★★★☆</div>
-                    </div>
-                    <p class="text-slate-400 leading-relaxed text-[13px]">"Kalender ekonomi terintegrasi. Nggak perlu buka tab ForexFactory lagi."</p>
+                <div class="qi-card p-5">
+                    <div class="font-heading font-bold text-white text-sm mb-2">Cara menilai ditulis jelas</div>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Bila satu candle menyentuh SL dan TP sekaligus, SL dihitung lebih dulu. Spread dan komisi dijelaskan sebagai batasan.</p>
                 </div>
+            </div>
+            <div class="text-center mt-8 reveal">
+                <a href="transparansi.html" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition-all">Lihat catatan sinyal lengkap →</a>
             </div>
         </div>
     </section>
@@ -603,26 +595,26 @@
     <div class="w-full py-2.5 sm:py-3 bg-black/80 border-y border-white/[0.06] overflow-x-auto whitespace-nowrap z-20 no-scrollbar">
         <div class="inline-flex animate-ticker font-mono text-xs sm:text-sm">
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
             </div>
             <div class="flex items-center space-x-6 sm:space-x-8 px-4">
-                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-emerald-400">$68,450.00 (+3.42%)</span></span>
+                <span data-ticker-sym="BTCUSDT" class="inline-flex items-center gap-2"><strong class="text-white">BTCUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-emerald-400">$2,654.20 (+0.85%)</span></span>
+                <span data-ticker-sym="XAUUSD" class="inline-flex items-center gap-2"><strong class="text-white">XAU/USD</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-emerald-400">$3,520.10 (+2.15%)</span></span>
+                <span data-ticker-sym="ETHUSDT" class="inline-flex items-center gap-2"><strong class="text-white">ETHUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-rose-400">1.0895 (-0.12%)</span></span>
+                <span data-ticker-sym="EURUSD" class="inline-flex items-center gap-2"><strong class="text-white">EUR/USD</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
                 <span class="text-slate-700">|</span>
-                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-emerald-400">$184.50 (+5.60%)</span></span>
+                <span data-ticker-sym="SOLUSDT" class="inline-flex items-center gap-2"><strong class="text-white">SOLUSDT</strong> <span class="ticker-price text-slate-500">memuat…</span></span>
             </div>
         </div>
     </div>
@@ -957,129 +949,80 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
             <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-14 reveal">
-                <div class="qi-eyebrow qi-eyebrow-cyan"><span class="qi-dot"></span>Quantum Trade Ideas</div>
+                <div class="qi-eyebrow qi-eyebrow-cyan"><span class="qi-dot"></span>Sinyal Terbaru</div>
                 <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
-                    Ide trading <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">terkurasi</span>
+                    Sinyal <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">sungguhan</span>, apa adanya
                 </h2>
-                <p class="text-slate-400 text-sm sm:text-base">Analisa teknikal dari mesin kuantum — diperbarui setiap penutupan candle harian.</p>
+                <p class="text-slate-400 text-sm sm:text-base">Enam sinyal terakhir yang benar-benar tercatat di sistem — lengkap dengan hasilnya, menang maupun kalah. Bukan contoh.</p>
             </div>
 
-            <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 reveal">
+            <!-- Kartu diisi skrip di bawah dari api/signal-history.php (data nyata). Tanpa data: tampil keadaan kosong, bukan contoh. -->
+            <div id="tradeIdeasGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="glass-card rounded-2xl border border-slate-700/40 p-6 text-center text-slate-500 text-xs font-mono sm:col-span-2 lg:col-span-3">Memuat sinyal tercatat…</div>
+            </div>
 
-                <!-- Idea Card 1 — BUY BTC -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
-                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
-                    <div class="p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
-                            <span class="text-[10px] font-mono text-slate-400">H4 · 2 jam lalu</span>
-                        </div>
-                        <div class="font-heading font-bold text-white text-base mb-1">BTC/USDT — Breakout Confirmed</div>
-                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">EMA200 support + Kijun bounce + SMC OB H4. Target 72K setelah konfirmasi candle close.</p>
-                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
-                                <span class="text-slate-400">Quantum AI Engine</span>
-                            </div>
-                            <span class="text-emerald-400">R:R 1:3.2</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Idea Card 2 — SELL XAU -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-rose-500/20 hover:border-rose-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
-                    <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 to-orange-500"></div>
-                    <div class="p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 rounded">▼ SHORT</span>
-                            <span class="text-[10px] font-mono text-slate-400">H1 · 45 menit lalu</span>
-                        </div>
-                        <div class="font-heading font-bold text-white text-base mb-1">XAU/USD — NY Session Reversal</div>
-                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">MomentumNY bearish divergence + SNR resistance 2680 + FVG fill. Potensi koreksi ke 2645.</p>
-                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
-                                <span class="text-slate-400">Quantum AI Engine</span>
-                            </div>
-                            <span class="text-rose-400">R:R 1:2.8</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Idea Card 3 — BUY ETH -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
-                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
-                    <div class="p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
-                            <span class="text-[10px] font-mono text-slate-400">D1 · 3 jam lalu</span>
-                        </div>
-                        <div class="font-heading font-bold text-white text-base mb-1">ETH/USDT — Ichimoku Breakout</div>
-                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Harga menembus kumo cloud + Golden Cross EMA50×EMA200. Setup swing bullish ke 4200.</p>
-                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
-                                <span class="text-slate-400">Quantum AI Engine</span>
-                            </div>
-                            <span class="text-emerald-400">R:R 1:4.1</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Idea Card 4 — EUR/USD -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-amber-500/20 hover:border-amber-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
-                    <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 to-yellow-400"></div>
-                    <div class="p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded">◆ WAIT</span>
-                            <span class="text-[10px] font-mono text-slate-400">H4 · 1 jam lalu</span>
-                        </div>
-                        <div class="font-heading font-bold text-white text-base mb-1">EUR/USD — Fib 61.8% Watch</div>
-                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">Mendekati golden zone 1.0850. Tunggu konfirmasi engulfing candle bullish untuk entry.</p>
-                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
-                                <span class="text-slate-400">Quantum AI Engine</span>
-                            </div>
-                            <span class="text-amber-400">MONITORING</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Idea Card 5 — SOL -->
-                <div class="glass-card rounded-2xl overflow-hidden border border-emerald-500/20 hover:border-emerald-500/50 transition-all group cursor-pointer" onclick="window.location.href='dashboard.html'">
-                    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
-                    <div class="p-5">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded">▲ LONG</span>
-                            <span class="text-[10px] font-mono text-slate-400">H1 · 20 menit lalu</span>
-                        </div>
-                        <div class="font-heading font-bold text-white text-base mb-1">SOL/USDT — MACD Cross Zero</div>
-                        <p class="text-slate-400 text-[11px] leading-relaxed mb-3">MACD histogram positif + Volume spike + EMA20 golden cross. Momentum kuat ke 210.</p>
-                        <div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-[8px] font-bold">QI</div>
-                                <span class="text-slate-400">Quantum AI Engine</span>
-                            </div>
-                            <span class="text-emerald-400">R:R 1:2.5</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CTA Card — Lihat Lebih Banyak -->
-                <div class="glass-card rounded-2xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all flex flex-col items-center justify-center p-8 cursor-pointer group" onclick="window.location.href='dashboard.html'">
-                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 group-hover:bg-cyan-500/20 transition-all">
-                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                    </div>
-                    <div class="font-heading font-bold text-white text-base mb-2 text-center">Lihat 120+ Ide Live</div>
-                    <p class="text-slate-400 text-[11px] text-center mb-4">Semua pair, semua timeframe. Update setiap penutupan candle.</p>
-                    <span class="px-4 py-2 rounded-lg bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-mono font-bold group-hover:bg-cyan-400/20 transition-all">Buka Terminal →</span>
-                </div>
-
+            <div class="text-center mt-8">
+                <a href="transparansi.html" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 text-xs font-semibold hover:bg-cyan-400/20 transition-all">Lihat seluruh catatan &amp; cara penilaian →</a>
             </div>
         </div>
     </section>
-
+    <script>
+    (function(){
+        var grid = document.getElementById('tradeIdeasGrid');
+        if (!grid) return;
+        function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+        function sym(s) { s = String(s || ''); if (/USDT$/.test(s)) return s.replace(/USDT$/, '/USDT'); return s.replace(/([A-Z]{3})([A-Z]{3})/, '$1/$2'); }
+        function lalu(iso) {
+            var t = Date.parse(iso); if (isNaN(t)) return '';
+            var d = Math.max(0, (Date.now() - t) / 1000);
+            if (d < 3600) return Math.max(1, Math.round(d / 60)) + ' menit lalu';
+            if (d < 86400) return Math.round(d / 3600) + ' jam lalu';
+            return Math.round(d / 86400) + ' hari lalu';
+        }
+        function angka(v) { var n = Number(v); if (!isFinite(n)) return '—'; return n >= 1000 ? n.toLocaleString('en-US', {maximumFractionDigits: 2}) : String(n); }
+        function status(st) {
+            st = String(st || '');
+            if (st.indexOf('HIT TP') === 0) return { t: 'TP KENA', c: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' };
+            if (st.indexOf('HIT SL') === 0) return { t: 'SL KENA', c: 'text-rose-400 bg-rose-500/15 border-rose-500/30' };
+            if (st.indexOf('EXPIRED') === 0) return { t: 'KEDALUWARSA', c: 'text-slate-300 bg-slate-500/15 border-slate-500/30' };
+            if (st === 'AKTIF') return { t: 'AKTIF', c: 'text-cyan-300 bg-cyan-500/15 border-cyan-500/30' };
+            return { t: esc(st || '—'), c: 'text-slate-300 bg-slate-500/15 border-slate-500/30' };
+        }
+        function kosong(pesan) { grid.innerHTML = '<div class="glass-card rounded-2xl border border-slate-700/40 p-6 text-center text-slate-500 text-xs font-mono sm:col-span-2 lg:col-span-3">' + esc(pesan) + '</div>'; }
+        fetch('api/signal-history.php', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var h = (d && d.status === 'success' && Array.isArray(d.history)) ? d.history.slice() : [];
+                h.sort(function(a, b) { return Date.parse(b.timestamp) - Date.parse(a.timestamp); });
+                h = h.slice(0, 6);
+                if (!h.length) return kosong('Belum ada sinyal tercatat.');
+                grid.innerHTML = '';
+                h.forEach(function(x) {
+                    var beli = String(x.side).toUpperCase() === 'BUY';
+                    var st = status(x.status);
+                    var warna = beli ? 'emerald' : 'rose';
+                    var el = document.createElement('div');
+                    el.className = 'glass-card rounded-2xl overflow-hidden border border-' + warna + '-500/20 hover:border-' + warna + '-500/50 transition-all cursor-pointer';
+                    el.onclick = function() { window.location.href = 'transparansi.html'; };
+                    el.innerHTML = '<div class="h-1.5 w-full bg-gradient-to-r from-' + warna + '-500 to-' + (beli ? 'cyan' : 'orange') + '-500"></div>'
+                        + '<div class="p-5">'
+                        + '<div class="flex items-center justify-between mb-3">'
+                        + '<span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-' + warna + '-500/15 text-' + warna + '-400 border border-' + warna + '-500/30 rounded">' + (beli ? '▲ BUY' : '▼ SELL') + '</span>'
+                        + '<span class="text-[10px] font-mono text-slate-400">' + esc(x.timeframe || '') + ' · ' + esc(lalu(x.timestamp)) + '</span></div>'
+                        + '<div class="font-heading font-bold text-white text-base mb-2">' + esc(sym(x.symbol)) + '</div>'
+                        + '<div class="grid grid-cols-3 gap-2 text-[11px] font-mono text-slate-400 mb-3">'
+                        + '<div>Entry<br><b class="text-white">' + esc(angka(x.entry)) + '</b></div>'
+                        + '<div>SL<br><b class="text-rose-300">' + esc(angka(x.sl)) + '</b></div>'
+                        + '<div>TP<br><b class="text-emerald-300">' + esc(angka(x.tp)) + '</b></div></div>'
+                        + '<div class="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/60 pt-3">'
+                        + '<span class="text-slate-500 truncate pr-2">' + esc(x.engine_name || 'Quantum') + '</span>'
+                        + '<span class="px-2 py-0.5 rounded border ' + st.c + '">' + st.t + '</span></div>'
+                        + '</div>';
+                    grid.appendChild(el);
+                });
+            }).catch(function() { kosong('Sinyal belum bisa dimuat saat ini. Kami tidak menampilkan contoh pengganti.'); });
+    })();
+    </script>
 
     <!-- AI SIGNAL WINRATE STATS -->
     <section class="py-14 md:py-16 relative z-10 border-t border-white/[0.06]" style="background:rgba(255,255,255,0.012)">
@@ -1096,24 +1039,24 @@
             <!-- Winrate stat cards -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 reveal">
                 <div class="qi-card p-5 text-center">
-                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-500 tabular-nums leading-tight" id="idxWinrate">78.4%</div>
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-purple-300 to-purple-500 tabular-nums leading-tight" id="idxWinrate">—</div>
                     <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-2 font-mono">Overall Winrate</div>
                     <div class="text-[10px] text-purple-400 mt-1 font-mono">Akumulatif</div>
                 </div>
                 <div class="qi-card p-5 text-center">
-                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-500 tabular-nums leading-tight" id="idxTotalWins">1 847</div>
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-emerald-300 to-emerald-500 tabular-nums leading-tight" id="idxTotalWins">—</div>
                     <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-2 font-mono">Total TP Hit</div>
                     <div class="text-[10px] text-emerald-400 mt-1 font-mono">Profit signals</div>
                 </div>
                 <div class="qi-card p-5 text-center">
-                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-cyan-500 tabular-nums leading-tight" id="idxAvgRR">1:2.6</div>
+                    <div class="text-3xl sm:text-4xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-cyan-500 tabular-nums leading-tight" id="idxAvgRR">—</div>
                     <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-2 font-mono">Avg Risk:Reward</div>
                     <div class="text-[10px] text-cyan-400 mt-1 font-mono">Rasio rata-rata</div>
                 </div>
                 <div class="qi-card p-5 text-center">
-                    <div class="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500 leading-tight truncate px-1" id="idxBestPair">XAU/USD</div>
-                    <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-2 font-mono">Best Pair</div>
-                    <div class="text-[10px] text-amber-400 mt-1 font-mono" id="idxBestPairWr">82.1% WR</div>
+                    <div class="text-xl sm:text-2xl lg:text-3xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500 leading-tight truncate px-1" id="idxBestPair">—</div>
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-2 font-mono">Pair Terbaik</div>
+                    <div class="text-[10px] text-amber-400 mt-1 font-mono" id="idxBestPairWr">min. 10 sinyal selesai</div>
                 </div>
             </div>
 
@@ -1124,41 +1067,14 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
                         <span class="font-heading font-semibold text-white text-sm">Winrate per Instrumen</span>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-mono">30 hari terakhir</span>
+                    <span class="text-[10px] text-slate-400 font-mono">seluruh sinyal tercatat</span>
                 </div>
-                <div class="space-y-3" id="idxWinrateByPair">
-                    <!-- Static display — enhanced by JS if qi_signal_records available -->
-                    <div class="flex items-center gap-3">
-                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">XAU/USD</span>
-                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style="width:82%"></div></div>
-                        <span class="w-10 text-right text-[11px] font-mono text-amber-400">82%</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">BTC/USDT</span>
-                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style="width:79%"></div></div>
-                        <span class="w-10 text-right text-[11px] font-mono text-emerald-400">79%</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">EUR/USD</span>
-                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full" style="width:76%"></div></div>
-                        <span class="w-10 text-right text-[11px] font-mono text-cyan-400">76%</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">GBP/USD</span>
-                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-purple-400 to-purple-500 rounded-full" style="width:74%"></div></div>
-                        <span class="w-10 text-right text-[11px] font-mono text-purple-400">74%</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">ETH/USDT</span>
-                        <div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full" style="width:77%"></div></div>
-                        <span class="w-10 text-right text-[11px] font-mono text-blue-400">77%</span>
-                    </div>
-                </div>
+                <div class="space-y-3" id="idxWinrateByPair"><div class="text-[11px] text-slate-500">Memuat statistik nyata…</div></div>
 
                 <div class="mt-5 pt-4 border-t border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <p class="text-[10px] text-slate-400 leading-relaxed max-w-md">* Statistik dihitung berdasarkan sinyal historis Quantum AI Engine. Past performance tidak menjamin hasil di masa mendatang.</p>
-                    <a href="dashboard.html" class="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] font-semibold hover:bg-purple-500/20 transition-all">
-                        Lihat Semua Sinyal →
+                    <p id="idxSampelCatatan" class="text-[10px] text-slate-400 leading-relaxed max-w-md">Memuat catatan sinyal…</p>
+                    <a href="transparansi.html" class="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] font-semibold hover:bg-purple-500/20 transition-all">
+                        Transparansi &amp; riwayat →
                     </a>
                 </div>
             </div>
@@ -1167,66 +1083,56 @@
     </section>
     <script>
     (function(){
-        var COLORS = ['amber','emerald','cyan','purple','blue','rose','indigo','teal'];
+        var COLORS = ['amber','emerald','cyan','purple','blue','rose'];
+        function el(id) { return document.getElementById(id); }
+        function set(id, t) { var e = el(id); if (e) e.textContent = t; }
         function formatSym(s) {
             if (!s) return s;
-            s = s.replace(/USDT$/,'');
+            s = String(s);
+            if (/USDT$/.test(s)) return s.replace(/USDT$/, '/USDT');
             return s.replace(/([A-Z]{3})([A-Z]{3})/, '$1/$2');
         }
+        function gagal() {
+            set('idxSampelCatatan', 'Statistik sinyal belum bisa dimuat saat ini. Kami tidak menampilkan angka perkiraan.');
+            set('idxStatWrN', 'belum bisa dimuat');
+            var c = el('idxWinrateByPair'); if (c) c.innerHTML = '<div class="text-[11px] text-slate-500">Data belum tersedia.</div>';
+        }
         function renderBars(pairs) {
-            var container = document.getElementById('idxWinrateByPair');
-            if (!container || !pairs.length) return;
-            container.innerHTML = '';
+            var c = el('idxWinrateByPair');
+            if (!c) return;
+            if (!pairs.length) { c.innerHTML = '<div class="text-[11px] text-slate-500">Belum ada sinyal selesai.</div>'; return; }
+            c.innerHTML = '';
             pairs.forEach(function(p, i) {
-                var c = COLORS[i % COLORS.length];
+                var warna = p.sampel_kecil ? 'slate' : COLORS[i % COLORS.length];
                 var row = document.createElement('div');
                 row.className = 'flex items-center gap-3';
-                row.innerHTML = '<span class="w-20 text-[11px] font-mono text-slate-400 shrink-0">' + formatSym(p.symbol) + '</span>'
-                    + '<div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-' + c + '-400 to-' + c + '-500 rounded-full" style="width:' + Math.round(p.wr) + '%"></div></div>'
-                    + '<span class="w-10 text-right text-[11px] font-mono text-' + c + '-400">' + Math.round(p.wr) + '%</span>';
-                container.appendChild(row);
+                var lebar = Math.max(2, Math.min(100, Math.round(p.win_rate)));
+                row.innerHTML = '<span class="w-24 text-[11px] font-mono text-slate-400 shrink-0">' + formatSym(p.simbol) + ' <span class="text-slate-600">(n=' + p.dinilai + ')</span></span>'
+                    + '<div class="flex-1 bg-slate-900 rounded-full h-2 overflow-hidden"><div class="h-full bg-gradient-to-r from-' + warna + '-400 to-' + warna + '-500 rounded-full" style="width:' + lebar + '%"></div></div>'
+                    + '<span class="w-10 text-right text-[11px] font-mono text-' + warna + '-400">' + Math.round(p.win_rate) + '%</span>';
+                c.appendChild(row);
             });
         }
-        fetch('api/signal-history.php', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
+        fetch('api/transparansi.php', { cache: 'no-store', signal: AbortSignal.timeout(8000) })
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data || data.status !== 'success') return;
-                var m = data.metrics || {};
-                var el;
-                el = document.getElementById('idxWinrate');
-                if (el) el.textContent = (m.win_rate || 0) + '%';
-                el = document.getElementById('idxTotalWins');
-                if (el) el.textContent = (m.wins || 0).toLocaleString();
-                el = document.getElementById('idxAvgRR');
-                if (el) el.textContent = m.avg_rr || '—';
-                // Stats counter section
-                var cntSignals = document.querySelector('[data-count-to="1247"]');
-                if (cntSignals && m.total_signals) cntSignals.setAttribute('data-count-to', m.total_signals);
-                var cntAcc = document.querySelector('[data-count-to="78"]');
-                if (cntAcc && m.win_rate) cntAcc.setAttribute('data-count-to', Math.round(m.win_rate));
-                // Per-symbol winrate
-                var hist = data.history || [];
-                var byPair = {};
-                hist.forEach(function(s) {
-                    var isTP = (s.status || '').indexOf('HIT TP') !== -1;
-                    var isSL = (s.status || '').indexOf('HIT SL') !== -1;
-                    if (!isTP && !isSL) return;
-                    if (!byPair[s.symbol]) byPair[s.symbol] = { tp: 0, tot: 0 };
-                    byPair[s.symbol].tot++;
-                    if (isTP) byPair[s.symbol].tp++;
-                });
-                var pairs = Object.entries(byPair).map(function(e) {
-                    return { symbol: e[0], wr: e[1].tp / e[1].tot * 100, tot: e[1].tot };
-                }).sort(function(a, b) { return b.wr - a.wr; }).slice(0, 6);
-                if (pairs.length) {
-                    renderBars(pairs);
-                    var best = pairs[0];
-                    el = document.getElementById('idxBestPair');
-                    if (el) el.textContent = formatSym(best.symbol);
-                    el = document.getElementById('idxBestPairWr');
-                    if (el) el.textContent = best.wr.toFixed(1) + '% WR';
-                }
-            }).catch(function() {});
+            .then(function(d) {
+                if (!d || d.status !== 'success') return gagal();
+                var st = (d.sinyal_resmi && d.sinyal_resmi.statistik) || {};
+                var n = st.dinilai || 0;
+                set('idxWinrate', st.win_rate == null ? '—' : st.win_rate + '%');
+                set('idxTotalWins', n ? String(st.menang) : '—');
+                set('idxAvgRR', st.rr_rata ? '1:' + st.rr_rata : '—');
+                set('idxStatSinyal', d.sinyal_resmi.total_tercatat ? Number(d.sinyal_resmi.total_tercatat).toLocaleString('id-ID') : '—');
+                set('idxStatWr', st.win_rate == null ? '—' : st.win_rate + '%');
+                set('idxStatWrN', n ? ('dari ' + n + ' sinyal selesai · interval 95%: ' + st.ci_bawah + '–' + st.ci_atas + '%' + (st.cukup_sampel ? '' : ' · sampel kecil')) : 'belum ada sinyal selesai');
+                var pairs = (st.per_simbol || []).filter(function(p) { return p.dinilai > 0 && p.win_rate != null; })
+                    .sort(function(a, b) { return b.dinilai - a.dinilai; }).slice(0, 6);
+                renderBars(pairs);
+                var layak = pairs.filter(function(p) { return p.dinilai >= 10; }).sort(function(a, b) { return b.win_rate - a.win_rate; })[0];
+                set('idxBestPair', layak ? formatSym(layak.simbol) : '—');
+                set('idxBestPairWr', layak ? layak.win_rate.toFixed(1) + '% (n=' + layak.dinilai + ')' : 'min. 10 sinyal selesai');
+                set('idxSampelCatatan', (st.catatan || '') + ' Hasil dalam R, spread/komisi belum dikurangkan. Hasil masa lalu tidak menjamin hasil di masa depan.');
+            }).catch(gagal);
     })();
     </script>
 
@@ -1342,7 +1248,7 @@
                         Berapa akurasi sinyal secara real?
                         <span class="text-slate-400 group-open:rotate-45 transition-transform text-lg">+</span>
                     </summary>
-                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Win rate bervariasi per mesin dan per instrumen — rata-rata 60–80% berdasarkan data historis. Anda bisa melihat track record transparan langsung di dashboard. Namun, akurasi masa lalu tidak menjamin hasil di masa depan.</div>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Win rate bervariasi per mesin dan per instrumen — kami tidak menjanjikan angka tetap. Angka sebenarnya — termasuk sinyal yang kalah dan interval keyakinannya — tampil apa adanya di halaman Transparansi dan berubah seiring sinyal baru; saat sampelnya masih kecil, kami menulisnya. Namun, akurasi masa lalu tidak menjamin hasil di masa depan.</div>
                 </details>
                 <details class="group rounded-xl overflow-hidden" style="border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02)">
                     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-white/[0.03] transition-colors">
@@ -1455,6 +1361,7 @@
                     <div><a href="dashboard.html" class="hover:text-cyan-400">Terminal Pro</a></div>
                     <div><a href="pricing.html" class="hover:text-purple-400">Quantum+</a></div>
                     <div><a href="#download" class="hover:text-emerald-400">Download Aplikasi</a></div>
+                    <div><a href="transparansi.html" class="hover:text-cyan-400">Transparansi Sinyal</a></div>
                     <div><a href="status.html" class="hover:text-cyan-400">Status API</a></div>
                 </div>
 

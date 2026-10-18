@@ -91,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // Jawaban memuat `ditolak` (alasan per baris) dan snapshot terbaru untuk sinkron ulang.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once __DIR__ . '/_paper_math.php';
+    if (is_file(__DIR__ . '/_auto_paper.php')) require_once __DIR__ . '/_auto_paper.php';
+    require_once __DIR__ . '/_batas_rugi.php';
     $input = qi_get_json_body();
     if (!is_array($input)) {
         http_response_code(400);
@@ -201,6 +203,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $buka = $pdo->prepare("INSERT INTO paper_positions (user_id, symbol, direction, lots, entry_price, stop_loss, take_profit, status, opened_at, source)
                                VALUES (:uid, :sym, :dir, :lots, :entry, :sl, :tp, 'open', COALESCE(FROM_UNIXTIME(:ots), NOW()), 'manual')");
         $dipakai = [];
+        // Batas rugi harian (profil risiko): setelah rugi terealisasi hari ini mencapai batas, posisi BARU ditolak.
+        // Dihitung setelah penutupan di atas, sehingga rugi yang baru saja direalisasi ikut terhitung.
+        $batasRugi = qi_batas_rugi_status($pdo, $uid);
         foreach ($positions as $p) {
             if (isset($dilindungi[(string)($p['id'] ?? '')])) continue;   // posisi otomatis: dilewati, tidak digandakan
             $sym = $normSym($p['symbol'] ?? '');
@@ -216,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ubahSlTp->execute([':sl' => $num($p['sl'] ?? null), ':tp' => $num($p['tp'] ?? null), ':id' => $dbId, ':uid' => $uid]);
                 continue;
             }
+            if ($batasRugi['tercapai']) { $ditolak[] = ['id' => $p['id'] ?? null, 'alasan' => qi_batas_rugi_pesan($batasRugi), 'kode' => 'batas_rugi_harian']; continue; }
             if ($alasan = $hargaWajar($sym, $entry)) { $ditolak[] = ['id' => $p['id'] ?? null, 'alasan' => 'posisi ditolak: ' . $alasan]; continue; }
             $buka->execute([':uid' => $uid, ':sym' => $sym, ':dir' => $dir, ':lots' => $lots, ':entry' => $entry, ':sl' => $num($p['sl'] ?? null), ':tp' => $num($p['tp'] ?? null),
                             ':ots' => $waktuKlien($p['openedAt'] ?? null)]);

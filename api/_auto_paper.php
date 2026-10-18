@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
+require_once __DIR__ . '/_batas_rugi.php';
 
 if (!function_exists('qi_ap_konfig')) :
 
@@ -234,6 +235,13 @@ function qi_ap_sinkron(PDO $pdo, array $riwayat, ?int $hanyaUser = null, ?callab
             $st->execute([':u' => $uid]);
             $tertaut = array_fill_keys($st->fetchAll(PDO::FETCH_COLUMN), true);
 
+            // Batas rugi harian tercapai → tidak membuka posisi baru (penutupan di langkah 1 tetap jalan). Sinyal tidak
+            // ditautkan, jadi bila batas naik/hari berganti sinyal yang masih segar (umur_maks_menit) tetap bisa diikuti.
+            if (qi_batas_rugi_status($pdo, $uid, $kini)['tercapai']) {
+                $ringkas['lewat'][] = ['id' => '*', 'symbol' => '*', 'alasan' => 'batas_rugi_harian', 'user' => $uid];
+                $pdo->commit();
+                continue;
+            }
             $rencana = qi_ap_pilih_buka(['aktif_sejak' => (int)$u['enabled_at'], 'risiko' => (float)$u['risk_pct']], $riwayat, $tertaut, $terbukaAuto, $saldo, $kini, $k);
             $ins = $pdo->prepare("INSERT INTO paper_positions (user_id, symbol, direction, lots, entry_price, stop_loss, take_profit, status, opened_at, source)
                                   VALUES (:u, :s, :d, :l, :e, :sl, :tp, 'open', NOW(), 'auto')");

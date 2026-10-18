@@ -170,7 +170,7 @@ async function bukaBrowser(lebar, tinggi, token) {
 // ── 2. Halaman ───────────────────────────────────────────────────────────────
 async function cekHalaman() {
   console.log('Halaman (desktop)');
-  const publik = ['', 'index.html', 'login.html', 'register.html', 'pricing.html', 'privacy.html', 'terms.html', 'status.html', 'economic-calendar.html', 'pwa.html', '404.html'];
+  const publik = ['', 'index.html', 'login.html', 'register.html', 'pricing.html', 'privacy.html', 'terms.html', 'status.html', 'economic-calendar.html', 'pwa.html', 'transparansi.html', '404.html'];
   const login = ['profile.html', 'admin.html'];
   for (const [daftar, token] of [[publik, ''], [login, tokenAdmin]]) {
     const b = await bukaBrowser(1440, 900, token);

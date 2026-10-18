@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Transparansi Sinyal — Quantum Institut</title>
+    <meta name="description" content="Catatan sinyal Quantum Institut apa adanya: win rate dengan interval keyakinan, hasil dalam R, sinyal yang kalah, dan cara penilaiannya.">
+    <meta property="og:title" content="Transparansi Sinyal — Quantum Institut">
+    <meta property="og:description" content="Catatan sinyal apa adanya: win rate dengan interval keyakinan, hasil dalam R, sinyal yang kalah, dan cara penilaiannya.">
+    <meta property="og:image" content="https://quantum-institut.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="https://quantum-institut.com/transparansi.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Quantum Institut Market Terminal">
+    <meta property="og:locale" content="id_ID">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Transparansi Sinyal — Quantum Institut">
+    <meta name="twitter:description" content="Catatan sinyal apa adanya: win rate dengan interval keyakinan, hasil dalam R, sinyal yang kalah, dan cara penilaiannya.">
+    <meta name="twitter:image" content="https://quantum-institut.com/og-image.png">
+    <link rel="canonical" href="https://quantum-institut.com/transparansi.html">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.2">
+    <script src="assets/js/a11y.js?v=1.0.4" defer></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: var(--qi-bg, #0B1220); color: var(--qi-text, #CBD5E1); }
+        .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .tr-kartu { background: rgba(15, 23, 42, .7); border: 1px solid #1e293b; border-radius: 16px; }
+        .tr-tabel { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+        .tr-tabel th, .tr-tabel td { padding: 8px 10px; border-bottom: 1px solid #1e293b; text-align: right; white-space: nowrap; }
+        .tr-tabel th:first-child, .tr-tabel td:first-child { text-align: left; }
+        .tr-tabel thead th { color: #64748b; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+        .tr-naik { color: #34d399; } .tr-turun { color: #fb7185; } .tr-abu { color: #94a3b8; }
+        .tr-gulir { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    </style>
+    <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
+</head>
+<body class="min-h-screen">
+
+    <header class="border-b border-slate-800 px-4 sm:px-8 py-5">
+        <div class="max-w-4xl mx-auto flex items-center justify-between gap-3">
+            <a href="index.html" class="flex items-center gap-2.5">
+                <img src="assets/img/logo-mark.svg" alt="Quantum Institut" width="32" height="32" class="w-8 h-8">
+                <div>
+                    <div class="font-heading font-bold text-white text-sm">QUANTUM INSTITUT</div>
+                    <div class="text-[10px] text-slate-500">Transparansi Sinyal</div>
+                </div>
+            </a>
+            <nav class="flex items-center gap-4 text-[11px] font-mono">
+                <a href="status.html" class="text-slate-400 hover:text-white">Status</a>
+                <a href="dashboard.html" class="text-cyan-400 hover:text-cyan-300">Terminal →</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+
+        <div>
+            <h1 class="font-heading font-bold text-white text-2xl mb-2">Catatan sinyal, apa adanya</h1>
+            <p class="text-sm text-slate-400 leading-relaxed">Setiap angka di halaman ini dihitung dari catatan sinyal sungguhan di sistem — <b class="text-slate-200">tidak ada angka bawaan, contoh, atau pembulatan yang memperbagus</b>. Sinyal yang kalah ikut dihitung dan ditampilkan. Bila belum ada data, kami menulis "belum ada data".</p>
+        </div>
+
+        <div id="peringatanSampel" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[12px] text-amber-200 leading-relaxed"></div>
+
+        <noscript><div class="tr-kartu p-4 text-sm text-slate-400">Halaman ini memerlukan JavaScript untuk memuat catatan sinyal.</div></noscript>
+
+        <!-- Ringkasan sinyal resmi -->
+        <section aria-labelledby="hRingkasan">
+            <h2 id="hRingkasan" class="font-heading font-bold text-white text-base mb-3">Sinyal resmi</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="tr-kartu p-4">
+                    <div class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Win rate</div>
+                    <div id="kWr" class="font-heading font-bold text-white text-3xl mt-1 tabular-nums">—</div>
+                    <div id="kWrCi" class="text-[10px] text-slate-500 mt-1 font-mono leading-snug">memuat…</div>
+                </div>
+                <div class="tr-kartu p-4">
+                    <div class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Sinyal selesai</div>
+                    <div id="kN" class="font-heading font-bold text-white text-3xl mt-1 tabular-nums">—</div>
+                    <div id="kNDetail" class="text-[10px] text-slate-500 mt-1 font-mono leading-snug"></div>
+                </div>
+                <div class="tr-kartu p-4">
+                    <div class="text-[10px] text-slate-500 font-mono uppercase tracking-wider" title="Rata-rata hasil per sinyal dalam R (kelipatan risiko)">Expectancy</div>
+                    <div id="kExp" class="font-heading font-bold text-white text-3xl mt-1 tabular-nums">—</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">R per sinyal</div>
+                </div>
+                <div class="tr-kartu p-4">
+                    <div class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">Total hasil</div>
+                    <div id="kTotal" class="font-heading font-bold text-white text-3xl mt-1 tabular-nums">—</div>
+                    <div id="kPf" class="text-[10px] text-slate-500 mt-1 font-mono"></div>
+                </div>
+            </div>
+            <p id="kImpas" class="text-[11px] text-slate-500 mt-3 leading-relaxed"></p>
+        </section>
+
+        <!-- Per pair -->
+        <section aria-labelledby="hPair">
+            <h2 id="hPair" class="font-heading font-bold text-white text-base mb-3">Per instrumen</h2>
+            <div class="tr-kartu p-2 sm:p-4 tr-gulir"><table class="tr-tabel" id="tPair"><tbody><tr><td>Memuat…</td></tr></tbody></table></div>
+        </section>
+
+        <!-- Riwayat -->
+        <section aria-labelledby="hRiwayat">
+            <h2 id="hRiwayat" class="font-heading font-bold text-white text-base mb-3">30 sinyal selesai terakhir</h2>
+            <div class="tr-kartu p-2 sm:p-4 tr-gulir"><table class="tr-tabel" id="tRiwayat"><tbody><tr><td>Memuat…</td></tr></tbody></table></div>
+            <p id="kPeriode" class="text-[11px] text-slate-600 mt-2 font-mono"></p>
+        </section>
+
+        <!-- Bayangan -->
+        <section aria-labelledby="hBayangan">
+            <h2 id="hBayangan" class="font-heading font-bold text-white text-base mb-1">Sumber sinyal baru (masa uji)</h2>
+            <p class="text-[12px] text-slate-400 mb-3 leading-relaxed">Sinyal berbasis struktur (SMC, ICT, Fibonacci, Supply &amp; Demand) dikumpulkan <b class="text-slate-200">dalam diam</b> dulu dan baru dipromosikan setelah terbukti pada sampel yang cukup.</p>
+            <div class="tr-kartu p-4 space-y-3">
+                <div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1"><span id="bProgres">memuat…</span><span id="bTarget">target 100</span></div>
+                    <div class="h-2 rounded-full bg-slate-800 overflow-hidden"><div id="bBatang" class="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full" style="width:0%"></div></div>
+                </div>
+                <div id="bDetail" class="text-[12px] text-slate-400 leading-relaxed"></div>
+                <div class="tr-gulir"><table class="tr-tabel" id="tMetode"><tbody></tbody></table></div>
+            </div>
+        </section>
+
+        <!-- Indikator Pine -->
+        <section aria-labelledby="hPine">
+            <h2 id="hPine" class="font-heading font-bold text-white text-base mb-1">Sinyal indikator Pine SMC+SnD (XAUUSD H4)</h2>
+            <p id="pCatatan" class="text-[12px] text-slate-400 mb-3 leading-relaxed">Memuat…</p>
+            <div class="tr-kartu p-2 sm:p-4 tr-gulir"><table class="tr-tabel" id="tPine"><tbody><tr><td>Memuat…</td></tr></tbody></table></div>
+        </section>
+
+        <!-- Metodologi -->
+        <section aria-labelledby="hMetode">
+            <h2 id="hMetode" class="font-heading font-bold text-white text-base mb-3">Cara kami menilai</h2>
+            <ul id="listMetodologi" class="tr-kartu p-4 space-y-2.5 text-[12.5px] text-slate-300 leading-relaxed list-disc pl-8"></ul>
+        </section>
+
+        <section aria-labelledby="hBatas">
+            <h2 id="hBatas" class="font-heading font-bold text-white text-base mb-3">Batasan yang perlu Anda ketahui</h2>
+            <ul class="tr-kartu p-4 space-y-2.5 text-[12.5px] text-slate-300 leading-relaxed list-disc pl-8">
+                <li><b class="text-slate-100">Sampel kecil menyesatkan.</b> Beberapa belas sinyal tidak cukup untuk menilai kualitas sebuah sistem; lihat interval keyakinan di atas, yang lebar bila sampelnya sedikit.</li>
+                <li><b class="text-slate-100">Spread dan komisi belum dikurangkan.</b> Hasil nyata di broker Anda bisa lebih rendah, terutama pada timeframe pendek.</li>
+                <li><b class="text-slate-100">Penilaian otomatis bukan eksekusi nyata.</b> Slippage, penolakan order, dan jeda eksekusi tidak tercermin.</li>
+                <li><b class="text-slate-100">Hasil masa lalu tidak menjamin hasil di masa depan.</b> Kondisi pasar berubah, dan sistem yang untung di satu periode bisa rugi di periode lain.</li>
+            </ul>
+        </section>
+
+        <p id="kPeringatan" class="text-[11px] text-slate-500 leading-relaxed border-t border-slate-800 pt-4"></p>
+        <p class="text-[10px] text-slate-600 font-mono">Diperbarui: <span id="kUpdate">—</span> · Data diambil langsung dari sistem, tanpa penyuntingan manual.</p>
+    </main>
+
+    <footer class="border-t border-slate-800 px-4 sm:px-8 py-6 mt-4">
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500 font-mono">
+            <span>© Quantum Institut Market Terminal</span>
+            <span class="flex gap-4"><a href="index.html" class="hover:text-white">Beranda</a><a href="terms.html" class="hover:text-white">Syarat</a><a href="privacy.html" class="hover:text-white">Privasi</a><a href="status.html" class="hover:text-white">Status</a></span>
+        </div>
+    </footer>
+
+    <script>
+    (function () {
+        'use strict';
+        function el(id) { return document.getElementById(id); }
+        function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function set(id, t) { var e = el(id); if (e) e.textContent = t; }
+        function persen(v) { return v == null ? '—' : v + '%'; }
+        function r(v, d) { if (v == null || !isFinite(v)) return '—'; var n = Number(v).toFixed(d == null ? 2 : d); return (v > 0 ? '+' : '') + n + 'R'; }
+        function kelasR(v) { return v == null ? 'tr-abu' : v > 0 ? 'tr-naik' : v < 0 ? 'tr-turun' : 'tr-abu'; }
+        function simbol(s) { s = String(s || ''); if (/USDT$/.test(s)) return s.replace(/USDT$/, '/USDT'); return s.replace(/([A-Z]{3})([A-Z]{3})/, '$1/$2'); }
+        function angka(v) { var n = Number(v); if (!isFinite(n)) return '—'; return n >= 1000 ? n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(n); }
+        function waktu(iso) {
+            var t = Date.parse(iso); if (isNaN(t)) return '—';
+            return new Date(t).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        }
+        function gagal() {
+            set('kWrCi', 'Catatan belum bisa dimuat saat ini. Kami tidak menampilkan angka perkiraan.');
+            ['tPair', 'tRiwayat'].forEach(function (id) { var e = el(id); if (e) e.innerHTML = '<tbody><tr><td>Data belum tersedia.</td></tr></tbody>'; });
+            set('bProgres', 'data belum tersedia');
+        }
+
+        fetch('api/transparansi.php', { cache: 'no-store', signal: AbortSignal.timeout(10000) })
+            .then(function (res) { return res.json(); })
+            .then(function (d) {
+                if (!d || d.status !== 'success') return gagal();
+                var st = (d.sinyal_resmi && d.sinyal_resmi.statistik) || {};
+                var n = st.dinilai || 0;
+
+                // Ringkasan
+                set('kWr', persen(st.win_rate));
+                set('kWrCi', n ? 'interval keyakinan 95%: ' + st.ci_bawah + '–' + st.ci_atas + '%' : 'belum ada sinyal selesai');
+                set('kN', String(n));
+                set('kNDetail', n ? st.menang + ' menang · ' + st.kalah + ' kalah' + ((st.aktif || st.kedaluwarsa) ? ' · ' + (st.aktif || 0) + ' aktif · ' + (st.kedaluwarsa || 0) + ' kedaluwarsa' : '') : '');
+                var exp = el('kExp'); if (exp) { exp.textContent = r(st.expectancy_r, 2); exp.className = 'font-heading font-bold text-3xl mt-1 tabular-nums ' + (st.expectancy_r == null ? 'text-white' : kelasR(st.expectancy_r)); }
+                var tot = el('kTotal'); if (tot) { tot.textContent = r(st.total_r, 1); tot.className = 'font-heading font-bold text-3xl mt-1 tabular-nums ' + (st.total_r == null ? 'text-white' : kelasR(st.total_r)); }
+                set('kPf', st.profit_factor != null ? 'profit factor ' + st.profit_factor : '');
+                set('kImpas', st.titik_impas_pct != null
+                    ? 'Dengan rasio risk:reward rata-rata 1:' + st.rr_rata + ', titik impas win rate adalah ±' + st.titik_impas_pct + '%. Win rate di bawah angka itu berarti rugi bersih, di atasnya untung — sebelum spread dan komisi.'
+                    : '');
+                var p = el('peringatanSampel');
+                if (p && n < 30) { p.classList.remove('hidden'); p.innerHTML = '<b>Sampel masih kecil (' + n + ' sinyal selesai, minimal 30 untuk penilaian awal).</b> Interval keyakinan yang lebar menunjukkan angka di bawah belum bisa dijadikan pegangan — jangan menyimpulkan kualitas sistem dari halaman ini saja.'; }
+
+                // Per pair
+                var pairs = (st.per_simbol || []).slice().sort(function (a, b) { return b.dinilai - a.dinilai; });
+                el('tPair').innerHTML = pairs.length
+                    ? '<thead><tr><th>Instrumen</th><th>Sinyal</th><th>Menang</th><th>Win rate</th><th>Total</th><th></th></tr></thead><tbody>' + pairs.map(function (x) {
+                        return '<tr><td>' + esc(simbol(x.simbol)) + '</td><td>' + x.dinilai + '</td><td>' + x.menang + '</td><td>' + persen(x.win_rate) + '</td><td class="' + kelasR(x.total_r) + '">' + r(x.total_r, 1) + '</td><td class="tr-abu">' + (x.sampel_kecil ? 'sampel kecil' : '') + '</td></tr>';
+                    }).join('') + '</tbody>'
+                    : '<tbody><tr><td>Belum ada sinyal selesai.</td></tr></tbody>';
+
+                // Riwayat
+                var h = (d.sinyal_resmi && d.sinyal_resmi.terakhir) || [];
+                el('tRiwayat').innerHTML = h.length
+                    ? '<thead><tr><th>Ditutup</th><th>Instrumen</th><th>Arah</th><th>Entry</th><th>SL</th><th>TP</th><th>Hasil</th><th>R</th></tr></thead><tbody>' + h.map(function (x) {
+                        var menang = x.hasil === 'TP';
+                        return '<tr><td class="tr-abu">' + esc(waktu(x.tutup || x.waktu)) + '</td><td>' + esc(simbol(x.simbol)) + '</td><td>' + esc(x.arah) + '</td><td>' + esc(angka(x.entry)) + '</td><td>' + esc(angka(x.sl)) + '</td><td>' + esc(angka(x.tp)) + '</td><td class="' + (menang ? 'tr-naik' : 'tr-turun') + '">' + (menang ? 'TP kena' : 'SL kena') + '</td><td class="' + kelasR(x.r) + '">' + r(x.r, 2) + '</td></tr>';
+                    }).join('') + '</tbody>'
+                    : '<tbody><tr><td>Belum ada sinyal selesai.</td></tr></tbody>';
+                var per = d.sinyal_resmi && d.sinyal_resmi.periode;
+                set('kPeriode', per ? 'Catatan dari ' + waktu(per.pertama) + ' sampai ' + waktu(per.terakhir) + ' · ' + (d.sinyal_resmi.total_tercatat || 0) + ' sinyal tercatat seluruhnya.' : '');
+
+                // Bayangan
+                var b = d.sinyal_bayangan || {}, bs = b.statistik || {}, bn = bs.dinilai || 0;
+                set('bProgres', bn + ' dari 100 sinyal tertutup terkumpul');
+                var bt = el('bBatang'); if (bt) bt.style.width = Math.min(100, bn) + '%';
+                set('bDetail', (b.catatan || '') + (b.tingkat_isi_pct != null ? ' Tingkat pengisian order limit: ' + b.tingkat_isi_pct + '%.' : ''));
+                var m = b.per_metode || [];
+                el('tMetode').innerHTML = m.length
+                    ? '<thead><tr><th>Metode</th><th>Sinyal</th><th>Menang</th><th>Win rate</th><th>Total</th></tr></thead><tbody>' + m.map(function (x) {
+                        return '<tr><td>' + esc(x.nama) + '</td><td>' + x.dinilai + '</td><td>' + x.menang + '</td><td>' + persen(x.win_rate) + '</td><td class="' + kelasR(x.total_r) + '">' + r(x.total_r, 1) + '</td></tr>';
+                    }).join('') + '</tbody>'
+                    : '<tbody></tbody>';
+
+                // Indikator Pine
+                var pn = d.sinyal_pine || {}, ps = pn.statistik || {};
+                set('pCatatan', (pn.catatan || '') + ' Tercatat: ' + (pn.rekor || 0) + ' sinyal; selesai: ' + (ps.dinilai || 0) + (ps.dinilai ? ' (win rate ' + persen(ps.win_rate) + ', total ' + r(ps.total_r, 1) + ')' : '') + '.');
+                var pt = pn.terakhir || [];
+                el('tPine').innerHTML = pt.length
+                    ? '<thead><tr><th>Waktu</th><th>Arah</th><th>Entry</th><th>SL</th><th>TP3</th><th>Status</th><th>Hasil</th></tr></thead><tbody>' + pt.map(function (x) {
+                        return '<tr><td>' + esc(waktu(x.waktu)) + '</td><td>' + esc(x.arah) + '</td><td>' + esc(x.entry) + '</td><td>' + esc(x.sl) + '</td><td>' + esc(x.tp) + '</td><td>' + esc(x.status) + '</td><td class="' + kelasR(x.r) + '">' + (x.r == null ? '—' : r(x.r, 2)) + '</td></tr>';
+                    }).join('') + '</tbody>'
+                    : '<tbody><tr><td>Belum ada sinyal VALID tercatat. Pemindai berjalan tiap bar H4 yang tutup.</td></tr></tbody>';
+
+                // Metodologi & peringatan
+                var ul = el('listMetodologi'); if (ul) ul.innerHTML = (d.metodologi || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+                set('kPeringatan', d.peringatan || '');
+                set('kUpdate', waktu(d.diperbarui));
+            })
+            .catch(gagal);
+    })();
+    </script>
+</body>
+</html>

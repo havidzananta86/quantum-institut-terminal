@@ -135,10 +135,12 @@ function qi_signal_statistik(array $records): array
     $rataKalahR  = $rKalah  ? round(array_sum($rKalah)  / count($rKalah), 3)  : null;
     $rataR       = $rSemua  ? round(array_sum($rSemua)  / count($rSemua), 3)  : null;
 
-    // Expectancy memakai rata-rata R nyata bila tersedia, jika tidak memakai 1R & plan.
-    $rm = $rataMenangR ?? 2.5;
-    $rk = $rataKalahR  ?? -1.0;
-    $expectancy = ($dinilai > 0) ? round(($menang / $dinilai) * $rm + ($kalah / $dinilai) * $rk, 3) : null;
+    // Expectancy HANYA dari R nyata. Dulu bila rata-rata R menang tidak ada dipakai asumsi 2,5R (dan kalah −1R),
+    // yaitu angka yang tidak pernah terjadi. Sekarang null ("belum bisa dihitung") bila data R-nya tidak ada.
+    $expectancy = null;
+    if ($dinilai > 0 && ($menang === 0 || $rataMenangR !== null) && ($kalah === 0 || $rataKalahR !== null)) {
+        $expectancy = round(($menang / $dinilai) * ($rataMenangR ?? 0.0) + ($kalah / $dinilai) * ($rataKalahR ?? 0.0), 3);
+    }
 
     $grossWin  = $rMenang ? array_sum($rMenang) : 0.0;
     $grossLoss = $rKalah ? abs(array_sum($rKalah)) : 0.0;
