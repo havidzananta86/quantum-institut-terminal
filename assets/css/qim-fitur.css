@@ -127,3 +127,21 @@ body.qbt-terbuka { overflow: hidden; }
     .qch-latih-form button { min-height: 44px; }
 }
 @media (pointer: coarse) { .qch-replay button, .qch-replay select { min-height: 40px; min-width: 40px; } }
+
+/* ── Header desktop: urutan mengalah saat ruang sempit (dulu semua mengerut bersamaan dan saling menimpa:
+   tab "Drawing" tertimpa ticker berita, teks "Quantum Institute Market…" tertimpa menu).
+   Ticker berita mengecil lebih dulu → teks logo dipotong "…" → menu bisa digeser. Tombol kanan tidak dipotong. ── */
+@media (min-width: 1024px) {
+    .qim-header > * { min-width: 0; }
+    .qim-header .qim-brand { flex: 0 4 auto; min-width: 140px; overflow: hidden; }
+    .qim-header .qim-brand-caption { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .qim-header .qim-top-nav { flex: 0 0.01 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    .qim-header .qim-top-nav::-webkit-scrollbar { display: none; }
+    .qim-header .qim-top-link { flex: 0 0 auto; white-space: nowrap; }
+    /* Ticker hanya bila muat utuh (≥ 2000 px); di bawah itu tinggal potongan sempit — countdown berita tetap ada
+       di chip pada chart dan kartu News Signal Engine. */
+    .qim-header #qimNewsTicker { flex: 0 10 auto; min-width: 0; overflow: hidden; }
+    @media (max-width: 1999px) { .qim-header #qimNewsTicker { display: none !important; } }
+    .qim-header .qim-header-actions { flex: 0 0 auto; }
+    #qimUserName { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

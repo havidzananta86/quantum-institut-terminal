@@ -39,6 +39,11 @@
      *   soket         { state: 'live'|..., umurDetik: number|null } — soket MT5 untuk simbol ini
      * @returns {{tingkat:'ok'|'warn'|'bad'|'idle', label:string, judul:string}}
      */
+    function akhirPekanKripto(ms) {
+        const d = new Date(typeof ms === 'number' ? ms : Date.now());
+        const hari = d.getUTCDay(), jam = d.getUTCHours();
+        return hari === 6 || (hari === 5 && jam >= 21) || (hari === 0 && jam < 22);
+    }
     function hitungStatusData(i) {
         const harga = i.harga || null;
         const sumber = (harga && harga.source) || i.sumberCandle || '';
@@ -70,6 +75,11 @@
             return { tingkat: 'ok', label: nama, judul: mt5
                 ? 'Harga dari MT5 (VPS) lewat polling berkala.'
                 : 'Harga dari OANDA lewat TradingView-API (tick tiap ±1 dtk).' };
+        }
+        // Kripto diperdagangkan 24/7 tetapi OANDA/broker menutup BTC di akhir pekan (Jum ±21:00 – Min ±22:00 UTC):
+        // di jam itu Binance adalah sumber yang BENAR (server memang beralih ke sana), bukan cadangan darurat.
+        if (i.simbolBridge && /USDT$/.test(String(i.simbol || '')) && /binance/i.test(sumber) && akhirPekanKripto(i.sekarang)) {
+            return { tingkat: 'ok', label: 'BINANCE · 24/7', judul: 'Harga ' + i.simbol + ' dari Binance. OANDA/broker menutup kripto di akhir pekan, jadi Binance (24/7) dipakai otomatis.' };
         }
         if (i.simbolBridge) {
             return { tingkat: 'warn', label: 'CADANGAN · ' + nama, judul: 'Sumber utama (MT5/OANDA) sedang tidak tersedia untuk ' + i.simbol + '. Memakai sumber cadangan ' + nama + ' — harga bisa berbeda dari MT5.' };
@@ -158,7 +168,7 @@
         } catch (e) {}
         // Simbol yang seharusnya dari MT5/OANDA (bukan Binance langsung) memakai awalan OANDA: di watchlist.
         const simbolBridge = tv.indexOf('OANDA:') === 0;
-        return { simbol: simbol || '—', simbolBridge, harga: hargaTerakhir[simbol] || null, sumberCandle, soket };
+        return { simbol: simbol || '—', simbolBridge, harga: hargaTerakhir[simbol] || null, sumberCandle, soket, sekarang: Date.now() };
     }
 
     function renderStatus() {

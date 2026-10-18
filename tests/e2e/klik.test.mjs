@@ -254,6 +254,14 @@ async function cekDashboard(lebar, tinggi, label) {
       const keluar = !panel.classList.contains('chart-fullscreen-mode');
       if (!masuk || !keluar) hasil.fs = 'layar penuh: masuk=' + masuk + ' keluar=' + keluar;
       hasil.fitur = [];
+      // Header: elemen anak tidak boleh saling menimpa dan tombol kanan tidak boleh keluar layar.
+      { const hd = document.querySelector('.qim-header');
+        if (hd) {
+          const kid = [...hd.children].filter(e => e.offsetParent !== null && e.getBoundingClientRect().width > 0).map(e => ({ n: e.id || String(e.className).split(' ')[0], r: e.getBoundingClientRect() }));
+          for (let i = 0; i < kid.length - 1; i++) if (kid[i].r.right > kid[i + 1].r.left + 1) hasil.fitur.push('header: ' + kid[i].n + ' menimpa ' + kid[i + 1].n + ' (' + Math.round(kid[i].r.right - kid[i + 1].r.left) + 'px)');
+          const aksi = hd.querySelector('.qim-header-actions');
+          if (aksi && aksi.getBoundingClientRect().right > innerWidth + 1) hasil.fitur.push('header: tombol kanan keluar layar');
+        } }
       if (!window.QIMBerita || !window.QIMAIJelaskan || !window.QIMBacktestUI || !window.QIMMultiChart) hasil.fitur.push('modul fitur baru tidak termuat');
       // Kembali ke BTC (sumber Binance/OANDA dengan cadangan) sebelum menguji fitur yang mengikuti chart utama.
       const btc = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].find(r => /BTCUSDT/.test(r.innerText));

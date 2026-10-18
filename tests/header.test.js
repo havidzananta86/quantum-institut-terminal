@@ -22,6 +22,15 @@ r = H.hitungStatusData({ ...dasar, harga: { source: 'biquote', market: 'open' },
 cek('simbol MT5/OANDA tetapi memakai biquote → kuning "CADANGAN · BIQUOTE"', r.tingkat === 'warn' && r.label === 'CADANGAN · BIQUOTE', r);
 r = H.hitungStatusData({ simbol: 'ETHUSDT', simbolBridge: false, harga: { source: 'binance' }, sumberCandle: 'binance', soket: null });
 cek('simbol non-bridge dari Binance → hijau (bukan cadangan)', r.tingkat === 'ok' && r.label === 'BINANCE', r);
+const sabtu = Date.UTC(2026, 9, 17, 12, 0), rabu = Date.UTC(2026, 9, 14, 12, 0), jumatMalam = Date.UTC(2026, 9, 16, 22, 0), jumatSiang = Date.UTC(2026, 9, 16, 12, 0), mingguPagi = Date.UTC(2026, 9, 18, 10, 0), mingguMalam = Date.UTC(2026, 9, 18, 23, 0);
+const btc = { simbol: 'BTCUSDT', simbolBridge: true, harga: { source: 'binance' }, sumberCandle: 'binance', soket: null };
+r = H.hitungStatusData({ ...btc, sekarang: sabtu });
+cek('BTC dari Binance di akhir pekan → hijau "BINANCE · 24/7" (sumber benar, bukan cadangan)', r.tingkat === 'ok' && r.label === 'BINANCE · 24/7', r);
+cek('batas akhir pekan: Jumat 22:00 UTC & Minggu 10:00 UTC ya; Jumat 12:00, Rabu, Minggu 23:00 tidak',
+    H.hitungStatusData({ ...btc, sekarang: jumatMalam }).label === 'BINANCE · 24/7' && H.hitungStatusData({ ...btc, sekarang: mingguPagi }).label === 'BINANCE · 24/7'
+    && H.hitungStatusData({ ...btc, sekarang: jumatSiang }).label === 'CADANGAN · BINANCE' && H.hitungStatusData({ ...btc, sekarang: rabu }).label === 'CADANGAN · BINANCE' && H.hitungStatusData({ ...btc, sekarang: mingguMalam }).label === 'CADANGAN · BINANCE');
+r = H.hitungStatusData({ ...dasar, harga: { source: 'biquote', market: 'open' }, sumberCandle: 'biquote', sekarang: sabtu });
+cek('forex memakai cadangan di akhir pekan tetap kuning (hanya kripto yang dikecualikan)', r.tingkat === 'warn' && /CADANGAN/.test(r.label), r);
 r = H.hitungStatusData({ ...dasar, harga: { source: 'oanda_tv' }, sumberCandle: 'simulasi' });
 cek('candle simulasi → merah "SIMULASI"', r.tingkat === 'bad' && r.label === 'SIMULASI', r);
 r = H.hitungStatusData({ ...dasar });
