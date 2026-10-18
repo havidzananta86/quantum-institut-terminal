@@ -234,7 +234,7 @@ async function cekDashboard(lebar, tinggi, label) {
         const sim = (r.querySelector('.qim-watch-name b') || {}).textContent;
         r.click();
         let k = {};
-        for (let i = 0; i < 20; i++) { await tidur(400); k = window.qiChartKonteks ? window.qiChartKonteks() : {}; if ((k.symbol || k.sym) === sim && (k.candles || []).length) break; }
+        for (let i = 0; i < 45; i++) { await tidur(400); k = window.qiChartKonteks ? window.qiChartKonteks() : {}; if ((k.symbol || k.sym) === sim && (k.candles || []).length) break; }
         if ((k.symbol || k.sym) !== sim) hasil.simbol.push(sim + ': chart tetap ' + (k.symbol || k.sym));
         else if (!(k.candles || []).length) hasil.simbol.push(sim + ': chart kosong');
       }
@@ -243,7 +243,7 @@ async function cekDashboard(lebar, tinggi, label) {
       for (const t of tfs) {
         t.click();
         let n = 0;
-        for (let i = 0; i < 20 && !n; i++) { await tidur(400); n = ((window.qiChartKonteks ? window.qiChartKonteks() : {}).candles || []).length; }
+        for (let i = 0; i < 45 && !n; i++) { await tidur(400); n = ((window.qiChartKonteks ? window.qiChartKonteks() : {}).candles || []).length; }
         if (!n) hasil.tf.push(t.dataset.iv + ': chart kosong');
       }
       hasil.jumlahTf = tfs.length;

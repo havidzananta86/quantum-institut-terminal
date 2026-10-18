@@ -139,7 +139,10 @@ function qi_ratelimit_cleanup($dir, $maxAge = 3600) {
     $now = time();
     $cleaned = 0;
     foreach ($files as $f) {
-        if ($now - filemtime($f) > $maxAge && $cleaned < 200) {
+        // Permintaan lain bisa menghapus berkas ini lebih dulu (balapan) → filemtime gagal: lewati, bukan Warning.
+        $mtime = @filemtime($f);
+        if ($mtime === false) continue;
+        if ($now - $mtime > $maxAge && $cleaned < 200) {
             @unlink($f);
             $cleaned++;
         }

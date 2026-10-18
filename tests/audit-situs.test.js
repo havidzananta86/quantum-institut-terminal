@@ -14,6 +14,7 @@ const cs = read('api/currency-strength.php');
 cek('currency-strength: cache yang sedang ditulis tidak memunculkan Notice (baca dicek dulu)', /\$cached = @file_get_contents\(\$cacheFile\);/.test(cs) && !/echo file_get_contents\(\$cacheFile\)/.test(cs));
 const hl = read('api/health.php');
 cek('health: kunci opsional (Telegram, Google) tidak membuat 503 permanen', /api_keys_optional_missing/.test(hl) && !/\$missing\[\] = 'telegram'/.test(hl) && !/\$missing\[\] = 'google'/.test(hl));
+cek('rate-limit cleanup tahan balapan: filemtime berkas yang baru dihapus permintaan lain tidak jadi PHP Warning', /\$mtime = @filemtime\(\$f\);[\s\S]{0,40}if \(\$mtime === false\) continue;/.test(read('api/_middleware.php')));
 cek('signals: label zona waktu mengikuti server (dulu "WIB" padahal UTC)', !/'Asia\/Jakarta \(WIB\)'/.test(read('api/signals.php')));
 
 console.log('Posisi akun MT');
