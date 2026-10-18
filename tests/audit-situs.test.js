@@ -15,6 +15,10 @@ cek('currency-strength: cache yang sedang ditulis tidak memunculkan Notice (baca
 const hl = read('api/health.php');
 cek('health: kunci opsional (Telegram, Google) tidak membuat 503 permanen', /api_keys_optional_missing/.test(hl) && !/\$missing\[\] = 'telegram'/.test(hl) && !/\$missing\[\] = 'google'/.test(hl));
 cek('rate-limit cleanup tahan balapan: filemtime berkas yang baru dihapus permintaan lain tidak jadi PHP Warning', /\$mtime = @filemtime\(\$f\);[\s\S]{0,40}if \(\$mtime === false\) continue;/.test(read('api/_middleware.php')));
+const cf = read('api/crypto-futures.php');
+cek('Whale vs Retail: tidak ada angka karangan bila Binance Futures tidak terjangkau (dulu 51.2/48.8 · 58.5/41.5 + verdict palsu)', !/: 51\.2;|: 58\.5;|: 41\.5;|: 48\.8;/.test(cf) && /if \(!\$retail \|\| !\$whale\) \{[\s\S]{0,200}'ok' => false/.test(cf));
+cek('Whale vs Retail: browser menampilkan "tidak tersedia" (bukan angka lama) saat ok:false', /if \(!j\.ok\) \{[\s\S]{0,900}j\.message/.test(read('assets/js/dashboard-app.js')));
+
 cek('signals: label zona waktu mengikuti server (dulu "WIB" padahal UTC)', !/'Asia\/Jakarta \(WIB\)'/.test(read('api/signals.php')));
 
 console.log('Posisi akun MT');

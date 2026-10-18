@@ -136,11 +136,21 @@ if ($action === 'liquidation') {
     $whale  = (!empty($topRatio) && is_array($topRatio)) ? $topRatio[0] : null;
     $taker  = (!empty($takerRatio) && is_array($takerRatio)) ? $takerRatio[0] : null;
 
-    $retailLong = $retail ? round((float)$retail['longAccount'] * 100, 1) : 51.2;
-    $retailShort = $retail ? round((float)$retail['shortAccount'] * 100, 1) : 48.8;
+    // KEJUJURAN DATA: dulu, bila Binance Futures tidak terjangkau, angka KARANGAN yang tertanam di kode
+    // (Retail 51,2/48,8 · Whale 58,5/41,5 · "SMART MONEY ACCUMULATION") dikirim seolah data nyata.
+    // Sekarang: tanpa data nyata → katakan tidak tersedia (HTTP 200 + ok:false, tidak disimpan di cache).
+    if (!$retail || !$whale) {
+        echo json_encode([
+            'ok' => false, 'tidak_tersedia' => true, 'symbol' => $sym,
+            'message' => 'Data posisi trader Binance Futures tidak tersedia saat ini (sumber tidak terjangkau dari server).',
+        ]);
+        exit;
+    }
+    $retailLong = round((float)$retail['longAccount'] * 100, 1);
+    $retailShort = round((float)$retail['shortAccount'] * 100, 1);
 
-    $whaleLong = $whale ? round((float)$whale['longAccount'] * 100, 1) : 58.5;
-    $whaleShort = $whale ? round((float)$whale['shortAccount'] * 100, 1) : 41.5;
+    $whaleLong = round((float)$whale['longAccount'] * 100, 1);
+    $whaleShort = round((float)$whale['shortAccount'] * 100, 1);
 
     $divergence = round($whaleLong - $retailLong, 1);
     $verdict = 'NEUTRAL';
@@ -156,14 +166,14 @@ if ($action === 'liquidation') {
         'retail' => [
             'long'  => $retailLong,
             'short' => $retailShort,
-            'ratio' => $retail ? (float)$retail['longShortRatio'] : 1.05
+            'ratio' => (float)$retail['longShortRatio']
         ],
         'whale'  => [
             'long'  => $whaleLong,
             'short' => $whaleShort,
-            'ratio' => $whale ? (float)$whale['longShortRatio'] : 1.41
+            'ratio' => (float)$whale['longShortRatio']
         ],
-        'takerBuySellRatio' => $taker ? (float)$taker['buySellRatio'] : 1.0,
+        'takerBuySellRatio' => $taker ? (float)$taker['buySellRatio'] : null,
         'divergence'        => $divergence,
         'verdict'           => $verdict,
         'timestamp'         => date('Y-m-d H:i:s')

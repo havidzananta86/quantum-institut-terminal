@@ -995,7 +995,7 @@ document.addEventListener('keydown', e => {
                 <span class="text-base">📊</span> Volatility & Spread
             </button>
             <button data-panel="panel-sentiment" onclick="switchPanel('panel-sentiment')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">🌡</span> Sentiment & Clocks
+                <span class="text-base">🕐</span> Sessions &amp; P&amp;L Calendar
             </button>
             <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Advanced Analysis</div>
             <button data-panel="panel-watchlist" onclick="switchPanel('panel-watchlist')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
@@ -1006,7 +1006,7 @@ document.addEventListener('keydown', e => {
                 <span class="text-base">🔄</span> Multi-Timeframe
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
             </button>
-            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Community &amp; Growth</div>
+            <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Growth &amp; Belajar</div>
             <button data-panel="panel-leaderboard" onclick="switchPanel('panel-leaderboard')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🏅</span> Leaderboard
                 <span class="ml-auto text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-1">NEW</span>
@@ -1014,10 +1014,6 @@ document.addEventListener('keydown', e => {
             <button data-panel="panel-academy" onclick="switchPanel('panel-academy')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🎓</span> Academy &amp; Cheatsheet
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">EDU</span>
-            </button>
-            <button data-panel="panel-community" onclick="switchPanel('panel-community')" class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">💬</span> Community
-                <span class="ml-auto text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-1">NEW</span>
             </button>
         </div>
     </nav>
@@ -3725,16 +3721,8 @@ document.addEventListener('keydown', e => {
     <!-- ══ PANEL: Sentiment Gauge (#7) ══ -->
     <div id="panel-sentiment" class="panel-content hidden p-4 space-y-4">
         <div>
-            <div class="flex items-center gap-2"><span class="text-base">📈</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Retail Sentiment</span></div>
-            <p class="text-[10px] text-slate-500 mt-0.5">Persentase posisi Long vs Short dari retail trader — gunakan sebagai kontrarian indicator</p>
-        </div>
-        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
-            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Long vs Short (Retail)</div>
-            <div id="sentimentGauge" class="space-y-2.5"></div>
-            <div class="mt-4 p-3 rounded-xl bg-qi-panel border border-qi-border">
-                <div class="text-[10px] text-qi-gold font-semibold mb-1">💡 Tips Penggunaan</div>
-                <p class="text-[10px] text-slate-500 leading-relaxed">Retail trader umumnya salah di market trending. Jika >70% retail long, pertimbangkan sell. Jika >70% retail short, pertimbangkan buy. Gunakan sebagai konfirmasi, bukan sinyal utama.</p>
-            </div>
+            <div class="flex items-center gap-2"><span class="text-base">🕐</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Sessions &amp; P&amp;L Calendar</span></div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Jam sesi pasar dunia dan kalender profit/loss bulanan Anda</p>
         </div>
         <!-- Session Clocks (#20) -->
         <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
@@ -4169,55 +4157,6 @@ document.addEventListener('keydown', e => {
         </div>
     </div>
 
-    <!-- ══ PANEL: Community Chat (D18) ══ -->
-    <div id="panel-community" class="panel-content hidden p-4 space-y-3">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">💬</span>
-                    <span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Quantum Trader Community</span>
-                    <span class="text-[9px] bg-qi-green/10 text-qi-green border border-qi-green/30 rounded px-2 py-0.5">● 188 ONLINE</span>
-                </div>
-                <p class="text-[10px] text-slate-500 mt-0.5">Diskusi real-time pasar finansial, berbagi setup analisis, dan tanya jawab dengan sesama trader</p>
-            </div>
-            <!-- Channel Switcher -->
-            <div class="flex items-center gap-1.5 bg-qi-card border border-qi-border rounded-xl p-1 text-[10px] font-mono">
-                <button onclick="setChatChannel('all')" id="chatChan-all" class="chat-chan-btn px-2.5 py-1 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan font-semibold">#semua</button>
-                <button onclick="setChatChannel('gold')" id="chatChan-gold" class="chat-chan-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">#gold-xau</button>
-                <button onclick="setChatChannel('crypto')" id="chatChan-crypto" class="chat-chan-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">#crypto</button>
-                <button onclick="setChatChannel('signals')" id="chatChan-signals" class="chat-chan-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">#sinyal</button>
-            </div>
-        </div>
-
-        <!-- Chat Container -->
-        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden flex flex-col" style="height:calc(100vh - 220px);min-height:420px">
-            <!-- Messages Stream -->
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-3 space-y-2 font-sans">
-                <!-- Messages injected by JS -->
-            </div>
-
-            <!-- Quick Action Chips -->
-            <div class="px-3 py-1.5 border-t border-qi-border/50 bg-qi-panel/40 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono">
-                <span class="text-slate-600 text-[9px] uppercase tracking-wider shrink-0">Cepat:</span>
-                <button onclick="sendQuickChat('🔥 Bullish XAU/USD, momentum H4 masih kuat!')" class="shrink-0 px-2 py-0.5 rounded-full bg-qi-panel border border-qi-border hover:border-qi-cyan/50 text-slate-300 hover:text-white transition">🔥 Bullish Gold</button>
-                <button onclick="sendQuickChat('🐻 Bearish BTC, waspada fakeout di resistance!')" class="shrink-0 px-2 py-0.5 rounded-full bg-qi-panel border border-qi-border hover:border-qi-cyan/50 text-slate-300 hover:text-white transition">🐻 Bearish BTC</button>
-                <button onclick="sendQuickChat('🎯 TP Hit! Target 1:2 tercapai dengan mulus.')" class="shrink-0 px-2 py-0.5 rounded-full bg-qi-panel border border-qi-border hover:border-qi-cyan/50 text-slate-300 hover:text-white transition">🎯 TP Hit!</button>
-                <button onclick="sendQuickChat('👀 Menunggu sweep Asian Low saat London Open.')" class="shrink-0 px-2 py-0.5 rounded-full bg-qi-panel border border-qi-border hover:border-qi-cyan/50 text-slate-300 hover:text-white transition">👀 Menunggu London</button>
-                <button onclick="sendQuickChat('⚡ Setup valid di FVG M15, risk 1% siap.')" class="shrink-0 px-2 py-0.5 rounded-full bg-qi-panel border border-qi-border hover:border-qi-cyan/50 text-slate-300 hover:text-white transition">⚡ FVG Setup</button>
-            </div>
-
-            <!-- Chat Input Bar -->
-            <div class="border-t border-qi-border p-3 flex gap-2 bg-qi-card">
-                <input id="chatInput" type="text" maxlength="500" placeholder="Tulis pandangan pasar, analisis, atau pertanyaan trading Anda..." onkeydown="if(event.key==='Enter')sendChatMsg()"
-                    class="flex-1 bg-qi-panel border border-qi-border rounded-xl text-[11px] text-white px-3.5 py-2.5 outline-none focus:border-qi-cyan/40 placeholder:text-slate-600 transition">
-                <button onclick="sendChatMsg()" class="bg-gradient-to-r from-qi-cyan/20 to-blue-500/20 text-qi-cyan border border-qi-cyan/40 rounded-xl px-5 py-2.5 text-[11px] font-semibold hover:bg-qi-cyan/30 transition flex items-center gap-1.5 shrink-0">
-                    <span>Kirim</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
     </div><!-- /mainScroll -->
 
     <!-- ══ COMMAND PALETTE OVERLAY (#3) ══ -->
@@ -4305,7 +4244,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-chart-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.1"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.29"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.30"></script>
 <script src="assets/js/qim-dashboard.js?v=1.7.5"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
@@ -4341,7 +4280,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
     if (!navigator.onLine) setOnline(false);
 })();
 </script>
-<script src="assets/js/pro-features.js?v=2.5.2"></script>
+<script src="assets/js/pro-features.js?v=2.5.3"></script>
 <script src="assets/js/pro-trading-tools.js?v=2.4.4"></script>
 <!-- GAYA CHART — sumber tunggal penghalusan tampilan (zona WIB, presisi, watermark) -->
 <script src="assets/js/chart-style.js?v=1.2.1"></script>
@@ -4361,9 +4300,9 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-auto-paper.js?v=1.0.0"></script>
 <script src="assets/js/qim-mobile.js?v=1.0.0"></script>
 <script src="assets/js/dashboard-pro.js?v=1.0.2"></script>
-<script src="assets/js/advanced-trading.js?v=3.2.0"></script>
+<script src="assets/js/advanced-trading.js?v=3.2.1"></script>
 <script src="assets/js/perf-upgrades.js?v=2.2.1"></script>
-<script src="assets/js/ui-improvements.js?v=3.2.3"></script>
+<script src="assets/js/ui-improvements.js?v=3.2.4"></script>
 <script src="assets/js/main.js?v=1.4.1" defer></script>
 <!-- Fondasi aksesibilitas: peran tab, operasi keyboard, perangkap fokus, skip link -->
 <script src="assets/js/a11y.js?v=1.0.4"></script>

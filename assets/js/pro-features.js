@@ -2,7 +2,7 @@
  * Quantum Institut Market Terminal — Pro Features v2.1
  * Risk Calculator, Price Alerts, Command Palette, Floating Ticker,
  * Pip Calculator, Pivot Points, Market Screener, Trade Journal,
- * Volatility Dashboard, Session Clocks, DXY Tracker, Sentiment Gauge
+ * Volatility Dashboard, Session Clocks, DXY Tracker
  */
 
 /* ═══════════════════════════════════════════════════════════
@@ -298,23 +298,6 @@ function renderMonthlyCalendar(history) {
     }
     html += '</div>';
     el.innerHTML = html;
-}
-
-
-/* ═══════════════════════════════════════════════════════════
-   #7  RETAIL SENTIMENT GAUGE
-   ═══════════════════════════════════════════════════════════
-   ⚠️ Perbaikan integritas: versi sebelumnya menampilkan posisi ritel HARDCODED
-   (XAUUSD 72% long, EURUSD 44% long, dst.) yang tampak seperti data positioning
-   nyata. Data posisi ritel TIDAK tersedia dari sumber yang kami pakai, jadi
-   tabelnya dikosongkan dengan penjelasan — bukan diisi angka karangan. */
-function renderSentimentGauge() {
-    var el = document.getElementById('sentimentGauge');
-    if (!el) return;
-    el.innerHTML = '<div class="text-[10px] text-slate-500 leading-relaxed">'
-        + 'Data <b class="text-slate-400">posisi ritel (long/short)</b> tidak tersedia dari sumber data yang kami pakai.<br>'
-        + '<span class="text-slate-600">Tabel ini sengaja dikosongkan — menampilkan persentase contoh akan menyesatkan. '
-        + 'Bila Anda menghubungkan EA MT5 (bridge), data posisi akun Anda sendiri bisa ditampilkan di sini.</span></div>';
 }
 
 
@@ -759,7 +742,6 @@ function initProPanel(id) {
     if (id === 'panel-screener') runScreener();
     if (id === 'panel-volatility') { renderVolatilityDash(); renderSpreadMonitor(); renderSwapRates(); }
     if (id === 'panel-tools') { calcPivotPoints(); }
-    if (id === 'panel-sentiment') renderSentimentGauge();
 }
 
 /* ═══════════════════════════════════════════════════════════

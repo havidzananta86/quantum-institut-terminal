@@ -589,13 +589,12 @@ const PANEL_META = {
     'panel-journal':      { icon:'📔', title:'Trade Journal' },
     'panel-screener':     { icon:'🔍', title:'Market Screener' },
     'panel-volatility':   { icon:'📊', title:'Volatility Dashboard' },
-    'panel-sentiment':    { icon:'🌡', title:'Sentiment & Sessions' },
+    'panel-sentiment':    { icon:'🕐', title:'Sessions & P&L Calendar' },
     'panel-watchlist':    { icon:'⭐', title:'Custom Watchlist' },
     'panel-performance':  { icon:'📊', title:'Performance Analytics' },
     'panel-mtf':          { icon:'🔄', title:'Multi-Timeframe' },
     'panel-leaderboard':  { icon:'🏅', title:'Trading Leaderboard' },
     'panel-academy':      { icon:'🎓', title:'Trading Academy & Cheatsheet' },
-    'panel-community':    { icon:'💬', title:'Quantum Community Chat' },
 };
 let _activePanel = 'panel-overview';
 let _panelInited = new Set(['panel-overview']);
@@ -605,7 +604,6 @@ function switchPanel(id) {
         const sb = document.getElementById('sidebar');
         const ovl = document.getElementById('sidebarOverlay');
         if (sb?.classList.contains('open')) { sb.classList.remove('open'); ovl?.classList.add('hidden'); }
-        if (id === 'panel-community' && typeof renderChat === 'function') renderChat();
         return;
     }
     // Loading bar animation
@@ -664,7 +662,6 @@ function switchPanel(id) {
         _panelInited.add(id);
         initPanel(id);
     } else {
-        if (id === 'panel-community' && typeof renderChat === 'function') renderChat();
         // Panel akun: segarkan lalu GAMBAR ULANG grafik, karena kanvas yang tersembunyi
         // berukuran 0 saat pertama digambar.
         if (id === 'panel-account') { loadOpenPositions(); loadBalanceHistory(); }
@@ -702,7 +699,6 @@ const QI_PANEL_MIN = {
     'panel-strength': 0,      // Currency Strength
     'panel-sessions': 0,      // Market Galaxy
     'panel-academy': 0,       // Academy & Cheatsheet
-    'panel-community': 0,     // Community
     'panel-track': 0,         // Track Record (transparansi → justru membangun kepercayaan)
     'panel-account': 0,       // Akun & Kinerja (halaman akun sendiri, jangan dikunci)
     // ── PRO ──
@@ -720,7 +716,7 @@ const QI_PANEL_MIN = {
     'panel-journal': 1,       // Trade Journal
     'panel-screener': 1,      // Market Screener
     'panel-volatility': 1,    // Volatility & Spread
-    'panel-sentiment': 1,     // Sentiment & Clocks
+    'panel-sentiment': 1,     // Sessions & P&L Calendar
     'panel-watchlist': 1,     // Custom Watchlist
     'panel-mtf': 1,           // Multi-Timeframe
     'panel-leaderboard': 1,   // Leaderboard
@@ -1606,7 +1602,6 @@ function initPanel(id) {
     if (id === 'panel-sessions')    initNetworkGalaxy();
     if (id === 'panel-crypto')      initCryptoTerminal();
     if (id === 'panel-academy')     initAcademyPanel();
-    if (id === 'panel-community')   { if (typeof renderChat === 'function') renderChat(); }
     if (typeof initProPanel === 'function') initProPanel(id);
 }
 
@@ -1642,9 +1637,7 @@ const QI_PANEL_SEGAR = {
     'panel-autosignal':  [() => refreshAutoSignals()],
     'panel-screener':    [() => runScreener()],
     'panel-volatility':  [() => renderVolatilityDash()],
-    'panel-sentiment':   [() => renderSentimentGauge()],
     'panel-heatmap':     [() => fetchCalendarHeatmap()],
-    'panel-community':   [() => { if (typeof renderChat === 'function') renderChat(); }],
     'panel-mtf':         [() => mtfBiasBilaTerlihat()],
 };
 let _qiSegarJalan = false;
@@ -7494,7 +7487,13 @@ async function fetchWhaleSentiment() {
     try {
         const res = await fetch('api/crypto-futures.php?action=sentiment&symbol=' + sym);
         const j = await res.json();
-        if (!j.ok) throw new Error('Failed');
+        if (!j.ok) {
+            // Sumber tidak tersedia: kosongkan angka lama dan katakan apa adanya (jangan tampilkan data basi/karangan).
+            ['sentRetLong', 'sentRetShort', 'sentWhaleLong', 'sentWhaleShort'].forEach(id => { const x = document.getElementById(id); if (x) x.textContent = '—'; });
+            ['sentRetRatio', 'sentWhaleRatio', 'sentTaker'].forEach(id => { const x = document.getElementById(id); if (x) x.textContent = ''; });
+            if (vEl) { vEl.textContent = j.message || 'Data tidak tersedia saat ini'; vEl.className = 'text-xs font-mono font-bold my-1 text-slate-500'; }
+            return;
+        }
 
         const retL = document.getElementById('sentRetLong');
         const retS = document.getElementById('sentRetShort');
@@ -7515,7 +7514,7 @@ async function fetchWhaleSentiment() {
             vEl.className = 'text-xs font-mono font-bold my-1 ' + (j.divergence > 5 ? 'text-qi-green' : (j.divergence < -5 ? 'text-qi-red' : 'text-qi-cyan'));
         }
         const tkEl = document.getElementById('sentTaker');
-        if (tkEl) tkEl.textContent = 'Taker Buy/Sell: ' + j.takerBuySellRatio.toFixed(2) + ' (Divergence: ' + (j.divergence >= 0 ? '+' : '') + j.divergence + '%)';
+        if (tkEl) tkEl.textContent = 'Taker Buy/Sell: ' + (j.takerBuySellRatio === null ? '—' : j.takerBuySellRatio.toFixed(2)) + ' (Divergence: ' + (j.divergence >= 0 ? '+' : '') + j.divergence + '%)';
     } catch(e) {
         if (vEl) vEl.textContent = 'Gagal memuat sentiment';
     }

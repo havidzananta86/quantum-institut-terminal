@@ -43,8 +43,7 @@ const panelsToCheck = [
     'panel-performance',
     'panel-mtf',
     'panel-leaderboard',
-    'panel-academy',
-    'panel-community'
+    'panel-academy'
 ];
 
 panelsToCheck.forEach(pid => {
@@ -68,11 +67,6 @@ if (!dashboardAppJs.includes("'panel-academy':")) {
 }
 console.log('  ✓ panel-academy present in PANEL_META');
 
-if (!dashboardAppJs.includes("'panel-community':")) {
-    console.error('FAIL: panel-community missing from PANEL_META');
-    process.exit(1);
-}
-console.log('  ✓ panel-community present in PANEL_META');
 
 // 4. Every sidebar destination must be an existing panel with title metadata.
 // This prevents a new navigation item from silently opening a blank state.
@@ -144,14 +138,16 @@ acadElements.forEach(eid => {
     console.log(`  ✓ Academy element ${eid} present`);
 });
 
-// 7. Check Community chat elements
-const commElements = ['chatChan-all', 'chatChan-gold', 'chatMessages', 'chatInput'];
-commElements.forEach(eid => {
-    if (!dashHtml.includes(`id="${eid}"`)) {
-        console.error(`FAIL: Community element ${eid} missing`);
-        process.exit(1);
-    }
-    console.log(`  ✓ Community element ${eid} present`);
-});
+// 7. Panel yang dihapus karena tidak berfungsi / datanya palsu tidak boleh kembali diam-diam.
+const dashJs = dashboardAppJs;
+if (dashHtml.includes('id="panel-community"') || dashHtml.includes('188 ONLINE') || dashJs.includes("'panel-community'")) {
+    console.error('FAIL: panel Community Chat (data palsu: 188 ONLINE, pesan hanya di browser sendiri) muncul kembali');
+    process.exit(1);
+}
+if (dashHtml.includes('id="sentimentGauge"')) {
+    console.error('FAIL: kartu Retail Sentiment (tanpa sumber data) muncul kembali');
+    process.exit(1);
+}
+console.log('  ✓ Community Chat & Retail Sentiment tetap dihapus');
 
 console.log('\nPASS — All dashboard panels and DOM hierarchies are valid!');

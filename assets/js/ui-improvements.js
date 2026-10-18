@@ -534,7 +534,7 @@ var CHANGELOG_ITEMS = [
     {icon:'⭐', title:'Custom Watchlist', desc:'Pantau instrumen favorit dengan harga live real-time.'},
     {icon:'📊', title:'Performance Analytics', desc:'Equity curve, monthly breakdown, dan statistik trading lengkap.'},
     {icon:'🔄', title:'Multi-Timeframe View', desc:'Analisa bias dari M15 sampai Monthly dalam satu layar.'},
-    {icon:'🏅', title:'Leaderboard & Community', desc:'Papan peringkat trader dan ruang diskusi komunitas.'},
+    {icon:'🏅', title:'Leaderboard', desc:'Papan peringkat trader berdasarkan hasil paper trading.'},
     {icon:'📋', title:'COT Chart & CSV Export', desc:'Visualisasi data COT dan ekspor journal ke CSV.'},
     {icon:'🎯', title:'News Sentiment Engine', desc:'Skor sentimen otomatis untuk setiap berita pasar.'},
     {icon:'⌨️', title:'Keyboard Shortcuts', desc:'Tekan ? untuk melihat semua shortcut navigasi cepat.'},
