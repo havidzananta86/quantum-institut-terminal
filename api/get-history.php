@@ -50,10 +50,16 @@ $candles = [];
 // berfungsi; jumlah bar yang benar-benar didapat dilaporkan apa adanya.
 if (!$isKripto && qi_tv_bridge_symbol($symbol) !== null) {
     $minta = min($bars, 5000);
-    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $ttl) {
+    if (is_file($cacheFile)) {
+        $umur = time() - filemtime($cacheFile);
         $cd = json_decode((string)file_get_contents($cacheFile), true);
-        if (is_array($cd['candles'] ?? null) && count($cd['candles']) >= 100) {
-            echo json_encode($cd + ['cached' => true]);
+        $n = is_array($cd['candles'] ?? null) ? count($cd['candles']) : 0;
+        // Hasil yang bar-nya KURANG dari yang diminta (bridge lama membatasi 1.000) hanya dipakai 10 menit,
+        // supaya begitu bridge diperbarui riwayat penuh langsung terambil — bukan tertahan 6 jam di cache.
+        $umurMaks = $n >= $minta ? $ttl : 600;
+        if ($n >= 100 && $umur < $umurMaks) {
+            $cd['cached'] = true;
+            echo json_encode($cd);
             exit();
         }
     }

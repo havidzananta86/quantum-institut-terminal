@@ -65,6 +65,9 @@ cek('chart indeks tanpa data → pesan jujur, bukan candle simulasi', /qi_simbol
 const tv = read('tv-bridge/server.js');
 cek('tv-bridge: hingga 5.000 bar & indeks ikut di-stream', /Math\.min\(Math\.max\(parseInt\(limit, 10\) \|\| 300, 10\), 5000\)/.test(tv) && /'US30USD', 'NAS100USD'/.test(tv));
 cek('riwayat dalam OANDA untuk backtest (get-history.php)', /qi_tv_bridge_candles\(\$symbol, \$interval, \$minta, 45\)/.test(read('api/get-history.php')));
+const gh = read('api/get-history.php');
+cek('cache riwayat yang bar-nya kurang dari diminta hanya 10 menit (bridge lama membatasi 1.000; jangan tertahan 6 jam)', /\$umurMaks = \$n >= \$minta \? \$ttl : 600;/.test(gh));
+cek('label cached benar (bukan "$cd + [...]" yang tidak menimpa kunci lama)', /\$cd\['cached'\] = true;/.test(gh) && !/\$cd \+ \['cached' => true\]/.test(gh));
 const qd = read('assets/js/qim-dashboard.js');
 cek('watchlist: tab Indeks berisi 7 instrumen + perak di Metals', (qd.match(/group: 'indeks'/g) || []).length === 7 && /symbol: 'XAGUSD'/.test(qd) && !/symbol: 'AAPL'/.test(qd));
 cek('chart memuat harga live untuk simbol yang sedang dibuka', /if \(kini && !SYMBOLS\.includes\(kini\)\) daftar = SYMBOLS\.concat\(kini\);/.test(read('assets/js/dashboard-app.js')));
