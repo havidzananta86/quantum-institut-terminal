@@ -105,7 +105,7 @@ body:has(#sidebar.sidebar-collapsed) { --qim-sb:0px; }
 .qim-watch-row:disabled { cursor:not-allowed; opacity:.66; }
 .qim-watch-asset { display:flex; align-items:center; gap:6px; min-width:0; }
 .qim-watch-icon { display:grid; place-items:center; flex:0 0 21px; height:21px; border-radius:50%; color:#fff; background:#f7931a; font-size:11px; font-weight:700; }
-.qim-watch-icon.eth { background:#6379ec; }.qim-watch-icon.fx { background:#176ac4; }.qim-watch-icon.gold { background:#d79b10; }.qim-watch-icon.apple { background:#59606b; }.qim-watch-icon.tesla { background:#c82935; }
+.qim-watch-icon.eth { background:#6379ec; }.qim-watch-icon.fx { background:#176ac4; }.qim-watch-icon.gold { background:#d79b10; }.qim-watch-icon.apple { background:#59606b; }.qim-watch-icon.tesla { background:#c82935; }.qim-watch-icon.silver { background:#8e9aaf; }.qim-watch-icon.idx { background:#4b5ad6; font-size:9px; letter-spacing:-.3px; }.qim-watch-icon.oil { background:#2f3b4c; }
 .qim-watch-name { overflow:hidden; color:#d1d4dc; font-size:10px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .qim-watch-quote { text-align:right; white-space:nowrap; }
 .qim-watch-price { display:block; color:#d1d4dc; font-family:'JetBrains Mono',monospace; font-size:9px; }

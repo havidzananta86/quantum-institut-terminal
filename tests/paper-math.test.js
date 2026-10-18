@@ -21,6 +21,12 @@ const KASUS = [
   ['BTCUSDT', 'BUY', 80000, 81000, 0.01],
   ['ETHUSDT', 'SELL', 2450, 2400, 2],
   ['DOGEUSDT', 'BUY', 0.08, 0.085, 1000],
+  // Indeks & logam/energi OANDA (watchlist "Indeks"): CFD 1 kontrak, perak 5.000 oz, minyak 1.000 barel.
+  ['US30', 'BUY', 52000, 52100, 1],
+  ['NAS100', 'SELL', 29200, 29000, 0.5],
+  ['GER40', 'BUY', 25400, 25480, 2],
+  ['XAGUSD', 'BUY', 56.9, 57.4, 0.1],
+  ['USOIL', 'SELL', 101.2, 100.2, 0.5],
 ];
 
 let gagal = 0;

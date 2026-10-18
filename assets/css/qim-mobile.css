@@ -37,10 +37,47 @@ div:has(> #qimChartSkel) { position: relative; }
 .qim-skel-chart i:nth-child(11) { height: 66%; } .qim-skel-chart i:nth-child(12) { height: 59%; } .qim-skel-chart i:nth-child(13) { height: 72%; }
 @media (prefers-reduced-motion: reduce) { .qim-skel-row i, .qim-skel-row b, .qim-skel-row s, .qim-skel-chart i { animation: none; } }
 
+/* ── Watchlist di desktop 1024–1599 px: kolomnya ±200 px, B/S (56 px) membuat nama simbol hanya
+   kebagian ±23 px ("SOLU!", "EURL"). Tombol B/S disembunyikan di lebar ini (tetap ada ≥1600 px dan
+   di panel Paper Trading); tab grup boleh digeser bila tetap tidak muat. ── */
+@media (max-width: 1599px) {
+    .qim-watch-trade { display: none; }
+    .qim-watch-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .qim-watch-tabs { padding: 0 6px; }
+    .qim-watch-tabs button { padding: 9px 7px 10px; }
+}
+@media (max-width: 1919px) { .qim-sparkline { display: none; } .qim-watch-row { grid-template-columns: minmax(0, 1fr) auto auto; } }
+@media (max-width: 1599px) { .qim-watch-row { grid-template-columns: minmax(0, 1fr) auto; } }
+/* 900–1365 px: kolom watchlist 144–190 px — ikon disembunyikan, huruf sedikit lebih kecil, tab 4 kolom sama lebar. */
+@media (min-width: 900px) and (max-width: 1365px) {
+    .qim-watch-icon { display: none; }
+    .qim-watch-row { gap: 6px; padding: 6px 4px; }
+    .qim-watch-name b { font-size: 11.5px; }
+    .qim-watch-name small { font-size: 10px; }
+    .qim-watch-price { font-size: 11px; }
+    .qim-watch-change { font-size: 10px; }
+    .qim-watch-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 4px; }
+    .qim-watch-tabs button { padding: 9px 2px 10px; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }
+    .qim-watch-tabs button.active::after { left: 4px; right: 4px; }
+}
+.qim-watch-tabs { overflow-x: auto; scrollbar-width: none; }
+.qim-watch-tabs::-webkit-scrollbar { display: none; }
+.qim-watch-tabs button { flex: 0 0 auto; white-space: nowrap; }
+
+/* ── Chip hitung mundur berita high-impact (qim-berita-chart.js) ── */
+.qim-berita-chip { position: absolute; left: 8px; bottom: 30px; z-index: 6; max-width: calc(100% - 90px); padding: 5px 9px; border-radius: 8px;
+    background: rgba(15, 23, 42, .88); border: 1px solid rgba(148, 163, 184, .25); color: #cbd5e1; font: 600 11px/1.3 "Inter", system-ui, sans-serif;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: auto; }
+.qim-berita-chip b { color: #f8fafc; }
+.qim-berita-chip.bahaya { background: rgba(127, 29, 29, .92); border-color: rgba(248, 113, 113, .6); color: #fee2e2; }
+.qim-berita-chip.bahaya span { color: #fecaca; font-weight: 700; }
+.qim-berita-chip[hidden] { display: none; }
+@media (max-width: 599px) { .qim-berita-chip { font-size: 10.5px; bottom: 28px; max-width: calc(100% - 70px); } }
+
 /* ── Layar sentuh: target sentuh ≥ 44 px, teks input 16 px, tanpa zoom ketuk-ganda ── */
 @media (pointer: coarse) {
     /* iOS memperbesar halaman bila teks input < 16 px (berlaku juga untuk tablet). */
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(#qim-x), select:not(#qim-x), textarea:not(#qim-x) { font-size: 16px !important; }   /* :not(#qim-x): kalahkan a11y.css [class~="text-[10px]"] 11px !important */
     a, button, [role="button"], input, select, label, summary { touch-action: manipulation; }
 
     .qch-tf, .qch-btn, .qch-icon, .qdraw-tool, .qch-item, .qim-icon-button, .qim-mobile-menu, .qim-balance-button,
@@ -82,5 +119,8 @@ div:has(> #qimChartSkel) { position: relative; }
     /* Bilah timeframe & alat: satu baris yang bisa digeser (gradasi kanan = masih ada isi). */
     .qch-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); }
     .qch-bar > * { flex: 0 0 auto; }
+    /* Bilah alat gambar juga digeser mendatar: gradasi kanan menandakan masih ada alat lain. */
+    .qdraw-tools { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+    .qdraw-tools > * { flex: 0 0 auto; }
     .qch-bar .qch-spacer { flex: 0 0 8px; }
 }

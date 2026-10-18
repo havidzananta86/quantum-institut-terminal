@@ -138,7 +138,8 @@
     const NAMA_TF = { '1': 'M1', '5': 'M5', '15': 'M15', '30': 'M30', '60': 'H1', '240': 'H4', D: 'D1', W: 'W1', MN: 'MN1' };
 
     function presisiSimbol(sym, harga) {
-        const tetap = { XAUUSD: 2, XAGUSD: 3, USDJPY: 3, GBPJPY: 3, EURJPY: 3, BTCUSDT: 2, ETHUSDT: 2 };
+        const tetap = { XAUUSD: 2, XAGUSD: 4, USOIL: 3, USDJPY: 3, GBPJPY: 3, EURJPY: 3, BTCUSDT: 2, ETHUSDT: 2,
+                        US30: 1, NAS100: 1, SPX500: 1, GER40: 1, UK100: 1, JP225: 1 };
         if (Object.prototype.hasOwnProperty.call(tetap, sym)) return tetap[sym];
         return harga >= 1000 ? 2 : harga >= 50 ? 3 : 5;
     }
@@ -170,7 +171,7 @@
             for (const s of r.setups) {
                 const idx = hasilTerakhir.push(s) - 1;
                 const buy = s.arah === 'BUY';
-                bagian.push(`
+                bagian.push(`<div class="qim-setup-wrap">
                     <button type="button" class="qim-setup-item ${buy ? 'buy' : 'sell'}" data-idx="${idx}">
                         <span class="qim-setup-top">
                             <b>${esc(nama)}${s.struktur ? ' · ' + esc(s.struktur) : ''}</b>
@@ -184,7 +185,8 @@
                             <span>R:R <b>1:${s.rr.toFixed(2)}</b></span>
                         </span>
                         <span class="qim-setup-alasan">${s.alasan.map(a => `<span>• ${esc(a)}</span>`).join('')}</span>
-                    </button>`);
+                    </button>
+                    <button type="button" class="qim-setup-ai" data-jelaskan="${idx}" title="Penjelasan bahasa sederhana: kenapa setup ini muncul, kapan batal, ukuran posisi">🤖 Jelaskan setup ini</button></div>`);
             }
         }
         list.innerHTML = bagian.join('');
@@ -196,6 +198,13 @@
                 // Di layar penuh kartu ini dipinjam popover: tutup setelah pengguna memilih agar chart terlihat.
                 if (ev.isTrusted && document.querySelector('.qch-pop-setup') && typeof window.qimTutupPopoverChart === 'function') window.qimTutupPopoverChart();
             }
+        }));
+        list.querySelectorAll('[data-jelaskan]').forEach(btn => btn.addEventListener('click', () => {
+            const s = hasilTerakhir[Number(btn.dataset.jelaskan)];
+            if (!s) return;
+            if (!window.QIMAIJelaskan) { tulisStatus('Modul penjelasan belum siap.'); return; }
+            if (document.querySelector('.qch-pop-setup') && typeof window.qimTutupPopoverChart === 'function') window.qimTutupPopoverChart();
+            window.QIMAIJelaskan.jelaskan(s);
         }));
         const pertama = list.querySelector('.qim-setup-item');
         if (pertama) pertama.click();

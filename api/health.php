@@ -52,6 +52,7 @@ if (file_exists($cfgPath)) {
     $opsional = [];
     if (!defined('TELEGRAM_BOT_TOKEN') || TELEGRAM_BOT_TOKEN === '') $opsional[] = 'telegram';
     if (!defined('GOOGLE_CLIENT_ID') || GOOGLE_CLIENT_ID === '') $opsional[] = 'google';
+    if (!defined('GROQ_API_KEY') || GROQ_API_KEY === '') $opsional[] = 'groq';   // AI Assistant & penjelasan setup
     if ($opsional) $checks['api_keys_optional_missing'] = $opsional;
 } else {
     $checks['api_keys'] = false;

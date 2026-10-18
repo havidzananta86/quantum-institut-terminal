@@ -9,6 +9,9 @@
    Model (1 lot standar):
      · Kripto (…USDT)          : 1 koin per lot          → P/L = selisih × lot
      · XAUUSD                  : 100 oz per lot           → $1 gerak = $100 per lot
+     · XAGUSD                  : 5.000 oz per lot
+     · Indeks (US30, NAS100,   : 1 kontrak per lot        → 1 poin = $1 per lot
+       SPX500, GER40, UK100, JP225)
      · Pair berkuotasi USD     : 100.000 unit (EURUSD, GBPUSD, AUDUSD, NZDUSD)
      · Pair berbasis USD       : 100.000 unit, P/L dalam mata uang kuotasi lalu
        (USDJPY, USDCHF, USDCAD)  dikonversi ke USD pada harga itu → 100.000 / harga
@@ -21,6 +24,8 @@
         const s = String(symbol || '').toUpperCase().replace('/', '').trim();
         if (/USDT$/.test(s)) return 1;
         if (s === 'XAUUSD') return 100;
+        if (s === 'XAGUSD') return 5000;
+        if (['US30', 'NAS100', 'SPX500', 'GER40', 'UK100', 'JP225'].includes(s)) return 1;   // CFD indeks: 1 kontrak
         if (['EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD'].includes(s)) return 100000;
         if (['USDJPY', 'USDCHF', 'USDCAD'].includes(s)) {
             const p = Number(price);

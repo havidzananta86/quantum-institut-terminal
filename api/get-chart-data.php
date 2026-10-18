@@ -518,6 +518,15 @@ if (empty($candles) && in_array($symbol, $forexMajors, true)) {
     }
 }
 
+// Indeks & komoditas hanya punya OANDA (bridge). Bila bridge gagal, katakan terus terang —
+// jangan menggambar candle acak dengan label simulasi untuk instrumen yang baru ditambahkan.
+// HTTP 200 + status error (bukan 503): chart menampilkan pesan "tidak tersedia" tanpa galat merah di konsol.
+if (empty($candles) && qi_simbol_indeks($symbol)) {
+    echo json_encode(['status' => 'error', 'tidak_tersedia' => true, 'symbol' => $symbol, 'interval' => $interval, 'candles' => [],
+        'message' => 'Data ' . $symbol . ' sementara tidak tersedia (feed OANDA tidak terjangkau).']);
+    exit();
+}
+
 // 2. Fail-safe: candle acak (ditandai simulated agar UI tampil badge)
 $simulated = empty($candles);
 if ($simulated) {

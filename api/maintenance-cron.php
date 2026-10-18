@@ -60,6 +60,8 @@ $RULES = [
     'td'             => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
     'crypto-futures' => ['pattern' => '/^.*\.json$/',                        'max_age' => 3600],
     'ai_signals'     => ['pattern' => '/^.*\.json$/',                        'max_age' => 86400],
+    // Ditulis api/ai-jelaskan.php (penjelasan setup, disimpan 24 jam).
+    'ai_jelaskan'    => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 2 * 86400],
     'frankfurter'    => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],
     // Ditulis api/csp-report.php: satu berkas per hari. Sebelumnya TIDAK pernah
     // dibersihkan, jadi tumbuh tanpa batas — dan laporan CSP bisa sangat banyak.

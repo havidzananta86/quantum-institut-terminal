@@ -127,7 +127,8 @@ app.get('/candles', async (req, res) => {
   const { symbol = 'BTCUSDT', exchange = 'BINANCE', tf = '5m', limit = 300 } = req.query;
   const fullSymbol = buildFullSymbol(symbol, exchange);
   const timeframe = resolveTF(tf);
-  const amount = Math.min(Math.max(parseInt(limit, 10) || 300, 10), 1000);
+  // Hingga 5000 bar: chart memakai 1000, backtest Setup Analisa butuh riwayat bertahun-tahun.
+  const amount = Math.min(Math.max(parseInt(limit, 10) || 300, 10), 5000);
 
   try {
     const rawCandles = await getCandles({
@@ -178,7 +179,9 @@ app.get('/candles', async (req, res) => {
 // pasangan OANDA; /quotes membaca tick terakhir dari memori (milidetik) dan getQuotes hanya
 // dipakai sebagai cadangan untuk simbol di luar daftar / saat watcher belum siap.
 const WATCH_BASE = ['XAUUSD', 'BTCUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NZDUSD', 'USDCHF',
-                    'USDCAD', 'GBPJPY', 'EURJPY', 'EURGBP', 'AUDNZD', 'CHFJPY', 'CADJPY'];
+                    'USDCAD', 'GBPJPY', 'EURJPY', 'EURGBP', 'AUDNZD', 'CHFJPY', 'CADJPY',
+                    // Indeks & komoditas (watchlist "Indeks"): GER40 = DE30EUR di OANDA.
+                    'US30USD', 'NAS100USD', 'SPX500USD', 'DE30EUR', 'UK100GBP', 'JP225USD', 'XAGUSD', 'WTICOUSD'];
 const WATCH_SYMBOLS = WATCH_BASE.map(s => 'OANDA:' + s);
 let quoteWatcher = null;
 let quoteWatcherReady = false;

@@ -27,7 +27,10 @@ cek('pengguna baru tidak mendapat "apa yang baru"', /qi_dashboard_onboarded'\) !
 
 console.log('Target sentuh & input');
 cek('qim-mobile.css dimuat setelah qim-mockup.css', idx('qim-mobile.css') > idx('qim-mockup.css'));
-cek('teks input 16 px di layar sentuh (iOS tidak memperbesar halaman)', /@media \(pointer: coarse\)[\s\S]*select, textarea \{ font-size: 16px !important; \}/.test(css));
+cek('teks input 16 px di layar sentuh (iOS tidak memperbesar halaman), mengalahkan a11y.css 11px !important', /@media \(pointer: coarse\)[\s\S]*select:not\(#qim-x\), textarea:not\(#qim-x\) \{ font-size: 16px !important; \}/.test(css));
+const sentuh = read('assets/css/qim-sentuh.css');
+cek('halaman lain (login, register, profil, admin, …) juga 16 px di layar sentuh', /select:not\(#qim-x\), textarea:not\(#qim-x\) \{ font-size: 16px !important; \}/.test(sentuh)
+    && ['index', 'login', 'register', 'pricing', 'privacy', 'terms', 'status', 'economic-calendar', 'pwa', '404', 'profile', 'admin'].every(h => read(h + '.html').includes('assets/css/qim-sentuh.css')));
 cek('tombol alat chart, timeframe, ikon, menu ≥ 44 px', /\.qch-tf, \.qch-btn, \.qch-icon, \.qdraw-tool[\s\S]{0,200}min-height: 44px/.test(css) && /min-width: 44px/.test(css));
 cek('tombol kecil mendapat area sentuh tambahan (::after)', /\.qch-star::after \{ content: ""; position: absolute; inset: -11px; \}/.test(css));
 cek('tanpa jeda ketuk-ganda (touch-action: manipulation)', /touch-action: manipulation/.test(css));

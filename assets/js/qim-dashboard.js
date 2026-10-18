@@ -1,15 +1,17 @@
 (function () {
     'use strict';
 
-    // Grup watchlist: Metals · Crypto · Forex · Saham. Harga: OANDA (emas, BTC, forex) & Binance (kripto lain).
+    // Grup watchlist: Metals · Crypto · Forex · Indeks. Harga: OANDA (logam, BTC, forex, indeks, minyak)
+    // & Binance (kripto lain). Grup "Saham" (AAPL/TSLA tanpa feed) diganti indeks OANDA.
     const GROUPS = [
         { key: 'metals', label: 'Metals' },
         { key: 'crypto', label: 'Crypto' },
         { key: 'forex',  label: 'Forex' },
-        { key: 'saham',  label: 'Saham' }
+        { key: 'indeks', label: 'Indeks' }
     ];
     const SYMBOLS = [
         { group: 'metals', symbol: 'XAUUSD', label: 'Gold · U.S. Dollar', icon: 'Au', iconClass: 'gold', tv: 'OANDA:XAUUSD' },
+        { group: 'metals', symbol: 'XAGUSD', label: 'Silver · U.S. Dollar', icon: 'Ag', iconClass: 'silver', tv: 'OANDA:XAGUSD' },
         { group: 'crypto', symbol: 'BTCUSDT', label: 'Bitcoin · TetherUS', icon: '₿', iconClass: 'btc', tv: 'OANDA:BTCUSD' },
         { group: 'crypto', symbol: 'ETHUSDT', label: 'Ethereum · Tether', icon: '◆', iconClass: 'eth', tv: 'BINANCE:ETHUSDT' },
         { group: 'crypto', symbol: 'SOLUSDT', label: 'Solana · Tether', icon: '◎', iconClass: 'sol', tv: 'BINANCE:SOLUSDT' },
@@ -23,8 +25,13 @@
         { group: 'forex', symbol: 'USDCAD', label: 'U.S. Dollar · CAD', icon: 'C$', iconClass: 'fx', tv: 'OANDA:USDCAD' },
         { group: 'forex', symbol: 'GBPJPY', label: 'Pound · Yen', icon: '£', iconClass: 'fx', tv: 'OANDA:GBPJPY' },
         { group: 'forex', symbol: 'EURJPY', label: 'Euro · Yen', icon: '€', iconClass: 'fx', tv: 'OANDA:EURJPY' },
-        { group: 'saham', symbol: 'AAPL', label: 'Apple Inc.', icon: '●', iconClass: 'apple', tv: 'NASDAQ:AAPL', chartSupported: false },
-        { group: 'saham', symbol: 'TSLA', label: 'Tesla Inc.', icon: 'T', iconClass: 'tesla', tv: 'NASDAQ:TSLA', chartSupported: false }
+        { group: 'indeks', symbol: 'US30', label: 'Dow Jones 30', icon: 'DJ', iconClass: 'idx', tv: 'OANDA:US30USD' },
+        { group: 'indeks', symbol: 'NAS100', label: 'Nasdaq 100', icon: 'NQ', iconClass: 'idx', tv: 'OANDA:NAS100USD' },
+        { group: 'indeks', symbol: 'SPX500', label: 'S&P 500', icon: 'SP', iconClass: 'idx', tv: 'OANDA:SPX500USD' },
+        { group: 'indeks', symbol: 'GER40', label: 'Germany 40 (DAX)', icon: 'DE', iconClass: 'idx', tv: 'OANDA:DE30EUR' },
+        { group: 'indeks', symbol: 'UK100', label: 'UK 100 (FTSE)', icon: 'UK', iconClass: 'idx', tv: 'OANDA:UK100GBP' },
+        { group: 'indeks', symbol: 'JP225', label: 'Japan 225 (Nikkei)', icon: 'JP', iconClass: 'idx', tv: 'OANDA:JP225USD' },
+        { group: 'indeks', symbol: 'USOIL', label: 'Minyak WTI', icon: '⛽', iconClass: 'oil', tv: 'OANDA:WTICOUSD' }
     ];
     const LIVE_SYMBOLS = SYMBOLS.filter(item => item.chartSupported !== false).map(item => item.symbol).join(',');
     function pairLabel(symbol) {
@@ -82,13 +89,13 @@
                 row.setAttribute('role', 'button');
                 row.tabIndex = 0;   // tetap bisa difokus: baris nonaktif menjelaskan dirinya saat dipilih
                 if (disabled) row.setAttribute('aria-disabled', 'true');
-                row.title = disabled ? item.label + ' · feed saham belum tersedia' : item.label;
+                row.title = disabled ? item.label + ' · feed harga belum tersedia' : item.label;
                 row.setAttribute('aria-label', item.symbol + ', ' + priceText(data && data.price) + ', ' + (hasChange ? change.toFixed(2) + '%' : 'harga belum tersedia'));
                 if (item.symbol === active) row.classList.add('is-active');
                 const select = () => {
                     if (disabled) {
                         // Di layar sentuh tidak ada tooltip; dulu ketukan pada saham tidak memberi tanggapan apa pun.
-                        const pesan = item.symbol + ': feed harga saham belum tersedia — chart & Paper Trading saham menyusul.';
+                        const pesan = item.symbol + ': feed harga belum tersedia untuk instrumen ini.';
                         if (typeof window.showToast === 'function') window.showToast(pesan, 'info', 3500);
                         return;
                     }

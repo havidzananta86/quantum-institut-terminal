@@ -10,6 +10,7 @@ const SYMBOL_LABELS = {
     AUDNZD:'AUD/NZD', CHFJPY:'CHF/JPY', CADJPY:'CAD/JPY',
     BTCUSDT:'BTC/USDT', ETHUSDT:'ETH/USDT', SOLUSDT:'SOL/USDT',
     BNBUSDT:'BNB/USDT', XRPUSDT:'XRP/USDT', DOGEUSDT:'DOGE/USDT',
+    XAGUSD:'XAG/USD', USOIL:'WTI', US30:'US30', NAS100:'NAS100', SPX500:'SPX500', GER40:'GER40', UK100:'UK100', JP225:'JP225',
 };
 const SYMBOL_DESC = {
     XAUUSD:'Spot Gold', EURUSD:'Euro / Dollar', GBPUSD:'Pound / Dollar',
@@ -17,10 +18,13 @@ const SYMBOL_DESC = {
     USDCHF:'Dollar / Franc', USDCAD:'Dollar / Loonie',
     BTCUSDT:'Bitcoin', ETHUSDT:'Ethereum', SOLUSDT:'Solana',
     BNBUSDT:'BNB Chain', XRPUSDT:'Ripple', DOGEUSDT:'Dogecoin',
+    XAGUSD:'Spot Silver', USOIL:'Minyak WTI', US30:'Dow Jones 30', NAS100:'Nasdaq 100', SPX500:'S&P 500',
+    GER40:'Germany 40 (DAX)', UK100:'UK 100 (FTSE)', JP225:'Japan 225 (Nikkei)',
 };
 const DP = {
     XAUUSD:2, EURUSD:5, GBPUSD:5, USDJPY:3, AUDUSD:5, NZDUSD:5, USDCHF:5, USDCAD:5,
-    BTCUSDT:2, ETHUSDT:2, SOLUSDT:3, BNBUSDT:2, XRPUSDT:4, DOGEUSDT:5
+    BTCUSDT:2, ETHUSDT:2, SOLUSDT:3, BNBUSDT:2, XRPUSDT:4, DOGEUSDT:5,
+    GBPJPY:3, EURJPY:3, XAGUSD:4, USOIL:3, US30:1, NAS100:1, SPX500:1, GER40:1, UK100:1, JP225:1
 };
 
 // ─── World Clock ───────────────────────────────────────────────────────────
@@ -112,7 +116,14 @@ let _lastPricesAt = 0;
 
 async function fetchMarketData() {
     try {
-        const res = await fetch(`api/live-price.php?symbols=${SYMBOLS.join(',')}`);
+        // Simbol chart yang sedang dibuka ikut diminta: tanpa ini chart GBPJPY/EURJPY/indeks
+        // tidak pernah mendapat harga live (hanya 14 simbol tetap yang diperbarui).
+        let daftar = SYMBOLS;
+        try {
+            const kini = typeof window.qiChartKonteks === 'function' ? window.qiChartKonteks().symbol : null;
+            if (kini && !SYMBOLS.includes(kini)) daftar = SYMBOLS.concat(kini);
+        } catch (e) {}
+        const res = await fetch(`api/live-price.php?symbols=${daftar.join(',')}`);
         if (!res.ok) return;
         const data = await res.json();
         if (data.status !== 'success') return;
@@ -3112,6 +3123,16 @@ const WL_GROUPS = [
         { label:'USD/CAD', key:'USDCAD',  tv:'OANDA:USDCAD' },
         { label:'GBP/JPY', key:'GBPJPY',  tv:'OANDA:GBPJPY' },
         { label:'EUR/JPY', key:'EURJPY',  tv:'OANDA:EURJPY' },
+        { label:'XAG/USD', key:'XAGUSD',  tv:'OANDA:XAGUSD' },
+    ]},
+    { label: 'INDEKS & ENERGI', syms: [
+        { label:'US30', key:'US30',   tv:'OANDA:US30USD' },
+        { label:'NAS100', key:'NAS100', tv:'OANDA:NAS100USD' },
+        { label:'SPX500', key:'SPX500', tv:'OANDA:SPX500USD' },
+        { label:'GER40', key:'GER40',  tv:'OANDA:DE30EUR' },
+        { label:'UK100', key:'UK100',  tv:'OANDA:UK100GBP' },
+        { label:'JP225', key:'JP225',  tv:'OANDA:JP225USD' },
+        { label:'WTI', key:'USOIL',  tv:'OANDA:WTICOUSD' },
     ]},
 ];
 
@@ -3293,7 +3314,15 @@ async function lwFetchAndSetData() {
         const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
         const data = await res.json();
         const candles = (data.candles || []).filter(c => c.time && c.open);
-        if (!candles.length) { if (st) st.textContent = 'Tidak ada data'; kabar('qi-chart-gagal'); return; }
+        if (!candles.length) {
+            // Jangan biarkan candle simbol SEBELUMNYA tetap tampil di bawah judul simbol baru.
+            try { _lwSeries.setData([]); _lwLastCandles = []; if (_lwVolume) _lwVolume.setData([]); if (_lwRsi) _lwRsi.setData([]); } catch (e) {}
+            const pesan = data.message || ('Data ' + found.key + ' tidak tersedia saat ini.');
+            if (st) st.textContent = pesan;
+            if (typeof window.showQuantumToast === 'function') window.showQuantumToast(pesan, 'warning', 4500);
+            kabar('qi-chart-gagal');
+            return;
+        }
         // PENTING (integritas data): `.filter()` menghasilkan array BARU sehingga
         // properti `simulated` dari server HILANG. Akibatnya 9 mesin tidak bisa tahu
         // bahwa candle yang dinilai adalah candle ACAK (data simulasi) dan bisa

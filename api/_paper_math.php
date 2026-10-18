@@ -13,6 +13,9 @@
  *   XAUUSD  : 100     (100 oz  → $1 gerak harga = $100 per lot)
  *   EURUSD  : 100000  (100.000 unit → 100 pips = $1.000 per lot)
  *   BTCUSDT : 1       (1 BTC)
+ *   XAGUSD  : 5000    (5.000 oz)
+ *   Indeks  : 1       (US30, NAS100, SPX500, GER40, UK100, JP225 — 1 kontrak; GER40/UK100
+ *                      sebenarnya berdenominasi EUR/GBP, dihitung setara USD untuk simulasi)
  *   lainnya : 1000    (default, mengikuti sisi klien)
  *
  * Catatan jujur: ini model yang disederhanakan — pasangan berkuota JPY seharusnya
@@ -41,6 +44,9 @@ if (!function_exists('qi_paper_pip_mult')) {
             case 'BNBUSDT': return 1.0;        // 1 koin per lot
             case 'DOGEUSDT': return 1.0;       // 1 koin per lot
             case 'EURUSD':  return 100000.0;   // 100.000 unit per lot
+            case 'XAGUSD':  return 5000.0;     // 5.000 oz per lot
+            case 'US30': case 'NAS100': case 'SPX500': case 'GER40': case 'UK100': case 'JP225':
+                return 1.0;                    // CFD indeks: 1 lot = 1 kontrak (≈ $1 per poin)
             default:        return 1000.0;     // konvensi aplikasi, bukan spesifikasi broker
         }
     }

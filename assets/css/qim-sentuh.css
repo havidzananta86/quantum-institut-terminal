@@ -1,0 +1,15 @@
+/* ════════════════════════════════════════════════════════════════════════
+   QIM SENTUH — aturan layar sentuh (Android/iOS) untuk halaman selain dashboard
+   (dashboard memakai qim-mobile.css). Diukur di iPhone 390 px: kotak isian 14 px membuat
+   iOS memperbesar halaman saat diketuk; tombol & kotak centang 12–26 px sulit diketuk.
+   Hanya berlaku pada pointer kasar (jari) — tampilan desktop tidak berubah.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+    /* :not(#qim-x) menambah spesifisitas: aturan lama [class~="text-[10px]"] (11px !important) menang atas "select". */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not(#qim-x), select:not(#qim-x), textarea:not(#qim-x) { font-size: 16px !important; }
+    a, button, [role="button"], input, select, label, summary { touch-action: manipulation; }
+    button, [role="button"], input[type="submit"], input[type="button"] { min-height: 40px; }
+    input[type="checkbox"], input[type="radio"] { width: 22px !important; height: 22px !important; }
+    /* Tautan berdiri sendiri (footer, menu, "Bantuan?") — area ketuk diperluas tanpa mengubah tata letak. */
+    footer a:not(#qim-x), nav a:not(#qim-x), a.text-xs:not(#qim-x), a.text-\[11px\]:not(#qim-x), a.text-\[10px\]:not(#qim-x) { display: inline-block; padding-top: 10px; padding-bottom: 10px; }
+}

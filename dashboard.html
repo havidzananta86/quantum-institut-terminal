@@ -42,10 +42,11 @@
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.5">
     <!-- Responsive overrides -->
     <link rel="stylesheet" href="assets/css/responsive.css?v=1.4.6">
-    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=1.2.5">
+    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=1.2.6">
     <link rel="stylesheet" href="assets/css/qim-pages.css?v=1.7.5">
     <link rel="stylesheet" href="assets/css/qim-mockup.css?v=1.0.13">
-    <link rel="stylesheet" href="assets/css/qim-mobile.css?v=1.0.1">
+    <link rel="stylesheet" href="assets/css/qim-mobile.css?v=1.0.2">
+    <link rel="stylesheet" href="assets/css/qim-fitur.css?v=1.0.0">
 
     <style>
         body { font-family:'Inter',sans-serif; background-color: var(--qi-bg, #0B1220); }
@@ -851,7 +852,7 @@ document.addEventListener('keydown', e => {
                 <button type="button" class="active" data-group="metals">Metals</button>
                 <button type="button" data-group="crypto">Crypto</button>
                 <button type="button" data-group="forex">Forex</button>
-                <button type="button" data-group="saham">Saham</button>
+                <button type="button" data-group="indeks">Indeks</button>
             </div>
             <div class="qim-watchlist-labels"><span>Symbol</span><span>Price / 24h</span></div>
             <div id="qimWatchlistRows" class="qim-watchlist-rows"><div class="qim-skel-list" aria-label="Memuat data pasar…"><div class="qim-skel-row"><i></i><b></b><s></s></div><div class="qim-skel-row"><i></i><b></b><s></s></div><div class="qim-skel-row"><i></i><b></b><s></s></div><div class="qim-skel-row"><i></i><b></b><s></s></div><div class="qim-skel-row"><i></i><b></b><s></s></div><span class="qim-sr">Memuat data pasar…</span></div></div>
@@ -2471,6 +2472,14 @@ document.addEventListener('keydown', e => {
                         <option value="EURUSD">EUR/USD</option>
                         <option value="GBPUSD">GBP/USD</option>
                         <option value="USDJPY">USD/JPY</option>
+                        <option value="XAGUSD">XAG/USD</option>
+                        <option value="US30">US30</option>
+                        <option value="NAS100">NAS100</option>
+                        <option value="SPX500">SPX500</option>
+                        <option value="GER40">GER40</option>
+                        <option value="UK100">UK100</option>
+                        <option value="JP225">JP225</option>
+                        <option value="USOIL">WTI</option>
                     </select>
                 </div>
                 <div>
@@ -4237,6 +4246,7 @@ document.addEventListener('keydown', e => {
             <button type="button" data-metode="SND" title="Supply &amp; Demand: zona base segar">S&amp;D</button>
             <button type="button" data-metode="SEMUA" title="Jalankan keempat metode">Semua</button>
         </div>
+        <div class="qim-setup-alat"><button type="button" id="qimBacktestBuka" title="Uji keempat metode ke data historis: win rate, rata-rata R, metode terbaik per pair">📊 Backtest metode</button></div>
         <div class="qim-demo-note" id="qimSetupStatus">Pilih metode untuk mendeteksi setup pada chart yang tampil.</div>
         <div class="qim-setup-list" id="qimSetupList"></div>
     </section>
@@ -4294,14 +4304,14 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 ═══════════════════════════════════════════════════════════ -->
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-chart-store.js?v=1.0.0"></script>
-<script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.28"></script>
-<script src="assets/js/qim-dashboard.js?v=1.7.4"></script>
+<script src="assets/js/qim-paper-math.js?v=1.0.1"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.29"></script>
+<script src="assets/js/qim-dashboard.js?v=1.7.5"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
 <script src="assets/js/qim-mt5-socket.js?v=1.0.1"></script>
 <script src="assets/js/qim-notifications.js?v=1.1.0"></script>
-<script src="assets/js/qim-pages.js?v=1.7.3"></script>
+<script src="assets/js/qim-pages.js?v=1.7.4"></script>
 <script src="assets/js/qim-risk.js?v=1.0.0"></script>
 <script src="assets/js/qim-alerts.js?v=1.0.2"></script>
 
@@ -4334,13 +4344,17 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/pro-features.js?v=2.5.2"></script>
 <script src="assets/js/pro-trading-tools.js?v=2.4.4"></script>
 <!-- GAYA CHART — sumber tunggal penghalusan tampilan (zona WIB, presisi, watermark) -->
-<script src="assets/js/chart-style.js?v=1.2.0"></script>
+<script src="assets/js/chart-style.js?v=1.2.1"></script>
 <!-- ZONA POSISI — kotak entry/TP/SL di atas chart (overlay HTML, tidak menyentuh data) -->
 <script src="assets/js/chart-zones.js?v=1.3.0"></script>
 <!-- MESIN 9 — evaluator 9 mesin kuantum (indikator sungguhan, tanpa data karangan) -->
 <script src="assets/js/engine-nine.js?v=1.2.0"></script>
 <script src="assets/js/qim-setups.js?v=1.0.0"></script>
-<script src="assets/js/qim-setup-panel.js?v=1.0.3"></script>
+<script src="assets/js/qim-setup-panel.js?v=1.0.4"></script>
+<script src="assets/js/qim-berita-chart.js?v=1.0.0"></script>
+<script src="assets/js/qim-backtest-ui.js?v=1.0.0"></script>
+<script src="assets/js/qim-multichart.js?v=1.0.0"></script>
+<script src="assets/js/qim-ai-jelaskan.js?v=1.0.0"></script>
 <script src="assets/js/qim-header.js?v=1.0.0"></script>
 <script src="assets/js/qim-auto-paper.js?v=1.0.0"></script>
 <script src="assets/js/qim-mobile.js?v=1.0.0"></script>

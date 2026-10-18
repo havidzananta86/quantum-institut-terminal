@@ -24,7 +24,10 @@
     // Presisi per instrumen. minMove = langkah harga terkecil yang ditampilkan.
     const PRESISI = {
         XAUUSD: { precision: 2, minMove: 0.01 },
-        XAGUSD: { precision: 3, minMove: 0.001 },
+        XAGUSD: { precision: 4, minMove: 0.0001 },
+        USOIL: { precision: 3, minMove: 0.001 },
+        US30: { precision: 1, minMove: 0.1 }, NAS100: { precision: 1, minMove: 0.1 }, SPX500: { precision: 1, minMove: 0.1 },
+        GER40: { precision: 1, minMove: 0.1 }, UK100: { precision: 1, minMove: 0.1 }, JP225: { precision: 1, minMove: 0.1 },
         EURUSD: { precision: 5, minMove: 0.00001 },
         GBPUSD: { precision: 5, minMove: 0.00001 },
         AUDUSD: { precision: 5, minMove: 0.00001 },

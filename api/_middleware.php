@@ -764,8 +764,17 @@ if (!function_exists('qi_tv_bridge_symbol')) {
             'NZDUSD' => 'NZDUSD', 'USDCHF' => 'USDCHF', 'USDCAD' => 'USDCAD', 'GBPJPY' => 'GBPJPY',
             'EURJPY' => 'EURJPY', 'EURGBP' => 'EURGBP', 'AUDNZD' => 'AUDNZD', 'CHFJPY' => 'CHFJPY',
             'CADJPY' => 'CADJPY',
+            // Indeks & komoditas (CFD OANDA). GER40 = DE30EUR (OANDA tidak punya DE40EUR).
+            'US30' => 'US30USD', 'NAS100' => 'NAS100USD', 'SPX500' => 'SPX500USD', 'GER40' => 'DE30EUR',
+            'UK100' => 'UK100GBP', 'JP225' => 'JP225USD', 'XAGUSD' => 'XAGUSD', 'USOIL' => 'WTICOUSD',
         ];
         return $map[strtoupper($symbol)] ?? null;
+    }
+}
+if (!function_exists('qi_simbol_indeks')) {
+    /** Indeks & komoditas dari OANDA (bukan forex/kripto): tidak punya sumber cadangan selain bridge. */
+    function qi_simbol_indeks(string $symbol): bool {
+        return in_array(strtoupper($symbol), ['US30', 'NAS100', 'SPX500', 'GER40', 'UK100', 'JP225', 'XAGUSD', 'USOIL'], true);
     }
 }
 // ── MT5 bridge (Windows VPS, paket MetaTrader5): feed broker untuk pengguna yang berhak ──────────
@@ -1003,12 +1012,21 @@ if (!function_exists('qi_tv_bridge_quotes')) {
             if ($o !== null) $peta[$o] = strtoupper((string)$s);
         }
         if (!$peta) return [];
-        [$raw] = qi_tv_bridge_request('GET', '/quotes?exchange=OANDA&symbols=' . implode(',', array_keys($peta)), null, $timeout);
-        if (!$raw) return [];
-        $d = json_decode($raw, true);
-        if (!is_array($d) || empty($d['ok']) || empty($d['quotes']) || !is_array($d['quotes'])) return [];
+        // Indeks/komoditas diminta TERPISAH: bridge melayani satu permintaan dari stream (milidetik)
+        // hanya bila SEMUA simbolnya ada di daftar stream; bridge VPS lama belum men-stream indeks,
+        // dan satu simbol di luar daftar membuat seluruh permintaan jatuh ke snapshot (1–3 dtk).
+        $kelompok = [[], []];
+        foreach ($peta as $o => $s) $kelompok[qi_simbol_indeks($s) ? 1 : 0][] = $o;
+        $kutipan = [];
+        foreach ($kelompok as $daftar) {
+            if (!$daftar) continue;
+            [$raw] = qi_tv_bridge_request('GET', '/quotes?exchange=OANDA&symbols=' . implode(',', $daftar), null, $timeout);
+            $d = $raw ? json_decode($raw, true) : null;
+            if (is_array($d) && !empty($d['ok']) && !empty($d['quotes']) && is_array($d['quotes'])) $kutipan += $d['quotes'];
+        }
+        if (!$kutipan) return [];
         $out = [];
-        foreach ($d['quotes'] as $oanda => $q) {
+        foreach ($kutipan as $oanda => $q) {
             if (!isset($peta[$oanda]) || !is_array($q) || (float)($q['price'] ?? 0) <= 0) continue;
             $price = (float)$q['price'];
             $prev  = (float)($q['prevClose'] ?? 0);

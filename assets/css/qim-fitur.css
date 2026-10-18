@@ -1,0 +1,129 @@
+/* ════════════════════════════════════════════════════════════════════════
+   QIM FITUR — Backtest Setup Analisa, Multi-chart, Penjelasan AI, Latihan replay.
+   Responsif: dialog jadi lembar layar penuh di HP (< 600 px), aman untuk notch iPhone.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tombol alat di kartu Setup Analisa ── */
+.qim-setup-alat { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+.qim-setup-alat button { flex: 1 1 auto; min-height: 32px; padding: 6px 10px; border: 1px solid #22314f; border-radius: 8px; background: #0d1830; color: #cfe0ff; font-size: 12px; font-weight: 600; cursor: pointer; }
+.qim-setup-alat button:hover { border-color: #3ea0ff; color: #fff; }
+@media (pointer: coarse) { .qim-setup-alat button { min-height: 44px; } }
+
+/* ── Dialog umum (backtest & AI) ── */
+.qbt-latar { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(2, 6, 18, .72); }
+.qbt-latar[hidden] { display: none; }
+body.qbt-terbuka { overflow: hidden; }
+.qbt-dialog { width: min(860px, 100%); max-height: min(92vh, 900px); overflow: auto; overscroll-behavior: contain; border: 1px solid #1d2c4a; border-radius: 14px; background: #08101f; color: #cbd5e1; box-shadow: 0 24px 60px rgba(0, 0, 0, .55); }
+.qbt-kepala { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #14213a; background: #08101f; }
+.qbt-kepala h2 { margin: 0; color: #f1f5f9; font-size: 16px; font-weight: 700; }
+.qbt-tutup { min-width: 36px; min-height: 36px; border: 1px solid #22314f; border-radius: 8px; background: #0d1830; color: #cbd5e1; font-size: 15px; cursor: pointer; }
+.qbt-kontrol { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 14px 16px 6px; }
+.qbt-kontrol label { display: flex; flex-direction: column; gap: 4px; color: #8b98ad; font-size: 11px; font-weight: 600; }
+.qbt-kontrol select { min-width: 120px; min-height: 36px; padding: 6px 8px; border: 1px solid #22314f; border-radius: 8px; background: #0d1830; color: #f1f5f9; font-size: 13px; }
+.qbt-kontrol .qbt-cek { flex-direction: row; align-items: center; gap: 6px; min-height: 36px; color: #cbd5e1; font-size: 12px; }
+.qbt-tombol { display: flex; gap: 8px; margin-left: auto; }
+.qbt-tombol button { min-height: 36px; padding: 0 14px; border: 1px solid #22314f; border-radius: 8px; background: #0d1830; color: #e2e8f0; font-size: 13px; font-weight: 600; cursor: pointer; }
+.qbt-tombol button.utama { border-color: #1677ff; background: #1677ff; color: #fff; }
+.qbt-tombol button:disabled, .qbt-kontrol select:disabled { opacity: .55; cursor: wait; }
+.qbt-status { padding: 6px 16px 10px; color: #94a3b8; font-size: 12.5px; }
+.qbt-status b { color: #f1f5f9; }
+.qbt-catatan { color: #fbbf24; }
+.qbt-hasil { padding: 0 16px 8px; }
+.qbt-kesimpulan { margin: 4px 0 10px; padding: 9px 12px; border-radius: 9px; font-size: 13px; line-height: 1.45; }
+.qbt-kesimpulan.naik { border: 1px solid #14532d; background: #052e1a; color: #bbf7d0; }
+.qbt-kesimpulan.turun { border: 1px solid #7f1d1d; background: #2b0b10; color: #fecaca; }
+.qbt-tabel-wadah { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.qbt-tabel { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.qbt-tabel th, .qbt-tabel td { padding: 7px 8px; border-bottom: 1px solid #14213a; text-align: right; white-space: nowrap; }
+.qbt-tabel th:first-child { text-align: left; }
+.qbt-tabel thead th { color: #8b98ad; font-size: 11px; font-weight: 600; }
+.qbt-tabel tbody th { color: #e2e8f0; font-weight: 700; }
+.qbt-tabel small { display: block; color: #64748b; font-size: 10px; font-weight: 500; }
+.qbt-tabel tr.gabungan th, .qbt-tabel tr.gabungan td { border-top: 1px solid #22314f; background: #0b1528; }
+.qbt-tabel tr.terbaik th { color: #4ade80; }
+.qbt-tabel td.terbaik { outline: 1px solid #16a34a; outline-offset: -2px; border-radius: 4px; }
+.qbt-tabel .naik { color: #4ade80; } .qbt-tabel .turun { color: #f87171; } .qbt-tabel .datar { color: #cbd5e1; }
+.qbt-kurva-wadah { margin-top: 12px; }
+.qbt-kurva { display: block; width: 100%; height: 200px; border: 1px solid #14213a; border-radius: 9px; background: #060c19; }
+.qbt-legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 6px 2px 0; font-size: 11px; color: #94a3b8; }
+.qbt-legenda i { display: inline-block; width: 10px; height: 3px; margin-right: 5px; border-radius: 2px; vertical-align: middle; }
+.qbt-aturan { margin: 6px 16px 16px; padding: 8px 12px; border: 1px solid #14213a; border-radius: 9px; font-size: 12px; color: #94a3b8; }
+.qbt-aturan summary { color: #cbd5e1; font-weight: 600; cursor: pointer; }
+.qbt-aturan ul { margin: 8px 0 2px; padding-left: 18px; line-height: 1.55; }
+
+@media (max-width: 599px) {
+    .qbt-latar { padding: 0; align-items: stretch; }
+    .qbt-dialog { width: 100%; max-height: none; height: 100%; border: 0; border-radius: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .qbt-kepala { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+    .qbt-kontrol label { flex: 1 1 40%; }
+    .qbt-kontrol select { width: 100%; min-height: 44px; font-size: 16px; }
+    .qbt-tombol { width: 100%; margin-left: 0; }
+    .qbt-tombol button { flex: 1; min-height: 44px; }
+    .qbt-tutup { min-width: 44px; min-height: 44px; }
+    .qbt-tabel { font-size: 12px; }
+    .qbt-tabel th, .qbt-tabel td { padding: 7px 6px; }
+}
+
+/* ── Multi-chart (qim-multichart.js) — hanya ≥ 1024 px ── */
+.qim-multi { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.qim-multi-2 { grid-template-rows: minmax(0, 1fr); }
+.qim-multi-4 { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.qim-multi > #tv_chart_container { min-width: 0; min-height: 0 !important; overflow: hidden; border: 1px solid #14213a; border-radius: 8px; }
+.qim-mc-sel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #14213a; border-radius: 8px; background: #060c19; }
+.qim-mc-kepala { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 6px; border-bottom: 1px solid #14213a; font-size: 11px; }
+.qim-mc-simbol { max-width: 150px; min-height: 24px; padding: 2px 4px; border: 1px solid #22314f; border-radius: 6px; background: #0d1830; color: #e2e8f0; font-size: 11px; }
+.qim-mc-tf { display: flex; gap: 2px; }
+.qim-mc-tf button { min-width: 34px; min-height: 24px; padding: 0 6px; border: 1px solid transparent; border-radius: 6px; background: none; color: #8b98ad; font-size: 11px; font-weight: 600; cursor: pointer; }
+.qim-mc-tf button:hover { color: #fff; }
+.qim-mc-tf button.aktif { border-color: #1d4ed8; background: #0f2147; color: #93c5fd; }
+.qim-mc-harga { min-width: 0; margin-left: auto; overflow: hidden; color: #94a3b8; text-overflow: ellipsis; white-space: nowrap; }
+.qim-mc-chart { position: relative; flex: 1 1 auto; min-height: 0; }
+@media (max-width: 1023px) { .qch-bar [data-ch="layout"] { display: none; } }
+.qch-layout-pilih { display: grid; gap: 4px; }
+.qch-layout-pilih button { display: flex; align-items: center; gap: 10px; }
+.qch-layout-pilih svg { width: 26px; height: 18px; flex: 0 0 auto; }
+.qch-layout-pilih button.aktif { color: #93c5fd; }
+
+/* ── Penjelasan setup (qim-ai-jelaskan.js) ── */
+.qim-setup-wrap { display: flex; flex-direction: column; gap: 4px; }
+.qim-setup-ai { align-self: flex-start; min-height: 28px; padding: 3px 10px; border: 1px solid #22314f; border-radius: 999px; background: #0b1528; color: #a5c8ff; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.qim-setup-ai:hover { border-color: #3ea0ff; color: #fff; }
+@media (pointer: coarse) { .qim-setup-ai { min-height: 44px; padding: 6px 14px; } }
+.qai-dialog { width: min(640px, 100%); }
+.qai-isi { padding: 14px 18px 18px; font-size: 14px; line-height: 1.6; color: #d6e0ee; }
+.qai-isi h3 { margin: 12px 0 4px; color: #f1f5f9; font-size: 14px; }
+.qai-isi p { margin: 6px 0; }
+.qai-isi ul { margin: 4px 0 8px; padding-left: 20px; }
+.qai-isi b { color: #f8fafc; }
+.qai-sumber { display: inline-block; margin-bottom: 6px; padding: 3px 9px; border-radius: 999px; background: #1e293b; color: #cbd5e1; font-size: 11.5px; font-weight: 700; }
+.qai-sumber.ai { background: #1e1b4b; color: #c7d2fe; }
+.qai-catatan { color: #fbbf24; font-size: 12.5px; }
+.qai-galat { color: #fca5a5; }
+.qai-muat { color: #94a3b8; }
+.qai-kaki { margin-top: 12px !important; padding-top: 8px; border-top: 1px solid #14213a; color: #64748b; font-size: 11.5px; }
+
+/* ── Latihan bar replay (qim-pages.js) ── */
+.qch-latih { display: inline-flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid #22314f; }
+.qch-replay .qch-latih button { font-size: 11.5px; font-weight: 700; }
+.qch-replay .qch-latih button.beli { border-color: #1f6f5b; color: #3dd9a6; background: #0c3a30; }
+.qch-replay .qch-latih button.jual { border-color: #7a2a35; color: #ff6b7b; background: #3a1018; }
+.qch-replay .qch-latih button:disabled, .qch-replay button:disabled { opacity: .4; cursor: not-allowed; }
+.qch-replay .qch-latih em { min-width: 0; color: #fcd34d; font-style: normal; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.qch-latih-form { position: absolute; left: 50%; bottom: 92px; z-index: 10; display: grid; grid-template-columns: auto auto; gap: 6px 10px; align-items: center; width: min(340px, calc(100% - 16px)); padding: 10px 12px; border: 1px solid #f5b83d88; border-radius: 10px; transform: translateX(-50%); background: #0c1528f7; color: #e3e9f3; box-shadow: 0 10px 30px #000a; font-size: 12px; }
+.qch-latih-form b { grid-column: 1 / -1; color: #f5c443; }
+.qch-latih-form label { display: flex; align-items: center; gap: 6px; }
+.qch-latih-form input { width: 100%; min-width: 0; min-height: 32px; padding: 4px 6px; border: 1px solid #22314f; border-radius: 6px; background: #0d1830; color: #f1f5f9; font-size: 13px; }
+.qch-latih-form small { grid-column: 1 / -1; color: #94a3b8; font-size: 10.5px; }
+.qch-latih-form div { grid-column: 1 / -1; display: flex; gap: 8px; }
+.qch-latih-form button { flex: 1; min-height: 34px; border: 1px solid #22314f; border-radius: 7px; background: #12203a; color: #e3e9f3; font-weight: 600; cursor: pointer; }
+.qch-latih-form button[type="submit"] { border-color: #1677ff; background: #1677ff; color: #fff; }
+/* Bilah replay di HP: boleh dua baris, tidak keluar layar. */
+@media (max-width: 767px) {
+    .qch-replay { flex-wrap: wrap; justify-content: center; width: calc(100% - 12px); max-width: 420px; white-space: normal; bottom: 34px; padding: 6px; }
+    .qch-replay span#qchReplayInfo { min-width: 0; flex: 1 1 100%; text-align: center; }
+    .qch-latih { border-left: 0; padding-left: 0; }
+    .qch-latih-form { top: 8px; bottom: auto; }
+    .qch-latih-form input { min-height: 44px; font-size: 16px; }
+    .qch-latih-form button { min-height: 44px; }
+}
+@media (pointer: coarse) { .qch-replay button, .qch-replay select { min-height: 40px; min-width: 40px; } }

@@ -17,7 +17,7 @@
     const $ = id => document.getElementById(id);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ikon = (isi, vb) => '<svg viewBox="' + (vb || '0 0 24 24') + '" aria-hidden="true">' + isi + '</svg>';
-    const toast = (m, t) => { try { if (typeof window.showQuantumToast === 'function') window.showQuantumToast(m, t || 'info', 4000); } catch (e) {} };
+    const toast = (m, t, lama) => { try { if (typeof window.showQuantumToast === 'function') window.showQuantumToast(m, t || 'info', lama || 4000); } catch (e) {} };
     const simpan = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
     const baca = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
     const g = (nama) => { try { return (0, eval)(nama); } catch (e) { return undefined; } };   // baca global let/const dashboard-app.js
@@ -1242,7 +1242,9 @@
         BTCUSDT: 'Bitcoin / TetherUS', ETHUSDT: 'Ethereum / TetherUS', SOLUSDT: 'Solana / TetherUS', BNBUSDT: 'BNB / TetherUS', XRPUSDT: 'XRP / TetherUS',
         XAUUSD: 'Gold / U.S. Dollar', EURUSD: 'Euro / U.S. Dollar', GBPUSD: 'British Pound / U.S. Dollar', USDJPY: 'U.S. Dollar / Japanese Yen',
         AUDUSD: 'Australian Dollar / U.S. Dollar', NZDUSD: 'New Zealand Dollar / U.S. Dollar', USDCHF: 'U.S. Dollar / Swiss Franc', USDCAD: 'U.S. Dollar / Canadian Dollar',
-        GBPJPY: 'British Pound / Japanese Yen', EURJPY: 'Euro / Japanese Yen'
+        GBPJPY: 'British Pound / Japanese Yen', EURJPY: 'Euro / Japanese Yen',
+        XAGUSD: 'Silver / U.S. Dollar', USOIL: 'Minyak Mentah WTI', US30: 'Dow Jones Industrial Average',
+        NAS100: 'Nasdaq 100', SPX500: 'S&P 500', GER40: 'Germany 40 (DAX)', UK100: 'UK 100 (FTSE)', JP225: 'Japan 225 (Nikkei)'
     };
     const TF_UTAMA = [['1', '1m'], ['5', '5m'], ['15', '15m'], ['60', '1h'], ['240', '4h'], ['D', '1D'], ['W', '1W']];
     const TF_LAIN = [['30', '30m'], ['MN', '1M']];
@@ -1293,13 +1295,19 @@
                 + '<button type="button" class="qch-btn" data-ch="alert">' + ikon('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>') + 'Alert</button>'
                 + '<button type="button" class="qch-btn" data-ch="banding">' + ikon('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>') + 'Bandingkan</button>'
                 + '<button type="button" class="qch-btn" data-ch="replay">' + ikon('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>') + 'Replay</button>'
+                + '<button type="button" class="qch-btn" data-ch="berita" title="Tampilkan / sembunyikan penanda berita high-impact di chart">' + ikon('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>') + 'Berita</button>'
                 + '<button type="button" class="qch-btn qch-setup-btn" data-ch="setup" title="Setup Analisa: SMC, ICT, Fibonacci, S&amp;D">' + ikon('<path d="M4 19h16"/><path d="M6 15h12v-4H6z"/><path d="M6 11V7h12v4"/>') + 'Setup</button>'
                 + '<span class="qch-spacer"></span>'
+                + '<button type="button" class="qch-icon" data-ch="layout" title="Tata letak multi-chart (1 / 2 / 4)" aria-label="Tata letak multi-chart" aria-haspopup="true">' + ikon('<rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/>') + '</button>'
                 + '<button type="button" class="qch-icon" data-ch="setelan" title="Pengaturan chart" aria-label="Pengaturan chart">' + ikon(I.gear) + '</button>'
                 + '<button type="button" class="qch-icon" data-ch="layar" title="Layar penuh" aria-label="Layar penuh">' + ikon('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>') + '</button>';
             if (ringkas) { ringkas.insertAdjacentElement('beforebegin', head); ringkas.classList.add('qch-old'); }
             else panel.insertBefore(head, panel.firstChild);
             head.insertAdjacentElement('afterend', bar);
+            try {   // keadaan awal tombol Berita (qim-berita-chart.js menyimpan pilihan yang sama)
+                const tb = bar.querySelector('[data-ch="berita"]'), nyala = localStorage.getItem('qim_berita_chart') !== '0';
+                if (tb) { tb.classList.toggle('open', nyala); tb.setAttribute('aria-pressed', nyala ? 'true' : 'false'); }
+            } catch (e) {}
             const atas = $('chartTopBar'); if (atas) atas.classList.add('qch-old');
             const barisInd = $('indEMA20') && $('indEMA20').parentElement; if (barisInd) barisInd.classList.add('qch-old', 'qch-indrow');
             head.addEventListener('click', klikKepala);
@@ -1521,6 +1529,34 @@
         }
         if (aksi === 'banding') return popoverBanding(b);
         if (aksi === 'replay') { tutupPopover(); return ch.replay ? hentikanReplay() : mulaiReplay(); }
+        if (aksi === 'layout') {
+            if (!window.QIMMultiChart) { toast('Modul multi-chart belum siap.', 'error'); return; }
+            const kini = window.QIMMultiChart.jumlah();
+            const kotak = n => n === 1 ? '<rect x="1" y="1" width="24" height="16" rx="2"/>'
+                : n === 2 ? '<rect x="1" y="1" width="11" height="16" rx="2"/><rect x="14" y="1" width="11" height="16" rx="2"/>'
+                : '<rect x="1" y="1" width="11" height="7" rx="1.5"/><rect x="14" y="1" width="11" height="7" rx="1.5"/><rect x="1" y="10" width="11" height="7" rx="1.5"/><rect x="14" y="10" width="11" height="7" rx="1.5"/>';
+            const p = bukaPopover(b, '<div class="qch-pop-title">Tata letak chart</div><div class="qch-layout-pilih">'
+                + [[1, '1 chart'], [2, '2 chart berdampingan'], [4, '4 chart (2×2) — analisa top-down']].map(([n, l]) =>
+                    '<button type="button" class="qch-item' + (n === kini ? ' aktif' : '') + '" data-layout="' + n + '"><svg viewBox="0 0 26 18" fill="none" stroke="currentColor" stroke-width="1.5">' + kotak(n) + '</svg>' + l + '</button>').join('')
+                + '</div><p class="qim-note" style="margin:6px 0 0">Chart tambahan mengikuti simbol chart utama; timeframe dipilih per chart.</p>', 250);
+            if (!p) return;
+            p.addEventListener('click', ev => {
+                const x = ev.target.closest('[data-layout]');
+                if (!x) return;
+                window.QIMMultiChart.atur(Number(x.dataset.layout));
+                tutupPopover();
+            });
+            return;
+        }
+        if (aksi === 'berita') {
+            tutupPopover();
+            if (!window.QIMBerita) { toast('Modul penanda berita belum siap.', 'error'); return; }
+            const nyala = window.QIMBerita.alih();
+            b.classList.toggle('open', nyala);
+            b.setAttribute('aria-pressed', nyala ? 'true' : 'false');
+            toast(nyala ? 'Penanda berita high-impact ditampilkan di chart.' : 'Penanda berita disembunyikan.', 'info');
+            return;
+        }
         if (aksi === 'setelan') {
             const p = bukaPopover(b, '<div class="qch-pop-title">Pengaturan chart</div><div class="qch-setgrid"></div>', 240);
             if (!p) return;
@@ -1638,11 +1674,94 @@
         bar.className = 'qch-replay';
         bar.innerHTML = '<b>REPLAY</b><button type="button" data-rp="mundur" title="Mundur 1 bar">⏮</button><button type="button" data-rp="main" title="Putar / jeda">▶</button>'
             + '<button type="button" data-rp="maju" title="Maju 1 bar">⏭</button><select data-rp="laju" aria-label="Kecepatan"><option value="1">1x</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option></select>'
-            + '<span id="qchReplayInfo"></span><button type="button" data-rp="stop" class="stop">✕ Selesai</button>';
+            + '<span id="qchReplayInfo"></span>'
+            + '<span class="qch-latih" role="group" aria-label="Latihan trading"><button type="button" data-rp="beli" class="beli" title="Latihan: buka BUY di harga close bar ini">BUY</button>'
+            + '<button type="button" data-rp="jual" class="jual" title="Latihan: buka SELL di harga close bar ini">SELL</button>'
+            + '<button type="button" data-rp="tutup" class="tutup" hidden title="Tutup posisi latihan di harga close bar ini">Tutup</button>'
+            + '<em id="qchLatihSkor" title="Skor latihan: jumlah trade · win rate · total R">Latihan: 0 trade</em></span>'
+            + '<button type="button" data-rp="stop" class="stop">✕ Selesai</button>';
         const wadah = $('tv_chart_container') && $('tv_chart_container').parentElement;
         (wadah || document.body).appendChild(bar);
         ch.replay.bar = bar;
-        const langkah = d => { const r = ch.replay; if (!r) return; r.idx = Math.max(1, Math.min(r.data.length - 1, r.idx + d)); tampil(r.idx); if (r.idx >= r.data.length - 1) jeda(); };
+        // ── LATIHAN: buka posisi di close bar sekarang, nilai bar demi bar (konservatif: SL lebih dulu).
+        ch.replay.latih = { trade: [], posisi: null, garis: [] };
+        const atrDi = n => { let j = 0, k = 0; for (let i = Math.max(1, n - 13); i <= n; i++) { const c = data[i], p = data[i - 1]; j += Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)); k++; } return k ? j / k : 0; };
+        const desimal = v => { const a = Math.abs(v); return a >= 1000 ? 2 : a >= 50 ? 3 : 5; };
+        const hapusGaris = () => { const L = ch.replay && ch.replay.latih; if (!L) return; L.garis.forEach(x => { try { seri.removePriceLine(x); } catch (e) {} }); L.garis = []; };
+        const perbaruiSkor = () => {
+            const L = ch.replay.latih, n = L.trade.length, menang = L.trade.filter(t => t.R > 0).length, total = L.trade.reduce((a, t) => a + t.R, 0);
+            const el = $('qchLatihSkor');
+            if (el) el.textContent = L.posisi ? 'posisi ' + L.posisi.arah + ' berjalan' + (n ? ' · ' + (total >= 0 ? '+' : '') + total.toFixed(1) + 'R' : '')
+                : n ? n + ' trade · ' + Math.round(menang / n * 100) + '% · ' + (total >= 0 ? '+' : '') + total.toFixed(1) + 'R' : 'Latihan: 0 trade';
+            bar.querySelector('[data-rp="tutup"]').hidden = !L.posisi;
+            bar.querySelectorAll('[data-rp="beli"], [data-rp="jual"]').forEach(x => { x.disabled = !!L.posisi; });
+            // Mundur dinonaktifkan selama & sesudah latihan: melihat ulang bar yang sudah dinilai = menyontek.
+            bar.querySelector('[data-rp="mundur"]').disabled = !!(L.posisi || n);
+        };
+        const tutupPosisi = (n, hasil, harga) => {
+            const L = ch.replay.latih, P = L.posisi; if (!P) return;
+            const R = Math.round(((harga - P.entry) * (P.arah === 'BUY' ? 1 : -1) / P.risiko) * 100) / 100;
+            L.trade.push({ arah: P.arah, entry: P.entry, keluar: harga, hasil, R, bar: n - P.idx });
+            L.posisi = null; hapusGaris(); perbaruiSkor();
+            toast((hasil === 'TP' ? '🎯 TP kena ' : hasil === 'SL' ? '🛑 SL kena ' : '✋ Ditutup ') + (R >= 0 ? '+' : '') + R.toFixed(2) + 'R', R > 0 ? 'success' : 'info');
+        };
+        const nilaiBar = n => {
+            const L = ch.replay && ch.replay.latih, P = L && L.posisi; if (!P || n <= P.idx) return;
+            const b = data[n], buy = P.arah === 'BUY';
+            const gapSL = buy ? b.open <= P.sl : b.open >= P.sl;
+            if (gapSL || (buy ? b.low <= P.sl : b.high >= P.sl)) return tutupPosisi(n, 'SL', gapSL ? b.open : P.sl);
+            if (buy ? b.high >= P.tp : b.low <= P.tp) return tutupPosisi(n, 'TP', P.tp);
+        };
+        const bukaFormLatihan = arah => {
+            const r = ch.replay; if (!r || r.latih.posisi) return;
+            jeda();
+            const n = r.idx, entry = data[n].close, a = atrDi(n) || Math.abs(entry) * 0.002, d = desimal(entry);
+            const slAwal = arah === 'BUY' ? entry - 1.5 * a : entry + 1.5 * a, tpAwal = arah === 'BUY' ? entry + 3 * a : entry - 3 * a;
+            const lama = bar.parentElement.querySelector('.qch-latih-form'); if (lama) lama.remove();
+            const f = document.createElement('form');
+            f.className = 'qch-latih-form';
+            f.innerHTML = '<b>' + arah + ' @ ' + entry.toFixed(d) + '</b>'
+                + '<label>SL <input name="sl" type="number" step="any" inputmode="decimal" value="' + slAwal.toFixed(d) + '"></label>'
+                + '<label>TP <input name="tp" type="number" step="any" inputmode="decimal" value="' + tpAwal.toFixed(d) + '"></label>'
+                + '<small>Default: SL 1,5×ATR, TP 3×ATR (R:R 1:2). Ubah sesuai analisa Anda.</small>'
+                + '<div><button type="submit">Pasang</button><button type="button" data-batal>Batal</button></div>';
+            bar.parentElement.appendChild(f);
+            f.querySelector('[data-batal]').addEventListener('click', () => f.remove());
+            f.addEventListener('submit', ev => {
+                ev.preventDefault();
+                const sl = Number(f.sl.value), tp = Number(f.tp.value);
+                const sah = arah === 'BUY' ? (sl < entry && tp > entry) : (sl > entry && tp < entry);
+                if (!sah) { toast(arah === 'BUY' ? 'BUY: SL harus di bawah entry dan TP di atas entry.' : 'SELL: SL harus di atas entry dan TP di bawah entry.', 'error'); return; }
+                f.remove();
+                const L = ch.replay.latih;
+                L.posisi = { arah, entry, sl, tp, risiko: Math.abs(entry - sl), idx: n };
+                [[entry, '#94a3b8', 'ENTRY'], [sl, '#ef4444', 'SL'], [tp, '#22c55e', 'TP']].forEach(([harga, warna, judul]) => {
+                    try { L.garis.push(seri.createPriceLine({ price: harga, color: warna, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: judul })); } catch (e) {}
+                });
+                perbaruiSkor();
+                toast('Posisi latihan ' + arah + ' dipasang (R:R 1:' + (Math.abs(tp - entry) / Math.abs(entry - sl)).toFixed(2) + '). Majukan bar ⏭ atau ▶.', 'info');
+            });
+            const pertama = f.querySelector('input'); if (pertama) pertama.focus();
+        };
+        const ringkasLatihan = () => {
+            const L = ch.replay && ch.replay.latih; if (!L || !L.trade.length) return;
+            const n = L.trade.length, menang = L.trade.filter(t => t.R > 0).length, total = L.trade.reduce((a, t) => a + t.R, 0), rata = total / n;
+            const nilai = n < 5 ? 'belum dinilai (minimal 5 trade)' : rata >= 0.5 ? 'A — sangat baik' : rata >= 0.2 ? 'B — baik' : rata >= 0 ? 'C — impas' : 'D — perlu latihan lagi';
+            let terbaik = null;
+            try { terbaik = JSON.parse(localStorage.getItem('qim_latihan_terbaik') || 'null'); } catch (e) {}
+            const rekor = n >= 5 && rata > 0 && (!terbaik || rata > terbaik.rata);
+            if (rekor) { try { localStorage.setItem('qim_latihan_terbaik', JSON.stringify({ rata: Math.round(rata * 100) / 100, n, tanggal: Date.now() })); } catch (e) {} }
+            toast('Hasil latihan: ' + n + ' trade · win ' + Math.round(menang / n * 100) + '% · total ' + (total >= 0 ? '+' : '') + total.toFixed(1) + 'R · rata-rata ' + (rata >= 0 ? '+' : '') + rata.toFixed(2) + 'R · nilai ' + nilai + (rekor ? ' · 🏆 rekor baru!' : ''), rata >= 0 ? 'success' : 'info', 9000);
+        };
+        ch.replay.ringkasLatihan = ringkasLatihan;
+        ch.replay.uji = { bukaFormLatihan, tutupPosisi, nilaiBar };   // dipakai uji otomatis
+        const langkah = d => {
+            const r = ch.replay; if (!r) return;
+            if (d < 0 && (r.latih.posisi || r.latih.trade.length)) return;
+            r.idx = Math.max(1, Math.min(r.data.length - 1, r.idx + d)); tampil(r.idx);
+            if (d > 0) nilaiBar(r.idx);
+            if (r.idx >= r.data.length - 1) { jeda(); if (r.latih.posisi) tutupPosisi(r.idx, 'AKHIR', r.data[r.idx].close); }
+        };
         const jeda = () => { const r = ch.replay; if (!r) return; clearInterval(r.main); r.main = null; bar.querySelector('[data-rp="main"]').textContent = '▶'; };
         bar.addEventListener('click', e => {
             const t = e.target.closest('[data-rp]'); if (!t) return;
@@ -1650,6 +1769,9 @@
             if (t.dataset.rp === 'maju') langkah(1);
             if (t.dataset.rp === 'mundur') langkah(-1);
             if (t.dataset.rp === 'stop') hentikanReplay();
+            if (t.dataset.rp === 'beli') bukaFormLatihan('BUY');
+            if (t.dataset.rp === 'jual') bukaFormLatihan('SELL');
+            if (t.dataset.rp === 'tutup' && r.latih.posisi) tutupPosisi(r.idx, 'MANUAL', r.data[r.idx].close);
             if (t.dataset.rp === 'main') {
                 if (r.main) return jeda();
                 t.textContent = '⏸';
@@ -1664,6 +1786,9 @@
         document.querySelector('[data-ch="replay"]')?.classList.remove('open');
         if (!r) return;
         clearInterval(r.main);
+        try { if (typeof r.ringkasLatihan === 'function') r.ringkasLatihan(); } catch (e) {}
+        try { (r.latih && r.latih.garis || []).forEach(x => r.seri.removePriceLine(x)); } catch (e) {}
+        const form = r.bar.parentElement && r.bar.parentElement.querySelector('.qch-latih-form'); if (form) form.remove();
         r.seri.update = r.asli.update;
         r.seri.setData = r.asli.setData;
         const rsi = g('_lwRsi'); if (rsi && r.asli.rsiSet) rsi.setData = r.asli.rsiSet;

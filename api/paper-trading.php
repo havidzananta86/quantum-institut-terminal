@@ -17,7 +17,8 @@ $user = qi_require_level('pro');  // Paper Trading — PRO
 $uid  = (int)$user['user_id'];
 $pdo  = qi_db();
 
-$ALLOWED_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XAUUSD','EURUSD','GBPUSD','USDJPY','XRPUSDT','DOGEUSDT'];
+$ALLOWED_SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XAUUSD','EURUSD','GBPUSD','USDJPY','XRPUSDT','DOGEUSDT',
+                    'XAGUSD','USOIL','US30','NAS100','SPX500','GER40','UK100','JP225'];
 $STARTING_BALANCE = 10000.0;
 
 // ─── GET: muat snapshot ──────────────────────────────────────────────

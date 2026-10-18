@@ -45,6 +45,32 @@ $cached = false;
 $candles = [];
 
 // ── Jalur non-kripto: jujur soal batas sumber ───────────────────────────────
+// Forex, emas, perak, indeks, minyak: riwayat dalam dari OANDA lewat tv-bridge (hingga 5.000 bar —
+// H4 ±3 tahun, D1 ±19 tahun). Dipakai backtest Setup Analisa. Bridge lama (batas 1.000 bar) tetap
+// berfungsi; jumlah bar yang benar-benar didapat dilaporkan apa adanya.
+if (!$isKripto && qi_tv_bridge_symbol($symbol) !== null) {
+    $minta = min($bars, 5000);
+    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $ttl) {
+        $cd = json_decode((string)file_get_contents($cacheFile), true);
+        if (is_array($cd['candles'] ?? null) && count($cd['candles']) >= 100) {
+            echo json_encode($cd + ['cached' => true]);
+            exit();
+        }
+    }
+    $dariBridge = qi_tv_bridge_candles($symbol, $interval, $minta, 45);
+    if (count($dariBridge) >= 100) {
+        $hasil = [
+            'status' => 'success', 'symbol' => $symbol, 'interval' => $interval, 'source' => 'oanda_tv',
+            'bars' => count($dariBridge), 'requested' => $bars, 'limited' => count($dariBridge) < $minta, 'cached' => false,
+            'first_time' => (int)$dariBridge[0]['time'], 'last_time' => (int)end($dariBridge)['time'],
+            'candles' => $dariBridge, 'generated_at' => gmdate('c'),
+        ];
+        @file_put_contents($cacheFile, json_encode($hasil), LOCK_EX);
+        echo json_encode($hasil);
+        exit();
+    }
+}
+
 if (!$isKripto) {
     $chartCache = __DIR__ . '/../cache/chart/' . md5($symbol . '_' . $interval) . '.json';
     $pakai = [];

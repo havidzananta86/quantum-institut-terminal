@@ -192,7 +192,20 @@ async function cekHalaman() {
 }
 
 // ── 3. Dashboard ─────────────────────────────────────────────────────────────
+// Indeks/komoditas hanya punya sumber OANDA (tv-bridge). Bila bridge lokal tidak berjalan, simbol itu
+// dilewati (bukan dianggap rusak) dan dilaporkan.
+var lewatiIndeks = null;   // var: dipakai alur utama di atas sebelum baris ini dieksekusi
+async function indeksTersedia() {
+  if (lewatiIndeks != null) return !lewatiIndeks;   // != null: sebelum baris var dieksekusi nilainya undefined
+  // interval 30: jarang dipakai halaman, jadi tidak tertipu cache candle lama.
+  try { const r = await fetch(`${BASE}/api/get-chart-data.php?symbol=US30&interval=30`); const j = await r.json(); lewatiIndeks = !(j && Array.isArray(j.candles) && j.candles.length); }
+  catch (e) { lewatiIndeks = true; }
+  if (lewatiIndeks) console.log('  ⚠ tv-bridge lokal tidak berjalan — simbol indeks (US30, NAS100, …) dilewati');
+  return !lewatiIndeks;
+}
+
 async function cekDashboard(lebar, tinggi, label) {
+  const adaIndeks = await indeksTersedia();
   const b = await bukaBrowser(lebar, tinggi, tokenAdmin);
   try {
     await b.buka(`${BASE}/dashboard.html`, 12);
@@ -214,7 +227,9 @@ async function cekDashboard(lebar, tinggi, label) {
       }
       hasil.jumlahPanel = ids.length;
       switchPanel('panel-charts'); await tidur(2000);
-      const baris = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].filter(r => r.getAttribute('aria-disabled') !== 'true');
+      const lewati = ${JSON.stringify(adaIndeks ? [] : ['US30', 'NAS100', 'SPX500', 'GER40', 'UK100', 'JP225', 'XAGUSD', 'USOIL'])};
+      const baris = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].filter(r => r.getAttribute('aria-disabled') !== 'true'
+        && !lewati.includes((r.querySelector('.qim-watch-name b') || {}).textContent));
       for (const r of baris) {
         const sim = (r.querySelector('.qim-watch-name b') || {}).textContent;
         r.click();
@@ -238,6 +253,31 @@ async function cekDashboard(lebar, tinggi, label) {
       toggleChartFullscreenMode(); await tidur(1200);
       const keluar = !panel.classList.contains('chart-fullscreen-mode');
       if (!masuk || !keluar) hasil.fs = 'layar penuh: masuk=' + masuk + ' keluar=' + keluar;
+      hasil.fitur = [];
+      if (!window.QIMBerita || !window.QIMAIJelaskan || !window.QIMBacktestUI || !window.QIMMultiChart) hasil.fitur.push('modul fitur baru tidak termuat');
+      // Kembali ke BTC (sumber Binance/OANDA dengan cadangan) sebelum menguji fitur yang mengikuti chart utama.
+      const btc = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].find(r => /BTCUSDT/.test(r.innerText));
+      if (btc) { btc.click(); await tidur(3000); }
+      if (innerWidth >= 1024 && window.QIMMultiChart) {
+        QIMMultiChart.atur(2); await tidur(3500);
+        const sel = QIMMultiChart._sel();
+        if (sel.length !== 1 || !sel[0].candles.length) hasil.fitur.push('multi-chart 2: chart tambahan kosong');
+        QIMMultiChart.atur(4); await tidur(3500);
+        const sel4 = QIMMultiChart._sel();
+        if (sel4.length !== 3 || sel4.some(x => !x.candles.length)) hasil.fitur.push('multi-chart 4: ' + sel4.map(x => x.candles.length).join('/'));
+        QIMMultiChart.atur(1); await tidur(500);
+        if (QIMMultiChart._sel().length) hasil.fitur.push('multi-chart: kembali ke 1 chart gagal');
+      }
+      if (window.QIMBacktestUI) {
+        document.getElementById('qimBacktestBuka').click(); await tidur(400);
+        document.getElementById('qbtSimbol').value = 'BTCUSDT'; document.getElementById('qbtTf').value = '240';
+        document.getElementById('qbtJalan').click();
+        let tabel = null;
+        for (let i = 0; i < 90 && !tabel; i++) { await tidur(500); tabel = document.querySelector('.qbt-tabel'); }
+        if (!tabel) hasil.fitur.push('backtest: tabel hasil tidak muncul — ' + document.getElementById('qbtStatus').innerText);
+        else if (tabel.querySelectorAll('tbody tr').length !== 5) hasil.fitur.push('backtest: baris tabel ' + tabel.querySelectorAll('tbody tr').length);
+        QIMBacktestUI.tutup();
+      }
       return hasil;
     })()`);
     console.log(`Dashboard ${label} (${lebar}×${tinggi})`);
@@ -245,6 +285,7 @@ async function cekDashboard(lebar, tinggi, label) {
     (h.simbol || []).forEach(x => catat(`dashboard-${label}`, 'simbol ' + x));
     (h.tf || []).forEach(x => catat(`dashboard-${label}`, 'timeframe ' + x));
     if (h.fs) catat(`dashboard-${label}`, h.fs);
+    (h.fitur || []).forEach(x => catat(`dashboard-${label}`, x));
     if ((h.jumlahPanel || 0) < 30) catat(`dashboard-${label}`, `hanya ${h.jumlahPanel} panel ditemukan`);
     if ((h.jumlahSimbol || 0) < 10) catat(`dashboard-${label}`, `hanya ${h.jumlahSimbol} simbol watchlist ditemukan`);
     b.galat().forEach(x => catat(`dashboard-${label}`, x));
