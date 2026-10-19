@@ -60,7 +60,7 @@ if (aktif && laporan) {
   const A = arahan(aktif), L = arahan(laporan);
   const scriptSrc = L['script-src'] || [];
   cek("Report-Only: script-src tanpa 'unsafe-inline' dan 'unsafe-eval'", scriptSrc.length > 0 && !scriptSrc.includes("'unsafe-inline'") && !scriptSrc.includes("'unsafe-eval'"), scriptSrc);
-  cek('Report-Only: pelanggaran dikirim ke api/csp-report.php', (L['report-uri'] || []).includes('/api/csp-report.php'));
+  cek('Report-Only: pelanggaran dikirim ke api/csp-report.php', (L['report-uri'] || []).includes('api/csp-report.php'));
   cek("Report-Only: object-src 'none' dan base-uri 'self'", (L['object-src'] || []).join() === "'none'" && (L['base-uri'] || []).join() === "'self'");
   // Domain harus sama dengan CSP aktif; yang beda hanya kata kunci inline/eval/sampel — supaya laporan
   // hanya berisi pelanggaran inline, bukan domain yang lupa disalin.
