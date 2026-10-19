@@ -88,9 +88,9 @@
         <!-- Platform Tabs -->
         <div>
             <div class="flex flex-wrap gap-2 mb-6">
-                <button onclick="showPlatform('android')" id="tab-android" class="platform-tab active">🤖 Android</button>
-                <button onclick="showPlatform('ios')" id="tab-ios" class="platform-tab">🍎 iPhone / iPad</button>
-                <button onclick="showPlatform('pc')" id="tab-pc" class="platform-tab">🖥️ PC / Laptop</button>
+                <button type="button" data-platform="android" id="tab-android" class="platform-tab active">🤖 Android</button>
+                <button type="button" data-platform="ios" id="tab-ios" class="platform-tab">🍎 iPhone / iPad</button>
+                <button type="button" data-platform="pc" id="tab-pc" class="platform-tab">🖥️ PC / Laptop</button>
             </div>
 
             <!-- Android Steps -->
@@ -291,15 +291,7 @@
         © 2026 Quantum Institut Market Terminal · <a href="terms.html" class="hover:text-slate-400">Syarat & Ketentuan</a> · <a href="privacy.html" class="hover:text-slate-400">Kebijakan Privasi</a>
     </footer>
 
-    <script>
-    function showPlatform(name) {
-        ['android','ios','pc'].forEach(p => {
-            document.getElementById('tab-' + p)?.classList.toggle('active', p === name);
-            const c = document.getElementById('content-' + p);
-            if (c) c.classList.toggle('active', p === name);
-        });
-    }
-    </script>
+    <script src="assets/js/halaman-pwa.js?v=1.0.0"></script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

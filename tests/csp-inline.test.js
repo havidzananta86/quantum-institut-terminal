@@ -11,7 +11,8 @@ const read = f => fs.readFileSync(path.join(root, f), 'utf8');
 let gagal = 0;
 function cek(nama, kondisi, info) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama + (kondisi || info === undefined ? '' : '  ' + JSON.stringify(info).slice(0, 300))); if (!kondisi) gagal++; }
 
-const BERSIH = ['index.html', 'login.html', 'register.html', 'pricing.html', 'transparansi.html'];
+const BERSIH = ['index.html', 'login.html', 'register.html', 'pricing.html', 'transparansi.html', 'pwa.html', 'status.html',
+  'economic-calendar.html', 'profile.html', 'admin.html', '404.html', 'privacy.html', 'terms.html'];
 
 // <script> tanpa src yang dieksekusi browser (blok data JSON/JSON-LD tidak terkena script-src).
 const scriptInline = s => [...s.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]

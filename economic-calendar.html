@@ -112,41 +112,12 @@
             </div>
             <div id="gateLoginHint" class="hidden mt-4 text-[10px] text-slate-600">
                 Sudah punya lisensi PRO?
-                <a href="login.html" onclick="try{sessionStorage.setItem('qi_redirect_after_login','economic-calendar.html')}catch(e){}" class="text-[#00E5FF] underline">Login di sini</a>
+                <a href="login.html" id="gateLoginLink" class="text-[#00E5FF] underline">Login di sini</a>
             </div>
         </div>
     </div>
 </div>
-<script>
-(function() {
-    var token = null, userData = null;
-    try {
-        token = (typeof QuantumAuth !== 'undefined' && QuantumAuth.getToken) ? QuantumAuth.getToken()
-              : (localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token'));
-        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
-        userData = raw ? JSON.parse(raw) : null;
-    } catch(e) {}
-    var isPro = userData && (userData.role === 'pro' || userData.role === 'admin');
-    if (!token) { try{sessionStorage.setItem('qi_redirect_after_login','economic-calendar.html');}catch(e){} window.location.replace('login.html'); return; }
-    if (!isPro) {
-        document.getElementById('gateLoading').classList.add('hidden');
-        document.getElementById('gateUpgrade').classList.remove('hidden');
-        return;
-    }
-    document.getElementById('qiAccessGate').style.display = 'none';
-    fetch('api/auth.php', {
-        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body: JSON.stringify({type:'verify_token'})
-    }).then(function(r){return r.json();}).then(function(d){
-        var role = d.data && d.data.role;
-        if (d.status !== 'success' || (role !== 'pro' && role !== 'admin')) {
-            document.getElementById('qiAccessGate').style.display = 'flex';
-            document.getElementById('gateLoading').classList.add('hidden');
-            document.getElementById('gateUpgrade').classList.remove('hidden');
-        }
-    }).catch(function(){});
-})();
-</script>
+<script src="assets/js/halaman-kalender-gerbang.js?v=1.0.0"></script>
 
 <!-- ═══ LEFT SIDEBAR ═══ -->
 <aside id="sidebar" class="w-56 flex-shrink-0 bg-qi-panel border-r border-qi-border flex flex-col fixed lg:relative z-40 h-full overflow-y-auto">
@@ -195,7 +166,7 @@
 </aside>
 
 <!-- Sidebar backdrop (mobile) -->
-<div id="sidebarOverlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+<div id="sidebarOverlay" data-kal-aksi="sidebar" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
 
 <!-- ═══ MAIN ═══ -->
 <main class="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -203,14 +174,14 @@
     <!-- Top bar -->
     <div class="flex-shrink-0 bg-qi-panel border-b border-qi-border flex items-center justify-between px-4 h-12 gap-3">
         <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-500 hover:text-white mr-1">☰</button>
+            <button type="button" data-kal-aksi="sidebar" aria-label="Buka menu" class="lg:hidden text-slate-500 hover:text-white mr-1">☰</button>
             <span class="text-qi-gold text-base">📅</span>
             <span class="font-heading font-bold text-white text-sm uppercase tracking-wider">Economic Calendar</span>
             <span class="hidden sm:inline text-[10px] text-slate-600">— ForexFactory · Real-time</span>
         </div>
         <div class="flex items-center gap-2 text-[11px]">
             <span id="updatedAgo" class="text-slate-600 font-mono hidden sm:inline">—</span>
-            <button onclick="refreshCalendar()" id="refreshBtn" title="Refresh" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-qi-cyan hover:border-qi-cyan/30 transition-all text-[11px]">
+            <button type="button" data-kal-aksi="refresh" id="refreshBtn" title="Refresh" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-qi-cyan hover:border-qi-cyan/30 transition-all text-[11px]">
                 <span id="refreshIcon">↻</span> Refresh
             </button>
             <a href="dashboard.html" id="ecHeaderDash" class="px-2.5 py-1 rounded-lg border border-qi-border text-slate-400 hover:text-white transition-all text-[11px]">Dashboard →</a>
@@ -237,13 +208,13 @@
         <!-- Filter bar -->
         <div class="sticky top-0 z-20 bg-qi-bg/95 backdrop-blur-sm border-b border-qi-border px-4 py-2.5 flex items-center gap-2 flex-wrap">
             <span class="text-[10px] text-slate-600 uppercase tracking-wider mr-1">Impact:</span>
-            <button class="chip active" id="chip-all"  onclick="setImpact('all')">Semua</button>
-            <button class="chip chip-high" id="chip-high" onclick="setImpact('high')">🔴 Tinggi</button>
-            <button class="chip chip-med"  id="chip-med"  onclick="setImpact('medium')">🟡 Sedang</button>
-            <button class="chip chip-low"  id="chip-low"  onclick="setImpact('low')">🟢 Rendah</button>
+            <button class="chip active" id="chip-all"  data-impact="all">Semua</button>
+            <button class="chip chip-high" id="chip-high" data-impact="high">🔴 Tinggi</button>
+            <button class="chip chip-med"  id="chip-med"  data-impact="medium">🟡 Sedang</button>
+            <button class="chip chip-low"  id="chip-low"  data-impact="low">🟢 Rendah</button>
             <div class="h-4 w-px bg-qi-border mx-1"></div>
             <span class="text-[10px] text-slate-600 uppercase tracking-wider">Mata uang:</span>
-            <select id="currencyFilter" onchange="setCurrency(this.value)"
+            <select id="currencyFilter"
                 class="bg-qi-panel border border-qi-border text-slate-300 rounded-lg px-2 py-1 text-[11px] outline-none cursor-pointer">
                 <option value="ALL">Semua Mata Uang</option>
                 <option value="USD">🇺🇸 USD</option>
@@ -278,320 +249,8 @@
 </main>
 
 <!-- ═══ JAVASCRIPT ═══ -->
-<script>
-// ─── State ─────────────────────────────────────────────────────────────────
-let _allEvents   = [];
-let _filterImpact   = 'all';
-let _filterCurrency = 'ALL';
-let _cdInterval  = null;
-let _nextHighEvent = null;
-let _lastFetch   = null;
+<script src="assets/js/halaman-kalender.js?v=1.0.0"></script>
 
-const DAYS_ID  = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-
-const IMPACT_LABELS = { high:'Tinggi', medium:'Sedang', low:'Rendah', holiday:'Libur' };
-const CUR_FLAGS = {
-    USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', JPY:'🇯🇵', CHF:'🇨🇭',
-    AUD:'🇦🇺', NZD:'🇳🇿', CAD:'🇨🇦', CNY:'🇨🇳', KRW:'🇰🇷',
-};
-
-// ─── Fetch ──────────────────────────────────────────────────────────────────
-async function fetchCalendar(silent = false) {
-    if (!silent) {
-        const btn = document.getElementById('refreshIcon');
-        if (btn) btn.textContent = '⟳';
-    }
-    try {
-        const res  = await fetch('api/calendar.php');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        _allEvents = data.events || data.data || [];
-        _lastFetch = Date.now();
-        findNextHighEvent();
-        renderCalendar();
-        updateUpdatedAgo();
-    } catch(e) {
-        if (!_allEvents.length) {
-            document.getElementById('calendarContent').innerHTML =
-                `<div class="text-center text-slate-600 py-12 text-sm">Gagal memuat kalender. <button onclick="fetchCalendar()" class="text-qi-cyan underline">Coba lagi</button></div>`;
-        }
-    } finally {
-        const btn = document.getElementById('refreshIcon');
-        if (btn) btn.textContent = '↻';
-    }
-}
-
-function refreshCalendar() { fetchCalendar(false); }
-
-// ─── Filters ────────────────────────────────────────────────────────────────
-function setImpact(val) {
-    _filterImpact = val;
-    document.querySelectorAll('[id^="chip-"]').forEach(b => b.classList.remove('active'));
-    const el = document.getElementById('chip-' + val);
-    if (el) el.classList.add('active');
-    renderCalendar();
-}
-
-function setCurrency(val) {
-    _filterCurrency = val;
-    renderCalendar();
-}
-
-function filteredEvents() {
-    return _allEvents.filter(e => {
-        const imp = (e.impact || '').toLowerCase();
-        if (_filterImpact !== 'all' && imp !== _filterImpact) return false;
-        if (_filterCurrency !== 'ALL') {
-            const cur = (e.currency || e.country || '').toUpperCase();
-            if (cur !== _filterCurrency) return false;
-        }
-        return true;
-    });
-}
-
-// ─── Countdown ──────────────────────────────────────────────────────────────
-function findNextHighEvent() {
-    const now = Date.now();
-    const upcoming = _allEvents
-        .filter(e => (e.impact||'').toLowerCase() === 'high' && new Date(e.date).getTime() > now)
-        .sort((a,b) => new Date(a.date) - new Date(b.date));
-    _nextHighEvent = upcoming[0] || null;
-
-    const banner = document.getElementById('countdownBanner');
-    if (!_nextHighEvent) {
-        if (banner) banner.classList.add('hidden');
-        clearInterval(_cdInterval);
-        return;
-    }
-    if (banner) banner.classList.remove('hidden');
-    updateCountdown();
-    clearInterval(_cdInterval);
-    _cdInterval = setInterval(updateCountdown, 1000);
-}
-
-function updateCountdown() {
-    if (!_nextHighEvent) return;
-    const ev   = _nextHighEvent;
-    const diff = new Date(ev.date).getTime() - Date.now();
-    if (diff <= 0) { findNextHighEvent(); return; }
-
-    const h  = Math.floor(diff / 3600000);
-    const m  = Math.floor((diff % 3600000) / 60000);
-    const s  = Math.floor((diff % 60000) / 1000);
-    const pad = n => String(n).padStart(2,'0');
-
-    const el = document.getElementById('cdTimer');
-    if (el) el.textContent = h >= 24
-        ? `${Math.floor(h/24)}d ${pad(h%24)}:${pad(m)}:${pad(s)}`
-        : `${pad(h)}:${pad(m)}:${pad(s)}`;
-
-    const title = document.getElementById('cdEventTitle');
-    const cur   = document.getElementById('cdEventCur');
-    const time  = document.getElementById('cdEventLocalTime');
-    if (title) title.textContent = ev.title || '—';
-    if (cur)   cur.textContent   = (CUR_FLAGS[ev.currency] || '') + ' ' + (ev.currency || ev.country || '');
-    if (time)  time.textContent  = localTimeStr(ev.date);
-}
-
-// ─── Render ─────────────────────────────────────────────────────────────────
-function localTimeStr(isoDate) {
-    const d = new Date(isoDate);
-    if (isNaN(d)) return isoDate || '—';
-    return d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZoneName:'short' });
-}
-
-function localDateKey(isoDate) {
-    const d = new Date(isoDate);
-    if (isNaN(d)) return '1970-01-01';
-    return d.toLocaleDateString('sv-SE');
-}
-
-function localDateLabel(dateKey) {
-    const d = new Date(dateKey);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const dt    = new Date(d); dt.setHours(0,0,0,0);
-    const diff  = Math.round((dt - today) / 86400000);
-    const dow   = DAYS_ID[d.getDay()];
-    const mon   = MONTHS_SHORT[d.getMonth()];
-    const label = diff === 0 ? 'Hari Ini' : diff === 1 ? 'Besok' : diff === -1 ? 'Kemarin' : '';
-    return `${dow}, ${d.getDate()} ${mon} ${d.getFullYear()}${label ? ' — ' + label : ''}`;
-}
-
-function impactPill(impact) {
-    const cls = { high:'pill-high', medium:'pill-medium', low:'pill-low', holiday:'pill-holiday' };
-    const dot = { high:'bg-qi-red', medium:'bg-qi-gold', low:'bg-qi-green', holiday:'bg-slate-600' };
-    const lbl = IMPACT_LABELS[impact] || impact || '—';
-    const c   = cls[impact] || 'pill-holiday';
-    const d   = dot[impact] || 'bg-slate-600';
-    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${c}">
-        <span class="w-1.5 h-1.5 rounded-full ${d}"></span>${lbl}
-    </span>`;
-}
-
-function valueCell(val) {
-    if (!val || val === '-' || val === '') return '<span class="text-slate-700">—</span>';
-    return `<span class="text-slate-300">${val}</span>`;
-}
-
-function actualCell(actual, forecast) {
-    if (!actual || actual === '-' || actual === '') return '<span class="text-slate-700">—</span>';
-    const tryNum = (s) => parseFloat((s||'').replace(/[^0-9.\-]/g,''));
-    const a = tryNum(actual), f = tryNum(forecast);
-    let cls = 'text-slate-300';
-    if (!isNaN(a) && !isNaN(f)) {
-        cls = a > f ? 'text-qi-green font-semibold' : a < f ? 'text-qi-red font-semibold' : 'text-slate-300';
-    }
-    return `<span class="${cls}">${actual}</span>`;
-}
-
-function renderCalendar() {
-    const events = filteredEvents();
-    const now    = Date.now();
-    const content = document.getElementById('calendarContent');
-    const countEl = document.getElementById('eventCount');
-    if (countEl) countEl.textContent = `${events.length} event`;
-
-    if (!events.length) {
-        content.innerHTML = `<div class="text-center text-slate-600 py-16 text-sm">
-            Tidak ada event untuk filter ini.<br>
-            <button onclick="setImpact('all'); document.getElementById('currencyFilter').value='ALL'; setCurrency('ALL');" class="mt-3 text-qi-cyan text-[11px] underline">Reset filter</button>
-        </div>`;
-        return;
-    }
-
-    // Group by local date
-    const grouped = {};
-    events.forEach(e => {
-        const key = localDateKey(e.date);
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(e);
-    });
-
-    const sortedDates = Object.keys(grouped).sort();
-    let html = '';
-
-    sortedDates.forEach(dateKey => {
-        const dayEvents = grouped[dateKey];
-        const dateLabel = localDateLabel(dateKey);
-        const isToday   = dateKey === new Date().toLocaleDateString('sv-SE');
-
-        html += `<div class="rounded-xl overflow-hidden border ${isToday ? 'border-qi-cyan/20' : 'border-qi-border'}">
-            <div class="date-header px-4 py-2 flex items-center gap-2 ${isToday ? 'bg-qi-cyan/5 border-b border-qi-cyan/20' : 'bg-qi-panel border-b border-qi-border'}">
-                <span class="text-sm font-heading font-bold ${isToday ? 'text-qi-cyan' : 'text-white'}">${dateLabel}</span>
-                ${isToday ? '<span class="text-[9px] font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/25 rounded px-1.5 py-0.5">HARI INI</span>' : ''}
-                <span class="ml-auto text-[10px] text-slate-600">${dayEvents.length} event</span>
-            </div>
-            <table class="w-full text-xs font-mono">
-                <thead>
-                    <tr class="text-[10px] text-slate-600 uppercase border-b border-qi-border">
-                        <th class="px-3 py-1.5 text-left">Waktu</th>
-                        <th class="px-2 py-1.5 text-left hidden sm:table-cell">Mata Uang</th>
-                        <th class="px-3 py-1.5 text-left">Event</th>
-                        <th class="px-2 py-1.5 text-center">Impact</th>
-                        <th class="px-2 py-1.5 text-right hidden md:table-cell">Forecast</th>
-                        <th class="px-2 py-1.5 text-right hidden md:table-cell">Previous</th>
-                        <th class="px-2 py-1.5 text-right hidden lg:table-cell">Actual</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        dayEvents
-            .sort((a,b) => new Date(a.date) - new Date(b.date))
-            .forEach(ev => {
-                const evTime  = new Date(ev.date).getTime();
-                const isPast  = evTime < now;
-                const isNext  = _nextHighEvent && ev.id === _nextHighEvent.id;
-                const flag    = CUR_FLAGS[(ev.currency||ev.country||'').toUpperCase()] || '🏳️';
-                const cur     = (ev.currency || ev.country || '—').toUpperCase();
-                const rowCls  = `ev-row border-b border-qi-border/50 ${isPast ? 'past' : ''} ${isNext ? 'upcoming bg-qi-red/5' : ''}`;
-                const hasActual = ev.actual && ev.actual !== '-';
-
-                html += `<tr class="${rowCls}">
-                    <td class="px-3 py-2.5 text-slate-400 whitespace-nowrap">${localTimeStr(ev.date)}</td>
-                    <td class="px-2 py-2.5 hidden sm:table-cell">
-                        <span title="${cur}" class="flex items-center gap-1 text-slate-300">
-                            <span>${flag}</span>
-                            <span class="text-[11px] font-semibold">${cur}</span>
-                        </span>
-                    </td>
-                    <td class="px-3 py-2.5 text-white max-w-[180px] sm:max-w-none">
-                        <div class="truncate font-semibold text-[11px]">${ev.title || '—'}</div>
-                        <div class="text-[10px] text-slate-600 sm:hidden">${flag} ${cur}</div>
-                    </td>
-                    <td class="px-2 py-2.5 text-center">${impactPill((ev.impact||'').toLowerCase())}</td>
-                    <td class="px-2 py-2.5 text-right hidden md:table-cell text-slate-400">${valueCell(ev.forecast)}</td>
-                    <td class="px-2 py-2.5 text-right hidden md:table-cell text-slate-400">${valueCell(ev.previous)}</td>
-                    <td class="px-2 py-2.5 text-right hidden lg:table-cell ${hasActual ? 'font-bold' : ''}">${actualCell(ev.actual, ev.forecast)}</td>
-                </tr>`;
-            });
-
-        html += `</tbody></table></div>`;
-    });
-
-    content.innerHTML = html;
-}
-
-// ─── Updated ago ────────────────────────────────────────────────────────────
-function updateUpdatedAgo() {
-    if (!_lastFetch) return;
-    const sec = Math.floor((Date.now() - _lastFetch) / 1000);
-    const el  = document.getElementById('updatedAgo');
-    if (el) el.textContent = sec < 60 ? `${sec}d lalu` : `${Math.floor(sec/60)}m lalu`;
-}
-
-// ─── Sidebar toggle ─────────────────────────────────────────────────────────
-function toggleSidebar() {
-    const sb  = document.getElementById('sidebar');
-    const ovl = document.getElementById('sidebarOverlay');
-    const open = sb.classList.toggle('open');
-    ovl.classList.toggle('hidden', !open);
-}
-
-// ─── User ───────────────────────────────────────────────────────────────────
-function loadUserInfo() {
-    try {
-        const name = localStorage.getItem('qi_user_name') || sessionStorage.getItem('qi_user_name');
-        const el   = document.getElementById('sidebarUser');
-        if (el) el.textContent = name || 'Guest';
-    } catch(e) {}
-}
-
-// ─── Init ───────────────────────────────────────────────────────────────────
-loadUserInfo();
-fetchCalendar();
-setInterval(() => fetchCalendar(true), 300000); // refresh every 5 min
-setInterval(updateUpdatedAgo, 10000);
-</script>
-
-<!-- PRO-gate dashboard links -->
-<script>
-(function(){
-    var isPro = false;
-    try {
-        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
-        var u = raw ? JSON.parse(raw) : null;
-        isPro = u && (u.role === 'pro' || u.role === 'admin');
-    } catch(e){}
-
-    if (isPro) return;
-
-    var lockStyle = function(el, label) {
-        el.href = 'pricing.html';
-        el.title = 'Quantum+ PRO Required';
-        el.innerHTML = el.innerHTML.replace(label, label) + ' <span style="font-size:8px;padding:1px 4px;border-radius:4px;border:1px solid #334155;color:#475569">🔒</span>';
-        el.style.opacity = '0.55';
-    };
-
-    var d1 = document.getElementById('ecSidebarDash1');
-    var d2 = document.getElementById('ecSidebarDash2');
-    var dh = document.getElementById('ecHeaderDash');
-    if (d1) lockStyle(d1, 'Market Overview');
-    if (d2) lockStyle(d2, 'Currency Strength');
-    if (dh) { dh.href = 'pricing.html'; dh.textContent = '🔒 PRO →'; dh.style.opacity = '0.6'; }
-})();
-</script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

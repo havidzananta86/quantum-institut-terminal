@@ -114,9 +114,8 @@
     const el = document.getElementById('wibClock');
     if (!el) return;
     function update() {
-        const now = new Date();
-        const wib = new Date(now.getTime() + (7 * 60 - now.getTimezoneOffset()) * 60000);
-        el.textContent = wib.toTimeString().slice(0, 8);
+        // Zona waktu eksplisit: rumus lama (+7 jam − getTimezoneOffset) menambah 14 jam bila browser sudah WIB.
+        el.textContent = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false });
     }
     update();
     setInterval(update, 1000);

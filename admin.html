@@ -44,28 +44,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
     </div>
 </div>
 
-<script>
-(function() {
-    var token = null, userData = null;
-    try {
-        token = (typeof QuantumAuth !== 'undefined' && QuantumAuth.getToken)
-            ? QuantumAuth.getToken()
-            : (localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token'));
-        var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
-        userData = raw ? JSON.parse(raw) : null;
-    } catch(e) {}
-    if (!token) {
-        try { sessionStorage.setItem('qi_redirect_after_login', 'admin.html'); } catch(e) {}
-        window.location.replace('login.html'); return;
-    }
-    if (!userData || userData.role !== 'admin') {
-        document.getElementById('adminGateLoading').classList.add('hidden');
-        document.getElementById('adminGateDenied').classList.remove('hidden');
-        return;
-    }
-    document.getElementById('qiAdminGate').style.display = 'none';
-})();
-</script>
+<script src="assets/js/halaman-admin-gerbang.js?v=1.0.0"></script>
 
 <!-- MAIN CONTENT -->
 <div class="max-w-6xl mx-auto p-4 sm:p-6">
@@ -100,8 +79,8 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
     <div class="bg-qi-card border border-qi-border rounded-xl p-4 mb-4 flex gap-3">
         <input type="search" id="searchInput" placeholder="Cari email pengguna…"
                class="flex-1 bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-qi-cyan/50 transition-colors">
-        <button onclick="loadUsers()" class="px-4 py-2 bg-qi-cyan text-slate-950 font-bold rounded-lg text-sm hover:bg-qi-cyan/80 transition-colors">Cari</button>
-        <button onclick="document.getElementById('searchInput').value=''; loadUsers()" class="px-3 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-lg text-sm transition-colors">Reset</button>
+        <button type="button" data-aksi="cari" class="px-4 py-2 bg-qi-cyan text-slate-950 font-bold rounded-lg text-sm hover:bg-qi-cyan/80 transition-colors">Cari</button>
+        <button type="button" data-aksi="reset" class="px-3 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-lg text-sm transition-colors">Reset</button>
     </div>
     <div id="searchInput-keydown"></div>
 
@@ -128,9 +107,9 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
         <div class="flex items-center justify-between px-4 py-3 border-t border-qi-border">
             <div class="text-[11px] text-slate-500" id="paginationInfo">—</div>
             <div class="flex gap-2">
-                <button id="btnPrev" onclick="changePage(-1)" disabled
+                <button type="button" id="btnPrev" data-aksi="sebelum" disabled
                         class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 rounded text-xs transition-colors">← Prev</button>
-                <button id="btnNext" onclick="changePage(1)" disabled
+                <button type="button" id="btnNext" data-aksi="berikut" disabled
                         class="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white disabled:opacity-40 rounded text-xs transition-colors">Next →</button>
             </div>
         </div>
@@ -140,7 +119,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
     <div class="bg-qi-card border border-qi-border rounded-xl p-5 mt-6 mb-4">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-bold text-white uppercase tracking-wider">Analytics Dashboard</h2>
-            <button onclick="loadAnalytics()" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
+            <button type="button" data-aksi="analitik" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <div class="bg-slate-900/60 rounded-lg p-3 text-center">
@@ -221,7 +200,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
             <input id="bcNotes" type="text" placeholder="Konfirmasi FVG H1 + Sweep Asian High. Risk 1%." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none">
         </div>
         <div class="flex justify-end gap-2">
-            <button onclick="broadcastSignal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-qi-cyan/20 to-blue-500/20 border border-qi-cyan/40 text-qi-cyan hover:bg-qi-cyan/30 text-xs font-bold transition-all shadow-md">
+            <button type="button" data-aksi="siarkan" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-qi-cyan/20 to-blue-500/20 border border-qi-cyan/40 text-qi-cyan hover:bg-qi-cyan/30 text-xs font-bold transition-all shadow-md">
                 🚀 Siarkan Sinyal ke Seluruh Dashboard Member
             </button>
         </div>
@@ -231,196 +210,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
     </div>
 </div>
 
-<script>
-let currentPage = 0;
-const PAGE_SIZE = 25;
-let totalUsers  = 0;
-let _toastTimer = null;
-
-function showToast(msg, ok = true) {
-    const el  = document.getElementById('adminToast');
-    const msg_ = document.getElementById('adminToastMsg');
-    msg_.textContent = msg;
-    msg_.className   = 'px-4 py-3 rounded-xl text-sm text-white shadow-xl max-w-xs border ' +
-                       (ok ? 'bg-slate-800 border-qi-green/40' : 'bg-red-950 border-qi-red/40');
-    el.classList.remove('hidden');
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => el.classList.add('hidden'), 3000);
-}
-
-async function loadUsers(page = currentPage) {
-    const q   = document.getElementById('searchInput').value.trim();
-    const url = `api/admin-users.php?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}` + (q ? `&q=${encodeURIComponent(q)}` : '');
-    const tbody = document.getElementById('userTableBody');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-600 py-8 text-xs">Memuat…</td></tr>`;
-    try {
-        const res  = await fetch(url, { headers: authHeaders() });
-        const data = await res.json();
-        if (data.status !== 'success') throw new Error(data.message || 'Error');
-        totalUsers   = data.total;
-        currentPage  = page;
-
-        // Update stats
-        if (data.stats) {
-            const s = data.stats;
-            document.getElementById('statTotal').textContent  = (s.user||0) + (s.pro||0) + (s.admin||0);
-            document.getElementById('statPro').textContent    = s.pro || 0;
-            document.getElementById('statAdmin').textContent  = s.admin || 0;
-        }
-
-        // Pagination
-        document.getElementById('paginationInfo').textContent =
-            `Menampilkan ${page * PAGE_SIZE + 1}–${Math.min((page+1)*PAGE_SIZE, totalUsers)} dari ${totalUsers}`;
-        document.getElementById('btnPrev').disabled = page === 0;
-        document.getElementById('btnNext').disabled = (page + 1) * PAGE_SIZE >= totalUsers;
-
-        if (!data.users.length) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-slate-600 py-8 text-xs">Tidak ada pengguna ditemukan</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.users.map(u => {
-            const roleClass = u.role === 'admin' ? 'role-admin' : u.role === 'pro' ? 'role-pro' : 'role-user';
-            const dotColor  = u.is_active ? '#10B981' : '#4B5563';
-            const dot       = `<span class="active-dot" style="background:${dotColor}" title="${u.is_active ? 'Aktif' : 'Nonaktif'}"></span>`;
-            const joined    = new Date(u.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-            return `<tr class="border-b border-qi-border/50 hover:bg-slate-800/30 transition-colors">
-                <td class="px-4 py-3 text-slate-500 text-xs font-mono">#${u.id}</td>
-                <td class="px-4 py-3 text-white text-xs">${escHtml(u.email)}</td>
-                <td class="px-4 py-3">
-                    <select onchange="setRole(${u.id}, this.value, this)"
-                            class="text-[10px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1 outline-none">
-                        <option value="user"  ${u.role==='user'  ? 'selected':''}>User</option>
-                        <option value="pro"   ${u.role==='pro'   ? 'selected':''}>PRO</option>
-                        <option value="admin" ${u.role==='admin' ? 'selected':''}>Admin</option>
-                    </select>
-                </td>
-                <td class="px-4 py-3">${dot} <span class="text-xs text-slate-400">${u.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
-                <td class="px-4 py-3 text-slate-500 text-xs">${joined}</td>
-                <td class="px-4 py-3">
-                    <button onclick="toggleActive(${u.id}, ${u.is_active})"
-                            class="text-[10px] px-2.5 py-1 rounded border transition-colors ${u.is_active
-                                ? 'border-qi-red/40 text-qi-red hover:bg-qi-red/10'
-                                : 'border-qi-green/40 text-qi-green hover:bg-qi-green/10'}">
-                        ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
-    } catch(err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-qi-red py-8 text-xs">${escHtml(err.message)}</td></tr>`;
-    }
-}
-
-async function setRole(userId, newRole, selectEl) {
-    try {
-        const res  = await fetch('api/admin-users.php', {
-            method: 'POST', headers: { 'Content-Type':'application/json', ...authHeaders() },
-            body: JSON.stringify({ type:'set_role', user_id: userId, role: newRole })
-        });
-        const data = await res.json();
-        if (data.status === 'success') { showToast(`Role #${userId} diubah ke ${newRole}`); loadUsers(); }
-        else { showToast(data.message || 'Gagal', false); loadUsers(); }
-    } catch(e) { showToast('Network error', false); loadUsers(); }
-}
-
-async function toggleActive(userId, currentActive) {
-    try {
-        const res  = await fetch('api/admin-users.php', {
-            method: 'POST', headers: { 'Content-Type':'application/json', ...authHeaders() },
-            body: JSON.stringify({ type:'toggle_active', user_id: userId })
-        });
-        const data = await res.json();
-        if (data.status === 'success') { showToast(`Status pengguna #${userId} diubah`); loadUsers(); }
-        else showToast(data.message || 'Gagal', false);
-    } catch(e) { showToast('Network error', false); }
-}
-
-function changePage(dir) {
-    const newPage = currentPage + dir;
-    if (newPage < 0) return;
-    if (newPage * PAGE_SIZE >= totalUsers && dir > 0) return;
-    loadUsers(newPage);
-}
-
-function authHeaders() {
-    const token = (typeof QuantumAuth !== 'undefined' && QuantumAuth.getToken)
-        ? QuantumAuth.getToken()
-        : (localStorage.getItem('qi_token') || sessionStorage.getItem('qi_token') || '');
-    return token ? { 'Authorization': 'Bearer ' + token } : {};
-}
-
-function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadUsers(0); });
-
-async function loadAnalytics() {
-    try {
-        const res = await fetch('api/admin-analytics.php', { headers: authHeaders() });
-        const d = await res.json();
-        if (d.status !== 'success') return;
-        const a = d.analytics || {};
-        document.getElementById('anActiveSessions').textContent = a.active_sessions ?? '—';
-        document.getElementById('anSignals7d').textContent = a.signals_7d ?? '—';
-        document.getElementById('anApiKeys').textContent = a.total_api_keys ?? '—';
-        document.getElementById('anReferrals').textContent = a.total_referrals ?? '—';
-        document.getElementById('anPhpVer').textContent = a.php_version ?? '—';
-        document.getElementById('anCacheFiles').textContent = a.cache_files ?? '—';
-        document.getElementById('anErrors24').textContent = a.errors_24h ?? '0';
-        document.getElementById('anUptime').textContent = a.uptime ?? '—';
-
-        const logins = a.recent_logins || [];
-        const el = document.getElementById('anRecentLogins');
-        if (!logins.length) {
-            el.innerHTML = '<div class="text-slate-600">Tidak ada data</div>';
-        } else {
-            el.innerHTML = logins.map(l => {
-                const t = l.time ? new Date(l.time).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-                return `<div class="flex justify-between bg-slate-900/60 rounded px-2 py-1.5">
-                    <span class="text-white">${escHtml(l.email || '—')}</span>
-                    <span class="text-slate-500">${t}</span>
-                </div>`;
-            }).join('');
-        }
-    } catch(e) {}
-}
-
-async function broadcastSignal() {
-    const pair = document.getElementById('bcPair').value;
-    const type = document.getElementById('bcType').value;
-    const entry = document.getElementById('bcEntry').value.trim();
-    const sltp = document.getElementById('bcSlTp').value.trim();
-    const notes = document.getElementById('bcNotes').value.trim();
-
-    if (!entry) { showToast('Entry price wajib diisi', false); return; }
-
-    try {
-        const res = await fetch('api/admin-users.php?action=broadcast', {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ pair, type, entry, sltp, notes, time: new Date().toISOString() })
-        });
-        const d = await res.json();
-        showToast('Sinyal berhasil disiarkan ke seluruh member!', true);
-        document.getElementById('bcEntry').value = '';
-        document.getElementById('bcSlTp').value = '';
-        document.getElementById('bcNotes').value = '';
-    } catch(e) {
-        showToast('Sinyal tersimpan dan aktif di broadcast feed', true);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const gate = document.getElementById('qiAdminGate');
-    if (gate && gate.style.display === 'none') { loadUsers(0); loadAnalytics(); }
-    const interval = setInterval(() => {
-        if (gate && gate.style.display === 'none') { clearInterval(interval); loadUsers(0); loadAnalytics(); }
-    }, 100);
-    setTimeout(() => clearInterval(interval), 1500);
-});
-</script>
+<script src="assets/js/halaman-admin.js?v=1.0.0"></script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

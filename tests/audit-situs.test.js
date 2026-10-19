@@ -37,13 +37,14 @@ cek('harga kripto: quote OANDA/MT5 yang tutup/basi dilepas supaya diisi Binance'
 console.log('Browser');
 const app = read('assets/js/dashboard-app.js');
 cek('dashboard tidak memanggil api.binance.com langsung (diblokir DNS di Indonesia)', !/fetch\([^)]*api\.binance\.com/.test(app) && !/`https:\/\/api\.binance\.com\/api\/v3\/ticker\/price/.test(app));
-const st = read('status.html');
+const st = read('status.html') + read('assets/js/halaman-status.js');   // skrip status dipindah dari inline (CSP)
 cek('status: kalender dinilai dari status=success (dulu selalu "Degraded" karena bukan array)', /api\/calendar\.php',\s+key: 'status',\s+expect: 'success'/.test(st));
 cek('status: AI dicek lewat ?ping=1 tanpa login (dulu POST anonim → 401 merah di konsol)', /api\/ai-chat\.php\?ping=1/.test(st) && !/post_only/.test(st) && /isset\(\$_GET\['ping'\]\)/.test(read('api/ai-chat.php')));
 const ai = read('api/ai-chat.php');
 cek('ai-chat: ping dijawab sebelum wajib login & sebelum memanggil Groq', ai.indexOf("isset($_GET['ping'])") < ai.indexOf("qi_require_level('pro')"));
 cek('favicon.ico ada (dulu 404 di setiap kunjungan)', (() => { try { const b = fs.readFileSync(path.join(root, 'favicon.ico')); return b.readUInt16LE(2) === 1 && b.readUInt16LE(4) >= 1; } catch (e) { return false; } })());
 cek('index.html memakai meta mobile-web-app-capable (yang apple- saja sudah usang)', /name="mobile-web-app-capable"/.test(read('index.html')));
+cek('jam WIB beranda memakai zona Asia/Jakarta (dulu +14 jam bila browser sudah WIB)', (s => /timeZone: 'Asia\/Jakarta'/.test(s) && !/getTimezoneOffset\(\)/.test(s))(read('assets/js/halaman-index.js')));
 
 console.log(gagal ? `\nFAIL — ${gagal} kontrak audit dilanggar` : '\nPASS — audit situs: server, posisi akun, kripto 24/7, browser');
 process.exit(gagal ? 1 : 0);
