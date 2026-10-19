@@ -23,6 +23,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
 .role-pro    { background:#F59E0B22;color:#FCD34D;border:1px solid #F59E0B44; }
 .role-user   { background:#1E293B;color:#94A3B8;border:1px solid #334155; }
 .active-dot  { width:8px;height:8px;border-radius:50%;display:inline-block; }
+#cspTabel td { vertical-align:top; }
 </style>
     <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
     <link rel="icon" href="favicon.ico" sizes="any">
@@ -156,6 +157,36 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
                 </div>
             </div>
         </div>
+    <!-- Laporan CSP (api/csp-ringkasan.php): pelanggaran CSP ketat Report-Only per halaman/arahan/sumber -->
+    <div class="bg-qi-card border border-qi-border rounded-xl p-5 mt-6 mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Laporan CSP</h2>
+            <div class="flex items-center gap-2">
+                <select id="cspHari" aria-label="Rentang hari" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white outline-none">
+                    <option value="1">Hari ini</option>
+                    <option value="3">3 hari</option>
+                    <option value="7" selected>7 hari</option>
+                    <option value="14">14 hari</option>
+                </select>
+                <select id="cspDisposisi" aria-label="Jenis laporan" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white outline-none">
+                    <option value="report" selected>CSP ketat (Report-Only)</option>
+                    <option value="enforce">CSP aktif (diblokir)</option>
+                    <option value="semua">Semua</option>
+                </select>
+                <button type="button" data-aksi="csp" class="text-[10px] text-slate-500 hover:text-qi-cyan transition-colors">↻ Refresh</button>
+            </div>
+        </div>
+        <div id="cspInfo" class="text-[11px] text-slate-400 mb-2">Memuat…</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-[11px]">
+                <thead><tr class="text-left text-slate-500 border-b border-slate-800">
+                    <th class="py-1.5 pr-2">Jumlah</th><th class="py-1.5 pr-2">Halaman</th><th class="py-1.5 pr-2">Arahan</th>
+                    <th class="py-1.5 pr-2">Diblokir</th><th class="py-1.5 pr-2">Contoh (sumber · sampel)</th><th class="py-1.5">Terakhir</th>
+                </tr></thead>
+                <tbody id="cspTabel"></tbody>
+            </table>
+        </div>
+    </div>
     <!-- Admin CMS & Live Signal Broadcast Panel -->
     <div class="bg-qi-card border border-qi-border rounded-xl p-5 mt-6 mb-4">
         <div class="flex items-center justify-between mb-3 border-b border-qi-border/50 pb-2">
@@ -210,7 +241,7 @@ body { background:#050A1A; color:#e2e8f0; font-family:'Inter',sans-serif; }
     </div>
 </div>
 
-<script src="assets/js/halaman-admin.js?v=1.0.0"></script>
+<script src="assets/js/halaman-admin.js?v=1.0.1"></script>
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

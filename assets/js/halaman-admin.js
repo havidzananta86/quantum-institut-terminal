@@ -154,6 +154,37 @@ async function loadAnalytics() {
     } catch(e) {}
 }
 
+// Laporan CSP: grup kosong untuk "CSP ketat (Report-Only)" beberapa hari berturut-turut = aman ditegakkan.
+async function loadCsp() {
+    const info = document.getElementById('cspInfo'), tb = document.getElementById('cspTabel');
+    const hari = document.getElementById('cspHari').value, disp = document.getElementById('cspDisposisi').value;
+    info.textContent = 'Memuat…';
+    try {
+        const res = await fetch(`api/csp-ringkasan.php?hari=${encodeURIComponent(hari)}&disposisi=${encodeURIComponent(disp)}`, { headers: authHeaders() });
+        const d = await res.json();
+        if (d.status !== 'success') throw new Error(d.message || 'Error');
+        const per = Object.entries(d.per_disposisi || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || '—';
+        info.textContent = `${d.total} pelanggaran dalam ${d.jumlah_grup} grup · ${d.file.length} file harian · semua jenis: ${per}`
+            + (d.rusak ? ` · ${d.rusak} baris rusak` : '') + (d.terpotong ? ' · sebagian file terpotong (terlalu besar)' : '')
+            + (d.jumlah_grup > d.grup.length ? ` · menampilkan ${d.grup.length} grup teratas` : '');
+        tb.innerHTML = d.grup.length ? d.grup.map(g => {
+            const contoh = g.contoh.map(c => escHtml([c.sumber, c.sampel].filter(Boolean).join(' · ') || '—')).join('<br>');
+            const t = g.terakhir ? new Date(g.terakhir).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+            return `<tr class="border-b border-slate-800">
+                <td class="py-1.5 pr-2 text-white font-bold">${g.jumlah}<div class="text-slate-500 font-normal">${g.ip_berbeda} IP</div></td>
+                <td class="py-1.5 pr-2 text-slate-300 break-all">${escHtml(g.halaman || '—')}</td>
+                <td class="py-1.5 pr-2 text-qi-gold">${escHtml(g.arahan || '—')}</td>
+                <td class="py-1.5 pr-2 text-slate-300 break-all">${escHtml(g.diblok || '—')}</td>
+                <td class="py-1.5 pr-2 text-slate-400 break-all font-mono">${contoh || '—'}</td>
+                <td class="py-1.5 text-slate-500 whitespace-nowrap">${t}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="6" class="text-center text-qi-green py-4">Tidak ada pelanggaran pada rentang ini.</td></tr>';
+    } catch (e) {
+        info.textContent = 'Gagal memuat laporan CSP: ' + e.message;
+        tb.innerHTML = '';
+    }
+}
+
 async function broadcastSignal() {
     const pair = document.getElementById('bcPair').value;
     const type = document.getElementById('bcType').value;
@@ -181,9 +212,9 @@ async function broadcastSignal() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const gate = document.getElementById('qiAdminGate');
-    if (gate && gate.style.display === 'none') { loadUsers(0); loadAnalytics(); }
+    if (gate && gate.style.display === 'none') { loadUsers(0); loadAnalytics(); loadCsp(); }
     const interval = setInterval(() => {
-        if (gate && gate.style.display === 'none') { clearInterval(interval); loadUsers(0); loadAnalytics(); }
+        if (gate && gate.style.display === 'none') { clearInterval(interval); loadUsers(0); loadAnalytics(); loadCsp(); }
     }, 100);
     setTimeout(() => clearInterval(interval), 1500);
 });
@@ -199,6 +230,7 @@ document.addEventListener('click', e => {
         case 'sebelum':  changePage(-1); break;
         case 'berikut':  changePage(1); break;
         case 'analitik': loadAnalytics(); break;
+        case 'csp':      loadCsp(); break;
         case 'siarkan':  broadcastSignal(); break;
         case 'aktif':    toggleActive(Number(el.dataset.id)); break;
     }
@@ -206,4 +238,5 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
     const sel = e.target.closest('select[data-ubah-role]');
     if (sel) setRole(Number(sel.dataset.ubahRole), sel.value, sel);
+    if (e.target.id === 'cspHari' || e.target.id === 'cspDisposisi') loadCsp();
 });
