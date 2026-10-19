@@ -1,2 +1,6 @@
 # Shell hooks must keep LF endings: with core.autocrlf=true a CRLF checkout breaks sh.
 .githooks/* text eol=lf
+
+# Bundel JS hasil "npm run build:js": byte persis seperti ditulis build (hash di nama file = hash isi),
+# jadi tanpa konversi CRLF dan tanpa diff baris per baris.
+assets/dist/** -text -diff linguist-generated

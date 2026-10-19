@@ -26,21 +26,18 @@
     <!-- Font tidak memblokir tampilan pertama: dimuat paralel, lalu diterapkan (display=swap). -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" data-qi-gaya-tunda>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
-    <script src="assets/js/halaman-dashboard-kepala.js?v=1.0.0"></script>
-    <!-- Delegasi data-qi-aksi (pengganti atribut onclick="..." — CSP tanpa 'unsafe-inline') -->
-    <script src="assets/js/qim-aksi.js?v=1.0.0"></script>
+    <!-- bundel:kepala-awal · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-kepala.js, qim-aksi.js -->
+<script src="assets/dist/kepala-awal.316cbd801a.js"></script>
+<!-- /bundel:kepala-awal -->
 
     <!-- Design tokens + theme (must load before Tailwind) -->
     <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
     <!-- Fondasi aksesibilitas (fokus keyboard, skip link, gerak-minimal) -->
     <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
-    <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
+    <!-- bundel:kepala · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): theme-toggle.js, error-tracker.js, auth.js, qim-auth-fetch.js -->
+<script src="assets/dist/kepala.8f6bd896c5.js"></script>
+<!-- /bundel:kepala -->
 
-    <!-- Error Tracker — load first to catch all JS errors -->
-    <script src="assets/js/error-tracker.js?v=1.4.6"></script>
-    <!-- Auth must load before page renders so gate check fires immediately -->
-    <script src="assets/js/auth.js?v=1.4.3"></script>
-    <script src="assets/js/qim-auth-fetch.js?v=1.0.0"></script>
     <!-- Tailwind (pre-built) -->
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
     <!-- Responsive overrides -->
@@ -399,7 +396,9 @@
         <div class="h-full rounded-full bg-gradient-to-r from-qi-cyan to-qi-purple" style="animation:qiBarLoad 2s ease-out forwards;"></div>
     </div>
 </div>
-<script src="assets/js/halaman-dashboard-pemuat.js?v=1.0.0"></script>
+<!-- bundel:pemuat · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-pemuat.js -->
+<script src="assets/dist/pemuat.a1fbccf661.js"></script>
+<!-- /bundel:pemuat -->
 
 <!-- Panel load bar -->
 <div id="panelLoadBar"></div>
@@ -534,7 +533,9 @@
     </div>
 </div>
 <!-- Stempel waktu gerbang, pembungkus fetch (token otomatis ke api/), pemeriksaan gerbang, fungsi sambutan -->
-<script src="assets/js/halaman-dashboard-awal.js?v=1.0.0"></script>
+<!-- bundel:awal · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-awal.js -->
+<script src="assets/dist/awal.532802c85b.js"></script>
+<!-- /bundel:awal -->
 
 <!-- ═══════════════════════════════════════════════════════════
      FIRST-RUN ONBOARDING OVERLAY
@@ -4093,56 +4094,20 @@
 <!-- ═══════════════════════════════════════════════════════════
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════ -->
-<script src="assets/js/qim-price-store.js?v=1.0.0"></script>
-<script src="assets/js/qim-chart-store.js?v=1.0.0"></script>
-<script src="assets/js/qim-paper-math.js?v=1.0.1"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.32"></script>
-<script src="assets/js/qim-dashboard.js?v=1.7.6"></script>
-<script src="assets/js/qim-indicators.js?v=1.0.0"></script>
-<script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
-<script src="assets/js/qim-mt5-socket.js?v=1.0.1"></script>
-<script src="assets/js/qim-notifications.js?v=1.1.0"></script>
-<script src="assets/js/qim-pages.js?v=1.7.6"></script>
-<script src="assets/js/qim-risk.js?v=1.0.1"></script>
-<script src="assets/js/qim-alerts.js?v=1.0.2"></script>
+<!-- bundel:inti · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): qim-price-store.js, qim-chart-store.js, qim-paper-math.js, dashboard-app.js, qim-dashboard.js, qim-indicators.js, qim-trading-tools.js, qim-mt5-socket.js, qim-notifications.js, qim-pages.js, qim-risk.js, qim-alerts.js -->
+<script src="assets/dist/inti.7732a5c750.js"></script>
+<!-- /bundel:inti -->
 
 <!-- Sidebar toggle floating button -->
 <button id="sbToggleBtn" data-qi-aksi="toggleSidebar" title="Toggle sidebar">
     <span id="sbToggleIcon">‹</span>
 </button>
 
-<script src="assets/js/pro-features.js?v=2.5.4"></script>
-<script src="assets/js/pro-trading-tools.js?v=2.4.6"></script>
-<!-- GAYA CHART — sumber tunggal penghalusan tampilan (zona WIB, presisi, watermark) -->
-<script src="assets/js/chart-style.js?v=1.2.1"></script>
-<!-- ZONA POSISI — kotak entry/TP/SL di atas chart (overlay HTML, tidak menyentuh data) -->
-<script src="assets/js/chart-zones.js?v=1.3.0"></script>
-<!-- MESIN 9 — evaluator 9 mesin kuantum (indikator sungguhan, tanpa data karangan) -->
-<script src="assets/js/engine-nine.js?v=1.2.0"></script>
-<script src="assets/js/qim-setups.js?v=1.0.0"></script>
-<script src="assets/js/qim-setup-panel.js?v=1.0.4"></script>
-<script src="assets/js/qim-berita-chart.js?v=1.0.0"></script>
-<script src="assets/js/qim-backtest-ui.js?v=1.0.0"></script>
-<script src="assets/js/qim-multichart.js?v=1.0.0"></script>
-<script src="assets/js/qim-ai-jelaskan.js?v=1.0.0"></script>
-<script src="assets/js/qim-pine-smcsnd.js?v=1.0.0"></script>
-<script src="assets/js/qim-indikator-kustom.js?v=1.0.0"></script>
-<script src="assets/js/qim-header.js?v=1.0.1"></script>
-<script src="assets/js/qim-auto-paper.js?v=1.0.1"></script>
-<script src="assets/js/qim-batas-rugi.js?v=1.0.0"></script>
-<script src="assets/js/qim-brief-harian.js?v=1.0.0"></script>
-<script src="assets/js/qim-mobile.js?v=1.0.0"></script>
-<script src="assets/js/dashboard-pro.js?v=1.0.3"></script>
-<script src="assets/js/advanced-trading.js?v=3.2.2"></script>
-<script src="assets/js/perf-upgrades.js?v=2.2.1"></script>
-<script src="assets/js/ui-improvements.js?v=3.2.5"></script>
-<script src="assets/js/main.js?v=1.4.1" defer></script>
-<!-- Fondasi aksesibilitas: peran tab, operasi keyboard, perangkap fokus, skip link -->
-<script src="assets/js/a11y.js?v=1.0.5"></script>
-<!-- Aliran harga realtime (WebSocket kripto) + status yang jujur di bar atas -->
-<script src="assets/js/realtime.js?v=1.0.4" defer></script>
-<script src="assets/js/dashboard-tema.js?v=1.0.2"></script>
-<script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
-<script src="assets/js/halaman-dashboard.js?v=1.0.0"></script>
+<!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
+<script src="assets/dist/fitur.31d6fc6a29.js"></script>
+<!-- /bundel:fitur -->
+<!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
+<script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>
+<!-- /bundel:tunda -->
 </body>
 </html>

@@ -53,6 +53,24 @@ jobs:
           fi
           echo "tailwind.css matches the current markup."
 
+      # assets/dist/ (the dashboard's JS bundles) is the same kind of committed
+      # build artifact: dashboard.html loads ONLY the bundles, so an edit under
+      # assets/js/ without 'npm run build:js' never reaches users. Rebuild with
+      # the pinned esbuild and fail if anything the build writes differs.
+      # (tests/bundel.test.js in the unit tests already catches stale sources
+      # via manifest hashes; this also catches toolchain/config drift.)
+      - name: Check JS bundles are up to date
+        run: |
+          npm run build:js
+          BERKAS="assets/dist dashboard.html index.html assets/js/halaman-index.js sw.js"
+          if [ -n "$(git status --porcelain -- $BERKAS)" ]; then
+            echo "::error::JS bundles are stale. Run 'npm run build:js' and commit assets/dist/, dashboard.html, index.html, assets/js/halaman-index.js and sw.js."
+            git status --short -- $BERKAS
+            git diff --stat -- dashboard.html index.html assets/js/halaman-index.js sw.js | tail -5 || true
+            exit 1
+          fi
+          echo "assets/dist matches assets/js."
+
   smoke:
     name: Cold-cache API smoke
     runs-on: ubuntu-latest

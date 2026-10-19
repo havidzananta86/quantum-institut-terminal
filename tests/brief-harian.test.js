@@ -25,7 +25,7 @@ cek('satu panggilan AI per hari: hasil AI disimpan per tanggal WIB', /brief_hari
 cek('API key tidak pernah dikirim ke klien (hanya dibaca dari config di server)', !/GROQ_API_KEY/.test(read('assets/js/qim-brief-harian.js')) && !/GROQ_API_KEY/.test(ep));
 cek('cron menyiapkan brief pagi hari WIB (sebelum pengguna membuka dashboard)', /qi_brief_ambil\(/.test(cron));
 const dash = read('dashboard.html');
-cek('dashboard memuat modul brief & menyediakan tempat kartu di Overview', /qim-brief-harian\.js\?v=/.test(dash) && /id="briefHarian"/.test(dash));
+cek('dashboard memuat modul brief & menyediakan tempat kartu di Overview', JSON.parse(read('assets/js/bundel.json')).bundel.some(b => b.file.includes('qim-brief-harian.js')) && /id="briefHarian"/.test(dash));
 const B = require('../assets/js/qim-brief-harian.js');
 const html = B.md('**Judul**\n- butir <img src=x onerror=alert(1)>\n_miring_');
 cek('render Markdown aman (HTML mentah di-escape)', !/<img/.test(html) && /&lt;img/.test(html) && /<b>Judul<\/b>/.test(html) && /<li>/.test(html), html);

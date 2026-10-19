@@ -1469,7 +1469,10 @@
             const baris = document.querySelector('.qch-indrow');
             p.qimSebelumTutup = () => { if (baris) Array.from(grid.children).forEach(t => baris.appendChild(t)); };
             // Indikator hasil port Pine Script (qim-indikator-kustom.js): centang + pengaturan.
-            if (window.QIMIndikatorKustom) { try { p.appendChild(window.QIMIndikatorKustom.bagianMenu()); } catch (er) {} }
+            const pasangPine = () => { if (p.isConnected && window.QIMIndikatorKustom) { try { p.appendChild(window.QIMIndikatorKustom.bagianMenu()); } catch (er) {} } };
+            // Modulnya dimuat saat popover ini pertama kali dibuka (qim-muat-fitur.js); bagian Pine menyusul begitu tiba.
+            if (window.QIMIndikatorKustom) pasangPine();
+            else if (typeof window.QIMMuatFitur === 'function') window.QIMMuatFitur('pine').then(pasangPine, () => toast('Indikator Pine gagal dimuat — periksa koneksi.', 'error'));
             return;
         }
         if (aksi === 'template') {
@@ -1534,7 +1537,12 @@
         if (aksi === 'banding') return popoverBanding(b);
         if (aksi === 'replay') { tutupPopover(); return ch.replay ? hentikanReplay() : mulaiReplay(); }
         if (aksi === 'layout') {
-            if (!window.QIMMultiChart) { toast('Modul multi-chart belum siap.', 'error'); return; }
+            if (!window.QIMMultiChart) {
+                // Dimuat saat menu ini pertama kali dibuka (qim-muat-fitur.js), lalu klik yang sama diulang.
+                if (typeof window.QIMMuatFitur !== 'function') { toast('Modul multi-chart belum siap.', 'error'); return; }
+                window.QIMMuatFitur('multichart').then(() => { if (window.QIMMultiChart) klikKepala(e); }, () => toast('Modul multi-chart gagal dimuat — periksa koneksi.', 'error'));
+                return;
+            }
             const kini = window.QIMMultiChart.jumlah();
             const kotak = n => n === 1 ? '<rect x="1" y="1" width="24" height="16" rx="2"/>'
                 : n === 2 ? '<rect x="1" y="1" width="11" height="16" rx="2"/><rect x="14" y="1" width="11" height="16" rx="2"/>'

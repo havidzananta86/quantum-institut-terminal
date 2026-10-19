@@ -6,8 +6,10 @@
  *         membuat antarmuka tampil beda dari build terbaru di server.
  */
 
-const CACHE_NAME = 'quantum-terminal-v3.8.8';
-const STATIC_CACHE = 'quantum-static-v3.0.0';
+// CACHE_NAME & STATIC_CACHE DITULIS OTOMATIS oleh 'npm run build:js' (hash build) — jangan diubah tangan.
+// Bundel JS ber-hash (assets/dist/) baru → cache lama dibuang saat SW baru aktif.
+const CACHE_NAME = 'quantum-terminal-8a9c936d76';
+const STATIC_CACHE = 'quantum-static-8a9c936d76';
 
 const CORE_ASSETS = [
 
@@ -25,6 +27,15 @@ const CORE_ASSETS = [
     'assets/js/pro-features.js',
     'assets/js/perf-upgrades.js',
     'assets/js/error-tracker.js',
+    // bundel:mulai (ditulis npm run build:js)
+    'assets/dist/kepala-awal.316cbd801a.js',
+    'assets/dist/kepala.8f6bd896c5.js',
+    'assets/dist/pemuat.a1fbccf661.js',
+    'assets/dist/awal.532802c85b.js',
+    'assets/dist/inti.7732a5c750.js',
+    'assets/dist/fitur.31d6fc6a29.js',
+    'assets/dist/tunda.7a7be7a1eb.js',
+    // bundel:akhir
 ];
 
 // ── Install: cache core assets ────────────────────────────────

@@ -30,4 +30,7 @@ if ! cmp -s "$kopi" assets/css/tailwind.css; then
     exit 1
 fi
 rm -f "$kopi"
+
+# Bundel JS dashboard (assets/dist/) — sama dengan langkah CI "Check JS bundles are up to date".
+npm run --silent cek:js || { echo "pre-commit: jalankan 'npm run build:js', 'git add' hasilnya, lalu commit lagi." >&2; exit 1; }
 exit 0

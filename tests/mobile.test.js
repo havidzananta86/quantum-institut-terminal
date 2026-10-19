@@ -9,7 +9,9 @@ let gagal = 0;
 function cek(nama, kondisi) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama); if (!kondisi) gagal++; }
 
 const html = read('dashboard.html'), css = read('assets/css/qim-mobile.css'), app = read('assets/js/dashboard-app.js');
-const idx = s => html.indexOf(s);
+// Urutan muat = urutan di assets/js/bundel.json (skrip dashboard dibundel oleh npm run build:js).
+const urutan = JSON.parse(read('assets/js/bundel.json')).bundel.flatMap(b => b.file);
+const idx = s => (/\.css$/.test(s) ? html.indexOf(s) : urutan.indexOf(s.replace('assets/js/', '')) + 1);
 
 console.log('Muat awal');
 cek('qim-chart-store.js dimuat SEBELUM dashboard-app.js (semua modul memakai fetch yang sama)', idx('qim-chart-store.js') > 0 && idx('qim-chart-store.js') < idx('assets/js/dashboard-app.js'));

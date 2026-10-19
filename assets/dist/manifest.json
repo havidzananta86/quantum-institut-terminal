@@ -1,0 +1,114 @@
+{
+  "esbuild": "0.25.10",
+  "bundel": {
+    "kepala-awal": {
+      "file": "assets/dist/kepala-awal.316cbd801a.js",
+      "muat": "sinkron",
+      "sumber": {
+        "halaman-dashboard-kepala.js": "b9ceeb914b4c9260",
+        "qim-aksi.js": "6db7240e352a0536"
+      }
+    },
+    "kepala": {
+      "file": "assets/dist/kepala.8f6bd896c5.js",
+      "muat": "sinkron",
+      "sumber": {
+        "theme-toggle.js": "4bd9a59febf7c781",
+        "error-tracker.js": "d49e51d6f122fa46",
+        "auth.js": "ee1f12bf76ac560b",
+        "qim-auth-fetch.js": "e519286be7c95509"
+      }
+    },
+    "pemuat": {
+      "file": "assets/dist/pemuat.a1fbccf661.js",
+      "muat": "sinkron",
+      "sumber": {
+        "halaman-dashboard-pemuat.js": "e069fc4f9fbd9463"
+      }
+    },
+    "awal": {
+      "file": "assets/dist/awal.532802c85b.js",
+      "muat": "sinkron",
+      "sumber": {
+        "halaman-dashboard-awal.js": "c42e6e8c3b744152"
+      }
+    },
+    "inti": {
+      "file": "assets/dist/inti.7732a5c750.js",
+      "muat": "sinkron",
+      "sumber": {
+        "qim-price-store.js": "352ac0b781a22a7c",
+        "qim-chart-store.js": "b19a3cf8bac1c78f",
+        "qim-paper-math.js": "aee88cf55d36654c",
+        "dashboard-app.js": "120d6dafe4e43ff8",
+        "qim-dashboard.js": "34b84487289194e8",
+        "qim-indicators.js": "865b12d971fb3be1",
+        "qim-trading-tools.js": "effc8efc7a189e34",
+        "qim-mt5-socket.js": "56b7070dfcd743c8",
+        "qim-notifications.js": "78fa5e780d4db523",
+        "qim-pages.js": "421bcdad660193e8",
+        "qim-risk.js": "b2e6279cbc6bcbd2",
+        "qim-alerts.js": "c2240339a4c0cb4f"
+      }
+    },
+    "fitur": {
+      "file": "assets/dist/fitur.31d6fc6a29.js",
+      "muat": "sinkron",
+      "sumber": {
+        "pro-features.js": "e76de5bafd70616e",
+        "pro-trading-tools.js": "25af63d271b52733",
+        "chart-style.js": "36b18e58ca10d64c",
+        "chart-zones.js": "2ee750876a9aa508",
+        "engine-nine.js": "abb68a9626c4c29b",
+        "qim-setups.js": "e9105e10741cbb03",
+        "qim-setup-panel.js": "4636d98c6c411f59",
+        "qim-berita-chart.js": "7eca2b320ec419dd",
+        "qim-muat-fitur.js": "3391f13e2c700710",
+        "qim-ai-jelaskan.js": "34e6f6d6883be951",
+        "qim-header.js": "f5defc551e6e5335",
+        "qim-auto-paper.js": "c044c942ac9afeb5",
+        "qim-batas-rugi.js": "5bf1c70825ac61a6",
+        "qim-brief-harian.js": "35d06ba5cf71ab56",
+        "qim-mobile.js": "bd80a6a3bacf9526",
+        "dashboard-pro.js": "dee01078ad4b64f2",
+        "advanced-trading.js": "9df3e2dca4c9edc6",
+        "perf-upgrades.js": "0bd5552f901855cb",
+        "ui-improvements.js": "005c82eec7d07aa0",
+        "a11y.js": "fc79d7a42ff00b04",
+        "dashboard-tema.js": "c252a05fbb6611f5",
+        "halaman-dashboard.js": "06fd967165d8cbdb"
+      }
+    },
+    "tunda": {
+      "file": "assets/dist/tunda.7a7be7a1eb.js",
+      "muat": "defer",
+      "sumber": {
+        "main.js": "2fb473f15eb88b8e",
+        "realtime.js": "c66fb445d8ece8c1",
+        "cookie-consent.js": "f1b2f2a59a15a052"
+      }
+    }
+  },
+  "lazy": {
+    "backtest": {
+      "file": "assets/dist/lazy-backtest.f9c53045ea.js",
+      "sumber": {
+        "qim-backtest-ui.js": "0d41c85c1c45d10e"
+      }
+    },
+    "multichart": {
+      "file": "assets/dist/lazy-multichart.bb8586a158.js",
+      "sumber": {
+        "qim-multichart.js": "f8e2f6d942ba4d3a"
+      }
+    },
+    "pine": {
+      "file": "assets/dist/lazy-pine.722672caff.js",
+      "sumber": {
+        "qim-pine-smcsnd.js": "ce73ca2290db836b",
+        "qim-indikator-kustom.js": "72f0ea211b1a64db"
+      }
+    }
+  },
+  "versi": "8a9c936d76"
+}

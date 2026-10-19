@@ -69,7 +69,7 @@ cek('meteran: tercapai → tingkat "tercapai", batang penuh, pesan reset 00:00 W
 const r2 = B.ringkas({ terpakai_pct: 83.3, tercapai: false, peringatan: true, rugi_hari: 250, batas_usd: 300, batas_pct: 3, sisa_usd: 50 });
 cek('meteran: 83% → "waspada" dengan rincian rugi/batas/sisa', r2.tingkat === 'waspada' && /83%/.test(r2.judul) && /\$250\.00/.test(r2.rincian) && /\$50\.00/.test(r2.rincian), r2);
 cek('meteran: tanpa data → null (tersembunyi)', B.ringkas(null) === null);
-cek('dashboard memuat qim-batas-rugi.js', /qim-batas-rugi\.js\?v=/.test(read('dashboard.html')));
+cek('dashboard memuat qim-batas-rugi.js (bundel npm run build:js)', JSON.parse(read('assets/js/bundel.json')).bundel.some(b => b.file.includes('qim-batas-rugi.js')));
 
 // ── 5. Sinyal indikator Pine di server ───────────────────────────────────────
 console.log('Sinyal indikator Pine (server)');

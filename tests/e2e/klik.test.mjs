@@ -262,7 +262,14 @@ async function cekDashboard(lebar, tinggi, label) {
           const aksi = hd.querySelector('.qim-header-actions');
           if (aksi && aksi.getBoundingClientRect().right > innerWidth + 1) hasil.fitur.push('header: tombol kanan keluar layar');
         } }
-      if (!window.QIMBerita || !window.QIMAIJelaskan || !window.QIMBacktestUI || !window.QIMMultiChart) hasil.fitur.push('modul fitur baru tidak termuat');
+      // Backtest & indikator Pine dimuat lazy (qim-muat-fitur.js): belum ada saat halaman dibuka, termuat saat diminta.
+      if (window.QIMBacktestUI || window.QIMIndikatorKustom) hasil.fitur.push('modul lazy ikut termuat saat halaman dibuka');
+      if (typeof window.QIMMuatFitur !== 'function') hasil.fitur.push('pemuat fitur lazy (QIMMuatFitur) tidak ada');
+      else {
+        try { await Promise.all(['backtest', 'multichart', 'pine'].map(n => window.QIMMuatFitur(n))); }
+        catch (e) { hasil.fitur.push('fitur lazy gagal dimuat: ' + e.message); }
+      }
+      if (!window.QIMBerita || !window.QIMAIJelaskan || !window.QIMBacktestUI || !window.QIMMultiChart || !window.QIMIndikatorKustom) hasil.fitur.push('modul fitur baru tidak termuat');
       // Kembali ke BTC (sumber Binance/OANDA dengan cadangan) sebelum menguji fitur yang mengikuti chart utama.
       const btc = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].find(r => /BTCUSDT/.test(r.innerText));
       if (btc) { btc.click(); await tidur(3000); }

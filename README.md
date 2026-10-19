@@ -73,6 +73,24 @@ pernah dipakai, ia tidak akan ada di CSS sampai build dijalankan ulang —
 kelasnya diam-diam tidak berefek, tanpa error. Pernah terjadi: `py-14`
 hilang sehingga padding section menjadi nol di layar kecil.
 
+### JS dashboard
+
+`dashboard.html` tidak memuat `assets/js/*.js` satu per satu, melainkan bundel
+ber-hash di `assets/dist/` — juga **artefak build yang ikut di-commit**.
+Daftar dan urutan file ada di `assets/js/bundel.json` (urutan = urutan
+eksekusi; banyak modul memakai global dari modul sebelumnya).
+
+```bash
+npm run build:js     # bundel + minify, tulis tag <script>, versi cache sw.js
+npm run cek:js       # hanya cek: gagal bila bundel basi
+```
+
+Mengubah file di `assets/js/` tanpa `npm run build:js` = perubahan tidak
+sampai ke pengguna; `npm test` dan CI menolaknya. Konflik merge di
+`assets/dist/` jangan diselesaikan manual: ambil salah satu sisi lalu build
+ulang. Backtest, multi-chart, dan indikator Pine dimuat lazy saat menunya
+dibuka (`assets/js/qim-muat-fitur.js`).
+
 ---
 
 ## Konfigurasi

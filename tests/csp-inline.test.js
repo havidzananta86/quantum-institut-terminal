@@ -71,8 +71,12 @@ console.log('Delegasi data-qi-aksi (dashboard)');
   const DIKENAL_HILANG = new Set(['loadRealtimeSymbol']);
   const hilang = [...dipakai].filter(n => !ada.has(n.split('.')[0]) && !DIKENAL_HILANG.has(n));
   cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size > 100 && hilang.length === 0, hilang);
+  // Skrip dashboard dibundel (assets/js/bundel.json, npm run build:js): qim-aksi.js harus ada di bundel
+  // yang dimuat di <head>, sebelum bundel lain.
+  const bundel = JSON.parse(read('assets/js/bundel.json')).bundel, dash = read('dashboard.html');
+  const bAksi = bundel.find(b => b.file.includes('qim-aksi.js'));
   cek('qim-aksi.js dimuat di <head> dashboard (sebelum skrip yang mendaftarkan aksi)',
-    /<script src="assets\/js\/qim-aksi\.js[^"]*"><\/script>[\s\S]*<\/head>/.test(read('dashboard.html')));
+    !!bAksi && bundel.indexOf(bAksi) === 0 && new RegExp(`<!-- bundel:${bAksi.nama} ·[^>]*-->\\s*<script src="assets/dist/[^"]+"></script>[\\s\\S]*</head>`).test(dash));
 }
 
 console.log('Header CSP (.htaccess)');
