@@ -262,6 +262,30 @@ try {
     $out['snapshot_dihapus'] = 'dilewati';
 }
 
+// ── Akun berhak tinggi dengan kata sandi PUBLIK (seed demo) — sekali sehari ──
+// Repositori publik memuat kata sandi akun demo. Bila seed pernah diimpor ke produksi, akun
+// admin/vip/pro itu bisa dimasuki siapa saja. Login-nya sudah ditolak (api/_password_publik.php);
+// di sini sesi yang terlanjur aktif dicabut dan admin diberi tahu. Hanya di produksi.
+if (!$dryRun) {
+    try {
+        require_once __DIR__ . '/_password_publik.php';
+        $penandaPw = __DIR__ . '/../cache/password_publik_audit.txt';
+        if (qi_password_publik_berlaku() && (!is_file($penandaPw) || (time() - (int)@filemtime($penandaPw)) > 86400)) {
+            @file_put_contents($penandaPw, (string)time(), LOCK_EX);
+            $audit = qi_password_publik_audit($pdo ?? qi_db());
+            $out['password_publik'] = ['diperiksa' => $audit['diperiksa'], 'terdampak' => count($audit['terdampak']), 'sesi_dicabut' => $audit['sesi_dicabut']];
+            if ($audit['terdampak']) {
+                qi_password_publik_alarm("🔐 Quantum Institut: " . count($audit['terdampak']) . " akun masih memakai kata sandi demo PUBLIK: "
+                    . implode(', ', array_map(fn($u) => $u['email'] . ' (' . $u['role'] . ')', $audit['terdampak']))
+                    . ".
+Login akun itu sudah ditolak dan " . $audit['sesi_dicabut'] . " sesi aktif dicabut. Ganti kata sandinya: php database/ganti-password.php <email>.", 'audit');
+            }
+        }
+    } catch (Throwable $e) {
+        $out['password_publik'] = 'dilewati';
+    }
+}
+
 // ── Penurunan role untuk lisensi yang sudah kedaluwarsa ─────────────────────
 // Sebelumnya status pembayaran hanya MENAIKKAN role (api/payment.php) dan tidak ada
 // satu pun proses yang menurunkannya — sehingga pembeli 1 bulan mempertahankan akses

@@ -1,5 +1,8 @@
 -- ============================================================
 -- QUANTUM INSTITUT — SEED DATA (akun & lisensi demo)
+-- ⚠️ HANYA UNTUK PENGEMBANGAN LOKAL. JANGAN impor ke server produksi: repositori ini
+--    publik, jadi kata sandi di bawah diketahui siapa saja. Di produksi login dengan kata
+--    sandi ini DITOLAK dan sesinya dicabut cron (api/_password_publik.php).
 -- Password demo semua akun: quantum2026
 -- ============================================================
 

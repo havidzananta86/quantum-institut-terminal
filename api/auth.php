@@ -33,6 +33,7 @@ if ($type === 'verify_token') {
 // Batas kasar per IP tetap ada untuk banjir permintaan, tapi cukup longgar agar pengguna
 // satu jaringan (kantor, warnet) tidak saling mengunci.
 require_once __DIR__ . '/_login_guard.php';
+require_once __DIR__ . '/_password_publik.php';   // tolak kata sandi demo yang tercantum di repo publik
 qi_rate_limit(60, 900);
 
 if (!$input) {
@@ -140,6 +141,8 @@ if ($type === 'license') {
         $user = $stmt->fetch();
 
         if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
+            // Kata sandi benar tetapi diketahui publik (seed demo) → ditolak di produksi.
+            qi_password_publik_tolak_login($pdo, $subjek, $user, $password);
             // Login berhasil — buat session
             qi_login_catat($pdo, $subjek, true);
             $session = createSession($pdo, $user['id']);

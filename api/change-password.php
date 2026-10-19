@@ -30,6 +30,13 @@ if (strlen($newPw) < 8) {
     exit();
 }
 
+require_once __DIR__ . '/_password_publik.php';
+if (qi_password_publik_berlaku() && qi_password_publik($newPw)) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Kata sandi ini diketahui publik. Pilih kata sandi lain.']);
+    exit();
+}
+
 if ($currentPw === $newPw) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Kata sandi baru harus berbeda dari yang lama.']);

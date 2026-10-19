@@ -11,6 +11,7 @@ require_once __DIR__ . '/_middleware.php';
 // Batas dari percobaan GAGAL per akun+IP / akun / IP — dihitung bersama api/auth.php,
 // jadi endpoint ini tidak bisa dipakai untuk melewati batas itu (api/_login_guard.php).
 require_once __DIR__ . '/_login_guard.php';
+require_once __DIR__ . '/_password_publik.php';   // tolak kata sandi demo yang tercantum di repo publik
 qi_rate_limit(60, 900);
 
 $input = qi_get_json_body();
@@ -82,6 +83,7 @@ if (!empty($license)) {
         $user = $stmt->fetch();
 
         if ($user && $user['is_active'] && password_verify($password, $user['password_hash'])) {
+            qi_password_publik_tolak_login($pdo, $subjek, $user, $password);   // seed demo publik → ditolak di produksi
             qi_login_catat($pdo, $subjek, true);
             $token = createSession($pdo, $user['id'])['token'];
             echo json_encode([

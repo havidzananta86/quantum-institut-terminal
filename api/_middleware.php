@@ -31,8 +31,6 @@ if (!defined('QI_DEV')) {
 $allowedOrigins = [
     'https://quantum-institut.com',
     'https://www.quantum-institut.com',
-    'https://quantum-institut-terminal.vercel.app',
-    'https://quantum-institut.com',
     'http://localhost',
     'http://localhost:3000',
     'http://127.0.0.1',

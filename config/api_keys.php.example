@@ -27,6 +27,10 @@ define('CRON_SECRET_KEY', '');
 // (mis. https://quantum-institut.com). Kosong = diturunkan dari request.
 define('QI_PUBLIC_BASE', '');
 
+// Server produksi? Dipakai perlindungan kata sandi publik (api/_password_publik.php).
+// Tanpa baris ini: permintaan web = produksi kecuali lokal; cron CLI = produksi bila Linux.
+// define('QI_PRODUKSI', true);
+
 // Jumlah perangkat yang boleh login bersamaan per akun (1–10). Bawaan 1 = satu perangkat:
 // login baru mengakhiri sesi lain (anti berbagi akun). Lebih dari 1: sesi terlama yang diakhiri.
 // define('QI_SESI_MAKS', 1);

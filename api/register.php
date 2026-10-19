@@ -40,6 +40,12 @@ if (strlen($password) < 8) {
     echo json_encode(['status' => 'error', 'message' => 'Kata sandi minimal 8 karakter.']);
     exit();
 }
+require_once __DIR__ . '/_password_publik.php';
+if (qi_password_publik_berlaku() && qi_password_publik($password)) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Kata sandi ini diketahui publik. Pilih kata sandi lain.']);
+    exit();
+}
 
 try {
     $pdo = qi_db();
