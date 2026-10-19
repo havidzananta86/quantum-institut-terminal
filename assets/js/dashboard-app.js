@@ -5845,6 +5845,44 @@ async function fetchTrackRecord() {
                 }
             } catch (e) {}
 
+            // ── PER DIMENSI (sesi/hari/simbol/versi) + MONTE CARLO — data dari server, apa adanya ──
+            try {
+                const dim = data.statistik_dimensi || null;
+                const pilih = document.getElementById('trDimPilih');
+                const tbD = document.getElementById('trDimBaris');
+                const escD = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+                const tulisDim = () => {
+                    if (!tbD) return;
+                    const baris = (dim && pilih && dim[pilih.value]) || [];
+                    if (!baris.length) { tbD.innerHTML = '<tr><td colspan="5" class="py-2 text-slate-600">belum ada catatan sinyal</td></tr>'; return; }
+                    tbD.innerHTML = baris.map(g => {
+                        const ada = (g.dinilai || 0) > 0;
+                        const exCls = !ada ? 'text-slate-600' : ((g.expectancy_r ?? 0) > 0 ? 'text-qi-green' : 'text-qi-red');
+                        const kecil = ada && !g.cukup_sampel ? ' <span class="text-amber-300" title="Sampel kecil — belum bisa disimpulkan">*</span>' : '';
+                        return '<tr class="border-b border-qi-border/30">'
+                            + '<td class="py-1.5 pr-2 text-slate-200">' + escD(g.kelompok) + kecil + '</td>'
+                            + '<td class="text-right px-1.5 text-slate-300">' + (g.dinilai || 0) + '</td>'
+                            + '<td class="text-right px-1.5 text-slate-300">' + (ada && g.win_rate != null ? g.win_rate + '%' : '—') + '</td>'
+                            + '<td class="text-right px-1.5 ' + exCls + '">' + (ada && g.expectancy_r != null ? ((g.expectancy_r > 0 ? '+' : '') + g.expectancy_r + 'R') : '—') + '</td>'
+                            + '<td class="text-right pl-1.5 text-slate-400">' + (g.total_r == null ? '—' : ((g.total_r > 0 ? '+' : '') + g.total_r + 'R')) + '</td>'
+                            + '</tr>';
+                    }).join('');
+                };
+                if (pilih && !pilih.dataset.terpasang) { pilih.dataset.terpasang = '1'; pilih.addEventListener('change', tulisDim); }
+                tulisDim();
+                const mc = data.monte_carlo || null;
+                const elMc = document.getElementById('trMonteCarlo');
+                if (elMc) {
+                    if (!mc || !mc.iterasi) {
+                        elMc.innerHTML = '🎲 Monte Carlo: ' + escD((mc && mc.catatan) || 'belum tersedia.') + ' <span class="text-slate-600">* = sampel kecil.</span>';
+                    } else {
+                        elMc.innerHTML = '🎲 <b class="text-slate-300">Monte Carlo</b> (' + mc.iterasi + '× acak ulang ' + mc.panjang + ' transaksi): drawdown median <b>'
+                            + mc.dd_median_r + 'R</b>, 95% simulasi ≤ <b>' + mc.dd_p95_r + 'R</b>, terburuk ' + mc.dd_terburuk_r + 'R · peluang total rugi <b>'
+                            + mc.peluang_rugi_pct + '%</b>. ' + escD(mc.catatan) + ' <span class="text-slate-600">Asumsi: ' + escD(mc.asumsi) + '. * = sampel kecil.</span>';
+                    }
+                }
+            } catch (e) {}
+
             // ── KALIBRASI: expectancy per tingkat keyakinan, apa adanya ──
             try {
                 const kal = data.kalibrasi || null;

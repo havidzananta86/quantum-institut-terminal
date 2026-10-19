@@ -95,7 +95,10 @@ $historyFile = __DIR__ . '/../cache/signal_history.json';
 // yang basi disegarkan lebih dulu (dibatasi 5 menit sekali di dalam fungsinya).
 // Tanpa ini filter hanya aktif bila kebetulan ada pengguna membuka panel Kalender —
 // ditemukan di produksi: cache 459 menit sehingga filter tidak pernah bekerja.
-$blackout = qi_berita_blackout(30, true);
+// Per mata uang (2026-10-19): di sini hanya menyegarkan kalender dan menahan bila ADA berita
+// yang relevan untuk SEMUA kandidat (mis. berita USD → semua pasangan USD, emas, kripto).
+// Berita yang hanya menggerakkan sebagian simbol ditahan per simbol di dalam putaran.
+$blackout = qi_berita_blackout(30, true, 'USD');
 if ($blackout['aktif']) {
     if ($auto) @file_put_contents($penandaAuto, (string)time(), LOCK_EX);
     gen_jawab(200, [
@@ -182,6 +185,12 @@ foreach ($kandidat as $simbol) {
     $arah = ($bull >= 3) ? 'BUY' : (($bear >= 3) ? 'SELL' : null);
     if ($arah === null) {
         $hasil[] = ['simbol' => $simbol, 'hasil' => 'tidak_sepakat', 'bull' => $bull, 'bear' => $bear];
+        continue;
+    }
+    // Berita berdampak tinggi untuk mata uang simbol INI (mis. EUR untuk EURUSD).
+    $boSimbol = qi_berita_blackout(30, false, $simbol);
+    if (!empty($boSimbol['aktif'])) {
+        $hasil[] = ['simbol' => $simbol, 'hasil' => 'blackout_berita', 'berita' => $boSimbol['event']];
         continue;
     }
 

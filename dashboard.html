@@ -2842,6 +2842,39 @@ document.addEventListener('keydown', e => {
                 <div id="trKalCatatan" class="text-[10px] text-slate-500 leading-relaxed mt-2"></div>
             </div>
         </div>
+        <!-- ══ KINERJA PER DIMENSI + MONTE CARLO ══════════════════════════════
+             Win rate & expectancy per sesi / hari / simbol / versi aturan, dan simulasi
+             urutan transaksi. Kelompok kecil tetap tampil tetapi ditandai — jangan
+             mematikan sesi atau simbol dari segelintir transaksi. -->
+        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-qi-border">
+                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Kinerja per Dimensi</span>
+                <select id="trDimPilih" class="text-[10px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1 outline-none">
+                    <option value="per_sesi">Sesi (UTC)</option>
+                    <option value="per_hari">Hari</option>
+                    <option value="per_simbol">Simbol</option>
+                    <option value="per_versi_penilaian">Versi penilaian</option>
+                    <option value="per_versi_aturan">Versi aturan</option>
+                </select>
+            </div>
+            <div class="p-4 pt-3">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[10px] font-mono">
+                        <thead>
+                            <tr class="text-slate-500 border-b border-qi-border/60">
+                                <th class="text-left font-medium py-1 pr-2">KELOMPOK</th>
+                                <th class="text-right font-medium py-1 px-1.5">TERTUTUP</th>
+                                <th class="text-right font-medium py-1 px-1.5">WIN RATE</th>
+                                <th class="text-right font-medium py-1 px-1.5">EXPECTANCY</th>
+                                <th class="text-right font-medium py-1 pl-1.5">TOTAL R</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trDimBaris"><tr><td colspan="5" class="py-2 text-slate-600">memuat…</td></tr></tbody>
+                    </table>
+                </div>
+                <div id="trMonteCarlo" class="text-[10px] text-slate-500 leading-relaxed mt-2"></div>
+            </div>
+        </div>
         <!-- Filter -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
             <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-qi-border">
@@ -4256,8 +4289,8 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 <script src="assets/js/qim-price-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-chart-store.js?v=1.0.0"></script>
 <script src="assets/js/qim-paper-math.js?v=1.0.1"></script>
-<script src="assets/js/dashboard-app.js?v=2.0.30"></script>
-<script src="assets/js/qim-dashboard.js?v=1.7.5"></script>
+<script src="assets/js/dashboard-app.js?v=2.0.31"></script>
+<script src="assets/js/qim-dashboard.js?v=1.7.6"></script>
 <script src="assets/js/qim-indicators.js?v=1.0.0"></script>
 <script src="assets/js/qim-trading-tools.js?v=1.0.1"></script>
 <script src="assets/js/qim-mt5-socket.js?v=1.0.1"></script>
@@ -4293,7 +4326,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') docu
 })();
 </script>
 <script src="assets/js/pro-features.js?v=2.5.3"></script>
-<script src="assets/js/pro-trading-tools.js?v=2.4.4"></script>
+<script src="assets/js/pro-trading-tools.js?v=2.4.5"></script>
 <!-- GAYA CHART — sumber tunggal penghalusan tampilan (zona WIB, presisi, watermark) -->
 <script src="assets/js/chart-style.js?v=1.2.1"></script>
 <!-- ZONA POSISI — kotak entry/TP/SL di atas chart (overlay HTML, tidak menyentuh data) -->

@@ -136,5 +136,6 @@ foreach ($pd as $p => [$b,$q]) {
 
 $out = json_encode(['status'=>'success','timestamp'=>date('Y-m-d H:i:s'),
     'source'=>'CFTC · Commitment of Traders (Legacy)','currencies'=>$currencies,'pairs'=>$pairs]);
-file_put_contents($cacheFile, $out);
+require_once __DIR__ . '/_json_kunci.php';
+qi_tulis_atomik($cacheFile, (string)$out);
 echo $out;

@@ -2506,7 +2506,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${s.side==='BUY'?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${esc(s.side)} ${esc(s.symbol)}</span>
                                                 <strong class="text-white">${esc(s.engine_name)} (${esc(s.timeframe)})</strong>
                                                 ${mtfBadge}
-                                                <span class="text-[10px] text-slate-400">Score: <strong class="text-cyan-300">${+s.confluence_score}%</strong> (N=${+s.sample_size})</span>
+                                                <span class="text-[10px] text-slate-400">Score: <strong class="text-cyan-300">${s.confluence_score == null || s.confluence_score === '' ? '—' : (+s.confluence_score) + '%'}</strong>${s.sample_size == null || s.sample_size === '' ? '' : ' (N=' + (+s.sample_size) + ')'}</span>
                                             </div>
                                             <span class="px-2 py-0.5 rounded border text-[10px] font-bold ${statusBg}">${esc(s.status)}</span>
                                         </div>

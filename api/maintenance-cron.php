@@ -170,6 +170,9 @@ if (!$dryRun) {
                     'berita' => qi_berita_blackout(30, true),
                 ]);
                 $out['sinyal_bayangan'] = ['dinilai' => $b['dinilai'], 'dibuat' => $b['dibuat'], 'dipindai' => $b['dipindai'], 'total_rekor' => $b['total_rekor'] ?? null];
+                // Salinan ke tabel signal_records (dual-write, fail-safe — api/_rekor_db.php).
+                require_once __DIR__ . '/_rekor_db.php';
+                $out['sinyal_bayangan']['database'] = qi_rekor_db_sinkron('shadow', __DIR__ . '/../cache/signal_shadow.json');
             }
         }
     } catch (Throwable $e) {
@@ -206,6 +209,8 @@ if (!$dryRun) {
                     'notif' => $notifPine,
                 ]);
                 $out['sinyal_pine'] = ['dinilai' => $p['dinilai'], 'dibuat' => $p['dibuat'], 'dipindai' => $p['dipindai'], 'total_rekor' => $p['total_rekor'] ?? null];
+                require_once __DIR__ . '/_rekor_db.php';
+                $out['sinyal_pine']['database'] = qi_rekor_db_sinkron('pine', __DIR__ . '/../cache/pine_signals.json');
             }
         }
     } catch (Throwable $e) {
@@ -289,6 +294,16 @@ try {
     }
 } catch (Throwable $e) {
     $out['lisensi_diturunkan'] = 'dilewati';
+}
+
+// ── DETAK CRON (api/_detak_cron.php): bukti putaran ini selesai, dibaca api/health.php ──
+if (!$dryRun) {
+    require_once __DIR__ . '/_detak_cron.php';
+    qi_cron_detak([
+        'sinyal_dinilai'  => is_array($out['penilai_sinyal'] ?? null) ? ($out['penilai_sinyal']['dinilai'] ?? null) : null,
+        'bayangan_dibuat' => is_array($out['sinyal_bayangan'] ?? null) ? ($out['sinyal_bayangan']['dibuat'] ?? null) : null,
+        'pine_dibuat'     => is_array($out['sinyal_pine'] ?? null) ? ($out['sinyal_pine']['dibuat'] ?? null) : null,
+    ]);
 }
 
 echo $isCli ? json_encode($out, JSON_PRETTY_PRINT) . PHP_EOL : json_encode($out);

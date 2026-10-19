@@ -45,9 +45,12 @@ function qi_signal_r_satu(array $rek): array
     $exit  = (float)($rek['exit_price'] ?? 0);
     $side  = strtoupper((string)($rek['side'] ?? ''));
     if ($entry > 0 && $sl > 0 && $exit > 0 && $entry !== $sl) {
+        // Pembilang memakai entry SETELAH spread bila dicatat penilai (entry_efektif),
+        // penyebut tetap risiko rencana (entry − SL) supaya 1R tetap satuan yang sama.
+        $masuk = (isset($rek['entry_efektif']) && is_numeric($rek['entry_efektif'])) ? (float)$rek['entry_efektif'] : $entry;
         $r = ($side === 'SELL')
-            ? ($entry - $exit) / ($sl - $entry)
-            : ($exit - $entry) / ($entry - $sl);
+            ? ($masuk - $exit) / ($sl - $entry)
+            : ($exit - $masuk) / ($entry - $sl);
         if (is_finite($r)) return ['r' => round($r, 4), 'sumber' => 'exit_price'];
     }
 
@@ -610,6 +613,131 @@ function qi_signal_kalibrasi(array $records, int $minSampel = 30, int $minBucket
         'satuan'           => 'R (kelipatan risiko)',
         'dasar'            => 'Keyakinan diambil dari kolom confidence (atau confluence_score untuk catatan lama).',
     ];
+}
+
+/**
+ * Sesi pasar saat sinyal TERBIT (jam UTC). Batasnya perkiraan umum, ditulis apa adanya:
+ *   Asia 00–07 · London 07–12 · London+NY 12–16 · New York 16–21 · Sepi 21–24 (UTC).
+ */
+function qi_signal_sesi(?int $t): string
+{
+    if ($t === null) return 'tidak diketahui';
+    $j = (int)gmdate('G', $t);
+    if ($j < 7) return 'Asia (00–07 UTC)';
+    if ($j < 12) return 'London (07–12 UTC)';
+    if ($j < 16) return 'London+NY (12–16 UTC)';
+    if ($j < 21) return 'New York (16–21 UTC)';
+    return 'Sepi (21–24 UTC)';
+}
+
+/**
+ * Statistik dikelompokkan menurut kunci bebas (sesi, hari, simbol, versi aturan, ...).
+ * Kelompok dengan sampel kecil TETAP ditampilkan, ditandai cukup_sampel = false —
+ * jangan menyimpulkan "sesi X buruk" dari 4 transaksi.
+ *
+ * @param callable $kunci fn(array $rek): string
+ */
+function qi_signal_statistik_per(array $records, callable $kunci): array
+{
+    $kelompok = [];
+    foreach ($records as $r) {
+        if (!is_array($r)) continue;
+        $k = (string)$kunci($r);
+        $kelompok[$k][] = $r;
+    }
+    $keluar = [];
+    foreach ($kelompok as $k => $daftar) {
+        $st = qi_signal_statistik($daftar);
+        $keluar[] = [
+            'kelompok'     => $k,
+            'total'        => count($daftar),
+            'dinilai'      => $st['dinilai'],
+            'menang'       => $st['menang'],
+            'win_rate'     => $st['win_rate'],
+            'ci_bawah'     => $st['ci_bawah'],
+            'ci_atas'      => $st['ci_atas'],
+            'expectancy_r' => $st['expectancy_r'],
+            'total_r'      => $st['total_r'],
+            'cukup_sampel' => $st['cukup_sampel'],
+        ];
+    }
+    usort($keluar, fn($a, $b) => [$b['dinilai'], $a['kelompok']] <=> [$a['dinilai'], $b['kelompok']]);
+    return $keluar;
+}
+
+/** Semua pemisahan yang dipakai panel rekor sinyal. */
+function qi_signal_statistik_dimensi(array $records): array
+{
+    $hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return [
+        'per_sesi'   => qi_signal_statistik_per($records, fn($r) => qi_signal_sesi(qi_sig_epoch($r['timestamp'] ?? null))),
+        'per_hari'   => qi_signal_statistik_per($records, function ($r) use ($hari) {
+            $t = qi_sig_epoch($r['timestamp'] ?? null);
+            return $t === null ? 'tidak diketahui' : $hari[(int)gmdate('w', $t)] . ' (UTC)';
+        }),
+        'per_simbol' => qi_signal_statistik_per($records, fn($r) => strtoupper((string)($r['symbol'] ?? '?'))),
+        // Rekor yang ditutup sebelum 2026-10-19 dinilai TANPA spread & tanpa harga gap —
+        // angkanya lebih bagus dari kenyataan. Dipisah supaya tidak tercampur diam-diam.
+        'per_versi_penilaian' => qi_signal_statistik_per($records, fn($r) => isset($r['versi_penilaian'])
+            ? 'v' . (int)$r['versi_penilaian'] . ' (spread + gap)' : 'v1 (tanpa spread)'),
+        'per_versi_aturan' => qi_signal_statistik_per($records, fn($r) => (string)($r['versi_aturan'] ?? 'v1')),
+    ];
+}
+
+/**
+ * MONTE CARLO urutan transaksi: R yang SUDAH terjadi diacak ulang (bootstrap dengan
+ * pengembalian) untuk melihat seberapa dalam drawdown BISA terjadi dengan edge yang sama.
+ * Drawdown historis hanya satu urutan; urutan lain dengan hasil yang sama bisa jauh lebih buruk.
+ *
+ * Deterministik (benih tetap) supaya angka di panel tidak berubah tiap kali dimuat.
+ * Asumsi dicatat: transaksi saling bebas, distribusi R masa depan = masa lalu.
+ */
+function qi_signal_monte_carlo(array $records, int $iterasi = 2000, ?int $panjang = null, int $benih = 20261019): array
+{
+    $r = [];
+    foreach ($records as $rek) {
+        if (!is_array($rek)) continue;
+        $h = qi_signal_r_satu($rek);
+        if ($h['r'] !== null) $r[] = (float)$h['r'];
+    }
+    $n = count($r);
+    $dasar = ['dinilai' => $n, 'iterasi' => 0, 'panjang' => 0, 'dd_median_r' => null, 'dd_p95_r' => null,
+              'dd_terburuk_r' => null, 'peluang_rugi_pct' => null, 'total_r_p5' => null, 'total_r_median' => null,
+              'asumsi' => 'urutan transaksi diacak ulang dari R yang sudah terjadi; transaksi dianggap saling bebas'];
+    if ($n < 10) return $dasar + ['catatan' => 'Minimal 10 transaksi tertutup untuk simulasi (sekarang ' . $n . ').'];
+
+    $panjang = $panjang ?? $n;
+    $x = $benih & 0x7fffffff ?: 1;
+    $acak = static function () use (&$x, $n): int {          // LCG sederhana — tidak menyentuh mt_rand global
+        $x = (int)(($x * 1103515245 + 12345) & 0x7fffffff);
+        return $x % $n;
+    };
+    $dd = []; $total = []; $rugi = 0;
+    for ($i = 0; $i < $iterasi; $i++) {
+        $kum = 0.0; $puncak = 0.0; $ddMaks = 0.0;
+        for ($j = 0; $j < $panjang; $j++) {
+            $kum += $r[$acak()];
+            if ($kum > $puncak) $puncak = $kum;
+            if ($puncak - $kum > $ddMaks) $ddMaks = $puncak - $kum;
+        }
+        $dd[] = $ddMaks; $total[] = $kum;
+        if ($kum < 0) $rugi++;
+    }
+    sort($dd); sort($total);
+    $q = static fn(array $a, float $p): float => round($a[(int)min(count($a) - 1, floor($p * (count($a) - 1)))], 2);
+    return array_merge($dasar, [
+        'iterasi'          => $iterasi,
+        'panjang'          => $panjang,
+        'dd_median_r'      => $q($dd, 0.5),
+        'dd_p95_r'         => $q($dd, 0.95),
+        'dd_terburuk_r'    => round(end($dd), 2),
+        'peluang_rugi_pct' => round($rugi / $iterasi * 100, 1),
+        'total_r_p5'       => $q($total, 0.05),
+        'total_r_median'   => $q($total, 0.5),
+        'catatan'          => $n < 30
+            ? 'Sampel masih kecil (' . $n . ' transaksi) — rentang hasil simulasi ini sangat lebar.'
+            : 'Dalam 95% simulasi drawdown tidak melebihi ' . $q($dd, 0.95) . 'R untuk ' . $panjang . ' transaksi.',
+    ]);
 }
 
 endif;

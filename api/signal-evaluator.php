@@ -19,7 +19,8 @@
  *     dari data OHLC — maka dianggap SL yang kena lebih dulu (kerugian). Ini
  *     pilihan yang tidak menyanjung diri sendiri.
  *  5. Bila candle terbuka langsung melewati level (gap), level itu dianggap kena
- *     di harga pembukaan.
+ *     di harga pembukaan — dan harga KELUAR juga harga pembukaan itu (gap melewati SL
+ *     berarti rugi lebih dari 1R; dulu tercatat tepat di SL).
  *  6. EXPIRED ditandai bila data candle MENCAKUP seluruh jendela waktu sinyal tanpa
  *     TP/SL tersentuh (expiry_basis = "candle"). Kalau datanya tidak cukup, sinyal
  *     dibiarkan AKTIF — tetapi paling lama 24 jam sesudah expiry; setelah itu ditutup
@@ -33,6 +34,10 @@
  *     kripto — 1 koin per lot — nilai 0,01 lot terlalu kecil: pembulatan 2 desimal
  *     membuat kerugian tercatat 0,00 dan itu merusak profit factor (gross loss = 0).
  *     Presisi P/L sinyal dijaga 4 desimal.
+ *  9. SPREAD (api/_biaya_spread.php): BUY ditutup di BID, SELL di ASK, entry pasar
+ *     membayar sisi pembuka. Spread tipikal per simbol dicatat di rekor (spread_biaya,
+ *     spread_basis, harga_basis), pnl = BERSIH setelah spread, pnl_kotor = tanpa spread,
+ *     entry_efektif = entry setelah spread (dipakai perhitungan R).
  *
  * CATATAN ZONA WAKTU: semua waktu sinyal BARU ditulis ISO 8601 UTC ("...Z") dan
  * semua pembacaan lewat qi_sig_epoch()/qi_sig_jendela() di api/_signal_time.php —
@@ -53,6 +58,8 @@
 
 require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
+require_once __DIR__ . '/_biaya_spread.php';
+require_once __DIR__ . '/_json_kunci.php';
 
 if (!function_exists('qi_sig_interval_kandidat')) :
 /**
@@ -174,26 +181,36 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     }
     usort($filtered, fn($a, $b) => $a['time'] - $b['time']);
 
+    // Aturan 9 (spread): BUY ditutup di BID, SELL di ASK; entry pasar membayar sisi
+    // pembuka. Offset 0 bila rekor tidak dipasangi biaya (perilaku lama, dipakai uji).
+    $off = qi_spread_offset_rekor($sig);
+    $offTutup = ($side === 'BUY') ? $off['bid_off'] : $off['ask_off'];
+    $entryEfektif = $entry + (($side === 'BUY') ? $off['ask_off'] : $off['bid_off']);
+
     foreach ($filtered as $c) {
         $tpKena = false; $slKena = false; $harga = 0.0;
+        $o = $c['open'] + $offTutup; $h = $c['high'] + $offTutup; $l = $c['low'] + $offTutup;
         if ($side === 'BUY') {
-            if ($c['open'] >= $tp) { $tpKena = true; $harga = $c['open']; }      // gap naik melewati TP
-            elseif ($c['open'] <= $sl) { $slKena = true; $harga = $c['open']; }  // gap turun melewati SL
+            if ($o >= $tp) { $tpKena = true; $harga = $o; }      // gap naik melewati TP
+            elseif ($o <= $sl) { $slKena = true; $harga = $o; }  // gap turun melewati SL
             else {
-                if ($c['low'] <= $sl) { $slKena = true; $harga = $sl; }          // aturan 4: SL lebih dulu
-                elseif ($c['high'] >= $tp) { $tpKena = true; $harga = $tp; }
+                if ($l <= $sl) { $slKena = true; $harga = $sl; }          // aturan 4: SL lebih dulu
+                elseif ($h >= $tp) { $tpKena = true; $harga = $tp; }
             }
         } else {
-            if ($c['open'] <= $tp) { $tpKena = true; $harga = $c['open']; }
-            elseif ($c['open'] >= $sl) { $slKena = true; $harga = $c['open']; }
+            if ($o <= $tp) { $tpKena = true; $harga = $o; }
+            elseif ($o >= $sl) { $slKena = true; $harga = $o; }
             else {
-                if ($c['high'] >= $sl) { $slKena = true; $harga = $sl; }
-                elseif ($c['low'] <= $tp) { $tpKena = true; $harga = $tp; }
+                if ($h >= $sl) { $slKena = true; $harga = $sl; }
+                elseif ($l <= $tp) { $tpKena = true; $harga = $tp; }
             }
         }
         if ($tpKena || $slKena) {
             $menang = $tpKena;
-            $keluar = $menang ? $tp : $sl;
+            // Aturan 5: keluar di harga yang BENAR-BENAR bisa didapat. Saat gap melewati SL,
+            // itu harga pembukaan (lebih buruk dari −1R) — dulu dicatat tepat di SL sehingga
+            // kerugian gap tampak lebih kecil dari kenyataannya.
+            $keluar = $harga;
 
             // ── UKUR KEDALAMAN WICK (Tahap 2 lanjutan) ───────────────────────────
             // MENGAPA: saat SL kena tanpa gap, harga keluar diset TEPAT di SL sehingga
@@ -221,14 +238,22 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
                 ];
             }
 
+            $selisih = ($side === 'BUY') ? $keluar - $entryEfektif : $entryEfektif - $keluar;
+            $biaya = [];
+            if ($off['ask_off'] - $off['bid_off'] > 0) {
+                $biaya = [
+                    'entry_efektif' => round($entryEfektif, 6),
+                    'pnl_kotor'     => round(($side === 'BUY' ? $keluar - $entry : $entry - $keluar), 6),
+                ];
+            }
             return array_merge([
                 'status'      => $menang ? 'HIT TP 🎯' : 'HIT SL 🛑',
                 'hit_price'   => round($harga, 6),
                 'exit_price'  => round($keluar, 6),
                 'closed_at'   => qi_sig_waktu_utc($c['time']),
-                'pnl'         => round(($side === 'BUY' ? $keluar - $entry : $entry - $keluar), 6),
-                'pnl_usd'     => round(($side === 'BUY' ? $keluar - $entry : $entry - $keluar) * qi_paper_pip_mult((string)$sig['symbol']), 4),
-            ], $luar);
+                'pnl'         => round($selisih, 6),
+                'pnl_usd'     => round($selisih * qi_paper_pip_mult((string)$sig['symbol']), 4),
+            ], $biaya, $luar);
         }
     }
 
@@ -335,6 +360,25 @@ endif;
 
 if (!function_exists('qi_signal_evaluator_run')) :
 /**
+ * Cari kembali rekor yang dinilai di isi berkas terbaru: menurut id bila ada; bila
+ * tidak, indeks yang sama asalkan simbol & waktu terbitnya cocok (rekor lama tanpa id).
+ */
+function qi_sig_cari_rekor(array $daftar, array $p): ?int {
+    if (!empty($p['id'])) {
+        foreach ($daftar as $j => $r) {
+            if (is_array($r) && (string)($r['id'] ?? '') === (string)$p['id']) return $j;
+        }
+        return null;
+    }
+    $j = $p['i'];
+    if (isset($daftar[$j]) && ($daftar[$j]['symbol'] ?? null) === $p['symbol'] && ($daftar[$j]['timestamp'] ?? null) === $p['timestamp']) return $j;
+    foreach ($daftar as $j => $r) {
+        if (is_array($r) && empty($r['id']) && ($r['symbol'] ?? null) === $p['symbol'] && ($r['timestamp'] ?? null) === $p['timestamp']) return $j;
+    }
+    return null;
+}
+
+/**
  * Jalankan penilaian.
  * @return array laporan: ['diperiksa','dinilai','dilewati','tanpa_data','detail'=>[],'dry_run'=>bool]
  */
@@ -377,7 +421,9 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
     }
 
     $berubah = 0;
+    $perubahan = [];
     foreach ($aktif as $i => $s) {
+        unset($sBiaya);
         if ($berubah >= $maxNilai) break;
         // Coba tiap interval kandidat (halus → kasar) sampai ada yang bisa memutuskan:
         // cache 5 menit bisa basi atau sudah tidak mencakup awal sinyal, sementara
@@ -387,7 +433,8 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
             $data = qi_sig_ambil_candle((string)$s['symbol'], [$iv]);
             if ($data === null) continue;
             $adaData = true;
-            $hasil = qi_sig_nilai_lintas_zona($s, $data['candles'], qi_sig_durasi_interval($data['interval']));
+            $sBiaya = qi_spread_pasang($s, (string)($data['source'] ?? ''));
+            $hasil = qi_sig_nilai_lintas_zona($sBiaya, $data['candles'], qi_sig_durasi_interval($data['interval']));
             if ($hasil !== null) { $pakai = $data; break; }
         }
         if ($hasil === null) {
@@ -407,26 +454,54 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
             'pnl_usd'  => $hasil['pnl_usd'],
         ];
         if (!$dry) {
-            $history[$i]['status']     = $hasil['status'];
-            $history[$i]['pnl']        = $hasil['pnl'];
-            $history[$i]['pnl_usd']    = $hasil['pnl_usd'];
-            $history[$i]['pnl_basis']  = '1 lot';
-            $history[$i]['exit_price'] = $hasil['exit_price'];
-            $history[$i]['closed_at']  = $hasil['closed_at'];
-            if (isset($hasil['expiry_basis'])) $history[$i]['expiry_basis'] = $hasil['expiry_basis'];
-            if (isset($hasil['zona_hasil']))   $history[$i]['zona_hasil']   = $hasil['zona_hasil'];
-            $history[$i]['evaluated_at']   = qi_sig_waktu_utc();
-            $history[$i]['evaluated_from'] = $pakai['interval'] === 'tanpa_data' ? 'tanpa_data' : 'cache/' . $pakai['interval'];
+            $ubah = [
+                'status'     => $hasil['status'],
+                'pnl'        => $hasil['pnl'],
+                'pnl_usd'    => $hasil['pnl_usd'],
+                'pnl_basis'  => '1 lot',
+                'exit_price' => $hasil['exit_price'],
+                'closed_at'  => $hasil['closed_at'],
+            ];
+            foreach (['expiry_basis', 'zona_hasil', 'entry_efektif', 'pnl_kotor'] as $f) {
+                if (isset($hasil[$f])) $ubah[$f] = $hasil[$f];
+            }
+            if ($pakai['interval'] !== 'tanpa_data' && isset($sBiaya)) {
+                foreach (['spread_biaya', 'spread_basis', 'harga_basis'] as $f) {
+                    if (isset($sBiaya[$f])) $ubah[$f] = $sBiaya[$f];
+                }
+            }
+            // Versi aturan PENILAIAN: 2 = dengan spread + harga keluar saat gap (2026-10-19).
+            // Rekor yang ditutup sebelumnya tidak ditulis ulang; statistik bisa memisahkannya.
+            $ubah['versi_penilaian'] = 2;
+            $ubah['evaluated_at']   = qi_sig_waktu_utc();
+            $ubah['evaluated_from'] = $pakai['interval'] === 'tanpa_data' ? 'tanpa_data' : 'cache/' . $pakai['interval'];
+            $perubahan[] = ['i' => $i, 'id' => $s['id'] ?? null, 'timestamp' => $s['timestamp'] ?? null,
+                            'symbol' => $s['symbol'] ?? null, 'ubah' => $ubah];
         }
         $berubah++;
     }
 
     if (!$dry && $berubah > 0) {
-        // Cadangan sebelum menulis: riwayat kinerja tidak boleh hilang tanpa jejak.
-        @copy($historyFile, __DIR__ . '/../cache/signal_history.backup.json');
-        $ok = @file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
-        $laporan['tersimpan'] = ($ok !== false);
-        if ($ok === false) $laporan['catatan'] = 'GAGAL menulis riwayat (periksa izin cache/)';
+        // Penilaian di atas memakan waktu (mengambil candle), dan selama itu sinyal BARU
+        // bisa tercatat. Karena itu perubahan diterapkan ke isi berkas TERBARU di bawah
+        // kunci bersama (api/_json_kunci.php) — dulu seluruh salinan lama ditulis ulang
+        // sehingga sinyal yang tercatat di tengah jalan bisa hilang tanpa jejak.
+        $tulis = qi_json_ubah($historyFile, function (array $kini) use ($perubahan): ?array {
+            $kena = 0;
+            foreach ($perubahan as $p) {
+                $j = qi_sig_cari_rekor($kini, $p);
+                if ($j === null || ($kini[$j]['status'] ?? '') !== 'AKTIF') continue;   // sudah dinilai proses lain
+                $kini[$j] = array_merge($kini[$j], $p['ubah']);
+                $kena++;
+            }
+            return $kena > 0 ? $kini : null;
+        }, ['tunggu' => 10.0, 'cadangan' => __DIR__ . '/../cache/signal_history.backup.json']);
+        $ok = $tulis['ok'] ? true : false;
+        if ($tulis['data']) $history = $tulis['data'];
+        $laporan['tersimpan'] = $ok;
+        if (!$ok) $laporan['catatan'] = $tulis['alasan'] === 'sedang_menulis'
+            ? 'riwayat sedang dikunci proses lain — dinilai ulang pada putaran berikutnya'
+            : 'GAGAL menulis riwayat (periksa izin cache/)';
 
         // ── SINKRONISASI KE JURNAL DATABASE (dual-write — Tahap 1) ───────────────
         // Status/P&L/R yang baru dinilai ikut disimpan ke jurnal. Dibatasi ke rekor

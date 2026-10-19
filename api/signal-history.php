@@ -174,6 +174,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // data nyata, bukan asumsi. Baris A/B/C selalu ada; yang belum tertutup → null.
         'statistik_per_grade' => function_exists('qi_signal_statistik_per_grade')
             ? qi_signal_statistik_per_grade($history) : [],
+        // Pemisahan per sesi / hari / simbol / versi aturan & penilaian (seluruh rekor).
+        // Kelompok kecil tetap tampil dengan cukup_sampel = false — bukan untuk disimpulkan.
+        'statistik_dimensi' => function_exists('qi_signal_statistik_dimensi')
+            ? qi_signal_statistik_dimensi($history) : null,
+        // Seberapa dalam drawdown BISA terjadi bila urutan transaksi yang sama diacak ulang.
+        'monte_carlo' => function_exists('qi_signal_monte_carlo') ? qi_signal_monte_carlo($history) : null,
         // Kalibrasi ambang keyakinan: expectancy per tingkat keyakinan + verdict jujur
         // tentang kecukupan sampel (tidak menyarankan ambang bila sampel masih kecil).
         'kalibrasi' => function_exists('qi_signal_kalibrasi') ? qi_signal_kalibrasi($history) : null,
@@ -288,20 +294,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pnl'              => (float)($input['pnl'] ?? 0),
         'pnl_usd'          => (float)($input['pnl_usd'] ?? 0),
         'mtf_aligned'      => !empty($input['mtf_aligned']),
-        'confluence_score' => (int)($input['confluence_score'] ?? 85),
-        'sample_size'      => (int)($input['sample_size'] ?? 100),
+        // Tanpa angka bawaan: dulu skor kosong menjadi 85 dan sampel menjadi 100 — angka
+        // karangan yang tampil di dashboard DAN memberi poin grade tertinggi
+        // (qi_signal_grade: skor ≥ 85 → 3 poin). Tidak dikirim = tidak diketahui = null.
+        'confluence_score' => is_numeric($input['confluence_score'] ?? null) ? max(0, min(100, (int)$input['confluence_score'])) : null,
+        'sample_size'      => is_numeric($input['sample_size'] ?? null) ? max(0, (int)$input['sample_size']) : null,
     ];
-
-    $raw = @file_get_contents($historyFile);
-    $history = json_decode($raw, true) ?: [];
-    array_unshift($history, $cleanRecord);
-    
-    // Batasi riwayat maksimum 500 catatan untuk mencegah pembengkakan memori
-    if (count($history) > 500) {
-        $history = array_slice($history, 0, 500);
+    // R:R dihitung dari level bila pengirim tidak menyebutkannya (bukan teks bawaan "1 : 2.5").
+    if (!isset($input['rr']) || trim((string)$input['rr']) === '') {
+        $risikoPost = abs($cleanRecord['entry'] - $cleanRecord['sl']);
+        $cleanRecord['rr'] = ($risikoPost > 0 && $cleanRecord['tp'] > 0)
+            ? '1 : ' . number_format(abs($cleanRecord['tp'] - $cleanRecord['entry']) / $risikoPost, 2, '.', '')
+            : '';
     }
 
-    file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT));
+    // Baca → tambah → tulis di bawah kunci yang sama dengan pencatat sinyal & evaluator
+    // (api/_json_kunci.php). Dulu tanpa kunci: POST yang bersamaan dengan evaluator
+    // bisa saling menghapus rekor.
+    require_once __DIR__ . '/_json_kunci.php';
+    $tulis = qi_json_ubah($historyFile, function (array $history) use ($cleanRecord): array {
+        array_unshift($history, $cleanRecord);
+        // Batasi riwayat maksimum 500 catatan untuk mencegah pembengkakan memori
+        return count($history) > 500 ? array_slice($history, 0, 500) : $history;
+    }, ['tunggu' => 10.0, 'cadangan' => __DIR__ . '/../cache/signal_history.backup.json']);
+    if (!$tulis['ok']) {
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'message' => $tulis['alasan'] === 'sedang_menulis'
+            ? 'Riwayat sinyal sedang ditulis proses lain. Coba lagi beberapa detik lagi.'
+            : 'Gagal menulis riwayat sinyal (periksa izin folder cache/).']);
+        exit();
+    }
 
     // ── SINYAL → ANTREAN EKSEKUSI OTOMATIS ──────────────────────────────────
     // Hanya sinyal yang benar-benar BARU & AKTIF yang boleh dieksekusi:

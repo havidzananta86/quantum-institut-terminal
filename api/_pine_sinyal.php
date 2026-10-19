@@ -35,6 +35,7 @@ function qi_pine_konfig(): array
         'maks_tahan_jam'  => 96,
         'maks_rekor'      => 300,
         'min_bar'         => 300,           // riwayat minimum agar zona cukup
+        'spread'          => true,          // nilai dengan biaya spread tipikal (api/_biaya_spread.php)
     ];
 }
 
@@ -97,18 +98,33 @@ function qi_pine_pindai(array $o): array
     $dir = rtrim((string)($o['dir'] ?? (__DIR__ . '/../cache')), '/\\');
     $fRekor = $dir . '/pine_signals.json';
     $fState = $dir . '/pine_state.json';
+    $ringkas = ['dinilai' => 0, 'dibuat' => 0, 'dipindai' => 0, 'rincian' => [], 'diperbarui' => []];
+    // Satu putaran sekaligus (cron + pemanggil manual): tanpa kunci, putaran yang selesai
+    // belakangan menghapus rekor buatan putaran lain.
+    $token = qi_kunci_ambil($fRekor, 0.0, 600);
+    if ($token === null) { $ringkas['catatan'] = 'sedang_berjalan (putaran lain memegang kunci)'; return $ringkas; }
+    try {
+        return qi_pine_pindai_terkunci($o, $k, $muat, $kini, $fRekor, $fState, $ringkas);
+    } finally {
+        qi_kunci_lepas($fRekor, $token);
+    }
+}
+
+/** Isi qi_pine_pindai — dipanggil hanya saat kunci rekor sudah dipegang. */
+function qi_pine_pindai_terkunci(array $o, array $k, callable $muat, int $kini, string $fRekor, string $fState, array $ringkas): array
+{
     $rekor = qi_ss_baca($fRekor);
     $state = qi_ss_baca($fState);
-    $ringkas = ['dinilai' => 0, 'dibuat' => 0, 'dipindai' => 0, 'rincian' => [], 'diperbarui' => []];
     $nilaiCfg = ['ttl_pending_jam' => $k['ttl_pending_jam'], 'maks_tahan_jam' => $k['maks_tahan_jam']];
 
     // 1) Nilai rekor yang masih terbuka.
-    $cacheM15 = [];
+    $cacheM15 = []; $sumberM15 = [];
     foreach ($rekor as $i => $r) {
         if (!in_array($r['status'] ?? '', ['MENUNGGU', 'AKTIF'], true)) continue;
         $sym = (string)$r['symbol'];
-        if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = empty($m['simulated']) ? ($m['candles'] ?? []) : []; }
+        if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = empty($m['simulated']) ? ($m['candles'] ?? []) : []; $sumberM15[$sym] = (string)($m['source'] ?? ''); }
         if (!$cacheM15[$sym]) continue;
+        if (!empty($k['spread'])) $r = qi_spread_pasang($r, $sumberM15[$sym] ?? '');
         $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $nilaiCfg);
         $ringkas['dinilai']++;
         if (($baru['status'] ?? '') !== ($r['status'] ?? '')) $ringkas['diperbarui'][] = $r['id'] . ': ' . $r['status'] . ' → ' . $baru['status'];

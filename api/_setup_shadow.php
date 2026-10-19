@@ -19,13 +19,21 @@
  *   · terisi bila harga MENYENTUH entry setelah sinyal terbit; tidak terisi dalam 12 jam → TIDAK TERISI;
  *   · harga melewati TP sebelum terisi → BATAL (peluang sudah lewat);
  *   · di candle yang sama dengan pengisian: bila SL tersentuh → HIT SL; TP baru dihitung dari candle berikutnya;
- *   · SL lebih dulu bila SL dan TP tersentuh di candle yang sama; tahan maksimal 48 jam setelah terisi → EXPIRED.
+ *   · SL lebih dulu bila SL dan TP tersentuh di candle yang sama; tahan maksimal 48 jam setelah terisi → EXPIRED;
+ *   · SPREAD: limit BUY terisi saat ASK menyentuh entry, posisi ditutup di BID (SELL sebaliknya) memakai
+ *     spread tipikal yang dicatat di rekor (api/_biaya_spread.php);
+ *   · GAP melewati SL/TP → keluar di harga pembukaan candle, bukan tepat di level.
+ *
+ * Satu putaran memegang kunci "<berkas rekor>.lock" (cron dan endpoint admin bisa jalan bersamaan;
+ * tanpa kunci, putaran yang selesai belakangan menghapus rekor buatan putaran lain).
  */
 declare(strict_types=1);
 
 require_once __DIR__ . '/_setup_engine.php';
 require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_signal_stats.php';
+require_once __DIR__ . '/_biaya_spread.php';
+require_once __DIR__ . '/_json_kunci.php';
 
 if (!function_exists('qi_ss_konfig')) :
 
@@ -49,6 +57,7 @@ function qi_ss_konfig(): array
         'risiko_maks_atr'  => 3.0,
         'konfluensi_atr'   => 0.6,         // dua metode "sepakat" bila entry-nya ≤ 0,6×ATR
         'maks_rekor'       => 500,
+        'spread'           => true,        // nilai dengan biaya spread tipikal (api/_biaya_spread.php)
     ];
 }
 
@@ -145,16 +154,24 @@ function qi_ss_nilai(array $rek, array $candles, int $kini, array $k): array
     $tIsi = ($status === 'AKTIF') ? (qi_sig_epoch($rek['filled_at'] ?? null) ?? $t0) : null;
     $maks = (int)$k['maks_tahan_jam'] * 3600;
 
+    // Spread (api/_biaya_spread.php): limit BUY terisi saat ASK menyentuh entry, posisi BUY
+    // ditutup di BID; SELL sebaliknya. Offset 0 bila rekor tidak dipasangi biaya.
+    $off = qi_spread_offset_rekor($rek);
+    $offBuka  = $buy ? $off['ask_off'] : $off['bid_off'];
+    $offTutup = $buy ? $off['bid_off'] : $off['ask_off'];
+
     usort($candles, fn($a, $b) => ((int)$a['time']) <=> ((int)$b['time']));
     foreach ($candles as $c) {
         $t = (int)$c['time'];
         if ($t <= $t0) continue;
         if ($tIsi !== null && $t <= $tIsi) continue;
-        $o = (float)$c['open']; $h = (float)$c['high']; $l = (float)$c['low'];
+        // Harga sisi PENUTUP posisi (BUY: bid, SELL: ask).
+        $o = (float)$c['open'] + $offTutup; $h = (float)$c['high'] + $offTutup; $l = (float)$c['low'] + $offTutup;
 
         if ($status === 'MENUNGGU') {
             if ($t > $ttl) { $rek['status'] = 'TIDAK TERISI'; $rek['closed_at'] = qi_sig_waktu_utc($t); return $rek; }
-            $kenaEntry = $buy ? $l <= $entry : $h >= $entry;
+            $hB = (float)$c['high'] + $offBuka; $lB = (float)$c['low'] + $offBuka;   // sisi PEMBUKA
+            $kenaEntry = $buy ? $lB <= $entry : $hB >= $entry;
             if (!$kenaEntry) {
                 if ($buy ? $h > $tp : $l < $tp) { $rek['status'] = 'BATAL'; $rek['closed_at'] = qi_sig_waktu_utc($t); $rek['catatan_akhir'] = 'harga melewati TP sebelum entry terisi'; return $rek; }
                 continue;
@@ -169,12 +186,12 @@ function qi_ss_nilai(array $rek, array $candles, int $kini, array $k): array
             continue;   // TP baru dihitung dari candle berikutnya
         }
 
-        // AKTIF
+        // AKTIF. Gap melewati level → keluar di harga pembukaan (bukan tepat di level).
         if ($t > $tIsi + $maks) { $rek['status'] = 'EXPIRED'; $rek['closed_at'] = qi_sig_waktu_utc($t); return $rek; }
-        $kenaSl = $buy ? ($o <= $sl || $l <= $sl) : ($o >= $sl || $h >= $sl);
-        if ($kenaSl) return qi_ss_tutup($rek, false, $sl, $t);
-        $kenaTp = $buy ? ($o >= $tp || $h >= $tp) : ($o <= $tp || $l <= $tp);
-        if ($kenaTp) return qi_ss_tutup($rek, true, $tp, $t);
+        if ($buy ? $o <= $sl : $o >= $sl) return qi_ss_tutup($rek, false, $o, $t);
+        if ($buy ? $l <= $sl : $h >= $sl) return qi_ss_tutup($rek, false, $sl, $t);
+        if ($buy ? $o >= $tp : $o <= $tp) return qi_ss_tutup($rek, true, $o, $t);
+        if ($buy ? $h >= $tp : $l <= $tp) return qi_ss_tutup($rek, true, $tp, $t);
     }
     // Tidak ada keputusan dari candle yang ada: terapkan batas waktu bila sudah lewat.
     if ($status === 'MENUNGGU' && $kini > $ttl) { $rek['status'] = 'TIDAK TERISI'; $rek['closed_at'] = qi_sig_waktu_utc($ttl); }
@@ -186,7 +203,7 @@ function qi_ss_tutup(array $rek, bool $menang, float $keluar, int $t): array
 {
     $buy = strtoupper((string)$rek['side']) === 'BUY';
     $rek['status'] = $menang ? 'HIT TP 🎯' : 'HIT SL 🛑';
-    $rek['exit_price'] = $keluar;
+    $rek['exit_price'] = round($keluar, 6);
     $rek['closed_at'] = qi_sig_waktu_utc($t);
     $rek['pnl'] = round($buy ? $keluar - (float)$rek['entry'] : (float)$rek['entry'] - $keluar, 6);
     return $rek;
@@ -220,18 +237,30 @@ function qi_ss_jalankan(array $o): array
     $dir = rtrim((string)($o['dir'] ?? (__DIR__ . '/../cache')), '/\\');
     $fRekor = $dir . '/signal_shadow.json';
     $fState = $dir . '/signal_shadow_state.json';
+    $ringkas = ['dinilai' => 0, 'dibuat' => 0, 'dipindai' => 0, 'rincian' => [], 'diperbarui' => []];
+    $token = qi_kunci_ambil($fRekor, 0.0, 600);
+    if ($token === null) { $ringkas['catatan'] = 'sedang_berjalan (putaran lain memegang kunci)'; return $ringkas; }
+    try {
+        return qi_ss_jalankan_terkunci($o, $k, $muat, $kini, $fRekor, $fState, $ringkas);
+    } finally {
+        qi_kunci_lepas($fRekor, $token);
+    }
+}
+
+/** Isi putaran qi_ss_jalankan — dipanggil hanya saat kunci rekor sudah dipegang. */
+function qi_ss_jalankan_terkunci(array $o, array $k, callable $muat, int $kini, string $fRekor, string $fState, array $ringkas): array
+{
     $rekor = qi_ss_baca($fRekor);
     $state = qi_ss_baca($fState) + ['scan' => [], 'penolakan' => []];
 
-    $ringkas = ['dinilai' => 0, 'dibuat' => 0, 'dipindai' => 0, 'rincian' => [], 'diperbarui' => []];
-
     // 1) Nilai rekor yang masih terbuka (M15 per simbol, dimuat sekali).
-    $cacheM15 = [];
+    $cacheM15 = []; $sumberM15 = [];
     foreach ($rekor as $i => $r) {
         if (!in_array($r['status'] ?? '', ['MENUNGGU', 'AKTIF'], true)) continue;
         $sym = (string)$r['symbol'];
-        if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = (empty($m['simulated']) ? ($m['candles'] ?? []) : []); }
+        if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = (empty($m['simulated']) ? ($m['candles'] ?? []) : []); $sumberM15[$sym] = (string)($m['source'] ?? ''); }
         if (!$cacheM15[$sym]) continue;
+        if (!empty($k['spread'])) $r = qi_spread_pasang($r, $sumberM15[$sym] ?? '');
         $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $k);
         $ringkas['dinilai']++;
         if (($baru['status'] ?? '') !== ($r['status'] ?? '')) $ringkas['diperbarui'][] = $r['id'] . ': ' . $r['status'] . ' → ' . $baru['status'];

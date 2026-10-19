@@ -54,7 +54,7 @@ function ai_load_candles(string $sym, string $interval): array {
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
         $d = json_decode(file_get_contents($cacheFile), true);
         // Cache hanya menyimpan data nyata (candle simulasi tidak pernah di-cache).
-        return ['candles' => $d['candles'] ?? [], 'simulated' => false];
+        return ['candles' => $d['candles'] ?? [], 'simulated' => false, 'source' => (string)($d['source'] ?? '')];
     }
     if (!defined('QI_INCLUDED_BY_SIGNALS')) define('QI_INCLUDED_BY_SIGNALS', true);
     ob_start();
@@ -66,7 +66,7 @@ function ai_load_candles(string $sym, string $interval): array {
     $_GET = $origGet;
     $d = json_decode($raw, true);
     if (!is_array($d)) return ['candles' => [], 'simulated' => false];
-    return ['candles' => $d['candles'] ?? [], 'simulated' => !empty($d['simulated'])];
+    return ['candles' => $d['candles'] ?? [], 'simulated' => !empty($d['simulated']), 'source' => (string)($d['source'] ?? '')];
 }
 
 function ai_ema(array $closes, int $period): ?float {
@@ -288,7 +288,8 @@ $response = [
 ];
 
 // Cache 15 min
-file_put_contents($cacheFile, json_encode($response));
+require_once __DIR__ . '/_json_kunci.php';
+qi_tulis_atomik($cacheFile, (string)json_encode($response));   // pembaca tidak pernah melihat berkas setengah jadi
 
 // ── CATAT SINYAL AI KE REKOR (hanya bila benar-benar layak) ────────────────
 // Berada DI DALAM penjaga QI_AI_SIGNAL_LIB, jadi pemakaian sebagai library
@@ -343,7 +344,7 @@ try {
 
         if (qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
             // Filter berita High impact: tahan pencatatan (bukan menahan analisa).
-            $boRek = function_exists('qi_berita_blackout') ? qi_berita_blackout(30, true) : ['aktif' => false];
+            $boRek = function_exists('qi_berita_blackout') ? qi_berita_blackout(30, true, $symbol) : ['aktif' => false];   // hanya berita mata uang simbol ini
             if (!empty($boRek['aktif'])) {
                 $response['catatan_rekor'] = 'Ditahan filter berita berdampak tinggi (' . ($boRek['event']['judul'] ?? '-') . ').';
             } else {

@@ -131,6 +131,7 @@ $result = [
 ];
 
 $jsonOutput = json_encode($result, JSON_PRETTY_PRINT);
-@file_put_contents($cacheFile, $jsonOutput);
+require_once __DIR__ . '/_json_kunci.php';
+qi_tulis_atomik($cacheFile, (string)$jsonOutput);
 
 echo $jsonOutput;

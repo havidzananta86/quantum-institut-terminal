@@ -37,6 +37,9 @@ if (!$isCli) {
         $laporan = qi_ss_laporan(qi_ss_baca($cache . '/signal_shadow.json'), $resmi);
         $state = qi_ss_baca($cache . '/signal_shadow_state.json');
         $laporan['penolakan_filter'] = $state['penolakan'] ?? new stdClass();
+        // Salinan database (dual-write, api/_rekor_db.php): harus identik sebelum pembacaan dipindah.
+        require_once __DIR__ . '/_rekor_db.php';
+        $laporan['salinan_database'] = qi_rekor_db_bandingkan('shadow', $cache . '/signal_shadow.json');
         shd_jawab(200, $laporan);
     }
 
@@ -72,6 +75,9 @@ $hasil = qi_ss_jalankan([
     'berita' => qi_berita_blackout(30, true),
 ]);
 if ($auto) @file_put_contents($cache . '/signal_shadow_auto.txt', (string)time(), LOCK_EX);
+// Salinan ke database (fail-safe: database mati tidak menggagalkan putaran).
+require_once __DIR__ . '/_rekor_db.php';
+$hasil['database'] = qi_rekor_db_sinkron('shadow', $cache . '/signal_shadow.json');
 
 $hasil = ['status' => 'ok', 'dijalankan' => true, 'mode' => 'bayangan'] + $hasil;
 echo json_encode($hasil, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | ($isCli ? JSON_PRETTY_PRINT : 0)) . ($isCli ? PHP_EOL : '');

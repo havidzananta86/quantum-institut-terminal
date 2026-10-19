@@ -23,6 +23,15 @@
  */
 
 require_once __DIR__ . '/_signal_time.php';   // waktu sinyal: tulis UTC, baca rekor lama dengan benar
+require_once __DIR__ . '/_json_kunci.php';    // kunci bersama dengan evaluator & POST admin
+require_once __DIR__ . '/_gerbang_risiko.php'; // spread hidup, eksposur korelasi, berita per mata uang
+
+/**
+ * Versi ATURAN PENERBITAN. Naikkan setiap kali gerbang/filter penerbitan berubah, supaya
+ * statistik sebelum dan sesudah perubahan bisa dipisah (statistik per_versi_aturan).
+ *   v1 = sebelum 2026-10-19 · v2 = + gerbang spread hidup, korelasi, berita per mata uang
+ */
+if (!defined('QI_VERSI_ATURAN_SINYAL')) define('QI_VERSI_ATURAN_SINYAL', 'v2');
 
 if (!function_exists('qi_signal_cek_pagar')) :
 
@@ -236,7 +245,6 @@ function qi_signal_pascaterbit(array $rek, array $gerbang = []): array
 function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit = 20, ?string $fileBerkas = null): array
 {
     $file = $fileBerkas ?? (__DIR__ . '/../cache/signal_history.json');
-    $lock = $file . '.lock';
 
     $simbol = strtoupper(trim((string)($rek['symbol'] ?? '')));
     $arah   = strtoupper(trim((string)($rek['side'] ?? '')));
@@ -262,6 +270,27 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
     // Validasi level lebih dulu — tidak perlu menyentuh berkas bila tidak sah.
     if (!qi_signal_level_sah($arah, (float)($rek['entry'] ?? 0), (float)($rek['tp'] ?? 0), (float)($rek['sl'] ?? 0))) {
         return ['dicatat' => false, 'alasan' => 'level_tidak_konsisten', 'detail' => [], 'id' => null];
+    }
+
+    // ── GERBANG SPREAD HIDUP (api/_gerbang_risiko.php) ──────────────────────────
+    // Spread broker jauh di atas tipikal → tahan. Feed tidak tersedia → fail-open, dicatat.
+    // Uji dapat mematikannya lewat $GLOBALS['qi_spread_lewati'] = true.
+    $rek['versi_aturan'] = QI_VERSI_ATURAN_SINYAL;
+    if (empty($GLOBALS['qi_spread_lewati'])) {
+        $spreadHidup = qi_gr_spread_hidup($simbol);
+        $gs = qi_gr_cek_spread($simbol, $spreadHidup, (float)($rek['entry'] ?? 0));
+        if (!$gs['lolos']) {
+            return ['dicatat' => false, 'alasan' => 'spread_melebar', 'detail' => $gs, 'id' => null];
+        }
+        if ($gs['dinilai']) {
+            $rek['spread_saat_terbit'] = $gs['sekarang'];
+            // Biaya penilaian memakai yang LEBIH BESAR: spread nyata saat terbit atau tipikal.
+            if ($gs['sekarang'] > $gs['tipikal']) {
+                $rek['spread_biaya'] = $gs['sekarang'];
+                $rek['spread_basis'] = 'broker_saat_terbit';
+            }
+        }
+        $rek['gerbang_spread'] = $gs['catatan'];
     }
 
     // ── GERBANG KONFLUENSI MESIN (Tahap 3, spesifikasi Bagian 2 & 10) ───────────
@@ -293,15 +322,13 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
     }
 
     // ── Klaim atomik ──
-    $fp = @fopen($lock, 'x');
-    if ($fp === false && is_file($lock) && (time() - (int)@filemtime($lock)) > 20) {
-        @unlink($lock);                       // kunci basi (proses sebelumnya mati)
-        $fp = @fopen($lock, 'x');
-    }
-    if ($fp === false) {
+    // Kunci yang SAMA dipakai evaluator dan POST admin (api/_json_kunci.php). Menunggu
+    // sebentar (≤ 3 dtk) karena evaluator kini juga memegang kunci ini saat menulis;
+    // tanpa tunggu, sinyal yang kebetulan bersamaan akan ditolak 'sedang_menulis'.
+    $tokenKunci = qi_kunci_ambil($file, 3.0, 20);
+    if ($tokenKunci === null) {
         return ['dicatat' => false, 'alasan' => 'sedang_menulis', 'detail' => [], 'id' => null];
     }
-    fclose($fp);
 
     try {
         clearstatcache(true, $file);
@@ -312,6 +339,14 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
         if (!$periksa['boleh']) {
             return ['dicatat' => false, 'alasan' => $periksa['alasan'], 'detail' => $periksa['detail'], 'id' => null];
         }
+
+        // EKSPOSUR KORELASI lintas mesin: EURUSD BUY + GBPUSD BUY + XAUUSD BUY = satu taruhan
+        // (USD melemah). Diperiksa di bawah kunci supaya dua sinyal bersamaan tidak lolos berdua.
+        $kor = qi_gr_cek_korelasi($history, $simbol, $arah);
+        if (!$kor['lolos']) {
+            return ['dicatat' => false, 'alasan' => 'eksposur_korelasi', 'detail' => $kor, 'id' => null];
+        }
+        $rek['kunci_korelasi'] = $kor['kunci'];
 
         // GRADE A/B/C disimpan SAAT PENCATATAN supaya nilainya tetap (tidak berubah
         // di belakang) dan bisa diaudit. Bila pemanggil sudah mengisi grade, hormati.
@@ -421,7 +456,7 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
         // Kunci berkas dilepas lebih dulu: rekor sudah tertulis, dan banyak webhook lambat
         // tidak boleh menahan penulis lain sampai kuncinya dianggap basi (20 detik).
         $notifikasi = null;
-        @unlink($lock);
+        qi_kunci_lepas($file, $tokenKunci);
         $kunciDilepas = true;
         if ($fileBerkas === null) {
             try {
@@ -441,7 +476,7 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
             'notifikasi' => $notifikasi,
         ];
     } finally {
-        if (empty($kunciDilepas)) @unlink($lock);   // jangan hapus kunci milik penulis berikutnya
+        if (empty($kunciDilepas)) qi_kunci_lepas($file, $tokenKunci);   // hanya kunci milik sendiri
     }
 }
 

@@ -486,8 +486,11 @@ function qi_kalender_event_sah(array $e): bool
  *                           (dipakai jalur yang mencatat sinyal, bukan sekadar tampilan).
  * @return array{aktif:bool,event:?array,menit:?int,umur_cache:?int,catatan:string}
  */
-function qi_berita_blackout(int $menit = 30, bool $bolehSegarkan = false): array
+function qi_berita_blackout(int $menit = 30, bool $bolehSegarkan = false, ?string $simbol = null): array
 {
+    // $simbol (opsional): hanya berita yang mata uangnya menggerakkan simbol itu yang menahan
+    // (api/_gerbang_risiko.php). Tanpa $simbol: semua berita High impact (perilaku lama).
+    if ($simbol !== null && !function_exists('qi_gr_berita_relevan')) require_once __DIR__ . '/_gerbang_risiko.php';
     $hasil = ['aktif' => false, 'event' => null, 'menit' => null, 'umur_cache' => null, 'catatan' => ''];
     $f = __DIR__ . '/../cache/calendar.json';
 
@@ -520,6 +523,7 @@ function qi_berita_blackout(int $menit = 30, bool $bolehSegarkan = false): array
         if (strtolower((string)($e['impact'] ?? '')) !== 'high') continue;
         // Pertahanan berlapis: event contoh/uji TIDAK boleh menahan sinyal nyata.
         if (function_exists('qi_kalender_event_sah') && !qi_kalender_event_sah($e)) continue;
+        if ($simbol !== null && !qi_gr_berita_relevan((string)($e['currency'] ?? ($e['country'] ?? '')), $simbol)) continue;
         $t = strtotime((string)($e['date'] ?? ''));
         if ($t === false) continue;
         $selisih = $t - $kini;

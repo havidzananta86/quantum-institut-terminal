@@ -442,7 +442,8 @@
                 });
 
                 const quality = node('div', 'qim-quality');
-                const score = Number(item.confluence_score);
+                // null/'' = skor tidak diketahui (Number(null) = 0 akan tampil sebagai skor 0).
+                const score = (item.confluence_score == null || item.confluence_score === '') ? NaN : Number(item.confluence_score);
                 const hasScore = Number.isFinite(score);
                 const bar = node('i');
                 const fill = node('b');

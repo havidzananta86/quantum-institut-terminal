@@ -47,7 +47,9 @@ function qi_tr_r(array $r): ?float
     $beli = strtoupper((string)($r['side'] ?? '')) === 'BUY';
     if (isset($r['exit_price']) && is_numeric($r['exit_price'])) {
         $x = (float)$r['exit_price'];
-        return round(($beli ? $x - $entry : $entry - $x) / $risiko, 3);
+        // entry_efektif = entry setelah spread (dicatat penilai, api/_biaya_spread.php).
+        $masuk = (isset($r['entry_efektif']) && is_numeric($r['entry_efektif'])) ? (float)$r['entry_efektif'] : $entry;
+        return round(($beli ? $x - $masuk : $masuk - $x) / $risiko, 3);
     }
     return $menang ? round(abs($tp - $entry) / $risiko, 3) : -1.0;
 }

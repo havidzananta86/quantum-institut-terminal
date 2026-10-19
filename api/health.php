@@ -104,6 +104,16 @@ if (isset($_GET['bridges'])) {
     ];
 }
 
+// Cron pemeliharaan (api/_detak_cron.php). Belum pernah jalan = dilaporkan saja; pernah jalan
+// lalu berhenti > 45 menit = degraded + Telegram admin (paling sering 6 jam sekali).
+require_once __DIR__ . '/_detak_cron.php';
+$checks['cron'] = qi_cron_status(qi_cron_baca(), time());
+if ($checks['cron']['basi']) {
+    $status = 'degraded';
+    $alarm = qi_cron_alarm($checks['cron']);
+    if ($alarm !== null) $checks['cron']['alarm'] = $alarm['dikirim'] ? 'dikirim' : $alarm['alasan'];
+}
+
 if (!$checks['db'] || !$checks['disk'] || !$checks['cache_writable']) {
     $status = 'degraded';
 }
