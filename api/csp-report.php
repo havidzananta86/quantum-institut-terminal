@@ -34,6 +34,8 @@ $entry = [
     'document_uri'    => mb_substr($report['document-uri'] ?? '', 0, 500),
     'source_file'     => mb_substr($report['source-file'] ?? '', 0, 500),
     'line'            => (int)($report['line-number'] ?? 0),
+    // Potongan kode pelanggar (maks. 40 karakter dari browser) — dikirim karena 'report-sample' di CSP Report-Only.
+    'sample'          => mb_substr($report['script-sample'] ?? '', 0, 80),
     'disposition'     => mb_substr($report['disposition'] ?? '', 0, 20),
     'ip'              => $_SERVER['REMOTE_ADDR'] ?? '',
 ];

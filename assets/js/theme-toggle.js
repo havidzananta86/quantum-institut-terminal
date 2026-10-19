@@ -70,6 +70,11 @@
     apply(next);
   };
 
+  // Tombol [data-qi-theme-toggle] — pengganti onclick="toggleQITheme()" (CSP tanpa 'unsafe-inline').
+  document.addEventListener('click', function(e) {
+    if (e.target.closest && e.target.closest('[data-qi-theme-toggle]')) window.toggleQITheme();
+  });
+
   // Set a specific theme directly
   window.setQITheme = function(theme) {
     if (THEMES.indexOf(theme) === -1) return;

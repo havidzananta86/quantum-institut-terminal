@@ -60,6 +60,15 @@ function showQuantumToast(message, type = 'info', duration = 3500) {
 window.showQuantumToast = showQuantumToast;
 window.showToast = showQuantumToast;
 
+// Tautan/tombol [data-toast="pesan"] (+ data-toast-type) — pengganti onclick="showQuantumToast(...); return false;"
+// yang dilarang CSP tanpa 'unsafe-inline'.
+document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest('[data-toast]');
+    if (!el) return;
+    e.preventDefault();
+    showQuantumToast(el.dataset.toast, el.dataset.toastType || 'info');
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Scroll reveal observer
     const revealEls = document.querySelectorAll('.reveal');

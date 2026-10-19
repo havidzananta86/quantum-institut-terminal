@@ -15,7 +15,8 @@ const phpAda = !spawnSync(PHP, ['-v'], { encoding: 'utf8' }).error;
 
 // ── 1. Landing page jujur ────────────────────────────────────────────────────
 console.log('Landing page tanpa angka karangan');
-const idx = read('index.html');
+// Skrip halaman dipindah ke assets/js/halaman-*.js (CSP tanpa 'unsafe-inline'); kontrak membaca keduanya.
+const idx = read('index.html') + read('assets/js/halaman-index.js');
 cek('tidak ada klaim "78% Akurasi"', !/78\s*%\s*Akurasi/i.test(idx));
 cek('tidak ada janji win rate 60–80% di FAQ', !/60\s*[–-]\s*80\s*%/.test(idx));
 cek('tidak ada testimoni karangan (nama/kutipan tetap)', !/testimonial/i.test(idx.replace(/Bukti, bukan janji[\s\S]{0,0}/, '')) || /Bukti, bukan janji/.test(idx));
@@ -38,7 +39,7 @@ cek('transparansi.html masuk sitemap', /transparansi\.html/.test(read('sitemap.x
 
 // ── 3. Transparansi ──────────────────────────────────────────────────────────
 console.log('Transparansi');
-const tr = read('transparansi.html'), trApi = read('api/transparansi.php');
+const tr = read('transparansi.html') + read('assets/js/halaman-transparansi.js'), trApi = read('api/transparansi.php');
 cek('halaman memanggil api/transparansi.php dan menampilkan selang kepercayaan + peringatan sampel kecil', /api\/transparansi\.php/.test(tr) && /ci_bawah|ci_atas/.test(tr) && /30/.test(tr));
 cek('endpoint publik (tanpa login) ber-rate-limit dan ber-cache pendek', /qi_rate_limit/.test(trApi) && /Cache-Control: public, max-age=/.test(trApi) && !/qi_require_auth/.test(trApi));
 cek('endpoint memuat metodologi dan peringatan risiko', /metodologi/.test(trApi) && /peringatan/.test(trApi));

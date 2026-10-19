@@ -24,7 +24,7 @@
     <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
     <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
     <script src="assets/js/a11y.js?v=1.0.4" defer></script>
-    <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
+    <script src="assets/js/theme-toggle.js?v=1.4.3"></script>
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
     <script src="assets/js/error-tracker.js?v=1.4.6"></script>
 
@@ -187,18 +187,18 @@
 
                 <!-- AUTH MODE TAB SWITCHER -->
                 <div class="flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800 mb-6 font-mono text-xs">
-                    <button onclick="switchAuthTab('license')" id="tab-license" class="flex-1 py-2.5 rounded-lg font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 transition-all flex items-center justify-center gap-2">
+                    <button type="button" data-auth-tab="license" id="tab-license" class="flex-1 py-2.5 rounded-lg font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 transition-all flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"/></svg>
                         Kunci Lisensi (Pro)
                     </button>
-                    <button onclick="switchAuthTab('email')" id="tab-email" class="flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
+                    <button type="button" data-auth-tab="email" id="tab-email" class="flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
                         Email & Sandi
                     </button>
                 </div>
 
                 <!-- FORM 1: KUNCI LISENSI (Default Active) -->
-                <form id="formLicense" onsubmit="handleLoginSubmit(event, 'license')" class="space-y-5">
+                <form id="formLicense" class="space-y-5">
                     <div>
                         <label for="licenseKey" class="block text-xs font-mono text-slate-300 font-semibold mb-2 flex justify-between">
                             <span>KUNCI LISENSI QUANTUM (256-BIT)</span>
@@ -207,7 +207,7 @@
                         <div class="relative">
                             <input type="text" id="licenseKey" placeholder="QI-89X2-90P1-K4MM" required
                                 class="w-full px-4 py-3.5 rounded-xl input-quantum font-mono text-sm tracking-wider uppercase placeholder:text-slate-600">
-                            <button type="button" onclick="fillDemoLicense()" title="Isi kunci DEMO paket FREE — untuk mencoba dashboard tanpa berlangganan (sebagian area terkunci)"
+                            <button type="button" id="btnDemoLicense" title="Isi kunci DEMO paket FREE — untuk mencoba dashboard tanpa berlangganan (sebagian area terkunci)"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[10px] font-mono bg-cyan-500/20 text-cyan-300 rounded border border-cyan-500/30 hover:bg-cyan-500/30">
                                 Demo FREE
                             </button>
@@ -234,7 +234,7 @@
                 </form>
 
                 <!-- FORM 2: EMAIL & SANDI (Hidden by default) -->
-                <form id="formEmail" onsubmit="handleLoginSubmit(event, 'email')" class="space-y-5 hidden">
+                <form id="formEmail" class="space-y-5 hidden">
                     <div>
                         <label for="emailInput" class="block text-xs font-mono text-slate-300 font-semibold mb-2">EMAIL TERDAFTAR</label>
                         <input type="email" id="emailInput" placeholder="trader@quantum-institut.com" required
@@ -244,12 +244,12 @@
                     <div>
                         <label for="passwordInput" class="block text-xs font-mono text-slate-300 font-semibold mb-2 flex justify-between">
                             <span>KATA SANDI</span>
-                            <a href="#" onclick="showQuantumToast('Untuk reset kata sandi, hubungi admin via Telegram @QuantumInstitut atau email admin@quantum-institut.com', 'info'); return false;" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
+                            <a href="#" data-toast="Untuk reset kata sandi, hubungi admin via Telegram @QuantumInstitut atau email admin@quantum-institut.com" data-toast-type="info" class="text-cyan-400 text-[10px] hover:underline">Lupa Sandi?</a>
                         </label>
                         <div class="relative">
                             <input type="password" id="passwordInput" placeholder="••••••••••••" required
                                 class="w-full px-4 py-3.5 rounded-xl input-quantum text-sm placeholder:text-slate-600 pr-12">
-                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400">
+                            <button type="button" id="btnTogglePassword" aria-label="Tampilkan sandi" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400">
                                 <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             </button>
                         </div>
@@ -267,7 +267,7 @@
 
                     <!-- Tombol Google Account — GIS resmi jika dikonfigurasi, tersembunyi jika belum -->
                     <div id="googleBtnWrap" class="font-mono text-xs">
-                        <button id="btnGoogleFallback" type="button" onclick="handleGoogleClick()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
+                        <button id="btnGoogleFallback" type="button" class="w-full py-2.5 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-purple-500/40 transition-all flex items-center justify-center gap-2.5">
                             <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.58 3.3-3.23 5.485-6.887 5.485-4.14 0-7.5-3.36-7.5-7.5s3.36-7.5 7.5-7.5c1.86 0 3.55.69 4.86 1.83l2.36-2.36C17.5 1.7 15.02 1 12.24 1 6.13 1 1.18 5.95 1.18 12s4.95 11 11.06 11c6.34 0 10.55-4.46 10.55-10.74 0-.72-.08-1.42-.2-2.115H12.24z"/></svg>
                             <span id="googleBtnLabel">Masuk Dengan Google Account</span>
                         </button>
@@ -301,279 +301,10 @@
 
 
     <!-- JAVASCRIPT AUTH LOGIC -->
-    <script src="assets/js/main.js?v=1.4.1"></script>
+    <script src="assets/js/main.js?v=1.4.2"></script>
     <script src="assets/js/auth.js?v=1.4.3"></script>
     <script src="assets/js/qim-2fa-login.js?v=1.0.0"></script>
-    <script>
-        // --- 1. PARTICLES BACKGROUND ---
-        const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-
-        window.addEventListener('resize', () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initParticles();
-        });
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.5;
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.radius = Math.random() * 1.5 + 1;
-                this.color = Math.random() > 0.4 ? '#00E5FF' : '#7C4DFF';
-            }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                if (this.x < 0 || this.x > width) this.vx *= -1;
-                if (this.y < 0 || this.y > height) this.vy *= -1;
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = 0.5;
-                ctx.fill();
-            }
-        }
-
-        let particles = [];
-        function initParticles() {
-            particles = [];
-            const count = Math.min(Math.floor(width / 20), 50);
-            for (let i = 0; i < count; i++) particles.push(new Particle());
-        }
-        initParticles();
-
-        // Hormati preferensi reduce-motion & hentikan animasi saat tab tidak terlihat (hemat baterai/CPU)
-        const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        let rafId = null;
-
-        function animateParticles() {
-            ctx.clearRect(0, 0, width, height);
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 120) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = '#00E5FF';
-                        ctx.globalAlpha = (1 - dist / 120) * 0.12;
-                        ctx.stroke();
-                    }
-                }
-            }
-            rafId = requestAnimationFrame(animateParticles);
-        }
-
-        function startParticles() {
-            if (prefersReduced || rafId !== null) return;
-            animateParticles();
-        }
-        function stopParticles() {
-            if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
-        }
-
-        if (prefersReduced) {
-            // Gambar satu frame statis saja
-            particles.forEach(p => p.draw());
-        } else {
-            startParticles();
-            document.addEventListener('visibilitychange', () => {
-                document.hidden ? stopParticles() : startParticles();
-            });
-        }
-
-
-        // Prefill email & buka tab email jika datang dari halaman register
-        (function prefillFromRegister() {
-            try {
-                const email = sessionStorage.getItem('qi_prefill_email');
-                if (email) {
-                    sessionStorage.removeItem('qi_prefill_email');
-                    const emailInput = document.getElementById('emailInput');
-                    if (emailInput) emailInput.value = email;
-                    switchAuthTab('email');
-                }
-            } catch (e) {}
-        })();
-
-        // --- 2. AUTH TAB SWITCHER ---
-        function switchAuthTab(mode) {
-            const formLicense = document.getElementById('formLicense');
-            const formEmail = document.getElementById('formEmail');
-            const tabLicense = document.getElementById('tab-license');
-            const tabEmail = document.getElementById('tab-email');
-
-            if (mode === 'license') {
-                formLicense.classList.remove('hidden');
-                formEmail.classList.add('hidden');
-                tabLicense.className = "flex-1 py-2.5 rounded-lg font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 transition-all flex items-center justify-center gap-2";
-                tabEmail.className = "flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
-            } else {
-                formEmail.classList.remove('hidden');
-                formLicense.classList.add('hidden');
-                tabEmail.className = "flex-1 py-2.5 rounded-lg font-bold text-purple-300 bg-purple-500/20 border border-purple-500/40 transition-all flex items-center justify-center gap-2";
-                tabLicense.className = "flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
-            }
-        }
-
-        // --- 3. DEMO LISENSI FILLER ---
-        function fillDemoLicense() {
-            document.getElementById('licenseKey').value = "QI-2026-99PRO-DEMO";
-        }
-
-        // --- 4. PASSWORD VISIBILITY TOGGLE ---
-        function togglePasswordVisibility() {
-            const pwdInput = document.getElementById('passwordInput');
-            if (pwdInput.type === 'password') {
-                pwdInput.type = 'text';
-            } else {
-                pwdInput.type = 'password';
-            }
-        }
-
-        // --- 5. LOGIN FORM SUBMISSION (api/auth.php) ---
-        async function handleLoginSubmit(event, type) {
-            event.preventDefault();
-            const btn = type === 'license' ? document.getElementById('btnSubmitLicense') : document.getElementById('btnSubmitEmail');
-            const originalContent = btn.innerHTML;
-
-            const body = type === 'license'
-                ? { type: 'license', license_key: document.getElementById('licenseKey').value.trim() }
-                : { type: 'email', email: document.getElementById('emailInput').value.trim(), password: document.getElementById('passwordInput').value };
-            const rememberEl = document.getElementById('rememberMeLicense');
-            const remember = type === 'license' && rememberEl ? rememberEl.checked : true;
-
-            btn.disabled = true;
-            btn.innerHTML = `<svg class="w-5 h-5 animate-spin text-slate-950" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Memverifikasi Enkripsi...</span>`;
-            const restore = () => { btn.disabled = false; btn.innerHTML = originalContent; };
-
-            let res, data;
-            try {
-                res = await fetch('api/auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                    signal: AbortSignal.timeout(10000)
-                });
-                data = await res.json();
-            } catch (e) {
-                restore();
-                showQuantumToast('Server autentikasi tidak dapat dihubungi. Periksa koneksi lalu coba lagi.', 'error');
-                return;
-            }
-
-            if (res.ok && data?.status === 'success' && data.data?.token) {
-                const { token, ...user } = data.data;
-                // Verifikasi dua langkah (bila aktif di akun ini) sebelum sesi dipakai.
-                if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { restore(); showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
-                QuantumAuth.saveSession(token, user, remember);
-                showQuantumToast('⚡ Otentikasi Berhasil! Mengalihkan ke Quantum Terminal Live Dashboard...', 'success');
-                let target = 'dashboard.html';
-                try {
-                    const saved = sessionStorage.getItem('qi_redirect_after_login');
-                    sessionStorage.removeItem('qi_redirect_after_login');
-                    // Hanya redirect ke origin sendiri (cegah open redirect)
-                    if (saved && new URL(saved, location.href).origin === location.origin) target = saved;
-                } catch (e) {}
-                setTimeout(() => { window.location.href = target; }, 800);
-                return;
-            }
-
-            restore();
-            const msg = res.status === 429
-                ? `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((data?.retry_after || 60) / 60)} menit.`
-                : (data?.message || 'Login gagal. Silakan coba lagi.');
-            showQuantumToast(msg, 'error');
-        }
-
-        // --- 6. GOOGLE SIGN-IN (Google Identity Services) ---
-        let _googleClientId = '';
-
-        (async function initGoogleAuth() {
-            try {
-                const res = await fetch('api/auth-config.php', { cache: 'no-store' });
-                const json = await res.json();
-                if (json?.data?.google_enabled && json.data.google_client_id) {
-                    _googleClientId = json.data.google_client_id;
-                    loadGoogleGsi();
-                } else {
-                    // Belum dikonfigurasi → sembunyikan tombol Google dan divider-nya
-                    const wrap = document.getElementById('googleBtnWrap');
-                    const divider = document.getElementById('googleDividerLabel');
-                    if (wrap) wrap.style.display = 'none';
-                    if (divider) divider.style.display = 'none';
-                }
-            } catch (e) { /* endpoint tak terjangkau → tombol tetap fallback */ }
-        })();
-
-        function loadGoogleGsi() {
-            const s = document.createElement('script');
-            s.src = 'https://accounts.google.com/gsi/client';
-            s.async = true; s.defer = true;
-            s.onload = () => {
-                if (!window.google?.accounts?.id) return;
-                google.accounts.id.initialize({
-                    client_id: _googleClientId,
-                    callback: handleGoogleCredential,
-                });
-                const container = document.getElementById('googleGsiButton');
-                const fallback  = document.getElementById('btnGoogleFallback');
-                if (container) {
-                    container.classList.remove('hidden');
-                    container.classList.add('flex');
-                    google.accounts.id.renderButton(container, {
-                        theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'pill', width: 280
-                    });
-                }
-                if (fallback) fallback.classList.add('hidden');
-            };
-            document.head.appendChild(s);
-        }
-
-        function handleGoogleClick() {
-            if (!_googleClientId) {
-                showQuantumToast('Login Google belum diaktifkan oleh admin. Gunakan kunci lisensi atau email.', 'info');
-                return;
-            }
-            if (window.google?.accounts?.id) google.accounts.id.prompt();
-        }
-
-        async function handleGoogleCredential(response) {
-            const credential = response?.credential;
-            if (!credential) { showQuantumToast('Login Google dibatalkan.', 'info'); return; }
-            try {
-                const res = await fetch('api/auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'google', credential }),
-                    signal: AbortSignal.timeout(12000)
-                });
-                const data = await res.json();
-                if (res.ok && data?.status === 'success' && data.data?.token) {
-                    const { token, ...user } = data.data;
-                    if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
-                    QuantumAuth.saveSession(token, user, true);
-                    showQuantumToast('⚡ Login Google Berhasil! Mengalihkan ke Terminal...', 'success');
-                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
-                } else {
-                    showQuantumToast(data?.message || 'Login Google gagal.', 'error');
-                }
-            } catch (e) {
-                showQuantumToast('Server autentikasi tidak dapat dihubungi.', 'error');
-            }
-        }
-    </script>
+    <script src="assets/js/halaman-login.js?v=1.0.0"></script>
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>
