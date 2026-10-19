@@ -8,7 +8,8 @@
         var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
         userData = raw ? JSON.parse(raw) : null;
     } catch(e) {}
-    var isPro = userData && (userData.role === 'pro' || userData.role === 'admin');
+    // VIP juga berhak (server: qi_require_level('pro') menerima pro, vip, admin).
+    var isPro = userData && ['pro', 'vip', 'admin'].indexOf(String(userData.role || '').toLowerCase()) !== -1;
     if (!token) { try{sessionStorage.setItem('qi_redirect_after_login','economic-calendar.html');}catch(e){} window.location.replace('login.html'); return; }
     if (!isPro) {
         document.getElementById('gateLoading').classList.add('hidden');
@@ -21,7 +22,7 @@
         body: JSON.stringify({type:'verify_token'})
     }).then(function(r){return r.json();}).then(function(d){
         var role = d.data && d.data.role;
-        if (d.status !== 'success' || (role !== 'pro' && role !== 'admin')) {
+        if (d.status !== 'success' || ['pro', 'vip', 'admin'].indexOf(String(role || '').toLowerCase()) === -1) {
             document.getElementById('qiAccessGate').style.display = 'flex';
             document.getElementById('gateLoading').classList.add('hidden');
             document.getElementById('gateUpgrade').classList.remove('hidden');

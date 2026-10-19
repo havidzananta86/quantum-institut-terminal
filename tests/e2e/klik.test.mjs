@@ -170,7 +170,8 @@ async function bukaBrowser(lebar, tinggi, token) {
 // ── 2. Halaman ───────────────────────────────────────────────────────────────
 async function cekHalaman() {
   console.log('Halaman (desktop)');
-  const publik = ['', 'index.html', 'login.html', 'register.html', 'pricing.html', 'privacy.html', 'terms.html', 'status.html', 'economic-calendar.html', 'pwa.html', 'transparansi.html', '404.html'];
+  const publik = ['', 'index.html', 'login.html', 'register.html', 'pricing.html', 'privacy.html', 'terms.html', 'status.html', 'economic-calendar.html', 'pwa.html', 'transparansi.html', '404.html',
+    'metodologi.html', 'risiko.html', 'changelog.html', 'bantuan.html'];
   const login = ['profile.html', 'admin.html'];
   for (const [daftar, token] of [[publik, ''], [login, tokenAdmin]]) {
     const b = await bukaBrowser(1440, 900, token);
@@ -180,12 +181,14 @@ async function cekHalaman() {
         const g = b.galat();
         if (g.length) g.forEach(x => catat('halaman', `/${hal}: ${x}`)); else lulus(`/${hal || '(beranda)'}`);
       }
-      // status.html: semua layanan harus "Operational" (dulu kalender selalu "Degraded").
+      // status.html: semua layanan fitur harus "Normal" (data-tingkat="ok"; dulu kalender selalu "Degraded"), dan
+      // laporan kesehatan server (#intiList) tidak boleh punya baris merah. Baris abu-abu (belum tercatat) boleh.
       if (!token) {
         await b.buka(`${BASE}/status.html`, 9);
-        const st = await b.nilai(`[...document.querySelectorAll('#statusList > div')].map(d => d.innerText.replace(/\\s+/g,' ').trim())`);
-        const buruk = (st || []).filter(s => !/Operational$/.test(s));
-        if (buruk.length) catat('status', buruk.join(' | ')); else lulus(`status.html: ${st.length} layanan Operational`);
+        const st = await b.nilai(`[...document.querySelectorAll('#statusList > .pb-baris-status, #intiList > .pb-baris-status')].map(d => d.parentElement.id + ':' + (d.dataset.tingkat || 'netral') + ' ' + d.innerText.replace(/\\s+/g,' ').trim())`);
+        const fitur = (st || []).filter(s => s.startsWith('statusList:'));
+        const buruk = (st || []).filter(s => s.startsWith('statusList:') ? !s.startsWith('statusList:ok ') : s.startsWith('intiList:bahaya '));
+        if (buruk.length || !fitur.length) catat('status', buruk.join(' | ') || 'baris status tidak ditemukan'); else lulus(`status.html: ${fitur.length} layanan Normal, kesehatan server tanpa baris merah`);
       }
     } finally { await b.tutup(); }
   }

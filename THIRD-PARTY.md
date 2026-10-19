@@ -14,6 +14,7 @@ lisensinya. Ini praktik yang benar untuk produk komersial: kewajiban lisensi
 | **Tailwind CSS** | 3.4.x | **MIT** | build saja (devDependency) | CSS hasil build (`assets/css/tailwind.css`) yang di-deploy |
 | **Microsoft SignalR JS client** | 8.0.7 (CDN) | **MIT** | `terminal.html` | Untuk hub realtime Biquote (`_connectBiquoteSignalR`) |
 | **TradingView Widget** (`tv.js`) | terbaru (CDN) | Ketentuan TradingView | `terminal.html` | **Widget resmi** — hanya untuk *menampilkan*; tidak dipakai sebagai sumber data mesin |
+| **Feather Icons** (gaya & sebagian path ikon) | — (path SVG inline) | **MIT** | halaman publik (`pricing`, `metodologi`, `bantuan`, … — ikon `.pb-ikon`) | Ikon garis 24×24 ditulis inline di HTML; tidak ada berkas pustaka yang dimuat |
 | **JetBrains Mono / Archivo / Inter** | — | SIL Open Font License | via Google Fonts | Dimuat dari `fonts.googleapis.com` |
 
 ## Sumber data pasar (bukan komponen kode)

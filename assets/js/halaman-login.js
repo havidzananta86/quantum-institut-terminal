@@ -1,92 +1,5 @@
-// Skrip halaman masuk (login.html) — dulu <script> inline, dipindah agar lolos CSP tanpa 'unsafe-inline'.
-// --- 1. PARTICLES BACKGROUND ---
-const canvas = document.getElementById('particleCanvas');
-const ctx = canvas.getContext('2d');
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
-
-window.addEventListener('resize', () => {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-    initParticles();
-});
-
-class Particle {
-    constructor() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.radius = Math.random() * 1.5 + 1;
-        this.color = Math.random() > 0.4 ? '#00E5FF' : '#7C4DFF';
-    }
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.x < 0 || this.x > width) this.vx *= -1;
-        if (this.y < 0 || this.y > height) this.vy *= -1;
-    }
-    draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = 0.5;
-        ctx.fill();
-    }
-}
-
-let particles = [];
-function initParticles() {
-    particles = [];
-    const count = Math.min(Math.floor(width / 20), 50);
-    for (let i = 0; i < count; i++) particles.push(new Particle());
-}
-initParticles();
-
-// Hormati preferensi reduce-motion & hentikan animasi saat tab tidak terlihat (hemat baterai/CPU)
-const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let rafId = null;
-
-function animateParticles() {
-    ctx.clearRect(0, 0, width, height);
-    for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
-        particles[i].draw();
-        for (let j = i + 1; j < particles.length; j++) {
-            const dx = particles[i].x - particles[j].x;
-            const dy = particles[i].y - particles[j].y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 120) {
-                ctx.beginPath();
-                ctx.moveTo(particles[i].x, particles[i].y);
-                ctx.lineTo(particles[j].x, particles[j].y);
-                ctx.strokeStyle = '#00E5FF';
-                ctx.globalAlpha = (1 - dist / 120) * 0.12;
-                ctx.stroke();
-            }
-        }
-    }
-    rafId = requestAnimationFrame(animateParticles);
-}
-
-function startParticles() {
-    if (prefersReduced || rafId !== null) return;
-    animateParticles();
-}
-function stopParticles() {
-    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
-}
-
-if (prefersReduced) {
-    // Gambar satu frame statis saja
-    particles.forEach(p => p.draw());
-} else {
-    startParticles();
-    document.addEventListener('visibilitychange', () => {
-        document.hidden ? stopParticles() : startParticles();
-    });
-}
-
+// Skrip halaman masuk (login.html) — tanpa kode inline (CSP tanpa 'unsafe-inline').
+// Latar partikel animasi dihapus bersama desain halaman publik baru (assets/css/publik.css).
 
 // Prefill email & buka tab email jika datang dari halaman register
 (function prefillFromRegister() {
@@ -101,42 +14,31 @@ if (prefersReduced) {
     } catch (e) {}
 })();
 
-// --- 2. AUTH TAB SWITCHER ---
+// --- 1. TAB CARA MASUK ---
 function switchAuthTab(mode) {
-    const formLicense = document.getElementById('formLicense');
-    const formEmail = document.getElementById('formEmail');
-    const tabLicense = document.getElementById('tab-license');
-    const tabEmail = document.getElementById('tab-email');
-
-    if (mode === 'license') {
-        formLicense.classList.remove('hidden');
-        formEmail.classList.add('hidden');
-        tabLicense.className = "flex-1 py-2.5 rounded-lg font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 transition-all flex items-center justify-center gap-2";
-        tabEmail.className = "flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
-    } else {
-        formEmail.classList.remove('hidden');
-        formLicense.classList.add('hidden');
-        tabEmail.className = "flex-1 py-2.5 rounded-lg font-bold text-purple-300 bg-purple-500/20 border border-purple-500/40 transition-all flex items-center justify-center gap-2";
-        tabLicense.className = "flex-1 py-2.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2";
-    }
+    const lisensi = mode !== 'email';
+    document.getElementById('formLicense').hidden = !lisensi;
+    document.getElementById('formEmail').hidden = lisensi;
+    document.getElementById('tab-license').setAttribute('aria-selected', String(lisensi));
+    document.getElementById('tab-email').setAttribute('aria-selected', String(!lisensi));
 }
 
-// --- 3. DEMO LISENSI FILLER ---
+// --- 2. KUNCI DEMO ---
 function fillDemoLicense() {
     document.getElementById('licenseKey').value = "QI-2026-99PRO-DEMO";
 }
 
-// --- 4. PASSWORD VISIBILITY TOGGLE ---
+// --- 3. TAMPILKAN / SEMBUNYIKAN SANDI ---
 function togglePasswordVisibility() {
     const pwdInput = document.getElementById('passwordInput');
-    if (pwdInput.type === 'password') {
-        pwdInput.type = 'text';
-    } else {
-        pwdInput.type = 'password';
-    }
+    const tombol = document.getElementById('btnTogglePassword');
+    const tampil = pwdInput.type === 'password';
+    pwdInput.type = tampil ? 'text' : 'password';
+    tombol.setAttribute('aria-pressed', String(tampil));
+    tombol.setAttribute('aria-label', tampil ? 'Sembunyikan sandi' : 'Tampilkan sandi');
 }
 
-// --- 5. LOGIN FORM SUBMISSION (api/auth.php) ---
+// --- 4. KIRIM FORM MASUK (api/auth.php) ---
 async function handleLoginSubmit(event, type) {
     event.preventDefault();
     const btn = type === 'license' ? document.getElementById('btnSubmitLicense') : document.getElementById('btnSubmitEmail');
@@ -149,7 +51,7 @@ async function handleLoginSubmit(event, type) {
     const remember = type === 'license' && rememberEl ? rememberEl.checked : true;
 
     btn.disabled = true;
-    btn.innerHTML = `<svg class="w-5 h-5 animate-spin text-slate-950" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Memverifikasi Enkripsi...</span>`;
+    btn.innerHTML = '<svg class="pb-ikon pb-putar" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg> <span>Memeriksa…</span>';
     const restore = () => { btn.disabled = false; btn.innerHTML = originalContent; };
 
     let res, data;
@@ -172,7 +74,7 @@ async function handleLoginSubmit(event, type) {
         // Verifikasi dua langkah (bila aktif di akun ini) sebelum sesi dipakai.
         if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { restore(); showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
         QuantumAuth.saveSession(token, user, remember);
-        showQuantumToast('⚡ Otentikasi Berhasil! Mengalihkan ke Quantum Terminal Live Dashboard...', 'success');
+        showQuantumToast('Berhasil masuk. Membuka terminal…', 'success');
         let target = 'dashboard.html';
         try {
             const saved = sessionStorage.getItem('qi_redirect_after_login');
@@ -191,7 +93,7 @@ async function handleLoginSubmit(event, type) {
     showQuantumToast(msg, 'error');
 }
 
-// --- 6. GOOGLE SIGN-IN (Google Identity Services) ---
+// --- 5. GOOGLE SIGN-IN (Google Identity Services) ---
 let _googleClientId = '';
 
 (async function initGoogleAuth() {
@@ -202,11 +104,9 @@ let _googleClientId = '';
             _googleClientId = json.data.google_client_id;
             loadGoogleGsi();
         } else {
-            // Belum dikonfigurasi → sembunyikan tombol Google dan divider-nya
-            const wrap = document.getElementById('googleBtnWrap');
-            const divider = document.getElementById('googleDividerLabel');
-            if (wrap) wrap.style.display = 'none';
-            if (divider) divider.style.display = 'none';
+            // Belum dikonfigurasi → sembunyikan bagian Google beserta pemisahnya
+            const bagian = document.getElementById('googleAuthSection');
+            if (bagian) bagian.hidden = true;
         }
     } catch (e) { /* endpoint tak terjangkau → tombol tetap fallback */ }
 })();
@@ -224,13 +124,12 @@ function loadGoogleGsi() {
         const container = document.getElementById('googleGsiButton');
         const fallback  = document.getElementById('btnGoogleFallback');
         if (container) {
-            container.classList.remove('hidden');
-            container.classList.add('flex');
+            container.hidden = false;
             google.accounts.id.renderButton(container, {
                 theme: 'filled_black', size: 'large', text: 'signin_with', shape: 'pill', width: 280
             });
         }
-        if (fallback) fallback.classList.add('hidden');
+        if (fallback) fallback.hidden = true;
     };
     document.head.appendChild(s);
 }
@@ -258,7 +157,7 @@ async function handleGoogleCredential(response) {
             const { token, ...user } = data.data;
             if (window.QimDuaLangkah && !(await window.QimDuaLangkah.selesaikan(token))) { showQuantumToast('Login dibatalkan — kode verifikasi belum dimasukkan.', 'info'); return; }
             QuantumAuth.saveSession(token, user, true);
-            showQuantumToast('⚡ Login Google Berhasil! Mengalihkan ke Terminal...', 'success');
+            showQuantumToast('Berhasil masuk dengan Google. Membuka terminal…', 'success');
             setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
         } else {
             showQuantumToast(data?.message || 'Login Google gagal.', 'error');

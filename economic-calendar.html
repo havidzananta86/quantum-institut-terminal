@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.2">
     <script src="assets/js/a11y.js?v=1.0.4" defer></script>
     <script src="assets/js/theme-toggle.js?v=1.4.2"></script>
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.7">
     <script src="assets/js/error-tracker.js?v=1.4.6"></script>
     <style>
         body { background:#070C1A; font-family:'Inter',sans-serif; }
@@ -70,6 +70,7 @@
         }
     </style>
     <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
+    <link rel="stylesheet" href="assets/css/publik.css?v=1.0.0">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
     <meta property="og:type" content="website">
@@ -87,75 +88,67 @@
     <meta name="twitter:image" content="https://quantum-institut.com/og-image.png">
 </head>
 
-<body class="h-screen flex overflow-hidden text-slate-300 font-body">
+<body class="h-screen flex overflow-hidden text-slate-300 font-body pb-token">
 
 <!-- ═══ ACCESS GATE ═══ -->
-<div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="background:#070C1A;">
+<div id="qiAccessGate" class="pb-gerbang">
     <div id="gateLoading" class="text-center">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#7C4DFF] mx-auto mb-3 flex items-center justify-center font-bold text-white text-lg">Q</div>
-        <div class="text-slate-500 text-sm animate-pulse">Memeriksa akses…</div>
+        <img src="assets/img/logo-mark.svg" alt="" width="40" height="40" class="pb-gerbang-logo">
+        <div class="text-slate-500 text-sm">Memeriksa akses…</div>
     </div>
-    <div id="gateUpgrade" class="hidden w-full max-w-lg">
-        <div class="bg-[#0C1220] border border-[#1E293B] rounded-2xl p-8 text-center shadow-2xl shadow-black/60">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00E5FF]/20 to-[#7C4DFF]/20 border border-[#00E5FF]/20 mx-auto mb-5 flex items-center justify-center text-3xl">🔒</div>
-            <div class="text-[10px] font-semibold text-[#00E5FF] uppercase tracking-[0.2em] mb-2">Fitur Premium</div>
-            <h1 class="font-heading font-bold text-white text-2xl mb-2">Economic Calendar</h1>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Fitur ini eksklusif untuk pengguna <span class="text-[#00E5FF] font-semibold">Quantum+ PRO</span>.</p>
-            <div class="space-y-2.5">
-                <a href="pricing.html"
-                   class="block w-full py-3 rounded-xl font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF);">
-                    ⚡ Upgrade ke Quantum+ PRO
-                </a>
-                <a href="dashboard.html" class="block w-full py-2.5 rounded-xl text-sm text-slate-400 border border-[#1E293B] hover:border-[#00E5FF]/30 hover:text-white transition-all">
-                    Lanjut dengan Terminal Gratis →
-                </a>
-            </div>
-            <div id="gateLoginHint" class="hidden mt-4 text-[10px] text-slate-600">
-                Sudah punya lisensi PRO?
-                <a href="login.html" id="gateLoginLink" class="text-[#00E5FF] underline">Login di sini</a>
-            </div>
+    <div id="gateUpgrade" class="hidden pb-gerbang-kotak">
+        <span class="pb-gerbang-ikon"><svg class="pb-ikon pb-ikon--besar" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+        <span class="pb-label">Fitur PRO</span>
+        <h1 class="pb-gerbang-judul">Kalender ekonomi</h1>
+        <p class="pb-gerbang-teks">Halaman kalender lengkap tersedia untuk pengguna Quantum+ PRO. Akun gratis tetap bisa melihat Economic Heatmap di terminal.</p>
+        <div class="pb-gerbang-aksi">
+            <a href="pricing.html" class="pb-tombol pb-tombol--utama pb-tombol--penuh">Lihat paket PRO</a>
+            <a href="dashboard.html" class="pb-tombol pb-tombol--garis pb-tombol--penuh">Kembali ke terminal</a>
+        </div>
+        <div id="gateLoginHint" class="hidden pb-gerbang-catatan">
+            Sudah punya lisensi PRO?
+            <a href="login.html" id="gateLoginLink" class="pb-tautan">Masuk di sini</a>
         </div>
     </div>
 </div>
-<script src="assets/js/halaman-kalender-gerbang.js?v=1.0.0"></script>
+<script src="assets/js/halaman-kalender-gerbang.js?v=1.0.1"></script>
 
 <!-- ═══ LEFT SIDEBAR ═══ -->
 <aside id="sidebar" class="w-56 flex-shrink-0 bg-qi-panel border-r border-qi-border flex flex-col fixed lg:relative z-40 h-full overflow-y-auto">
 
     <div class="px-4 pt-5 pb-4 border-b border-qi-border flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-qi-cyan to-qi-purple flex items-center justify-center font-heading font-bold text-xs text-white">Q</div>
-        <div>
-            <div class="font-heading font-bold text-white text-sm leading-none">QUANTUM</div>
-            <div class="text-[10px] text-slate-500 leading-none mt-0.5">INSTITUT TERMINAL</div>
-        </div>
+        <a href="index.html" class="pb-merek" aria-label="Quantum Institut — beranda">
+            <img src="assets/img/logo-mark.svg" alt="" width="28" height="28">
+            <span class="pb-merek-nama">Quantum <span>Institut</span></span>
+        </a>
     </div>
 
     <nav class="flex-1 px-2 py-3 space-y-4 text-xs">
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market Intelligence</div>
             <a href="dashboard.html?panel=panel-radar" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span>⚡</span> Quantum AI Radar
+                <svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="4"/></svg> Quantum AI Radar
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">PRO</span>
             </a>
-            <a href="dashboard.html?panel=panel-signal" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📡</span> Signal Matrix</a>
-            <a href="dashboard.html?panel=panel-outlook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔬</span> Technical Outlook</a>
-            <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>🗓</span> Economic Heatmap</a>
+            <a href="dashboard.html?panel=panel-signal" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Signal Matrix</a>
+            <a href="dashboard.html?panel=panel-outlook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg> Technical Outlook</a>
+            <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Economic Heatmap</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Market</div>
-            <a href="dashboard.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📈</span> Charts</a>
-            <a href="dashboard.html?panel=panel-orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📊</span> Order Book</a>
-            <a href="dashboard.html?panel=panel-news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>📰</span> News Feed</a>
-            <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><span>📅</span> Economic Calendar</a>
-            <a href="dashboard.html" id="ecSidebarDash1" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🌐</span> Market Overview</a>
-            <a href="dashboard.html#strength" id="ecSidebarDash2" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💪</span> Currency Strength</a>
+            <a href="dashboard.html" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg> Charts</a>
+            <a href="dashboard.html?panel=panel-orderbook" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg> Order Book</a>
+            <a href="dashboard.html?panel=panel-news" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5"/></svg> News Feed</a>
+            <a href="economic-calendar.html" class="nav-item active flex items-center gap-2 px-2 py-1.5 rounded-md"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Economic Calendar</a>
+            <a href="dashboard.html" id="ecSidebarDash1" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg> Market Overview</a>
+            <a href="dashboard.html#strength" id="ecSidebarDash2" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 9-9"/><path d="M14 7h7v7"/></svg> Currency Strength</a>
         </div>
         <div>
             <div class="px-2 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tools</div>
-            <a href="dashboard.html?panel=panel-paper" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>💼</span> Paper Trading</a>
-            <a href="dashboard.html?panel=panel-screener" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>⏪</span> Backtester</a>
-            <a href="dashboard.html?panel=panel-track"   class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🏆</span> Track Record</a>
-            <a href="dashboard.html?panel=panel-signal"  class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><span>🔮</span> Correlation Matrix</a>
+            <a href="dashboard.html?panel=panel-paper" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg> Paper Trading</a>
+            <a href="dashboard.html?panel=panel-screener" class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg> Backtester</a>
+            <a href="dashboard.html?panel=panel-track"   class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"/></svg> Track Record</a>
+            <a href="dashboard.html?panel=panel-signal"  class="nav-item flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg> Correlation Matrix</a>
         </div>
     </nav>
 
@@ -174,10 +167,10 @@
     <!-- Top bar -->
     <div class="flex-shrink-0 bg-qi-panel border-b border-qi-border flex items-center justify-between px-4 h-12 gap-3">
         <div class="flex items-center gap-3">
-            <button type="button" data-kal-aksi="sidebar" aria-label="Buka menu" class="lg:hidden text-slate-500 hover:text-white mr-1">☰</button>
-            <span class="text-qi-gold text-base">📅</span>
+            <button type="button" data-kal-aksi="sidebar" aria-label="Buka menu" class="lg:hidden text-slate-400 hover:text-white mr-1 pb-tombol-ikon"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+            <span class="text-qi-cyan"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
             <span class="font-heading font-bold text-white text-sm uppercase tracking-wider">Economic Calendar</span>
-            <span class="hidden sm:inline text-[10px] text-slate-600">— ForexFactory · Real-time</span>
+            <span class="hidden sm:inline text-[10px] text-slate-500">Sumber: ForexFactory</span>
         </div>
         <div class="flex items-center gap-2 text-[11px]">
             <span id="updatedAgo" class="text-slate-600 font-mono hidden sm:inline">—</span>
@@ -209,23 +202,23 @@
         <div class="sticky top-0 z-20 bg-qi-bg/95 backdrop-blur-sm border-b border-qi-border px-4 py-2.5 flex items-center gap-2 flex-wrap">
             <span class="text-[10px] text-slate-600 uppercase tracking-wider mr-1">Impact:</span>
             <button class="chip active" id="chip-all"  data-impact="all">Semua</button>
-            <button class="chip chip-high" id="chip-high" data-impact="high">🔴 Tinggi</button>
-            <button class="chip chip-med"  id="chip-med"  data-impact="medium">🟡 Sedang</button>
-            <button class="chip chip-low"  id="chip-low"  data-impact="low">🟢 Rendah</button>
+            <button class="chip chip-high" id="chip-high" data-impact="high"><span class="pb-titik-dampak is-tinggi"></span>Tinggi</button>
+            <button class="chip chip-med"  id="chip-med"  data-impact="medium"><span class="pb-titik-dampak is-sedang"></span>Sedang</button>
+            <button class="chip chip-low"  id="chip-low"  data-impact="low"><span class="pb-titik-dampak is-rendah"></span>Rendah</button>
             <div class="h-4 w-px bg-qi-border mx-1"></div>
             <span class="text-[10px] text-slate-600 uppercase tracking-wider">Mata uang:</span>
             <select id="currencyFilter"
                 class="bg-qi-panel border border-qi-border text-slate-300 rounded-lg px-2 py-1 text-[11px] outline-none cursor-pointer">
                 <option value="ALL">Semua Mata Uang</option>
-                <option value="USD">🇺🇸 USD</option>
-                <option value="EUR">🇪🇺 EUR</option>
-                <option value="GBP">🇬🇧 GBP</option>
-                <option value="JPY">🇯🇵 JPY</option>
-                <option value="CHF">🇨🇭 CHF</option>
-                <option value="AUD">🇦🇺 AUD</option>
-                <option value="NZD">🇳🇿 NZD</option>
-                <option value="CAD">🇨🇦 CAD</option>
-                <option value="CNY">🇨🇳 CNY</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+                <option value="CHF">CHF</option>
+                <option value="AUD">AUD</option>
+                <option value="NZD">NZD</option>
+                <option value="CAD">CAD</option>
+                <option value="CNY">CNY</option>
             </select>
             <span id="eventCount" class="ml-auto text-[10px] text-slate-600"></span>
         </div>
@@ -249,7 +242,7 @@
 </main>
 
 <!-- ═══ JAVASCRIPT ═══ -->
-<script src="assets/js/halaman-kalender.js?v=1.0.0"></script>
+<script src="assets/js/halaman-kalender.js?v=1.0.1"></script>
 
 <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>

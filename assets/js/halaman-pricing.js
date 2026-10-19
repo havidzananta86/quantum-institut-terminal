@@ -1,18 +1,25 @@
-// Skrip halaman harga (pricing.html) — dulu <script> inline, dipindah agar lolos CSP tanpa 'unsafe-inline'.
+// Skrip halaman harga (pricing.html) — tanpa kode inline (CSP tanpa 'unsafe-inline').
+// Dulu ada hitung mundur harga promo yang diulang setiap tengah malam (urgensi palsu); sudah dihapus.
 const orderModal = document.getElementById('orderModal');
+let pemicuTerakhir = null;
 
-function closeOrderModal() { orderModal.classList.add('hidden'); orderModal.style.display = ''; }
+function closeOrderModal() {
+    if (!orderModal.classList.contains('is-terbuka')) return;
+    orderModal.classList.remove('is-terbuka');
+    if (pemicuTerakhir && typeof pemicuTerakhir.focus === 'function') pemicuTerakhir.focus();
+}
 
 function showSection(id) {
     ['orderLoading', 'orderDetails', 'orderError'].forEach(s => {
-        document.getElementById(s).classList.toggle('hidden', s !== id);
+        document.getElementById(s).hidden = s !== id;
     });
 }
 
-async function orderPlan(name, price) {
-    orderModal.classList.remove('hidden');
-    orderModal.style.display = 'flex';
+async function orderPlan(name, price, pemicu) {
+    pemicuTerakhir = pemicu || null;
+    orderModal.classList.add('is-terbuka');
     showSection('orderLoading');
+    orderModal.querySelector('[data-tutup-order]').focus();
 
     let res, data;
     try {
@@ -39,15 +46,15 @@ async function orderPlan(name, price) {
         document.getElementById('odExpires').textContent = d.expires_at || '-';
 
         const methods = document.getElementById('odMethods');
-        methods.innerHTML = '';
+        methods.textContent = '';
         (d.payment_methods || ['QRIS']).forEach(m => {
             const span = document.createElement('span');
-            span.className = 'px-2 py-1 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700';
+            span.className = 'pb-lencana';
             span.textContent = m;
             methods.appendChild(span);
         });
         showSection('orderDetails');
-        showQuantumToast('🧾 Tagihan paket ' + (d.plan || name) + ' berhasil dibuat.', 'success');
+        if (typeof showQuantumToast === 'function') showQuantumToast('Tagihan paket ' + (d.plan || name) + ' berhasil dibuat.', 'success');
     } else {
         showSection('orderError');
         const msg = res.status === 429
@@ -59,36 +66,10 @@ async function orderPlan(name, price) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOrderModal(); });
 
-// #8 Early Bird Countdown Timer (resets daily at midnight)
-(function(){
-    function getEndOfDay() {
-        var now = new Date();
-        var end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-        return end;
-    }
-    function tick() {
-        var now = new Date();
-        var end = getEndOfDay();
-        var diff = Math.max(0, end - now);
-        var d = Math.floor(diff / 86400000);
-        var h = Math.floor((diff % 86400000) / 3600000);
-        var m = Math.floor((diff % 3600000) / 60000);
-        var s = Math.floor((diff % 60000) / 1000);
-        var el;
-        el = document.getElementById('ebDays'); if(el) el.textContent = String(d).padStart(2,'0');
-        el = document.getElementById('ebHours'); if(el) el.textContent = String(h).padStart(2,'0');
-        el = document.getElementById('ebMins'); if(el) el.textContent = String(m).padStart(2,'0');
-        el = document.getElementById('ebSecs'); if(el) el.textContent = String(s).padStart(2,'0');
-    }
-    tick();
-    setInterval(tick, 1000);
-})();
-
-// Pengganti atribut onclick="..." (dilarang CSP tanpa 'unsafe-inline'). Kartu paket dan tombol di dalamnya
-// sama-sama ber-data-plan; satu pendengar di document memastikan satu klik = satu pesanan (dulu klik tombol
-// ikut menggelembung ke onclick kartu sehingga orderPlan terpanggil dua kali).
+// Pengganti atribut onclick="..." (dilarang CSP tanpa 'unsafe-inline'): satu pendengar di document,
+// satu klik = satu pesanan.
 document.addEventListener('click', e => {
     const paket = e.target.closest('[data-plan]');
-    if (paket) { orderPlan(paket.dataset.plan, Number(paket.dataset.harga)); return; }
+    if (paket) { orderPlan(paket.dataset.plan, Number(paket.dataset.harga), paket); return; }
     if (e.target.closest('[data-tutup-order]') || e.target === orderModal) closeOrderModal();
 });

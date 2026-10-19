@@ -1,7 +1,11 @@
-// Skrip halaman daftar (register.html) — dulu <script> inline, dipindah agar lolos CSP tanpa 'unsafe-inline'.
+// Skrip halaman daftar (register.html) — tanpa kode inline (CSP tanpa 'unsafe-inline').
 function toggleRegPassword() {
     const el = document.getElementById('regPassword');
-    el.type = el.type === 'password' ? 'text' : 'password';
+    const tombol = document.getElementById('btnToggleRegPassword');
+    const tampil = el.type === 'password';
+    el.type = tampil ? 'text' : 'password';
+    tombol.setAttribute('aria-pressed', String(tampil));
+    tombol.setAttribute('aria-label', tampil ? 'Sembunyikan sandi' : 'Tampilkan sandi');
 }
 
 // Password strength meter
@@ -14,17 +18,10 @@ document.getElementById('regPassword').addEventListener('input', function () {
     if (/[^A-Za-z0-9]/.test(v)) score++;
     const bar = document.getElementById('pwStrengthBar');
     const txt = document.getElementById('pwStrengthText');
-    const levels = [
-        { w: '0%',   c: '',               t: '' },
-        { w: '25%',  c: 'bg-rose-500',    t: 'Lemah' },
-        { w: '50%',  c: 'bg-amber-500',   t: 'Sedang' },
-        { w: '75%',  c: 'bg-cyan-500',    t: 'Kuat' },
-        { w: '100%', c: 'bg-emerald-500', t: 'Sangat Kuat' }
-    ];
-    const lv = levels[score];
-    bar.style.width = lv.w;
-    bar.className = 'h-full transition-all duration-300 ' + lv.c;
-    txt.textContent = v ? lv.t : '';
+    const levels = ['', 'Lemah', 'Sedang', 'Kuat', 'Sangat kuat'];
+    bar.style.width = (score * 25) + '%';
+    bar.dataset.tingkat = String(score);
+    txt.textContent = v ? 'Kekuatan sandi: ' + levels[score] : '';
 });
 
 async function handleRegister(e) {
@@ -49,7 +46,7 @@ async function handleRegister(e) {
 
     const original = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> <span>Mendaftar...</span>';
+    btn.innerHTML = '<svg class="pb-ikon pb-putar" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg> <span>Mendaftar…</span>';
     const restore = () => { btn.disabled = false; btn.innerHTML = original; };
 
     let res, data;
@@ -68,7 +65,7 @@ async function handleRegister(e) {
     }
 
     if ((res.status === 201 || res.ok) && data?.status === 'success') {
-        showQuantumToast('✓ Akun berhasil dibuat! Silakan masuk.', 'success');
+        showQuantumToast('Akun berhasil dibuat. Silakan masuk.', 'success');
         try { sessionStorage.setItem('qi_prefill_email', email); } catch (e) {}
         setTimeout(() => { window.location.href = 'login.html'; }, 1200);
         return;

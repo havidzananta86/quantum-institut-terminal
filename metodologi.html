@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#000000">
+    <title>Metodologi Penilaian Sinyal | Quantum Institut</title>
+    <meta name="description" content="Cara sinyal Quantum Institut dinilai: spread, slippage, gap, candle ambigu diurai di M1, satuan R, interval Wilson 95%, expectancy, dan mengapa win rate saja menyesatkan.">
+    <link rel="canonical" href="https://quantum-institut.com/metodologi.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Quantum Institut Market Terminal">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:title" content="Metodologi Penilaian Sinyal | Quantum Institut">
+    <meta property="og:description" content="Cara sinyal Quantum Institut dinilai: spread, slippage, gap, candle ambigu diurai di M1, satuan R, interval Wilson 95%, expectancy, dan mengapa win rate saja menyesatkan.">
+    <meta property="og:url" content="https://quantum-institut.com/metodologi.html">
+    <meta property="og:image" content="https://quantum-institut.com/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Metodologi Penilaian Sinyal | Quantum Institut">
+    <meta name="twitter:description" content="Cara sinyal Quantum Institut dinilai: spread, slippage, gap, candle ambigu diurai di M1, satuan R, interval Wilson 95%, expectancy, dan mengapa win rate saja menyesatkan.">
+    <meta name="twitter:image" content="https://quantum-institut.com/og-image.png">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.7">
+    <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
+    <link rel="stylesheet" href="assets/css/publik.css?v=1.0.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.3"></script>
+    <script src="assets/js/error-tracker.js?v=1.4.6"></script>
+    <script src="assets/js/a11y.js?v=1.0.4" defer></script>
+    <script src="assets/js/publik.js?v=1.0.0" defer></script>
+</head>
+<body class="pb">
+    <a class="qi-skip-link" href="#utama">Lewati ke konten utama</a>
+    <header class="pb-kepala">
+        <div class="pb-kepala-isi">
+            <a class="pb-merek" href="index.html" aria-label="Quantum Institut — beranda">
+                <img src="assets/img/logo-mark.svg" alt="" width="32" height="32">
+                <span class="pb-merek-nama">Quantum <span>Institut</span></span>
+            </a>
+            <nav class="pb-nav" aria-label="Menu utama">
+                <a href="transparansi.html">Transparansi</a>
+                <a href="metodologi.html" aria-current="page">Metodologi</a>
+                <a href="pricing.html">Harga</a>
+                <a href="changelog.html">Apa yang baru</a>
+                <a href="bantuan.html">Bantuan</a>
+            </nav>
+            <div class="pb-kepala-aksi">
+                <a class="pb-tombol pb-tombol--garis pb-tombol--kecil" href="login.html">Masuk</a>
+            </div>
+            <details class="pb-menu">
+                <summary aria-label="Menu"><svg class="pb-ikon pb-ikon-buka" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><svg class="pb-ikon pb-ikon-tutup" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></summary>
+                <nav class="pb-menu-panel" aria-label="Menu utama (ponsel)">
+                    <a href="transparansi.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>Transparansi</a>
+                    <a href="metodologi.html" aria-current="page"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Metodologi</a>
+                    <a href="pricing.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>Harga</a>
+                    <a href="changelog.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M3 12h6M15 12h6"/></svg>Apa yang baru</a>
+                    <a href="bantuan.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>Bantuan</a>
+                    <div class="pb-menu-pisah"></div>
+                    <a href="login.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Masuk</a>
+                    <a href="register.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Daftar gratis</a>
+                </nav>
+            </details>
+        </div>
+    </header>
+
+    <main id="utama" class="pb-utama">
+        <div class="pb-wadah pb-wadah--baca">
+            <div class="pb-kepala-hal">
+                <span class="pb-label">Metodologi</span>
+                <h1 class="pb-judul">Cara sinyal dinilai</h1>
+                <p class="pb-pengantar">Angka di halaman <a class="pb-tautan" href="transparansi.html">Transparansi</a> dan di panel Track Record dihitung otomatis dengan aturan di bawah ini. Aturannya sengaja konservatif: bila ragu, hasil dihitung kalah.</p>
+                <p class="pb-meta">Menjelaskan aturan penilaian versi 3 yang berjalan sejak 19 Oktober 2026.</p>
+            </div>
+
+            <div class="pb-tumpuk-besar">
+                <div class="pb-kisi">
+                    <div class="pb-kartu pb-kartu--padat"><svg class="pb-ikon pb-ikon--besar" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg><h2 class="pb-h3">Dicatat saat terbit</h2><p class="pb-kecil">Waktu, arah, entry, SL, dan TP disimpan saat sinyal terbit. Rekor tidak dihapus atau diubah agar tampak lebih baik.</p></div>
+                    <div class="pb-kartu pb-kartu--padat"><svg class="pb-ikon pb-ikon--besar" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg><h2 class="pb-h3">Biaya ikut dihitung</h2><p class="pb-kecil">Spread tipikal dan perkiraan slippage dikurangkan dari setiap hasil.</p></div>
+                    <div class="pb-kartu pb-kartu--padat"><svg class="pb-ikon pb-ikon--besar" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><h2 class="pb-h3">Diukur dalam R</h2><p class="pb-kecil">Hasil dibandingkan dengan risiko, disertai interval keyakinan — bukan win rate saja.</p></div>
+                </div>
+
+                <nav class="pb-daftar-isi" aria-label="Daftar isi">
+                    <p>Daftar isi</p>
+                    <ol>
+                        <li><a href="#siklus">Dari terbit sampai selesai</a></li>
+                        <li><a href="#aturan">Aturan penilaian</a></li>
+                        <li><a href="#contoh">Contoh angka</a></li>
+                        <li><a href="#satuan-r">Satuan R</a></li>
+                        <li><a href="#wilson">Win rate dan interval Wilson</a></li>
+                        <li><a href="#expectancy">Expectancy dan profit factor</a></li>
+                        <li><a href="#menyesatkan">Mengapa win rate saja menyesatkan</a></li>
+                        <li><a href="#bayangan">Sinyal bayangan dan sinyal Pine</a></li>
+                        <li><a href="#batasan">Batasan yang kami akui</a></li>
+                    </ol>
+                </nav>
+
+                <article class="pb-prosa">
+                    <h2 id="siklus">1. Dari terbit sampai selesai</h2>
+                    <p>Setiap sinyal resmi melewati tiga tahap:</p>
+                    <ol>
+                        <li><strong>Terbit.</strong> Sinyal dicatat dengan waktu terbit (UTC), arah (BUY/SELL), entry, stop loss (SL), take profit (TP), dan masa berlaku. Bila masa berlaku tidak diisi, dipakai 4 jam setelah terbit.</li>
+                        <li><strong>Aktif.</strong> Penilai otomatis di server membaca candle yang terbentuk <em>setelah</em> waktu terbit dan memeriksa apakah TP atau SL tersentuh.</li>
+                        <li><strong>Selesai.</strong> Hasilnya salah satu dari: <strong>HIT TP</strong> (menang), <strong>HIT SL</strong> (kalah), atau <strong>EXPIRED</strong> (masa berlaku habis tanpa menyentuh keduanya). EXPIRED tidak dihitung menang maupun kalah dan dilaporkan terpisah.</li>
+                    </ol>
+                    <p>Sinyal yang sudah selesai tidak pernah dinilai ulang. Bila aturan penilaian diperbaiki, hanya sinyal berikutnya yang memakai aturan baru, dan statistik memisahkan hasil per versi aturan supaya angka lama tidak tercampur diam-diam.</p>
+
+                    <h2 id="aturan">2. Aturan penilaian</h2>
+                    <h3>Data yang dipakai</h3>
+                    <ul>
+                        <li>Hanya candle yang terbentuk setelah sinyal terbit dan sebelum masa berlakunya habis. Pergerakan sebelum sinyal terbit tidak pernah dihitung.</li>
+                        <li>Candle dari feed broker MT5 diutamakan; bila feed itu tertinggal lebih dari satu candle, dipakai sumber umum (OANDA atau sumber lain). Candle simulasi tidak pernah dipakai.</li>
+                        <li>Dipakai candle sehalus yang tersedia (5 menit, lalu 15 menit, lalu 1 jam) karena candle halus lebih tepat menunjukkan level mana yang tersentuh.</li>
+                        <li>Sinyal dengan level tidak masuk akal dilewati, tidak ditebak: BUY wajib <code>TP &gt; entry &gt; SL</code>, SELL wajib <code>TP &lt; entry &lt; SL</code>.</li>
+                    </ul>
+                    <h3>Spread</h3>
+                    <p>Di akun nyata, posisi BUY dibuka di harga ASK dan ditutup di BID; SELL sebaliknya. Karena itu:</p>
+                    <ul>
+                        <li>entry pasar membayar spread;</li>
+                        <li>TP BUY baru dianggap kena bila harga <em>BID</em> mencapainya — sentuhan tipis yang kurang dari spread tidak dihitung;</li>
+                        <li>SL BUY lebih cepat kena karena sisi penutup (BID) bergerak lebih dulu.</li>
+                    </ul>
+                    <p>Spread yang dipakai adalah angka <strong>tipikal per simbol</strong> untuk akun retail, misalnya XAUUSD 0,30, EURUSD 0,00012 (1,2 pip), USDJPY 0,014; kripto 0,1% dari harga (spread dan komisi); simbol lain 0,02% dari harga. Ini bukan spread historis pada detik itu — data seperti itu tidak tersedia. Nilai yang dipakai dicatat di setiap rekor sehingga bisa diperiksa. Harga candle feed MT5 dianggap BID; sumber lain dianggap harga tengah (MID).</p>
+                    <h3>Slippage</h3>
+                    <p>Entry pasar dan SL (order stop) dianggap terisi sedikit lebih buruk, sebesar 0,25 × spread. TP (order limit) terisi tepat di levelnya. Angka ini perkiraan dan juga dicatat di rekor.</p>
+                    <h3>Gap</h3>
+                    <p>Bila candle dibuka langsung melewati SL (misalnya setelah akhir pekan atau berita), posisi dianggap keluar di <strong>harga pembukaan</strong>, bukan tepat di SL. Kerugiannya bisa lebih besar dari 1R, dan itulah yang dicatat. Bila candle dibuka melewati TP, keluar juga di harga pembukaan.</p>
+                    <h3>Candle yang menyentuh TP dan SL sekaligus</h3>
+                    <p>Data OHLC tidak menunjukkan mana yang lebih dulu tersentuh. Penilai lalu membuka candle 1 menit (M1) di dalam candle itu: M1 pertama yang menyentuh salah satu level menentukan hasilnya. Bila M1 tidak tersedia, datanya bolong, atau satu candle M1 pun menyentuh keduanya, hasilnya <strong>dihitung SL</strong>. Rekor seperti ini ditandai cara penyelesaiannya.</p>
+                    <h3>Masa berlaku dan data yang kurang</h3>
+                    <ul>
+                        <li>EXPIRED hanya ditetapkan bila data candle benar-benar mencakup seluruh masa berlaku sinyal.</li>
+                        <li>Bila datanya tidak cukup, sinyal dibiarkan aktif paling lama 24 jam setelah masa berlakunya habis, lalu ditutup EXPIRED dengan catatan "tanpa data" — hasilnya tidak terverifikasi dan tidak dihitung.</li>
+                        <li>Sebagian rekor lama ditulis tanpa zona waktu. Rekor seperti itu dinilai di setiap zona yang mungkin; hasil hanya dicatat bila semuanya sepakat, kalau tidak ditutup EXPIRED "zona ambigu".</li>
+                    </ul>
+
+                    <h2 id="contoh">3. Contoh angka</h2>
+                    <p>Contoh hitungan (bukan rekor sungguhan): sinyal BUY XAUUSD, entry 2.400,00, SL 2.394,00, TP 2.415,00. Risiko rencana 6,00 dan rasio rencana 1 : 2,5. Candle dari sumber MID, spread 0,30, slippage 0,075.</p>
+                    <div class="pb-tabel-wadah">
+                        <table class="pb-tabel">
+                            <thead><tr><th scope="col">Kejadian</th><th scope="col">Harga keluar</th><th scope="col">Hasil</th></tr></thead>
+                            <tbody>
+                                <tr><th scope="row">Entry efektif (+ setengah spread + slippage)</th><td class="pb-angka">2.400,225</td><td>—</td></tr>
+                                <tr><th scope="row">TP kena (BID mencapai 2.415)</th><td class="pb-angka">2.415,000</td><td class="pb-angka">+2,46R</td></tr>
+                                <tr><th scope="row">SL kena tanpa gap</th><td class="pb-angka">2.393,925</td><td class="pb-angka">−1,05R</td></tr>
+                                <tr><th scope="row">Gap: candle dibuka di 2.391,00</th><td class="pb-angka">2.391,000</td><td class="pb-angka">−1,54R</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>Tanpa biaya, rencana ini akan tercatat +2,5R atau −1R. Selisih kecil seperti ini, bila diabaikan, membuat rekor selalu tampak sedikit lebih baik daripada yang bisa didapat pengguna.</p>
+
+                    <h2 id="satuan-r">4. Satuan R</h2>
+                    <p>Membandingkan untung-rugi dalam dolar antar simbol menyesatkan: satu lot BTCUSDT dan satu lot EURUSD punya nilai yang sangat berbeda. Karena itu hasil diukur dalam <strong>R</strong>, kelipatan risiko rencana. 1R = jarak entry ke SL.</p>
+                    <div class="pb-rumus">R (BUY)  = (harga keluar − entry efektif) ÷ (entry − SL)
+R (SELL) = (entry efektif − harga keluar) ÷ (SL − entry)</div>
+                    <p>Penyebutnya tetap risiko rencana supaya 1R selalu satuan yang sama. Bila sebuah rekor tidak punya harga keluar, R diambil dari rasio rencana (menang = +rasio, kalah = −1R), dan jumlah rekor seperti itu dilaporkan terpisah.</p>
+
+                    <h2 id="wilson">5. Win rate dan interval Wilson</h2>
+                    <p>Win rate = menang ÷ (menang + kalah). Sinyal EXPIRED dan yang masih aktif tidak ikut dihitung.</p>
+                    <p>Dari sampel kecil, win rate sangat tidak pasti. Karena itu setiap win rate disertai <strong>interval keyakinan 95% metode Wilson</strong>, yang lebih tepat untuk sampel kecil daripada pendekatan normal biasa:</p>
+                    <div class="pb-rumus">p = menang ÷ n,  z = 1,96
+tengah = (p + z²/2n) ÷ (1 + z²/n)
+lebar  = z ÷ (1 + z²/n) × √( p(1−p)/n + z²/4n² )
+interval = tengah ± lebar</div>
+                    <div class="pb-tabel-wadah">
+                        <table class="pb-tabel">
+                            <thead><tr><th scope="col">Hasil</th><th scope="col">Win rate</th><th scope="col">Interval 95%</th></tr></thead>
+                            <tbody>
+                                <tr><th scope="row">7 menang dari 10</th><td class="pb-angka">70%</td><td class="pb-angka">39,7% – 89,2%</td></tr>
+                                <tr><th scope="row">21 menang dari 30</th><td class="pb-angka">70%</td><td class="pb-angka">52,1% – 83,3%</td></tr>
+                                <tr><th scope="row">70 menang dari 100</th><td class="pb-angka">70%</td><td class="pb-angka">60,4% – 78,1%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p>Win rate 70% dari 10 sinyal masih sejalan dengan sistem yang sebenarnya hanya menang 40% dari waktu. Karena itu sampel di bawah 30 sinyal selesai selalu ditandai <strong>sampel kecil</strong>.</p>
+
+                    <h2 id="expectancy">6. Expectancy dan profit factor</h2>
+                    <div class="pb-rumus">Expectancy (R)  = win rate × rata-rata R menang + loss rate × rata-rata R kalah
+Profit factor   = jumlah R menang ÷ |jumlah R kalah|
+Titik impas     = 1 ÷ (1 + rasio rata-rata)</div>
+                    <ul>
+                        <li><strong>Expectancy</strong> adalah rata-rata hasil per sinyal dalam R. Di atas 0 berarti sistem rata-rata menghasilkan; di bawah 0 berarti rata-rata rugi. Hanya dihitung dari R nyata — bila datanya belum ada, ditulis "belum bisa dihitung", bukan angka perkiraan.</li>
+                        <li><strong>Profit factor</strong> di atas 1 berarti total kemenangan lebih besar dari total kerugian. Kosong bila belum ada kekalahan.</li>
+                        <li><strong>Titik impas</strong> adalah win rate minimum agar tidak rugi untuk rasio rata-rata tertentu: rasio 1 : 2,5 butuh 28,6%, rasio 1 : 1 butuh 50%, rasio 1 : 0,5 butuh 66,7%.</li>
+                    </ul>
+                    <p>Drawdown dihitung dari kurva R kumulatif yang dimulai dari nol, sehingga kerugian di awal pun ikut terhitung.</p>
+
+                    <h2 id="menyesatkan">7. Mengapa win rate saja menyesatkan</h2>
+                    <div class="pb-tabel-wadah">
+                        <table class="pb-tabel">
+                            <thead><tr><th scope="col">Sistem</th><th scope="col">Win rate</th><th scope="col">Menang</th><th scope="col">Expectancy</th></tr></thead>
+                            <tbody>
+                                <tr><th scope="row">A</th><td class="pb-angka">60%</td><td class="pb-angka">+0,5R</td><td class="pb-angka">−0,10R</td></tr>
+                                <tr><th scope="row">B</th><td class="pb-angka">70%</td><td class="pb-angka">+0,5R</td><td class="pb-angka">+0,05R</td></tr>
+                                <tr><th scope="row">C</th><td class="pb-angka">35%</td><td class="pb-angka">+2,5R</td><td class="pb-angka">+0,23R</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="pb-mini">"Menang" = rata-rata hasil per sinyal yang menang; kerugian −1R per sinyal yang kalah; expectancy per sinyal.</p>
+                    <p>Sistem A menang lebih sering daripada C, tetapi rugi dalam jangka panjang. Sistem C kalah hampir dua dari tiga kali, tetapi justru yang paling menghasilkan. Win rate tinggi juga mudah dibuat dengan TP yang sangat dekat dan SL yang sangat jauh — sampai satu kerugian besar menghapus puluhan kemenangan kecil. Karena itu kami selalu menampilkan win rate bersama R rata-rata, expectancy, profit factor, dan ukuran sampel.</p>
+
+                    <h2 id="bayangan">8. Sinyal bayangan dan sinyal Pine</h2>
+                    <p>Selain sinyal resmi, ada dua catatan terpisah yang dinilai dengan aturan konservatif yang sama (spread, gap, SL lebih dulu, candle ambigu diurai di M1) dan ditampilkan terpisah di Transparansi:</p>
+                    <ul>
+                        <li><strong>Sinyal bayangan</strong> berbasis struktur (SMC, ICT, Fibonacci, Supply &amp; Demand) memakai order limit: terisi bila harga menyentuh entry dalam 12 jam, batal bila harga lebih dulu melewati TP, tidak menghitung TP di candle yang sama dengan pengisian, dan ditahan paling lama 48 jam. Sinyal ini tidak dikirim sebagai notifikasi dan baru akan dipertimbangkan menjadi sinyal resmi setelah minimal 100 sinyal selesai menunjukkan expectancy positif.</li>
+                        <li><strong>Sinyal Pine</strong> dari indikator "XAU SMC+SnD" (XAUUSD, H4) dicatat saat statusnya berubah menjadi VALID pada candle yang sudah tutup.</li>
+                    </ul>
+
+                    <!-- ═══ TEMPAT: MESIN KONFLUENSI ═════════════════════════════════════════════════════════════
+                         Sengaja kosong. Sesi rilis "Tahap 1: KONFLUENSI" mengisi bagian ini (dan menambah butirnya di
+                         daftar isi di atas) setelah mesin konfluensi multi-metode + analisa wajib live di master.
+                         Jangan menjelaskan mesin itu di sini sebelum rilis tersebut ter-deploy.
+                         Saran id bagian: id="konfluensi", ditempatkan di antara penanda di bawah ini. -->
+                    <!-- konfluensi:mulai -->
+                    <!-- konfluensi:akhir -->
+
+                    <h2 id="batasan">9. Batasan yang kami akui</h2>
+                    <ul>
+                        <li>Spread adalah angka tipikal, bukan spread sebenarnya pada saat itu. Saat berita besar spread bisa jauh lebih lebar.</li>
+                        <li>Komisi broker untuk forex dan emas serta biaya swap (menginap) belum dihitung.</li>
+                        <li>Slippage adalah perkiraan; slippage nyata bisa lebih besar.</li>
+                        <li>Hasil bergantung pada data candle pihak ketiga. Bila datanya bolong, sinyal ditutup "tanpa data" dan tidak dihitung — bukan ditebak.</li>
+                        <li>Hasil di masa lalu tidak menjamin hasil di masa depan. Selama sampel masih kecil, angka-angka ini belum layak dijadikan pegangan. Baca <a href="risiko.html">pengungkapan risiko</a>.</li>
+                    </ul>
+                </article>
+
+                <div class="pb-kartu pb-baris pb-baris--antara">
+                    <div>
+                        <h2 class="pb-h3">Lihat hasilnya apa adanya</h2>
+                        <p class="pb-kecil pb-tanpa-jarak">Rekor sinyal resmi, sinyal bayangan, dan sinyal Pine — termasuk yang kalah.</p>
+                    </div>
+                    <a href="transparansi.html" class="pb-tombol pb-tombol--utama">Buka Transparansi<svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="pb-kaki">
+        <div class="pb-wadah">
+            <div class="pb-kaki-kisi">
+                <div class="pb-kaki-merek">
+                    <a class="pb-merek" href="index.html" aria-label="Quantum Institut — beranda">
+                        <img src="assets/img/logo-mark.svg" alt="" width="32" height="32">
+                        <span class="pb-merek-nama">Quantum <span>Institut</span></span>
+                    </a>
+                    <p>Terminal analisa pasar dan bahan belajar trading. Bukan broker dan bukan penasihat keuangan.</p>
+                </div>
+                <div>
+                    <h2>Produk</h2>
+                    <ul>
+                        <li><a href="dashboard.html">Terminal</a></li>
+                        <li><a href="pricing.html">Harga</a></li>
+                        <li><a href="pwa.html">Pasang aplikasi</a></li>
+                        <li><a href="changelog.html">Apa yang baru</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h2>Kepercayaan</h2>
+                    <ul>
+                        <li><a href="transparansi.html">Transparansi</a></li>
+                        <li><a href="metodologi.html">Metodologi</a></li>
+                        <li><a href="status.html">Status layanan</a></li>
+                        <li><a href="risiko.html">Pengungkapan risiko</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h2>Bantuan</h2>
+                    <ul>
+                        <li><a href="bantuan.html">Pusat bantuan</a></li>
+                        <li><a href="https://t.me/quantuminstitutterminal" target="_blank" rel="noopener">Telegram</a></li>
+                        <li><a href="terms.html">Syarat &amp; Ketentuan</a></li>
+                        <li><a href="privacy.html">Kebijakan Privasi</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pb-kaki-risiko">
+                <p><strong>Peringatan risiko.</strong> Trading forex, emas, indeks, dan kripto — terutama dengan leverage — bisa menimbulkan kerugian besar, termasuk seluruh modal. Sinyal dan analisa di situs ini adalah informasi edukasi, bukan saran investasi, dan hasil masa lalu tidak menjamin hasil di masa depan. <a href="risiko.html">Baca pengungkapan risiko</a>.</p>
+                <p>© 2026 Quantum Institut Market Terminal.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
+</body>
+</html>

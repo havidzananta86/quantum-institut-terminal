@@ -1,129 +1,168 @@
 <!DOCTYPE html>
-<html lang="id" class="selection:bg-cyan-500/30">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
-    <link rel="canonical" href="https://quantum-institut.com/register.html">
-    <title>Daftar Akun | Quantum Institut Market Terminal</title>
-    <meta name="description" content="Daftar akun Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
-    <meta property="og:title" content="Daftar Akun | Quantum Institut Market Terminal">
-    <meta property="og:description" content="Daftar akun gratis Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
-    <meta property="og:image" content="https://quantum-institut.com/og-image.png">
-    <meta property="og:url" content="https://quantum-institut.com/register.html">
-    <meta property="og:type" content="website">
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
-    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
-    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
-    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.2">
-    <script src="assets/js/a11y.js?v=1.0.4" defer></script>
-    <script src="assets/js/theme-toggle.js?v=1.4.3"></script>
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.6">
-    <script src="assets/js/error-tracker.js?v=1.4.6"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css?v=1.4.0">
-    <style>
-        .input-quantum {
-            background: rgba(5, 10, 26, 0.8);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            color: #FFFFFF;
-            transition: border-color 0.25s ease, box-shadow 0.25s ease;
-        }
-        .input-quantum:focus {
-            outline: none;
-            border-color: #00E5FF;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-        }
-        .input-quantum.invalid { border-color: #FF5252; box-shadow: 0 0 12px rgba(255,82,82,0.25); }
-    </style>
-    <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
-    <link rel="icon" href="favicon.ico" sizes="any">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+    <title>Daftar Akun Gratis | Quantum Institut Market Terminal</title>
+    <meta name="description" content="Buat akun gratis Quantum Institut Market Terminal: chart real-time, Signal Matrix, berita, dan rekor sinyal tanpa biaya.">
+    <link rel="canonical" href="https://quantum-institut.com/register.html">
+    <meta property="og:type" content="website">
     <meta property="og:site_name" content="Quantum Institut Market Terminal">
     <meta property="og:locale" content="id_ID">
+    <meta property="og:title" content="Daftar Akun Gratis | Quantum Institut">
+    <meta property="og:description" content="Buat akun gratis Quantum Institut Market Terminal: chart real-time, Signal Matrix, berita, dan rekor sinyal tanpa biaya.">
+    <meta property="og:url" content="https://quantum-institut.com/register.html">
+    <meta property="og:image" content="https://quantum-institut.com/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Daftar Akun | Quantum Institut Market Terminal">
-    <meta name="twitter:description" content="Daftar akun Quantum Institut Terminal untuk membuka akses 9 mesin analisa kuantum.">
+    <meta name="twitter:title" content="Daftar Akun Gratis | Quantum Institut">
+    <meta name="twitter:description" content="Buat akun gratis Quantum Institut Market Terminal: chart real-time, Signal Matrix, berita, dan rekor sinyal tanpa biaya.">
     <meta name="twitter:image" content="https://quantum-institut.com/og-image.png">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="assets/css/tokens.css?v=1.4.5">
+    <!-- Fondasi aksesibilitas: fokus keyboard, skip link, gerak-minimal, teks mikro -->
+    <link rel="stylesheet" href="assets/css/a11y.css?v=1.0.4">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.7">
+    <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
+    <link rel="stylesheet" href="assets/css/publik.css?v=1.0.0">
+    <script src="assets/js/theme-toggle.js?v=1.4.3"></script>
+    <script src="assets/js/error-tracker.js?v=1.4.6"></script>
+    <script src="assets/js/a11y.js?v=1.0.4" defer></script>
+    <script src="assets/js/publik.js?v=1.0.0" defer></script>
 </head>
-<body class="flex flex-col justify-between min-h-screen">
-
-    <!-- Header Nav -->
-    <header class="w-full px-5 sm:px-6 py-5 flex items-center justify-between border-b border-cyan-500/10">
-        <a href="index.html" class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="#00E5FF"/>
-                </svg>
+<body class="pb">
+    <a class="qi-skip-link" href="#utama">Lewati ke konten utama</a>
+    <header class="pb-kepala">
+        <div class="pb-kepala-isi">
+            <a class="pb-merek" href="index.html" aria-label="Quantum Institut — beranda">
+                <img src="assets/img/logo-mark.svg" alt="" width="32" height="32">
+                <span class="pb-merek-nama">Quantum <span>Institut</span></span>
+            </a>
+            <nav class="pb-nav" aria-label="Menu utama">
+                <a href="transparansi.html">Transparansi</a>
+                <a href="metodologi.html">Metodologi</a>
+                <a href="pricing.html">Harga</a>
+                <a href="changelog.html">Apa yang baru</a>
+                <a href="bantuan.html">Bantuan</a>
+            </nav>
+            <div class="pb-kepala-aksi">
+                <a class="pb-tombol pb-tombol--garis pb-tombol--kecil" href="login.html">Masuk</a>
             </div>
-            <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
-        </a>
-        <a href="login.html" class="text-xs font-mono text-cyan-400 hover:underline">Sudah punya akun? Masuk →</a>
+            <details class="pb-menu">
+                <summary aria-label="Menu"><svg class="pb-ikon pb-ikon-buka" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><svg class="pb-ikon pb-ikon-tutup" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></summary>
+                <nav class="pb-menu-panel" aria-label="Menu utama (ponsel)">
+                    <a href="transparansi.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>Transparansi</a>
+                    <a href="metodologi.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Metodologi</a>
+                    <a href="pricing.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/></svg>Harga</a>
+                    <a href="changelog.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M3 12h6M15 12h6"/></svg>Apa yang baru</a>
+                    <a href="bantuan.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>Bantuan</a>
+                    <div class="pb-menu-pisah"></div>
+                    <a href="login.html"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Masuk</a>
+                    <a href="register.html" aria-current="page"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Daftar gratis</a>
+                </nav>
+            </details>
+        </div>
     </header>
 
-    <!-- Register Form Container -->
-    <main class="flex-1 flex items-center justify-center p-4 my-8">
-        <div class="w-full max-w-md glass-card rounded-2xl p-6 sm:p-8 space-y-6">
-            <div class="text-center space-y-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
-                    PENDAFTARAN AKUN GRATIS
-                </div>
-                <h1 class="text-2xl font-bold font-heading text-white">Buat Akun Quantum</h1>
-                <p class="text-xs text-slate-400">Daftar gratis, lalu upgrade ke Quantum+ PRO untuk akses penuh 9 mesin.</p>
-            </div>
-
-            <form id="registerForm" class="space-y-4" novalidate>
-                <div>
-                    <label for="regName" class="block text-xs font-mono text-slate-300 mb-1.5">NAMA LENGKAP</label>
-                    <input type="text" id="regName" required placeholder="Nama Anda" autocomplete="name" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+    <main id="utama" class="pb-utama">
+        <div class="pb-wadah">
+            <div class="pb-autentik">
+                <div class="pb-autentik-samping pb-tumpuk">
+                    <span class="pb-label">Akun gratis</span>
+                    <h1 class="pb-judul">Buat akun Quantum Institut</h1>
+                    <p class="pb-pengantar">Gratis dan tanpa kartu kredit. Upgrade ke Quantum+ PRO hanya bila Anda membutuhkan alat tambahan.</p>
+                    <ul class="pb-daftar pb-jarak-atas">
+                        <li><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Chart real-time, Signal Matrix, berita, dan rekor sinyal</span></li>
+                        <li><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Rekor sinyal dibuka apa adanya di <a class="pb-tautan" href="transparansi.html">Transparansi</a></span></li>
+                        <li><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Kata sandi disimpan sebagai hash, tidak pernah sebagai teks biasa</span></li>
+                    </ul>
                 </div>
 
-                <div>
-                    <label for="regEmail" class="block text-xs font-mono text-slate-300 mb-1.5">ALAMAT EMAIL</label>
-                    <input type="email" id="regEmail" required placeholder="trader@quantum-institut.com" autocomplete="email" class="w-full px-4 py-3 rounded-xl input-quantum text-sm">
+                <div class="pb-kartu">
+                    <form id="registerForm" class="pb-tumpuk" novalidate>
+                        <div class="pb-isian">
+                            <label for="regName" class="pb-isian-label">Nama lengkap</label>
+                            <input type="text" id="regName" class="pb-masukan" required placeholder="Nama Anda" autocomplete="name">
+                        </div>
+                        <div class="pb-isian">
+                            <label for="regEmail" class="pb-isian-label">Email</label>
+                            <input type="email" id="regEmail" class="pb-masukan" required placeholder="nama@email.com" autocomplete="email">
+                        </div>
+                        <div class="pb-isian">
+                            <label for="regPassword" class="pb-isian-label">Kata sandi <span class="pb-mini">Minimal 8 karakter</span></label>
+                            <div class="pb-masukan-wadah">
+                                <input type="password" id="regPassword" class="pb-masukan" required minlength="8" placeholder="••••••••" autocomplete="new-password" aria-describedby="pwStrengthText">
+                                <button type="button" id="btnToggleRegPassword" class="pb-masukan-aksi" aria-label="Tampilkan sandi" aria-pressed="false"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                            </div>
+                            <div class="pb-meteran" aria-hidden="true"><div id="pwStrengthBar"></div></div>
+                            <div id="pwStrengthText" class="pb-mini" aria-live="polite"></div>
+                        </div>
+                        <label for="regTerms" class="pb-centang">
+                            <input type="checkbox" id="regTerms" required>
+                            <span>Saya menyetujui <a href="terms.html" class="pb-tautan">Syarat &amp; Ketentuan</a>, <a href="privacy.html" class="pb-tautan">Kebijakan Privasi</a>, dan telah membaca <a href="risiko.html" class="pb-tautan">pengungkapan risiko</a>.</span>
+                        </label>
+                        <button type="submit" id="btnRegister" class="pb-tombol pb-tombol--utama pb-tombol--penuh">Buat akun gratis</button>
+                        <p class="pb-kecil pb-tengah pb-tanpa-jarak">Sudah punya akun? <a href="login.html" class="pb-tautan">Masuk</a></p>
+                    </form>
                 </div>
-
-                <div>
-                    <label for="regPassword" class="block text-xs font-mono text-slate-300 mb-1.5 flex justify-between">
-                        <span>KATA SANDI</span>
-                        <span class="text-[10px] text-slate-500">Min. 8 karakter</span>
-                    </label>
-                    <div class="relative">
-                        <input type="password" id="regPassword" required minlength="8" placeholder="••••••••••••" autocomplete="new-password" class="w-full px-4 py-3 pr-12 rounded-xl input-quantum text-sm">
-                        <button type="button" id="btnToggleRegPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 text-xs" aria-label="Tampilkan sandi">👁</button>
-                    </div>
-                    <!-- Password strength meter -->
-                    <div class="mt-2 h-1 rounded-full bg-slate-800 overflow-hidden">
-                        <div id="pwStrengthBar" class="h-full w-0 transition-all duration-300"></div>
-                    </div>
-                    <div id="pwStrengthText" class="text-[10px] text-slate-500 mt-1 font-mono h-3"></div>
-                </div>
-
-                <div class="flex items-start gap-2 text-xs font-mono text-slate-400 pt-1">
-                    <input type="checkbox" id="regTerms" required class="w-4 h-4 mt-0.5 rounded bg-slate-900 border-cyan-500/30 text-cyan-400 shrink-0">
-                    <label for="regTerms" class="cursor-pointer leading-relaxed">Saya menyetujui Syarat &amp; Ketentuan serta Risk Disclaimer trading.</label>
-                </div>
-
-                <button type="submit" id="btnRegister" class="w-full py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-heading font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                    Buat Akun Gratis →
-                </button>
-            </form>
-
-            <div class="text-center text-xs font-mono text-slate-400 border-t border-slate-800 pt-4">
-                Sudah punya akun? <a href="login.html" class="text-cyan-400 font-bold hover:underline">Masuk Langsung</a>
             </div>
         </div>
     </main>
 
-    <footer class="py-4 text-center text-xs font-mono text-slate-400 border-t border-slate-900">
-        © 2026 Quantum Institut Market Terminal.
+    <footer class="pb-kaki">
+        <div class="pb-wadah">
+            <div class="pb-kaki-kisi">
+                <div class="pb-kaki-merek">
+                    <a class="pb-merek" href="index.html" aria-label="Quantum Institut — beranda">
+                        <img src="assets/img/logo-mark.svg" alt="" width="32" height="32">
+                        <span class="pb-merek-nama">Quantum <span>Institut</span></span>
+                    </a>
+                    <p>Terminal analisa pasar dan bahan belajar trading. Bukan broker dan bukan penasihat keuangan.</p>
+                </div>
+                <div>
+                    <h2>Produk</h2>
+                    <ul>
+                        <li><a href="dashboard.html">Terminal</a></li>
+                        <li><a href="pricing.html">Harga</a></li>
+                        <li><a href="pwa.html">Pasang aplikasi</a></li>
+                        <li><a href="changelog.html">Apa yang baru</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h2>Kepercayaan</h2>
+                    <ul>
+                        <li><a href="transparansi.html">Transparansi</a></li>
+                        <li><a href="metodologi.html">Metodologi</a></li>
+                        <li><a href="status.html">Status layanan</a></li>
+                        <li><a href="risiko.html">Pengungkapan risiko</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h2>Bantuan</h2>
+                    <ul>
+                        <li><a href="bantuan.html">Pusat bantuan</a></li>
+                        <li><a href="https://t.me/quantuminstitutterminal" target="_blank" rel="noopener">Telegram</a></li>
+                        <li><a href="terms.html">Syarat &amp; Ketentuan</a></li>
+                        <li><a href="privacy.html">Kebijakan Privasi</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pb-kaki-risiko">
+                <p><strong>Peringatan risiko.</strong> Trading forex, emas, indeks, dan kripto — terutama dengan leverage — bisa menimbulkan kerugian besar, termasuk seluruh modal. Sinyal dan analisa di situs ini adalah informasi edukasi, bukan saran investasi, dan hasil masa lalu tidak menjamin hasil di masa depan. <a href="risiko.html">Baca pengungkapan risiko</a>.</p>
+                <p>© 2026 Quantum Institut Market Terminal.</p>
+            </div>
+        </div>
     </footer>
-
     <script src="assets/js/main.js?v=1.4.2"></script>
-    <script src="assets/js/halaman-register.js?v=1.0.0"></script>
+    <script src="assets/js/halaman-register.js?v=1.1.0"></script>
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

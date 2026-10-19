@@ -12,10 +12,6 @@ const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agu
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
 const IMPACT_LABELS = { high:'Tinggi', medium:'Sedang', low:'Rendah', holiday:'Libur' };
-const CUR_FLAGS = {
-    USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', JPY:'🇯🇵', CHF:'🇨🇭',
-    AUD:'🇦🇺', NZD:'🇳🇿', CAD:'🇨🇦', CNY:'🇨🇳', KRW:'🇰🇷',
-};
 
 // ─── Fetch ──────────────────────────────────────────────────────────────────
 async function fetchCalendar(silent = false) {
@@ -223,7 +219,6 @@ function renderCalendar() {
                 const evTime  = new Date(ev.date).getTime();
                 const isPast  = evTime < now;
                 const isNext  = _nextHighEvent && ev.id === _nextHighEvent.id;
-                const flag    = CUR_FLAGS[(ev.currency||ev.country||'').toUpperCase()] || '🏳️';
                 const cur     = (ev.currency || ev.country || '—').toUpperCase();
                 const rowCls  = `ev-row border-b border-qi-border/50 ${isPast ? 'past' : ''} ${isNext ? 'upcoming bg-qi-red/5' : ''}`;
                 const hasActual = ev.actual && ev.actual !== '-';
@@ -231,14 +226,11 @@ function renderCalendar() {
                 html += `<tr class="${rowCls}">
                     <td class="px-3 py-2.5 text-slate-400 whitespace-nowrap">${localTimeStr(ev.date)}</td>
                     <td class="px-2 py-2.5 hidden sm:table-cell">
-                        <span title="${cur}" class="flex items-center gap-1 text-slate-300">
-                            <span>${flag}</span>
-                            <span class="text-[11px] font-semibold">${cur}</span>
-                        </span>
+                        <span class="text-[11px] font-semibold text-slate-300">${cur}</span>
                     </td>
                     <td class="px-3 py-2.5 text-white max-w-[180px] sm:max-w-none">
                         <div class="truncate font-semibold text-[11px]">${ev.title || '—'}</div>
-                        <div class="text-[10px] text-slate-600 sm:hidden">${flag} ${cur}</div>
+                        <div class="text-[10px] text-slate-600 sm:hidden">${cur}</div>
                     </td>
                     <td class="px-2 py-2.5 text-center">${impactPill((ev.impact||'').toLowerCase())}</td>
                     <td class="px-2 py-2.5 text-right hidden md:table-cell text-slate-400">${valueCell(ev.forecast)}</td>
@@ -289,7 +281,7 @@ setInterval(updateUpdatedAgo, 10000);
     try {
         var raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
         var u = raw ? JSON.parse(raw) : null;
-        isPro = u && (u.role === 'pro' || u.role === 'admin');
+        isPro = u && ['pro', 'vip', 'admin'].indexOf(String(u.role || '').toLowerCase()) !== -1;
     } catch(e){}
 
     if (isPro) return;
@@ -297,7 +289,7 @@ setInterval(updateUpdatedAgo, 10000);
     var lockStyle = function(el, label) {
         el.href = 'pricing.html';
         el.title = 'Quantum+ PRO Required';
-        el.innerHTML = el.innerHTML.replace(label, label) + ' <span style="font-size:8px;padding:1px 4px;border-radius:4px;border:1px solid #334155;color:#475569">🔒</span>';
+        el.insertAdjacentHTML('beforeend', ' <span class="ml-auto text-[9px] border border-qi-border rounded px-1">PRO</span>');
         el.style.opacity = '0.55';
     };
 
@@ -306,7 +298,7 @@ setInterval(updateUpdatedAgo, 10000);
     var dh = document.getElementById('ecHeaderDash');
     if (d1) lockStyle(d1, 'Market Overview');
     if (d2) lockStyle(d2, 'Currency Strength');
-    if (dh) { dh.href = 'pricing.html'; dh.textContent = '🔒 PRO →'; dh.style.opacity = '0.6'; }
+    if (dh) { dh.href = 'pricing.html'; dh.textContent = 'PRO →'; dh.style.opacity = '0.6'; }
 })();
 
 // Pengganti atribut onclick/onchange="..." (dilarang CSP tanpa 'unsafe-inline'), termasuk tombol yang
