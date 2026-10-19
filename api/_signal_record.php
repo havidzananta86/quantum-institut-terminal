@@ -25,6 +25,7 @@
 require_once __DIR__ . '/_signal_time.php';   // waktu sinyal: tulis UTC, baca rekor lama dengan benar
 require_once __DIR__ . '/_json_kunci.php';    // kunci bersama dengan evaluator & POST admin
 require_once __DIR__ . '/_gerbang_risiko.php'; // spread hidup, eksposur korelasi, berita per mata uang
+require_once __DIR__ . '/_sinyal_ditolak.php'; // kandidat yang ditolak gerbang dinilai kontrafaktual
 
 /**
  * Versi ATURAN PENERBITAN. Naikkan setiap kali gerbang/filter penerbitan berubah, supaya
@@ -280,6 +281,7 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
         $spreadHidup = qi_gr_spread_hidup($simbol);
         $gs = qi_gr_cek_spread($simbol, $spreadHidup, (float)($rek['entry'] ?? 0));
         if (!$gs['lolos']) {
+            if ($fileBerkas === null || isset($GLOBALS['qi_ditolak_berkas'])) qi_ditolak_catat($rek, 'spread_melebar', ['rasio' => $gs['rasio'], 'spread' => $gs['sekarang']]);
             return ['dicatat' => false, 'alasan' => 'spread_melebar', 'detail' => $gs, 'id' => null];
         }
         if ($gs['dinilai']) {
@@ -315,6 +317,7 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
             }
         }
         if (empty($gerbang['lolos'])) {
+            if ($fileBerkas === null || isset($GLOBALS['qi_ditolak_berkas'])) qi_ditolak_catat($rek, 'gerbang_mesin', ['catatan' => mb_substr((string)($gerbang['catatan'] ?? ''), 0, 160)]);
             return ['dicatat' => false, 'alasan' => 'gerbang_mesin',
                     'detail' => ['catatan' => (string)($gerbang['catatan'] ?? ''), 'ringkas' => $gerbang['ringkas'] ?? null],
                     'id' => null];
@@ -344,6 +347,7 @@ function qi_signal_catat(array $rek, int $cooldownJam = 4, int $jedaGlobalMenit 
         // (USD melemah). Diperiksa di bawah kunci supaya dua sinyal bersamaan tidak lolos berdua.
         $kor = qi_gr_cek_korelasi($history, $simbol, $arah);
         if (!$kor['lolos']) {
+            if ($fileBerkas === null || isset($GLOBALS['qi_ditolak_berkas'])) qi_ditolak_catat($rek, 'eksposur_korelasi', ['kunci' => $kor['kunci'], 'aktif' => $kor['id_aktif']]);
             return ['dicatat' => false, 'alasan' => 'eksposur_korelasi', 'detail' => $kor, 'id' => null];
         }
         $rek['kunci_korelasi'] = $kor['kunci'];

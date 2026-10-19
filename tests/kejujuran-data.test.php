@@ -67,17 +67,18 @@ cek('tanpa spread: high 2025,10 = HIT TP', (qi_sig_nilai_satu($beli, $sentuh, 30
 cek('dengan spread (mid): BID tertinggi 2024,95 < TP → belum TP', qi_sig_nilai_satu($bMid, $sentuh, 300, $kini) === null);
 $h = qi_sig_nilai_satu($bMid, [$c(1, 2001, 2025.20, 1995, 2020)], 300, $kini);
 cek('BID 2025,05 ≥ TP → HIT TP di 2025', ($h['status'] ?? '') === 'HIT TP 🎯' && $dekat($h['exit_price'] ?? null, 2025), $h);
-cek('entry_efektif = ASK 2000,15; pnl bersih 24,85; pnl_kotor 25', $dekat($h['entry_efektif'] ?? null, 2000.15) && $dekat($h['pnl'] ?? null, 24.85) && $dekat($h['pnl_kotor'] ?? null, 25), $h);
+cek('slippage bawaan = 0,25 × spread = 0,075', $dekat($bMid['slippage_biaya'] ?? null, 0.075), $bMid);
+cek('entry_efektif = ASK 2000,15 + slippage 0,075 = 2000,225; pnl bersih 24,775; pnl_kotor 25', $dekat($h['entry_efektif'] ?? null, 2000.225) && $dekat($h['pnl'] ?? null, 24.775) && $dekat($h['pnl_kotor'] ?? null, 25), $h);
 $r = qi_signal_r_satu($bMid + $h);
-cek('R bersih = (2025 − 2000,15) / 10 = 2,485', $dekat($r['r'], 2.485), $r);
+cek('R bersih = (2025 − 2000,225) / 10 = 2,4775', $dekat($r['r'], 2.4775), $r);
 $slDekat = [$c(1, 2001, 2002, 1990.10, 1995)];
 cek('tanpa spread: low 1990,10 belum menyentuh SL', qi_sig_nilai_satu($beli, $slDekat, 300, $kini) === null);
 cek('dengan spread: BID 1989,95 ≤ SL → HIT SL', (qi_sig_nilai_satu($bMid, $slDekat, 300, $kini)['status'] ?? '') === 'HIT SL 🛑');
 
 $jBid = qi_spread_pasang($jual, 'mt5');   // candle BID: ASK = BID + 0,30
 $h = qi_sig_nilai_satu($jBid, [$c(1, 1999, 2009.80, 1998, 2000)], 300, $kini);
-cek('SELL, candle BID: ASK tertinggi 2010,10 ≥ SL → HIT SL', ($h['status'] ?? '') === 'HIT SL 🛑' && $dekat($h['exit_price'] ?? null, 2010), $h);
-cek('SELL masuk di BID: entry_efektif 2000, pnl −10', $dekat($h['entry_efektif'] ?? null, 2000) && $dekat($h['pnl'] ?? null, -10), $h);
+cek('SELL, candle BID: ASK tertinggi 2010,10 ≥ SL → HIT SL; order stop terisi 2010 + slippage 0,075', ($h['status'] ?? '') === 'HIT SL 🛑' && $dekat($h['exit_price'] ?? null, 2010.075), $h);
+cek('SELL masuk di BID − slippage: entry_efektif 1999,925, pnl −10,15', $dekat($h['entry_efektif'] ?? null, 1999.925) && $dekat($h['pnl'] ?? null, -10.15), $h);
 $h = qi_sig_nilai_satu($jBid, [$c(1, 1999, 2000, 1975.10, 1980)], 300, $kini);
 cek('SELL: BID 1975,10 → ASK 1975,40 > TP → belum TP', $h === null, $h);
 

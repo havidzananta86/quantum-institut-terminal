@@ -678,8 +678,9 @@ function qi_signal_statistik_dimensi(array $records): array
         'per_simbol' => qi_signal_statistik_per($records, fn($r) => strtoupper((string)($r['symbol'] ?? '?'))),
         // Rekor yang ditutup sebelum 2026-10-19 dinilai TANPA spread & tanpa harga gap —
         // angkanya lebih bagus dari kenyataan. Dipisah supaya tidak tercampur diam-diam.
-        'per_versi_penilaian' => qi_signal_statistik_per($records, fn($r) => isset($r['versi_penilaian'])
-            ? 'v' . (int)$r['versi_penilaian'] . ' (spread + gap)' : 'v1 (tanpa spread)'),
+        'per_versi_penilaian' => qi_signal_statistik_per($records, fn($r) => [
+            1 => 'v1 (tanpa spread)', 2 => 'v2 (spread + gap)', 3 => 'v3 (spread + gap + slippage + M1)',
+        ][(int)($r['versi_penilaian'] ?? 1)] ?? ('v' . (int)$r['versi_penilaian'])),
         'per_versi_aturan' => qi_signal_statistik_per($records, fn($r) => (string)($r['versi_aturan'] ?? 'v1')),
     ];
 }
@@ -738,6 +739,72 @@ function qi_signal_monte_carlo(array $records, int $iterasi = 2000, ?int $panjan
             ? 'Sampel masih kecil (' . $n . ' transaksi) — rentang hasil simulasi ini sangat lebar.'
             : 'Dalam 95% simulasi drawdown tidak melebihi ' . $q($dd, 0.95) . 'R untuk ' . $panjang . ' transaksi.',
     ]);
+}
+
+/**
+ * Interval keyakinan 95% untuk EXPECTANCY (rata-rata R) lewat bootstrap — lebih bermakna
+ * daripada interval win rate, karena sistem R:R tinggi bisa untung dengan win rate rendah.
+ * Deterministik (benih tetap). null bila transaksi tertutup < 10.
+ * @return array{n:int, rata_r:?float, bawah:?float, atas:?float}
+ */
+function qi_signal_ci_expectancy(array $records, int $iterasi = 2000, int $benih = 20261019): array
+{
+    $r = [];
+    foreach ($records as $rek) {
+        if (!is_array($rek)) continue;
+        $h = qi_signal_r_satu($rek);
+        if ($h['r'] !== null) $r[] = (float)$h['r'];
+    }
+    $n = count($r);
+    if ($n < 10) return ['n' => $n, 'rata_r' => $n ? round(array_sum($r) / $n, 3) : null, 'bawah' => null, 'atas' => null];
+    $x = $benih & 0x7fffffff ?: 1;
+    $rata = [];
+    for ($i = 0; $i < $iterasi; $i++) {
+        $jum = 0.0;
+        for ($j = 0; $j < $n; $j++) {
+            $x = (int)(($x * 1103515245 + 12345) & 0x7fffffff);
+            $jum += $r[$x % $n];
+        }
+        $rata[] = $jum / $n;
+    }
+    sort($rata);
+    return ['n' => $n, 'rata_r' => round(array_sum($r) / $n, 3),
+            'bawah' => round($rata[(int)floor(0.025 * ($iterasi - 1))], 3),
+            'atas' => round($rata[(int)floor(0.975 * ($iterasi - 1))], 3)];
+}
+
+/**
+ * KESIAPAN AUTO-ENTRY ke akun MT5 (keputusan pemilik 2026-10-18): hanya bila data bayangan
+ * membuktikan edge. Setiap kriteria dilaporkan lulus/gagal dengan angkanya — tidak ada
+ * keputusan otomatis; laporan ini hanya alat bantu. Meski semua lulus, rencana yang disepakati
+ * tetap: akun DEMO dulu, kill switch, risiko 0,25–0,5%/sinyal, batas rugi harian, order limit.
+ */
+function qi_signal_kesiapan_auto(array $bayanganSelesai, array $lamaSelesai = []): array
+{
+    $st = qi_signal_statistik($bayanganSelesai);
+    $ci = qi_signal_ci_expectancy($bayanganSelesai);
+    $mc = qi_signal_monte_carlo($bayanganSelesai, 1000, 100);
+    $stL = qi_signal_statistik($lamaSelesai);
+    $k = [
+        ['nama' => 'Sampel tertutup ≥ 100', 'nilai' => $st['dinilai'], 'lolos' => $st['dinilai'] >= 100],
+        ['nama' => 'Expectancy > 0R', 'nilai' => $st['expectancy_r'], 'lolos' => ($st['expectancy_r'] ?? 0) > 0],
+        ['nama' => 'Batas bawah CI 95% expectancy > 0R (bootstrap)', 'nilai' => $ci['bawah'], 'lolos' => $ci['bawah'] !== null && $ci['bawah'] > 0],
+        ['nama' => 'Profit factor ≥ 1,2', 'nilai' => $st['profit_factor'], 'lolos' => is_numeric($st['profit_factor']) && (float)$st['profit_factor'] >= 1.2],
+        ['nama' => 'Drawdown 95% Monte Carlo (100 transaksi) ≤ 15R', 'nilai' => $mc['dd_p95_r'], 'lolos' => $mc['dd_p95_r'] !== null && $mc['dd_p95_r'] <= 15],
+        ['nama' => 'Lebih baik dari sinyal lama (expectancy)', 'nilai' => ['bayangan' => $st['expectancy_r'], 'lama' => $stL['expectancy_r']],
+         'lolos' => $st['expectancy_r'] !== null && ($stL['expectancy_r'] === null || $st['expectancy_r'] > $stL['expectancy_r'])],
+    ];
+    $lolos = count(array_filter($k, fn($x) => $x['lolos']));
+    $siap = $lolos === count($k);
+    return [
+        'siap'      => $siap,
+        'lolos'     => $lolos . ' / ' . count($k),
+        'kriteria'  => $k,
+        'ci_expectancy' => $ci,
+        'catatan'   => $siap
+            ? 'Semua kriteria lulus. Langkah berikutnya tetap AKUN DEMO dengan kill switch dan risiko kecil — bukan akun nyata.'
+            : 'Belum siap: ' . (count($k) - $lolos) . ' kriteria belum lulus. Jangan menyalakan auto-entry.',
+    ];
 }
 
 endif;

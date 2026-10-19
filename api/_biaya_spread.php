@@ -18,6 +18,8 @@
  *     (untuk perbandingan) dengan define('QI_SPREAD_AKTIF', false).
  *   · basis harga candle: feed broker MT5 = BID; sumber lain (OANDA, Binance, dll.) = MID.
  *     Dari situ: harga BID = candle + bid_off, ASK = candle + ask_off.
+ *   · SLIPPAGE: entry pasar dan SL (order stop) terisi lebih buruk sebesar slippage_biaya =
+ *     QI_SLIPPAGE_KALI × spread (bawaan 0,25×). TP (order limit) tidak. Perkiraan, dicatat di rekor.
  */
 declare(strict_types=1);
 
@@ -83,6 +85,10 @@ function qi_spread_pasang(array $rek, string $sumberCandle): array
         $t = qi_spread_tipikal((string)($rek['symbol'] ?? ''), (float)($rek['entry'] ?? 0));
         $rek['spread_biaya'] = $t['spread'];
         $rek['spread_basis'] = $t['basis'];
+    }
+    if (!isset($rek['slippage_biaya']) || !is_numeric($rek['slippage_biaya'])) {
+        $kali = defined('QI_SLIPPAGE_KALI') ? max(0.0, (float)QI_SLIPPAGE_KALI) : 0.25;
+        $rek['slippage_biaya'] = round((float)$rek['spread_biaya'] * $kali, 8);
     }
     $rek['harga_basis'] = qi_spread_basis_candle($sumberCandle);
     return $rek;

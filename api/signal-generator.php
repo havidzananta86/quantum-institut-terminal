@@ -187,12 +187,6 @@ foreach ($kandidat as $simbol) {
         $hasil[] = ['simbol' => $simbol, 'hasil' => 'tidak_sepakat', 'bull' => $bull, 'bear' => $bear];
         continue;
     }
-    // Berita berdampak tinggi untuk mata uang simbol INI (mis. EUR untuk EURUSD).
-    $boSimbol = qi_berita_blackout(30, false, $simbol);
-    if (!empty($boSimbol['aktif'])) {
-        $hasil[] = ['simbol' => $simbol, 'hasil' => 'blackout_berita', 'berita' => $boSimbol['event']];
-        continue;
-    }
 
     // Anti counter-trend: bias D1 (EMA20 vs EMA50) tidak boleh berlawanan.
     $d1 = $tfs['D1'] ?? null;
@@ -224,6 +218,18 @@ foreach ($kandidat as $simbol) {
     // Validasi arah level (aturan yang sama dengan penilai sinyal).
     $sah = ($arah === 'BUY') ? ($tp > $entry && $entry > $sl) : ($tp < $entry && $entry < $sl);
     if (!$sah) { $hasil[] = ['simbol' => $simbol, 'hasil' => 'level_tidak_konsisten']; continue; }
+
+    // Berita berdampak tinggi untuk mata uang simbol INI (mis. EUR untuk EURUSD). Diperiksa
+    // sesudah level ada, supaya kandidat yang ditahan bisa dinilai kontrafaktual (api/_sinyal_ditolak.php).
+    $boSimbol = qi_berita_blackout(30, false, $simbol);
+    if (!empty($boSimbol['aktif'])) {
+        require_once __DIR__ . '/_sinyal_ditolak.php';
+        qi_ditolak_catat(['symbol' => $simbol, 'side' => $arah, 'engine' => 'AUTO_SIGNAL', 'entry' => $entry, 'sl' => $sl, 'tp' => $tp,
+                          'atr' => round($atr, 5), 'expiry' => qi_sig_waktu_utc($kini + 12 * 3600)], 'blackout_berita',
+                         ['berita' => (string)($boSimbol['event']['judul'] ?? ''), 'mata_uang' => (string)($boSimbol['event']['mata_uang'] ?? '')]);
+        $hasil[] = ['simbol' => $simbol, 'hasil' => 'blackout_berita', 'berita' => $boSimbol['event']];
+        continue;
+    }
 
     $skor = (int)round(min(100, ($arah === 'BUY' ? $bull : $bear) * 20 + 10));   // 3 TF = 70, 4 TF = 90
 

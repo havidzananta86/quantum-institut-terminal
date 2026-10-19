@@ -60,6 +60,7 @@ require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_biaya_spread.php';
 require_once __DIR__ . '/_json_kunci.php';
+require_once __DIR__ . '/_urai_m1.php';
 
 if (!function_exists('qi_sig_interval_kandidat')) :
 /**
@@ -157,7 +158,7 @@ if (!function_exists('qi_sig_nilai_satu')) :
  * @param int      $durasi durasi satu candle (detik) — untuk memeriksa cakupan data
  * @param int|null $kini   waktu sekarang (epoch); null = time()
  */
-function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?string $zonaLama = null): ?array {
+function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?string $zonaLama = null, ?callable $urai = null): ?array {
     $side  = strtoupper((string)($sig['side'] ?? ''));
     $entry = (float)($sig['entry'] ?? 0);
     $tp    = (float)($sig['tp'] ?? 0);
@@ -185,24 +186,43 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     // pembuka. Offset 0 bila rekor tidak dipasangi biaya (perilaku lama, dipakai uji).
     $off = qi_spread_offset_rekor($sig);
     $offTutup = ($side === 'BUY') ? $off['bid_off'] : $off['ask_off'];
-    $entryEfektif = $entry + (($side === 'BUY') ? $off['ask_off'] : $off['bid_off']);
+    // Aturan 10 (slippage): entry pasar dan SL (order stop) terisi sedikit lebih buruk;
+    // TP (order limit) terisi tepat di level. 0 bila rekor tidak dipasangi biaya.
+    $slip = max(0.0, (float)($sig['slippage_biaya'] ?? 0));
+    $entryEfektif = $entry + (($side === 'BUY') ? $off['ask_off'] + $slip : $off['bid_off'] - $slip);
+    $resolusi = null;
 
     foreach ($filtered as $c) {
         $tpKena = false; $slKena = false; $harga = 0.0;
         $o = $c['open'] + $offTutup; $h = $c['high'] + $offTutup; $l = $c['low'] + $offTutup;
+        $slStop = ($side === 'BUY') ? $sl - $slip : $sl + $slip;   // harga isi SL tanpa gap
         if ($side === 'BUY') {
             if ($o >= $tp) { $tpKena = true; $harga = $o; }      // gap naik melewati TP
             elseif ($o <= $sl) { $slKena = true; $harga = $o; }  // gap turun melewati SL
             else {
-                if ($l <= $sl) { $slKena = true; $harga = $sl; }          // aturan 4: SL lebih dulu
-                elseif ($h >= $tp) { $tpKena = true; $harga = $tp; }
+                $kenaSl = $l <= $sl; $kenaTp = $h >= $tp;
+                if ($kenaSl && $kenaTp) {
+                    // Aturan 4 + 11: keduanya tersentuh di satu candle. Urutan dicari dari candle M1
+                    // di dalam candle ini; bila M1 tidak tersedia / tetap ambigu → SL lebih dulu.
+                    $urut = qi_sig_urai_m1($side, $tp, $sl, $offTutup, $c, $durasi, $urai);
+                    $resolusi = $urut === null ? 'sl_dulu' : 'M1';
+                    if ($urut === 'TP') { $tpKena = true; $harga = $tp; } else { $slKena = true; $harga = $slStop; }
+                }
+                elseif ($kenaSl) { $slKena = true; $harga = $slStop; }
+                elseif ($kenaTp) { $tpKena = true; $harga = $tp; }
             }
         } else {
             if ($o <= $tp) { $tpKena = true; $harga = $o; }
             elseif ($o >= $sl) { $slKena = true; $harga = $o; }
             else {
-                if ($h >= $sl) { $slKena = true; $harga = $sl; }
-                elseif ($l <= $tp) { $tpKena = true; $harga = $tp; }
+                $kenaSl = $h >= $sl; $kenaTp = $l <= $tp;
+                if ($kenaSl && $kenaTp) {
+                    $urut = qi_sig_urai_m1($side, $tp, $sl, $offTutup, $c, $durasi, $urai);
+                    $resolusi = $urut === null ? 'sl_dulu' : 'M1';
+                    if ($urut === 'TP') { $tpKena = true; $harga = $tp; } else { $slKena = true; $harga = $slStop; }
+                }
+                elseif ($kenaSl) { $slKena = true; $harga = $slStop; }
+                elseif ($kenaTp) { $tpKena = true; $harga = $tp; }
             }
         }
         if ($tpKena || $slKena) {
@@ -239,9 +259,9 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
             }
 
             $selisih = ($side === 'BUY') ? $keluar - $entryEfektif : $entryEfektif - $keluar;
-            $biaya = [];
-            if ($off['ask_off'] - $off['bid_off'] > 0) {
-                $biaya = [
+            $biaya = $resolusi !== null ? ['resolusi_ambigu' => $resolusi] : [];
+            if ($off['ask_off'] - $off['bid_off'] > 0 || $slip > 0) {
+                $biaya += [
                     'entry_efektif' => round($entryEfektif, 6),
                     'pnl_kotor'     => round(($side === 'BUY' ? $keluar - $entry : $entry - $keluar), 6),
                 ];
@@ -292,16 +312,17 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
 }
 endif;
 
+
 if (!function_exists('qi_sig_nilai_lintas_zona')) :
 /**
  * qi_sig_nilai_satu() untuk setiap zona kandidat rekor (satu zona saja bila waktunya
  * sudah membawa zona). null bila salah satu zona belum bisa memutuskan. Bila zona-zona
  * tidak sepakat, hasilnya EXPIRED "zona_ambigu" — tidak pernah menebak menang/kalah.
  */
-function qi_sig_nilai_lintas_zona(array $sig, array $candles, int $durasi = 0, ?int $kini = null): ?array {
+function qi_sig_nilai_lintas_zona(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?callable $urai = null): ?array {
     $perZona = [];
     foreach (qi_sig_zona_kandidat($sig) as $zona) {
-        $h = qi_sig_nilai_satu($sig, $candles, $durasi, $kini, $zona);
+        $h = qi_sig_nilai_satu($sig, $candles, $durasi, $kini, $zona, $urai);
         if ($h === null) return null;
         $perZona[$zona ?? 'zona_tertulis'] = $h;
     }
@@ -355,6 +376,105 @@ function qi_sig_url_dasar(): string {
     }
     if (defined('QI_PUBLIC_BASE') && QI_PUBLIC_BASE !== '') return rtrim(QI_PUBLIC_BASE, '/');
     return 'https://quantum-institut.com';
+}
+endif;
+
+if (!function_exists('qi_sig_nilai_rekor')) :
+/**
+ * Nilai SATU rekor AKTIF dengan seluruh aturan (interval kandidat, spread, slippage, gap,
+ * resolusi M1, zona waktu, kedaluwarsa tanpa data). Dipakai rekor resmi DAN kandidat yang
+ * ditolak gerbang (api/_sinyal_ditolak.php), supaya keduanya dinilai identik.
+ * @return array{hasil: ?array, pakai: ?array, ada_data: bool, ubah: array}
+ */
+function qi_sig_nilai_rekor(array $s): array {
+    // Coba tiap interval kandidat (halus → kasar) sampai ada yang bisa memutuskan:
+    // cache 5 menit bisa basi atau sudah tidak mencakup awal sinyal, sementara
+    // cache 15/60 menit masih mencakup seluruh jendela.
+    $hasil = null; $pakai = null; $adaData = false; $sBiaya = null;
+    $urai = qi_sig_pengurai_m1((string)($s['symbol'] ?? ''));
+    foreach (qi_sig_interval_kandidat((string)($s['timeframe'] ?? 'MTF')) as $iv) {
+        $data = qi_sig_ambil_candle((string)$s['symbol'], [$iv]);
+        if ($data === null) continue;
+        $adaData = true;
+        $sBiaya = qi_spread_pasang($s, (string)($data['source'] ?? ''));
+        $hasil = qi_sig_nilai_lintas_zona($sBiaya, $data['candles'], qi_sig_durasi_interval($data['interval']), null, $urai);
+        if ($hasil !== null) { $pakai = $data; break; }
+    }
+    if ($hasil === null) {
+        $hasil = qi_sig_kedaluwarsa_tanpa_data($s);
+        if ($hasil !== null) $pakai = ['interval' => 'tanpa_data'];
+    }
+    if ($hasil === null) return ['hasil' => null, 'pakai' => null, 'ada_data' => $adaData, 'ubah' => []];
+
+    $ubah = [
+        'status'     => $hasil['status'],
+        'pnl'        => $hasil['pnl'],
+        'pnl_usd'    => $hasil['pnl_usd'],
+        'pnl_basis'  => '1 lot',
+        'exit_price' => $hasil['exit_price'],
+        'closed_at'  => $hasil['closed_at'],
+    ];
+    foreach (['expiry_basis', 'zona_hasil', 'entry_efektif', 'pnl_kotor', 'resolusi_ambigu'] as $f) {
+        if (isset($hasil[$f])) $ubah[$f] = $hasil[$f];
+    }
+    if ($pakai['interval'] !== 'tanpa_data' && $sBiaya !== null) {
+        foreach (['spread_biaya', 'spread_basis', 'harga_basis', 'slippage_biaya'] as $f) {
+            if (isset($sBiaya[$f])) $ubah[$f] = $sBiaya[$f];
+        }
+    }
+    // Versi aturan PENILAIAN: 2 = spread + harga keluar saat gap (2026-10-19);
+    // 3 = + slippage entry/SL + resolusi M1 untuk candle ambigu. Rekor yang ditutup
+    // sebelumnya tidak ditulis ulang; statistik memisahkannya (per_versi_penilaian).
+    $ubah['versi_penilaian'] = 3;
+    $ubah['evaluated_at']   = qi_sig_waktu_utc();
+    $ubah['evaluated_from'] = $pakai['interval'] === 'tanpa_data' ? 'tanpa_data' : 'cache/' . $pakai['interval'];
+    return ['hasil' => $hasil, 'pakai' => $pakai, 'ada_data' => $adaData, 'ubah' => $ubah];
+}
+
+/**
+ * Pengambil candle M1 untuk mengurai candle ambigu (aturan 11): cache chart lebih dulu,
+ * lalu feed broker MT5 (hanya dipanggil bila memang ada candle ambigu — jarang).
+ */
+function qi_sig_pengurai_m1(string $simbol): ?callable {
+    if ($simbol === '') return null;
+    return function (int $t0, int $t1) use ($simbol): array {
+        $saring = fn(array $cs) => array_values(array_filter($cs, fn($c) => (int)($c['time'] ?? 0) >= $t0 && (int)($c['time'] ?? 0) < $t1));
+        $d = qi_sig_ambil_candle($simbol, ['1']);
+        $m1 = $d ? $saring($d['candles']) : [];
+        if (!$m1 && function_exists('qi_mt5_candles')) {
+            $m1 = $saring(qi_mt5_candles($simbol, '1', 1000));
+        }
+        return $m1;
+    };
+}
+
+/**
+ * Nilai kandidat yang DITOLAK gerbang (cache/sinyal_ditolak.json) dengan qi_sig_nilai_rekor.
+ * Penilaian di luar kunci (mengambil candle), lalu digabung ke isi berkas terbaru di bawah kunci.
+ */
+function qi_sig_nilai_ditolak(bool $dry = false, int $maks = 60): array {
+    if (!function_exists('qi_ditolak_berkas')) require_once __DIR__ . '/_sinyal_ditolak.php';
+    $berkas = qi_ditolak_berkas();
+    $daftar = qi_json_baca($berkas);
+    $ubah = []; $dinilai = 0;
+    foreach ($daftar as $r) {
+        if (($r['status'] ?? '') !== 'AKTIF' || empty($r['id'])) continue;
+        if ($dinilai >= $maks) break;
+        $n = qi_sig_nilai_rekor($r);
+        if ($n['hasil'] === null) continue;
+        $ubah[(string)$r['id']] = $n['ubah'];
+        $dinilai++;
+    }
+    if ($dry || !$ubah) return ['dinilai' => $dinilai, 'tersimpan' => !$ubah ? null : false];
+    $t = qi_json_ubah($berkas, function (array $kini) use ($ubah): ?array {
+        $kena = 0;
+        foreach ($kini as $j => $r) {
+            $id = (string)($r['id'] ?? '');
+            if (isset($ubah[$id]) && ($r['status'] ?? '') === 'AKTIF') { $kini[$j] = array_merge($r, $ubah[$id]); $kena++; }
+        }
+        return $kena ? $kini : null;
+    }, ['tunggu' => 5.0]);
+    return ['dinilai' => $dinilai, 'tersimpan' => $t['ok']];
 }
 endif;
 
@@ -423,25 +543,10 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
     $berubah = 0;
     $perubahan = [];
     foreach ($aktif as $i => $s) {
-        unset($sBiaya);
         if ($berubah >= $maxNilai) break;
-        // Coba tiap interval kandidat (halus → kasar) sampai ada yang bisa memutuskan:
-        // cache 5 menit bisa basi atau sudah tidak mencakup awal sinyal, sementara
-        // cache 15/60 menit masih mencakup seluruh jendela.
-        $hasil = null; $pakai = null; $adaData = false;
-        foreach (qi_sig_interval_kandidat((string)($s['timeframe'] ?? 'MTF')) as $iv) {
-            $data = qi_sig_ambil_candle((string)$s['symbol'], [$iv]);
-            if ($data === null) continue;
-            $adaData = true;
-            $sBiaya = qi_spread_pasang($s, (string)($data['source'] ?? ''));
-            $hasil = qi_sig_nilai_lintas_zona($sBiaya, $data['candles'], qi_sig_durasi_interval($data['interval']));
-            if ($hasil !== null) { $pakai = $data; break; }
-        }
-        if ($hasil === null) {
-            $hasil = qi_sig_kedaluwarsa_tanpa_data($s);
-            if ($hasil !== null) $pakai = ['interval' => 'tanpa_data'];
-        }
-        if ($hasil === null) { $laporan[$adaData ? 'dilewati' : 'tanpa_data']++; continue; }
+        $n = qi_sig_nilai_rekor($s);
+        $hasil = $n['hasil']; $pakai = $n['pakai'];
+        if ($hasil === null) { $laporan[$n['ada_data'] ? 'dilewati' : 'tanpa_data']++; continue; }
 
         $laporan['dinilai']++;
         $laporan['detail'][] = [
@@ -454,29 +559,8 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
             'pnl_usd'  => $hasil['pnl_usd'],
         ];
         if (!$dry) {
-            $ubah = [
-                'status'     => $hasil['status'],
-                'pnl'        => $hasil['pnl'],
-                'pnl_usd'    => $hasil['pnl_usd'],
-                'pnl_basis'  => '1 lot',
-                'exit_price' => $hasil['exit_price'],
-                'closed_at'  => $hasil['closed_at'],
-            ];
-            foreach (['expiry_basis', 'zona_hasil', 'entry_efektif', 'pnl_kotor'] as $f) {
-                if (isset($hasil[$f])) $ubah[$f] = $hasil[$f];
-            }
-            if ($pakai['interval'] !== 'tanpa_data' && isset($sBiaya)) {
-                foreach (['spread_biaya', 'spread_basis', 'harga_basis'] as $f) {
-                    if (isset($sBiaya[$f])) $ubah[$f] = $sBiaya[$f];
-                }
-            }
-            // Versi aturan PENILAIAN: 2 = dengan spread + harga keluar saat gap (2026-10-19).
-            // Rekor yang ditutup sebelumnya tidak ditulis ulang; statistik bisa memisahkannya.
-            $ubah['versi_penilaian'] = 2;
-            $ubah['evaluated_at']   = qi_sig_waktu_utc();
-            $ubah['evaluated_from'] = $pakai['interval'] === 'tanpa_data' ? 'tanpa_data' : 'cache/' . $pakai['interval'];
             $perubahan[] = ['i' => $i, 'id' => $s['id'] ?? null, 'timestamp' => $s['timestamp'] ?? null,
-                            'symbol' => $s['symbol'] ?? null, 'ubah' => $ubah];
+                            'symbol' => $s['symbol'] ?? null, 'ubah' => $n['ubah']];
         }
         $berubah++;
     }
@@ -524,6 +608,14 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
                 @error_log('[jurnal] hook penilai gagal: ' . $e->getMessage());
             }
         }
+    }
+
+    // ── KANDIDAT YANG DITOLAK GERBANG (api/_sinyal_ditolak.php) ───────────────────
+    // Dinilai dengan aturan yang sama, supaya manfaat setiap gerbang bisa diukur.
+    try {
+        $laporan['sinyal_ditolak'] = qi_sig_nilai_ditolak($dry);
+    } catch (Throwable $e) {
+        @error_log('[sinyal-ditolak] penilaian gagal: ' . $e->getMessage());
     }
 
     // ── BELAJAR DARI SL (Tahap 2, spesifikasi Bagian 5) ──────────────────────────

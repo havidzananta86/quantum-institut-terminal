@@ -125,7 +125,8 @@ function qi_pine_pindai_terkunci(array $o, array $k, callable $muat, int $kini, 
         if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = empty($m['simulated']) ? ($m['candles'] ?? []) : []; $sumberM15[$sym] = (string)($m['source'] ?? ''); }
         if (!$cacheM15[$sym]) continue;
         if (!empty($k['spread'])) $r = qi_spread_pasang($r, $sumberM15[$sym] ?? '');
-        $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $nilaiCfg);
+        $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $nilaiCfg + [
+            'urai' => is_callable($o['urai_m1'] ?? null) ? ($o['urai_m1'])($sym) : null, 'durasi_nilai' => 900]);
         $ringkas['dinilai']++;
         if (($baru['status'] ?? '') !== ($r['status'] ?? '')) $ringkas['diperbarui'][] = $r['id'] . ': ' . $r['status'] . ' → ' . $baru['status'];
         $rekor[$i] = $baru;

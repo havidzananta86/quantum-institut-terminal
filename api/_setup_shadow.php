@@ -34,6 +34,7 @@ require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_signal_stats.php';
 require_once __DIR__ . '/_biaya_spread.php';
 require_once __DIR__ . '/_json_kunci.php';
+require_once __DIR__ . '/_urai_m1.php';
 
 if (!function_exists('qi_ss_konfig')) :
 
@@ -159,6 +160,9 @@ function qi_ss_nilai(array $rek, array $candles, int $kini, array $k): array
     $off = qi_spread_offset_rekor($rek);
     $offBuka  = $buy ? $off['ask_off'] : $off['bid_off'];
     $offTutup = $buy ? $off['bid_off'] : $off['ask_off'];
+    // SL adalah order stop: terisi lebih buruk sebesar slippage (entry limit & TP tidak).
+    $slip = max(0.0, (float)($rek['slippage_biaya'] ?? 0));
+    $slIsi = $buy ? $sl - $slip : $sl + $slip;
 
     usort($candles, fn($a, $b) => ((int)$a['time']) <=> ((int)$b['time']));
     foreach ($candles as $c) {
@@ -180,7 +184,7 @@ function qi_ss_nilai(array $rek, array $candles, int $kini, array $k): array
             $rek['filled_at'] = qi_sig_waktu_utc($t);
             $tIsi = $t;
             $kenaSl = $buy ? $l <= $sl : $h >= $sl;
-            if ($kenaSl) return qi_ss_tutup($rek, false, $sl, $t);
+            if ($kenaSl) return qi_ss_tutup($rek, false, $slIsi, $t);
             $status = 'AKTIF';
             $rek['status'] = 'AKTIF';
             continue;   // TP baru dihitung dari candle berikutnya
@@ -189,9 +193,18 @@ function qi_ss_nilai(array $rek, array $candles, int $kini, array $k): array
         // AKTIF. Gap melewati level → keluar di harga pembukaan (bukan tepat di level).
         if ($t > $tIsi + $maks) { $rek['status'] = 'EXPIRED'; $rek['closed_at'] = qi_sig_waktu_utc($t); return $rek; }
         if ($buy ? $o <= $sl : $o >= $sl) return qi_ss_tutup($rek, false, $o, $t);
-        if ($buy ? $l <= $sl : $h >= $sl) return qi_ss_tutup($rek, false, $sl, $t);
         if ($buy ? $o >= $tp : $o <= $tp) return qi_ss_tutup($rek, true, $o, $t);
-        if ($buy ? $h >= $tp : $l <= $tp) return qi_ss_tutup($rek, true, $tp, $t);
+        $kenaSl = $buy ? $l <= $sl : $h >= $sl;
+        $kenaTp = $buy ? $h >= $tp : $l <= $tp;
+        if ($kenaSl && $kenaTp) {
+            // TP dan SL di candle yang sama: urutan dari M1 bila tersedia, selain itu SL dulu.
+            $urut = qi_sig_urai_m1($buy ? 'BUY' : 'SELL', $tp, $sl, $offTutup, $c, (int)($k['durasi_nilai'] ?? 900),
+                                   is_callable($k['urai'] ?? null) ? $k['urai'] : null);
+            $rek['resolusi_ambigu'] = $urut === null ? 'sl_dulu' : 'M1';
+            return $urut === 'TP' ? qi_ss_tutup($rek, true, $tp, $t) : qi_ss_tutup($rek, false, $slIsi, $t);
+        }
+        if ($kenaSl) return qi_ss_tutup($rek, false, $slIsi, $t);
+        if ($kenaTp) return qi_ss_tutup($rek, true, $tp, $t);
     }
     // Tidak ada keputusan dari candle yang ada: terapkan batas waktu bila sudah lewat.
     if ($status === 'MENUNGGU' && $kini > $ttl) { $rek['status'] = 'TIDAK TERISI'; $rek['closed_at'] = qi_sig_waktu_utc($ttl); }
@@ -261,7 +274,8 @@ function qi_ss_jalankan_terkunci(array $o, array $k, callable $muat, int $kini, 
         if (!isset($cacheM15[$sym])) { $m = $muat($sym, $k['tf_nilai']); $cacheM15[$sym] = (empty($m['simulated']) ? ($m['candles'] ?? []) : []); $sumberM15[$sym] = (string)($m['source'] ?? ''); }
         if (!$cacheM15[$sym]) continue;
         if (!empty($k['spread'])) $r = qi_spread_pasang($r, $sumberM15[$sym] ?? '');
-        $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $k);
+        $kNilai = $k + ['urai' => is_callable($o['urai_m1'] ?? null) ? ($o['urai_m1'])($sym) : null, 'durasi_nilai' => 900];
+        $baru = qi_ss_nilai($r, $cacheM15[$sym], $kini, $kNilai);
         $ringkas['dinilai']++;
         if (($baru['status'] ?? '') !== ($r['status'] ?? '')) $ringkas['diperbarui'][] = $r['id'] . ': ' . $r['status'] . ' → ' . $baru['status'];
         $rekor[$i] = $baru;
@@ -411,6 +425,8 @@ function qi_ss_laporan(array $bayangan, array $resmi): array
             ? 'Sampel bayangan ≥ 100 sinyal tertutup: perbandingan expectancy & interval keyakinan sudah bermakna.'
             : 'Sampel bayangan baru ' . $n . ' sinyal tertutup. Kumpulkan minimal 100 sebelum menyimpulkan atau mempromosikan.',
         'satuan'        => 'R = kelipatan risiko (1R = jarak entry ke SL). Titik impas = 1/(1+R:R rata-rata).',
+        // Kriteria lulus/gagal yang bisa diaudit (api/_signal_stats.php) — alat bantu, bukan saklar.
+        'kesiapan_auto_entry' => qi_signal_kesiapan_auto($selesai, array_values(array_filter($lama, fn($r) => preg_match('/^HIT (TP|SL)/u', (string)($r['status'] ?? ''))))),
     ];
 }
 

@@ -40,6 +40,9 @@ if (!$isCli) {
         // Salinan database (dual-write, api/_rekor_db.php): harus identik sebelum pembacaan dipindah.
         require_once __DIR__ . '/_rekor_db.php';
         $laporan['salinan_database'] = qi_rekor_db_bandingkan('shadow', $cache . '/signal_shadow.json');
+        // Apakah gerbang (spread, korelasi, berita, mesin) menolong? Kandidat yang ditolak, dinilai kontrafaktual.
+        require_once __DIR__ . '/_sinyal_ditolak.php';
+        $laporan['sinyal_ditolak'] = qi_ditolak_ringkas(qi_json_baca(qi_ditolak_berkas()));
         shd_jawab(200, $laporan);
     }
 
@@ -72,6 +75,10 @@ if (!function_exists('ai_load_candles')) shd_jawab(200, ['status' => 'error', 'm
 
 $hasil = qi_ss_jalankan([
     'muat'   => fn(string $simbol, string $iv): array => ai_load_candles($simbol, $iv),
+    'urai_m1' => fn(string $simbol): callable => function (int $t0, int $t1) use ($simbol): array {
+        $m = ai_load_candles($simbol, '1');
+        return array_values(array_filter($m['candles'] ?? [], fn($c) => (int)$c['time'] >= $t0 && (int)$c['time'] < $t1));
+    },
     'berita' => qi_berita_blackout(30, true),
 ]);
 if ($auto) @file_put_contents($cache . '/signal_shadow_auto.txt', (string)time(), LOCK_EX);

@@ -167,6 +167,10 @@ if (!$dryRun) {
                 @file_put_contents($penandaBayangan, (string)time(), LOCK_EX);
                 $b = qi_ss_jalankan([
                     'muat'   => fn(string $simbol, string $iv): array => ai_load_candles($simbol, $iv),
+                    'urai_m1' => fn(string $simbol): callable => function (int $t0, int $t1) use ($simbol): array {
+                        $m = ai_load_candles($simbol, '1');
+                        return array_values(array_filter($m['candles'] ?? [], fn($c) => (int)$c['time'] >= $t0 && (int)$c['time'] < $t1));
+                    },
                     'berita' => qi_berita_blackout(30, true),
                 ]);
                 $out['sinyal_bayangan'] = ['dinilai' => $b['dinilai'], 'dibuat' => $b['dibuat'], 'dipindai' => $b['dipindai'], 'total_rekor' => $b['total_rekor'] ?? null];
@@ -206,6 +210,10 @@ if (!$dryRun) {
                     : null;
                 $p = qi_pine_pindai([
                     'muat'  => fn(string $simbol, string $iv): array => ai_load_candles($simbol, $iv),
+                    'urai_m1' => fn(string $simbol): callable => function (int $t0, int $t1) use ($simbol): array {
+                        $m = ai_load_candles($simbol, '1');
+                        return array_values(array_filter($m['candles'] ?? [], fn($c) => (int)$c['time'] >= $t0 && (int)$c['time'] < $t1));
+                    },
                     'notif' => $notifPine,
                 ]);
                 $out['sinyal_pine'] = ['dinilai' => $p['dinilai'], 'dibuat' => $p['dibuat'], 'dipindai' => $p['dipindai'], 'total_rekor' => $p['total_rekor'] ?? null];

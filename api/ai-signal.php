@@ -347,6 +347,10 @@ try {
             $boRek = function_exists('qi_berita_blackout') ? qi_berita_blackout(30, true, $symbol) : ['aktif' => false];   // hanya berita mata uang simbol ini
             if (!empty($boRek['aktif'])) {
                 $response['catatan_rekor'] = 'Ditahan filter berita berdampak tinggi (' . ($boRek['event']['judul'] ?? '-') . ').';
+                require_once __DIR__ . '/_sinyal_ditolak.php';
+                qi_ditolak_catat(['symbol' => $symbol, 'side' => $arahRek, 'engine' => 'AI', 'entry' => $epRek, 'sl' => $slRek, 'tp' => $tpRek,
+                                  'expiry' => qi_sig_waktu_utc(time() + 12 * 3600)], 'blackout_berita',
+                                 ['berita' => (string)($boRek['event']['judul'] ?? ''), 'mata_uang' => (string)($boRek['event']['mata_uang'] ?? '')]);
             } else {
                 $jarakRek = abs($epRek - $slRek);
                 $rrRek = $jarakRek > 0 ? abs($tpRek - $epRek) / $jarakRek : 0;
