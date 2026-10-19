@@ -12,7 +12,7 @@ let gagal = 0;
 function cek(nama, kondisi, info) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama + (kondisi || info === undefined ? '' : '  ' + JSON.stringify(info).slice(0, 300))); if (!kondisi) gagal++; }
 
 const BERSIH = ['index.html', 'login.html', 'register.html', 'pricing.html', 'transparansi.html', 'pwa.html', 'status.html',
-  'economic-calendar.html', 'profile.html', 'admin.html', '404.html', 'privacy.html', 'terms.html'];
+  'economic-calendar.html', 'profile.html', 'admin.html', '404.html', 'privacy.html', 'terms.html', 'dashboard.html'];
 
 // <script> tanpa src yang dieksekusi browser (blok data JSON/JSON-LD tidak terkena script-src).
 const scriptInline = s => [...s.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
@@ -26,6 +26,8 @@ const tanpaKomentar = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.
 const pelanggaranJs = s => (s = tanpaKomentar(s), [
   ...[...s.matchAll(/\son[a-z]+\s*=\s*\\?["'`]/g)].map(m => 'handler inline: ' + m[0].trim()),
   ...[...s.matchAll(/(^|[^.\w$])eval\s*\(/gm)].map(() => 'eval('),
+  // eval tidak langsung: (0, eval)(nama) dan window.eval(...) — sama-sama butuh 'unsafe-eval'.
+  ...[...s.matchAll(/,\s*eval\s*\)|\bwindow\.eval\s*\(/g)].map(m => 'eval tidak langsung: ' + m[0]),
   ...[...s.matchAll(/new\s+Function\s*\(/g)].map(() => 'new Function('),
   ...[...s.matchAll(/(^|[^.\w$])set(Timeout|Interval)\s*\(\s*["'`]/gm)].map(m => `set${m[2]}(string)`),
 ]);
@@ -47,6 +49,30 @@ console.log('Skrip yang dimuat halaman bersih');
 for (const f of [...jsDipakai].sort()) {
   const p = pelanggaranJs(read(f));
   cek(`${f}: tanpa handler inline / eval / new Function / setTimeout(string)`, p.length === 0, p);
+}
+
+// Pengganti onclick="fn(...)" di dashboard: data-qi-aksi="fn" (assets/js/qim-aksi.js). QIAksi mencari nama itu di
+// daftar QIAksi.daftar(...) lalu di window — fungsi `let`/`const` level atas TIDAK ada di window, jadi setiap nama
+// wajib terbukti: aksi terdaftar, deklarasi `function` level atas, atau `window.nama = ...`.
+console.log('Delegasi data-qi-aksi (dashboard)');
+{
+  const sumber = fs.readdirSync(path.join(root, 'assets/js')).filter(f => f.endsWith('.js')).map(f => read('assets/js/' + f));
+  const dipakai = new Set([read('dashboard.html'), ...sumber].flatMap(s => [...s.matchAll(/data-qi-aksi(?:-[a-z]+)?="([A-Za-z_$][\w$.]*)"/g)].map(m => m[1])));
+  const ada = new Set();
+  for (const s of sumber) {
+    for (const m of s.matchAll(/^(?:async\s+)?function\s+([\w$]+)/gm)) ada.add(m[1]);
+    for (const m of s.matchAll(/window\.([\w$]+)\s*=/g)) ada.add(m[1]);
+  }
+  for (const m of read('assets/js/qim-aksi.js').matchAll(/^\s{8}(\w+)\(el, e/gm)) ada.add(m[1]);
+  for (const s of sumber) for (const b of s.matchAll(/QIAksi\.daftar\(\{([\s\S]*?)\n\s*\}\);/g))
+    for (const m of b[1].matchAll(/^\s*(\w+)(?:\s*:\s*function)?\s*\(/gm)) ada.add(m[1]);
+  // loadRealtimeSymbol: dipanggil kartu AI Radar (pro-trading-tools.js) tetapi tidak pernah didefinisikan — sudah
+  // begitu sejak sebelum delegasi; QIAksi hanya memberi console.warn alih-alih ReferenceError.
+  const DIKENAL_HILANG = new Set(['loadRealtimeSymbol']);
+  const hilang = [...dipakai].filter(n => !ada.has(n.split('.')[0]) && !DIKENAL_HILANG.has(n));
+  cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size > 100 && hilang.length === 0, hilang);
+  cek('qim-aksi.js dimuat di <head> dashboard (sebelum skrip yang mendaftarkan aksi)',
+    /<script src="assets\/js\/qim-aksi\.js[^"]*"><\/script>[\s\S]*<\/head>/.test(read('dashboard.html')));
 }
 
 console.log('Header CSP (.htaccess)');

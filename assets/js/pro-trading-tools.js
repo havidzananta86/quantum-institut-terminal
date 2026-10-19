@@ -125,7 +125,7 @@
                 const formatPrice = item.price >= 100 ? item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : item.price.toFixed(4);
 
                 return `
-                    <div onclick="QuantumTickerEngine.handleClick('${item.sym}', '${item.tvSym}', ${item.price})" 
+                    <div data-qi-aksi="QuantumTickerEngine.handleClick" data-qi-arg="${QIAksi.arg(String(item.sym), String(item.tvSym), Number(item.price))}"
                          id="ticker-item-${item.sym}-${idx}"
                          class="inline-flex items-center gap-2 px-3 py-1 mx-1.5 rounded-lg bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition-all shrink-0 select-none group">
                         <span class="font-bold text-white group-hover:text-cyan-400 text-xs">${item.label}</span>
@@ -1096,7 +1096,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                                 <div class="${pnlColor} font-bold">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</div>
                                 <div class="text-[9px] text-slate-500">${p.openTime}</div>
                             </div>
-                            <button onclick="QuantumPaperTrading.closePosition('${p.id}')" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 text-[10px] font-bold">TUTUP</button>
+                            <button data-qi-aksi="QuantumPaperTrading.closePosition" data-qi-arg="${QIAksi.arg(String(p.id))}" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 text-[10px] font-bold">TUTUP</button>
                         </div>
                     </div>
                 `;
@@ -1150,7 +1150,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                 barsDipakai = candles.length;
             } else {
                 // Cache miss → fetch langsung dari API
-                const runBtn = document.querySelector('[onclick*="runBacktest"]');
+                const runBtn = document.querySelector('[data-qi-aksi*="runBacktest"]');
                 if (runBtn) { runBtn.disabled = true; runBtn.textContent = '⏳ Fetching...'; }
                 if (window.showQuantumToast)
                     window.showQuantumToast(`📡 Mengambil ${mintaBars.toLocaleString('id-ID')} bar ${symbol} ${tfRaw}…`, 'info', 2000);
@@ -1696,14 +1696,14 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
 
                         <div class="flex gap-2">
                             ${slPrice !== null
-                                ? `<button onclick="QuantumPaperTrading.executeOrder('${isBullish ? 'BUY' : 'SELL'}'); QuantumAIEngine.closeModal();" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-cyan-glow">
+                                ? `<button data-qi-aksi="eksekusiSetupAi" data-qi-arg="${QIAksi.arg(isBullish ? 'BUY' : 'SELL')}" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-cyan-glow">
                                 🚀 Eksekusi Setup AI (${isBullish ? 'BUY' : 'SELL'})
                             </button>`
                                 : `<button disabled title="Level SL/TP belum tersedia (ATR TradingView belum ada), jadi eksekusi diblokir agar tidak ada posisi dari level karangan."
                                 class="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold cursor-not-allowed">
                                 ⛔ Eksekusi diblokir — SL/TP belum tersedia
                             </button>`}
-                            <button onclick="QuantumRRTool.copyTradePlan();" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold">
+                            <button data-qi-aksi="QuantumRRTool.copyTradePlan" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold">
                                 📋 Salin Plan
                             </button>
                         </div>
@@ -1729,6 +1729,10 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
         }
     };
     window.QuantumAIEngine = QuantumAIEngine;
+    // Tombol "Eksekusi Setup AI" di modal analisa (data-qi-aksi): buka order lalu tutup modal.
+    QIAksi.daftar({
+        eksekusiSetupAi(el, e, arah) { QuantumPaperTrading.executeOrder(arah); QuantumAIEngine.closeModal(); }
+    });
 
     /* ==========================================================================
        9b. QUANTUM AI RADAR — Dynamic multi-pair signal scanner
@@ -1788,7 +1792,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             container.innerHTML = `
                 <div class="p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> RADAR SINYAL QUANTUM (REALTIME MULTI-PAIR)</span>
-                    <button onclick="QuantumAIRadar.render()" class="text-cyan-300 font-bold hover:text-cyan-200 transition-colors">↻ REFRESH</button>
+                    <button data-qi-aksi="QuantumAIRadar.render" class="text-cyan-300 font-bold hover:text-cyan-200 transition-colors">↻ REFRESH</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs mt-2">
                     ${signals.length === 0 ? '<div class="col-span-full p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-amber-300">Menunggu data harga live — radar tidak menampilkan sinyal agar tidak memberi rekomendasi dari harga tebakan.</div>' : signals.map(s => {
@@ -1811,7 +1815,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                         const label = isBull ? `BUY ${s.analysis.score}%` : `SELL ${s.analysis.score}%`;
                         const isCurrent = s.sym === currentSym;
                         return `
-                        <div onclick="loadRealtimeSymbol('${s.tv}','${s.sym}',${s.livePrice})"
+                        <div data-qi-aksi="loadRealtimeSymbol" data-qi-arg="${QIAksi.arg(String(s.tv), String(s.sym), Number(s.livePrice))}"
                              class="p-2.5 rounded-lg bg-slate-950 border ${borderClass} hover:border-cyan-400 cursor-pointer space-y-1.5 transition-colors ${isCurrent ? 'ring-1 ring-cyan-500/50' : ''}">
                             <div class="flex justify-between items-center">
                                 <strong class="text-white">${s.label}</strong>
@@ -2074,7 +2078,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                     <!-- Timeframe Confluence Matrix Table -->
                     <div class="space-y-1.5 max-h-52 overflow-y-auto thin-scrollbar">
                         ${data.matrix.map(m => `
-                            <div onclick="if(window.loadRealtimeSymbol) window.loadRealtimeSymbol(undefined, '${data.symbol}', ${data.price}); if(quantumTerminalManager) quantumTerminalManager.setInterval('${m.tf==='M5'?'5':(m.tf==='M15'?'15':(m.tf==='H1'?'60':(m.tf==='H4'?'240':'D')))}');" 
+                            <div data-qi-aksi="bukaTfKonfluensi" data-qi-arg="${QIAksi.arg(String(data.symbol), Number(data.price), m.tf==='M5'?'5':(m.tf==='M15'?'15':(m.tf==='H1'?'60':(m.tf==='H4'?'240':'D'))))}"
                                  class="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all gap-1">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="w-8 py-0.5 text-center rounded bg-slate-900 font-bold text-cyan-300 border border-slate-700 text-[10px]">${m.tf}</span>
@@ -2093,6 +2097,13 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
         }
     };
     window.QuantumConfluenceEngine = QuantumConfluenceEngine;
+    // Baris matriks timeframe (data-qi-aksi): muat simbolnya lalu pindah ke timeframe baris itu.
+    QIAksi.daftar({
+        bukaTfKonfluensi(el, e, simbol, harga, interval) {
+            if (window.loadRealtimeSymbol) window.loadRealtimeSymbol(undefined, simbol, harga);
+            if (typeof quantumTerminalManager !== 'undefined' && quantumTerminalManager) quantumTerminalManager.setInterval(interval);
+        }
+    });
 
 
     /* ==========================================================================
@@ -2212,7 +2223,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
                     <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> MATRIKS KORELASI · Pearson (return harian)</span>
                     <span class="flex items-center gap-1">
                         <span class="text-[9px] text-slate-500 mr-1">WINDOW:</span>${btns}
-                        <button onclick="QuantumCorrelation.render()" class="ml-1 text-cyan-300 font-bold hover:text-cyan-200" title="Refresh">↻</button>
+                        <button data-qi-aksi="QuantumCorrelation.render" class="ml-1 text-cyan-300 font-bold hover:text-cyan-200" title="Refresh">↻</button>
                     </span>
                 </div>
                 <div class="mt-2">${inner}</div>`;
@@ -2265,7 +2276,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             return `<div class="mt-2 p-2 rounded-lg bg-rose-500/5 border border-rose-500/30 text-[10px] text-slate-400">
                 <span class="px-1 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[9px] mr-1">GAGAL</span>
                 Gagal diambil (timeout/jaringan): <span class="text-slate-300">${labels}</span>.
-                <button onclick="QuantumCorrelation.render()" class="ml-1 px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button></div>`;
+                <button data-qi-aksi="QuantumCorrelation.render" class="ml-1 px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button></div>`;
         },
 
         async render() {
@@ -2319,7 +2330,7 @@ Otomatis dibuat oleh Quantum Terminal Pro | quantum-institut.com`;
             } catch (e) {
                 panel.innerHTML = this._shell(
                     `<div class="text-center py-6 text-rose-400 font-mono text-xs">⚠ Gagal menghitung korelasi: ${e.message}
-                        <br><button onclick="QuantumCorrelation.render()" class="mt-2 px-3 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button>
+                        <br><button data-qi-aksi="QuantumCorrelation.render" class="mt-2 px-3 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">↻ Coba lagi</button>
                         <div class="text-[10px] text-slate-600 mt-1">${new Date().toLocaleTimeString('id-ID')}</div></div>`);
             } finally {
                 this._busy = false;

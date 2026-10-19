@@ -38,7 +38,7 @@ function renderAiSymbolBtns() {
     if (!wrap) return;
     wrap.innerHTML = AI_SYMBOLS_ALL.map(sym => {
         const active = aiSelectedSyms.includes(sym);
-        return `<button onclick="toggleAiSym('${sym}')" data-sym="${sym}"
+        return `<button data-qi-aksi="toggleAiSym" data-qi-arg="${QIAksi.arg(sym)}" data-sym="${sym}"
             class="ai-sym-btn text-[10px] font-mono px-2 py-1 rounded border transition-all ${active
                 ? 'border-qi-purple/60 bg-qi-purple/15 text-purple-300'
                 : 'border-qi-border text-slate-500 hover:border-slate-500'}">${sym}</button>`;
@@ -174,7 +174,7 @@ async function refreshAiSignals() {
         const actionLabel = d.action === 'ENTRY_BUY' ? '▲ BUY' : d.action === 'ENTRY_SELL' ? '▼ SELL' : '◆ SKIP';
         const confBar = `<div class="w-full bg-qi-border rounded-full h-1 mt-2"><div class="h-1 rounded-full ${d.action !== 'SKIP' ? 'bg-qi-cyan' : 'bg-slate-600'}" style="width:${d.confidence}%"></div></div>`;
         const execBtn = d.action !== 'SKIP'
-            ? `<button onclick="executeAiTrade('${sym}')" class="mt-2 w-full py-1.5 rounded-lg text-[10px] font-bold border ${d.action==='ENTRY_BUY'?'border-qi-green/40 text-qi-green hover:bg-qi-green/10':'border-qi-red/40 text-qi-red hover:bg-qi-red/10'} transition-colors">Eksekusi Manual</button>`
+            ? `<button data-qi-aksi="executeAiTrade" data-qi-arg="${QIAksi.arg(sym)}" class="mt-2 w-full py-1.5 rounded-lg text-[10px] font-bold border ${d.action==='ENTRY_BUY'?'border-qi-green/40 text-qi-green hover:bg-qi-green/10':'border-qi-red/40 text-qi-red hover:bg-qi-red/10'} transition-colors">Eksekusi Manual</button>`
             : '';
         cards.push(`
             <div class="bg-qi-surface border border-qi-border rounded-xl p-3">
@@ -251,7 +251,7 @@ function renderAiOpenPositions(positions) {
                 <div class="text-[10px] text-slate-500 font-mono">Entry: ${parseFloat(p.entry_price||0).toLocaleString()} · Lots: ${p.lots}</div>
                 ${p.take_profit ? `<div class="text-[10px] text-slate-600 font-mono">TP: ${p.take_profit} · SL: ${p.stop_loss}</div>` : ''}
             </div>
-            <button onclick="closeAiPosition(${p.id}, 0)"
+            <button data-qi-aksi="closeAiPosition" data-qi-arg="${QIAksi.arg(Number(p.id), 0)}"
                 class="shrink-0 text-[10px] border border-slate-700 text-slate-400 hover:border-red-500/40 hover:text-red-400 rounded px-2 py-1 transition-colors">
                 Tutup
             </button>

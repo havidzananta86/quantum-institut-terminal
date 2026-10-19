@@ -9,7 +9,8 @@
  * Yang dikerjakan:
  *   1. Sidebar panel diperlakukan sebagai tablist (role/aria-selected/aria-controls)
  *      + navigasi panah kiri/kanan/atas/bawah antar tab.
- *   2. Elemen <div onclick> diberi peran button, bisa difokus & dioperasikan keyboard.
+ *   2. Elemen <div>/<span> yang bisa diklik (data-qi-aksi, atau onclick di halaman lama) diberi peran button,
+ *      bisa difokus & dioperasikan keyboard.
  *   3. Dialog modal (role="dialog" aria-modal="true") mendapat perangkap fokus,
  *      dan fokus dikembalikan ke elemen pemicu setelah dialog tertutup.
  *   4. Tautan "lewati ke konten utama" untuk pengguna keyboard.
@@ -132,9 +133,9 @@
         window.switchPanel = terbungkus;
     }
 
-    // ── 2. Elemen div/span ber-onclick → dapat dioperasikan keyboard ────────
+    // ── 2. Elemen div/span ber-data-qi-aksi / ber-onclick → dapat dioperasikan keyboard ────────
     function siapkanKlikKeyboard() {
-        var kandidat = document.querySelectorAll('div[onclick], span[onclick]');
+        var kandidat = document.querySelectorAll('div[data-qi-aksi], span[data-qi-aksi], div[onclick], span[onclick]');
         Array.prototype.forEach.call(kandidat, function (el) {
             if (el.hasAttribute('data-qi-kbd')) return;
             el.setAttribute('data-qi-kbd', '1');

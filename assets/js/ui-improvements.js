@@ -77,34 +77,35 @@ function updateLastUpdatedTime() {
 // ═══════════════════════════════════════════════════════════
 // #19 — Empty States with Illustrations + CTA
 // ═══════════════════════════════════════════════════════════
+// fokus = selektor elemen yang difokuskan tombol CTA (data-qi-aksi="fokus").
 var EMPTY_STATES = {
     'panel-journal': {
         icon: '📔',
         title: 'Belum ada catatan trading',
         desc: 'Catat trade pertama Anda untuk membangun track record.',
         cta: 'Buat Entri Pertama',
-        action: "document.querySelector('#panel-journal form input')?.focus()"
+        fokus: '#panel-journal form input'
     },
     'panel-alerts': {
         icon: '🔔',
         title: 'Belum ada price alert',
         desc: 'Pasang alert untuk mendapat notifikasi saat harga mencapai target.',
         cta: 'Buat Alert Pertama',
-        action: "document.querySelector('#panel-alerts input')?.focus()"
+        fokus: '#panel-alerts input'
     },
     'panel-paper': {
         icon: '💼',
         title: 'Belum ada paper trade',
         desc: 'Latih strategi tanpa risiko — buka posisi paper trading pertama.',
         cta: 'Buka Posisi Pertama',
-        action: "document.querySelector('#ptSymbol')?.focus()"
+        fokus: '#ptSymbol'
     },
     'panel-watchlist': {
         icon: '⭐',
         title: 'Watchlist kosong',
         desc: 'Tambahkan instrumen favorit untuk pantau harga secara real-time.',
         cta: 'Tambah Instrumen',
-        action: "document.querySelector('#panel-watchlist select')?.focus()"
+        fokus: '#panel-watchlist select'
     }
 };
 
@@ -115,7 +116,7 @@ window._qiEmptyState = function(panelId) {
         '<div class="text-4xl mb-3">' + cfg.icon + '</div>' +
         '<div class="text-sm font-semibold text-white mb-1">' + cfg.title + '</div>' +
         '<div class="text-[11px] text-slate-500 mb-4 max-w-xs">' + cfg.desc + '</div>' +
-        '<button onclick="' + cfg.action + '" class="px-4 py-2 rounded-lg text-[11px] font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/30 hover:bg-qi-cyan/25 transition-all">' + cfg.cta + '</button>' +
+        '<button data-qi-aksi="fokus" data-qi-arg="' + QIAksi.arg(cfg.fokus) + '" class="px-4 py-2 rounded-lg text-[11px] font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/30 hover:bg-qi-cyan/25 transition-all">' + cfg.cta + '</button>' +
     '</div>';
 };
 
@@ -165,9 +166,10 @@ function createShortcutsModal() {
     modal.onclick = function(e){ if(e.target===modal){ modal.classList.add('hidden'); modal.style.display=''; }};
     modal.innerHTML = '<div class="w-full max-w-sm rounded-2xl border border-qi-border bg-qi-panel p-5 shadow-2xl">' +
         '<div class="flex items-center justify-between mb-4"><h3 class="font-heading font-bold text-white text-sm">Keyboard Shortcuts</h3>' +
-        '<button onclick="document.getElementById(\'qiShortcutsModal\').classList.add(\'hidden\');document.getElementById(\'qiShortcutsModal\').style.display=\'\'" class="text-slate-500 hover:text-white text-lg">&times;</button></div>' +
+        '<button data-sc-tutup class="text-slate-500 hover:text-white text-lg">&times;</button></div>' +
         '<div class="space-y-0">' + rows + '</div>' +
         '<div class="mt-4 text-[10px] text-slate-600 text-center font-mono">Tekan ? kapan saja untuk menampilkan ini</div></div>';
+    modal.querySelector('[data-sc-tutup]').addEventListener('click', function(){ modal.classList.add('hidden'); modal.style.display=''; });
     document.body.appendChild(modal);
 }
 
@@ -490,6 +492,7 @@ function addIndicatorTooltips() {
 // ═══════════════════════════════════════════════════════════
 // #44 — Better Error Messages
 // ═══════════════════════════════════════════════════════════
+// retryFn = NAMA fungsi global (mis. 'fetchCot'), bukan potongan kode — dipanggil lewat data-qi-aksi.
 window.qiErrorMsg = function(source, retryFn) {
     var msgs = {
         'binance': 'Koneksi ke Binance terputus.',
@@ -500,7 +503,7 @@ window.qiErrorMsg = function(source, retryFn) {
         'default': 'Data tidak tersedia saat ini.'
     };
     var msg = msgs[source] || msgs['default'];
-    var retryBtn = retryFn ? ' <button onclick="' + retryFn + '" class="text-qi-cyan hover:underline font-semibold ml-1">[Coba Lagi]</button>' : '';
+    var retryBtn = retryFn ? ' <button data-qi-aksi="' + String(retryFn).replace(/[^\w$.]/g, '') + '" class="text-qi-cyan hover:underline font-semibold ml-1">[Coba Lagi]</button>' : '';
     return '<div class="px-4 py-6 text-center"><div class="text-slate-500 text-xs">' + msg + '</div>' +
         '<div class="text-[10px] text-slate-600 mt-1">Data terakhir mungkin masih ditampilkan.' + retryBtn + '</div></div>';
 };
@@ -569,7 +572,7 @@ function showWhatsNew() {
             '<div class="text-[10px] text-slate-500 mt-1">Fitur-fitur terbaru yang sudah tersedia</div></div>' +
             '<div class="px-6 py-4 max-h-[50vh] overflow-y-auto space-y-1">' + items + '</div>' +
             '<div class="px-6 py-4 border-t border-qi-border">' +
-            '<button onclick="document.getElementById(\'qiWhatsNew\').remove()" class="w-full py-2.5 rounded-xl text-[12px] font-semibold text-qi-cyan border border-qi-cyan/30 bg-qi-cyan/10 hover:bg-qi-cyan/20 transition-all">Mengerti, Terima Kasih!</button></div></div>';
+            '<button class="w-full py-2.5 rounded-xl text-[12px] font-semibold text-qi-cyan border border-qi-cyan/30 bg-qi-cyan/10 hover:bg-qi-cyan/20 transition-all">Mengerti, Terima Kasih!</button></div></div>';
 
         document.body.appendChild(modal);
 

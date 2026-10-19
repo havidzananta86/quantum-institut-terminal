@@ -19,7 +19,9 @@ const doc = {
 };
 const src = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', 'pro-trading-tools.js'), 'utf8');
 // The file ends with `})(window, document);` — feed our stubs as those identifiers.
-new Function('window', 'document', src)(win, doc);
+// QIAksi (assets/js/qim-aksi.js, delegasi data-qi-aksi) dimuat lebih dulu di dashboard; di sini cukup stub.
+const QIAksi = { daftar() {}, arg: (...a) => JSON.stringify(a) };
+new Function('window', 'document', 'QIAksi', src)(win, doc, QIAksi);
 
 const C = win.QuantumCorrelation;
 if (!C) { console.error('FAIL: QuantumCorrelation not exported'); process.exit(1); }

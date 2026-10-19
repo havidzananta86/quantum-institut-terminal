@@ -188,7 +188,7 @@ function renderMarketTape(prices) {
         const label = SYMBOL_LABELS[sym] || sym;
         const desc  = SYMBOL_DESC[sym]  || '';
         return `<tr class="border-b border-qi-border/50 hover:bg-white/[.02] transition-colors cursor-pointer"
-                    onclick="window.location.href='dashboard.html?panel=panel-charts'">
+                    data-qi-aksi="bukaUrl" data-qi-arg="${QIAksi.arg('dashboard.html?panel=panel-charts')}">
             <td class="px-4 py-2.5">
                 <div class="font-semibold text-white">${label}</div>
                 <div class="text-[10px] text-slate-600">${desc}</div>
@@ -1253,8 +1253,8 @@ function renderBridgeAccounts(accounts, serverNow) {
         const shareOn = Number(a.share_positions) === 1;
         const button = a.connection_status === 'revoked' ? ''
             : '<div class="flex items-center gap-1">'
-              + `<button type="button" onclick="setPositionSharing(${Number(a.id)}, ${shareOn ? 0 : 1})" title="Izinkan pengguna PRO/VIP lain melihat posisi akun ini" class="rounded border ${shareOn ? 'border-qi-green/40 text-qi-green' : 'border-qi-border text-slate-400'} px-2 py-1 text-[9px] font-semibold hover:bg-white/5">Berbagi: ${shareOn ? 'YA' : 'tidak'}</button>`
-              + `<button type="button" onclick="revokeBridgeAccount(${Number(a.id)})" class="rounded border border-qi-red/40 px-2 py-1 text-[9px] font-semibold text-qi-red hover:bg-qi-red/10">Cabut</button>`
+              + `<button type="button" data-qi-aksi="setPositionSharing" data-qi-arg="${QIAksi.arg(Number(a.id), shareOn ? 0 : 1)}" title="Izinkan pengguna PRO/VIP lain melihat posisi akun ini" class="rounded border ${shareOn ? 'border-qi-green/40 text-qi-green' : 'border-qi-border text-slate-400'} px-2 py-1 text-[9px] font-semibold hover:bg-white/5">Berbagi: ${shareOn ? 'YA' : 'tidak'}</button>`
+              + `<button type="button" data-qi-aksi="revokeBridgeAccount" data-qi-arg="${QIAksi.arg(Number(a.id))}" class="rounded border border-qi-red/40 px-2 py-1 text-[9px] font-semibold text-qi-red hover:bg-qi-red/10">Cabut</button>`
               + '</div>';
         return '<div class="flex flex-col gap-1 rounded border border-qi-border bg-qi-bg px-2 py-2 sm:flex-row sm:items-center sm:justify-between">'
             + `<div class="min-w-0 text-[10px] text-slate-300">${parts.join(' · ')}</div>`
@@ -1930,8 +1930,8 @@ async function muatMetode() {
             const stCls = aktifIni ? 'text-qi-green font-bold' : (status === 'ditolak' ? 'text-qi-red' : (status === 'uji' ? 'text-qi-cyan' : 'text-slate-400'));
             const alasan = aktifIni ? 'SEDANG DIPAKAI' : String(v.alasan_kelayakan || '—');
             const tombol = aktifIni ? '' :
-                ('<button onclick="metodeAktifkan(\'' + esc(v.version) + '\')" class="text-[9px] px-1.5 py-0.5 rounded border border-qi-cyan/40 text-qi-cyan hover:bg-qi-cyan/10"' + (v.layak_aktif ? '' : ' disabled title="' + esc(alasan) + '"') + '>✔ aktifkan</button> '
-               + '<button onclick="metodeTolak(\'' + esc(v.version) + '\')" class="text-[9px] px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:bg-white/5">✖ tolak</button>');
+                ('<button data-qi-aksi="metodeAktifkan" data-qi-arg="' + QIAksi.arg(String(v.version)) + '" class="text-[9px] px-1.5 py-0.5 rounded border border-qi-cyan/40 text-qi-cyan hover:bg-qi-cyan/10"' + (v.layak_aktif ? '' : ' disabled title="' + esc(alasan) + '"') + '>✔ aktifkan</button> '
+               + '<button data-qi-aksi="metodeTolak" data-qi-arg="' + QIAksi.arg(String(v.version)) + '" class="text-[9px] px-1.5 py-0.5 rounded border border-qi-border text-slate-400 hover:bg-white/5">✖ tolak</button>');
             return '<tr class="border-b border-qi-border/30 hover:bg-white/[.02]">'
                 + '<td class="px-2 py-1.5 text-left text-white">' + esc(v.version) + '</td>'
                 + '<td class="px-2 py-1.5 ' + stCls + '">' + esc(aktifIni ? 'AKTIF' : status) + '</td>'
@@ -3161,14 +3161,19 @@ async function buildLwChart() {
                 if (detik === 3 && !window._lwFallbackDicoba) {
                     // CDN cadangan (unpkg diizinkan CSP). Alat gambar tidak ikut: sifatnya
                     // opsional, dan chart harus tetap tampil tanpanya.
+                    // import() dinamis, bukan <script type="module"> ber-textContent (itu skrip inline →
+                    // diblokir CSP tanpa 'unsafe-inline'). Versi dikunci sama dengan halaman-dashboard-lw.js;
+                    // berkas standalone tidak punya import bare ("fancy-canvas") sehingga jalan tanpa import-map.
+                    // (URL lama unpkg.com/lightweight-charts@5/+esm membalas 404 — cadangan itu tidak pernah jalan.)
                     window._lwFallbackDicoba = true;
                     if (st) st.textContent = 'CDN utama lambat — mencoba CDN cadangan…';
-                    const s = document.createElement('script');
-                    s.type = 'module';
-                    s.textContent = "import { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode } from 'https://unpkg.com/lightweight-charts@5/+esm';"
-                        + "window._lwModules = window._lwModules || { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode, DrawingManager: null };"
-                        + "window.dispatchEvent(new CustomEvent('lc-modules-ready'));";
-                    document.head.appendChild(s);
+                    import('https://unpkg.com/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.mjs').then(lw => {
+                        if (window._lwModules) return;
+                        const { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode } = lw;
+                        const createSeriesMarkers = typeof lw.createSeriesMarkers === 'function' ? lw.createSeriesMarkers : null;
+                        window._lwModules = { createChart, CandlestickSeries, LineSeries, HistogramSeries, LineStyle, CrosshairMode, DrawingManager: null, createSeriesMarkers };
+                        window.dispatchEvent(new CustomEvent('lc-modules-ready'));
+                    }).catch(() => { /* pesan jujur di bawah setelah 10 detik */ });
                 }
                 if (detik >= 10) {
                     clearInterval(window._lwFallbackTimer);
@@ -3888,7 +3893,7 @@ async function chartScreenshot() {
         <div class="bg-qi-panel border border-qi-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="px-5 py-4 border-b border-qi-border flex items-center justify-between">
                 <div class="font-heading font-bold text-white text-sm">📷 Screenshot Chart + AI Analisis</div>
-                <button onclick="this.closest('.fixed').remove()" class="text-slate-500 hover:text-white text-lg">✕</button>
+                <button data-qi-aksi="hapusTerdekat" data-qi-arg="${QIAksi.arg('.fixed')}" class="text-slate-500 hover:text-white text-lg">✕</button>
             </div>
             <div class="p-4">
                 <img src="${imageData}" class="w-full rounded-xl border border-qi-border mb-4" alt="Chart Screenshot">
@@ -3899,14 +3904,20 @@ async function chartScreenshot() {
                         <a href="${imageData}" download="quantum-setup-${_tvSymLabel.replace(/[^A-Za-z0-9]/g,'')}-${Date.now()}.png" class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[11px] font-semibold hover:bg-qi-cyan/30 transition-all flex items-center gap-1">
                             💾 Unduh Gambar Setup
                         </a>
-                        <button onclick="generateViralShareCard('${imageData}')" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[11px] font-semibold hover:brightness-110 transition-all flex items-center gap-1 shadow-md">
+                        <button data-ss-viral class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[11px] font-semibold hover:brightness-110 transition-all flex items-center gap-1 shadow-md">
                             📱 Buat Viral Share Card (Medsos)
                         </button>
                     </div>
-                    <button onclick="navigator.clipboard?.writeText(window.location.href);showQuantumToast('Link analisa disalin!','success');" class="text-[10px] text-slate-400 hover:text-white">🔗 Salin Link</button>
+                    <button data-ss-salin-link class="text-[10px] text-slate-400 hover:text-white">🔗 Salin Link</button>
                 </div>
             </div>
         </div>`;
+    // Pendengar langsung (bukan onclick="..." — CSP tanpa 'unsafe-inline'); data URL gambar cukup lewat closure.
+    modal.querySelector('[data-ss-viral]').addEventListener('click', () => generateViralShareCard(imageData));
+    modal.querySelector('[data-ss-salin-link]').addEventListener('click', () => {
+        navigator.clipboard?.writeText(window.location.href);
+        showQuantumToast('Link analisa disalin!', 'success');
+    });
     document.body.appendChild(modal);
 
     // Request AI analysis
@@ -4097,7 +4108,7 @@ function renderWatchlist(query) {
             const chgCls = chg === null ? 'text-slate-500' : chg >= 0 ? 'text-qi-green' : 'text-qi-red';
             const chgStr = chg === null ? '—' : (chg>=0?'+':'')+chg.toFixed(2)+'%';
             const priceStr = price === null ? '—' : price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:5});
-            html += `<div onclick="setChartSymbolFull('${s.key}','${s.tv}','${s.label}')"
+            html += `<div data-qi-aksi="setChartSymbolFull" data-qi-arg="${QIAksi.arg(s.key, s.tv, s.label)}"
                 class="wl-row${isActive?' active-sym':''} flex items-center justify-between px-3 py-2 border-b border-qi-border/20">
                 <div>
                     <div class="font-mono font-bold text-[11px] ${isActive?'text-qi-cyan':'text-white'}">${s.label}</div>
@@ -4440,7 +4451,7 @@ function renderChartTab() {
                 <td class="px-2 py-1.5 text-slate-300">${p.lots}</td>
                 <td class="px-2 py-1.5 text-slate-300">${parseFloat(p.entryPrice).toFixed(4)}</td>
                 <td class="px-2 py-1.5 ${pnlCls} font-bold">${pnl>=0?'+':''}$${pnl.toFixed(2)}</td>
-                <td class="px-2 py-1.5"><button onclick="ptClosePosition('${p.id}')" class="text-qi-red hover:underline text-[9px]">Tutup</button></td>
+                <td class="px-2 py-1.5"><button data-qi-aksi="ptClosePosition" data-qi-arg="${QIAksi.arg(String(p.id))}" class="text-qi-red hover:underline text-[9px]">Tutup</button></td>
             </tr>`;
         }).join('');
         const flCls = floatTotal >= 0 ? 'text-qi-green' : 'text-qi-red';
@@ -4849,7 +4860,7 @@ function renderCalGrid2(events) {
         const todayRing = key === todayKey ? ' ring-1 ring-qi-cyan' : '';
         const selRing   = key === _calSelected2 ? ' ring-1 ring-white/60' : '';
         const total = info ? (info.high + info.medium + info.low) : 0;
-        html += `<div onclick="selectCalDay2('${key}')" class="aspect-square relative rounded cursor-pointer flex items-end justify-start p-0.5 ${bg}${todayRing}${selRing} transition-all" title="${total} event">
+        html += `<div data-qi-aksi="selectCalDay2" data-qi-arg="${QIAksi.arg(String(key))}" class="aspect-square relative rounded cursor-pointer flex items-end justify-start p-0.5 ${bg}${todayRing}${selRing} transition-all" title="${total} event">
             ${dot}<span class="text-[9px] font-mono ${key === todayKey ? 'text-qi-cyan font-bold' : 'text-slate-500'}">${day}</span>
             ${total > 0 ? `<span class="absolute bottom-0.5 left-0.5 text-[8px] text-white/50">${total}</span>` : ''}
         </div>`;
@@ -5426,7 +5437,7 @@ function ptRender() {
                     <td class="px-3 py-2.5 text-center">
                         ${(p.src && p.src !== 'manual')
                             ? `<span class="text-[9px] font-mono text-qi-cyan" title="Dikelola otomatis: ditutup saat sinyal kena TP/SL">${p.src === 'auto' ? 'AUTO' : 'AI'}</span>`
-                            : `<button onclick="ptClosePosition('${p.id}')" class="text-[10px] text-qi-red hover:underline font-mono">Tutup</button>`}
+                            : `<button data-qi-aksi="ptClosePosition" data-qi-arg="${QIAksi.arg(String(p.id))}" class="text-[10px] text-qi-red hover:underline font-mono">Tutup</button>`}
                     </td>
                 </tr>`;
             }).join('');
@@ -5971,7 +5982,7 @@ async function fetchTrackRecord() {
                 const url = String(s.chart_image_url) + (tok ? ('&t=' + encodeURIComponent(tok)) : '');
                 return ' <a href="' + url + '" target="_blank" rel="noopener" title="Buka snapshot chart sinyal ini" class="text-[9px] text-qi-cyan hover:underline whitespace-nowrap">🖼️ lihat</a>';
             }
-            return ' <button onclick="fotoSinyal(\'' + id + '\')" title="Ambil snapshot chart terminal untuk sinyal ini (tersimpan di server)" class="text-[9px] text-qi-cyan hover:underline whitespace-nowrap">📸</button>';
+            return ' <button data-qi-aksi="fotoSinyal" data-qi-arg="' + QIAksi.arg(String(id)) + '" title="Ambil snapshot chart terminal untuk sinyal ini (tersimpan di server)" class="text-[9px] text-qi-cyan hover:underline whitespace-nowrap">📸</button>';
         };
         body.innerHTML = hist.map(s => {
             const stCls = Object.entries(STATUS_CLS).find(([k]) => s.status?.includes(k.split(' ')[0]))?.[1] || 'text-slate-400';
@@ -6658,7 +6669,7 @@ async function sendAiMessage(preset) {
                 <div class="w-7 h-7 rounded-full bg-gradient-to-br from-qi-purple to-qi-cyan flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">AI</div>
                 <div class="relative flex-1 min-w-0">
                     <div id="${msgId}" class="ai-bubble-ai bg-qi-card border border-qi-border rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-[11px] text-slate-300 leading-relaxed">${safe}</div>
-                    <button onclick="_copyAiMsg('${msgId}')" title="Salin balasan" class="ai-copy-btn absolute top-1.5 right-1.5 opacity-0 transition-opacity p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-800 text-[10px]">⎘</button>
+                    <button data-qi-aksi="_copyAiMsg" data-qi-arg="${QIAksi.arg(String(msgId))}" title="Salin balasan" class="ai-copy-btn absolute top-1.5 right-1.5 opacity-0 transition-opacity p-1 rounded text-slate-600 hover:text-slate-300 hover:bg-slate-800 text-[10px]">⎘</button>
                 </div>
             </div>`);
         _aiHistory.push({ role: 'assistant', content: reply });
@@ -7577,3 +7588,21 @@ async function fetchCryptoAIOutlook() {
         var _t2 = (j.reply||j.message||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); el.innerHTML = `<div class="text-[11px] leading-relaxed whitespace-pre-wrap text-slate-200">${_t2}</div>`;
     } catch(e) { el.innerHTML = '<div class="text-red-400 text-xs">AI error — coba lagi.</div>'; }
 }
+
+// ── Pembaca global let/const untuk modul ber-IIFE (qim-pages.js, qim-risk.js) ─────────────────────────────
+// `let`/`const` level atas di sini tidak menjadi properti window. Dulu modul itu membacanya lewat
+// (0, eval)(nama) — dilarang CSP tanpa 'unsafe-eval'. Getter di bawah berada di skrip yang sama dengan
+// deklarasinya, jadi selalu memberi nilai TERKINI. Nama yang tidak terdaftar → undefined (sama seperti dulu bila
+// eval gagal). Menambah nama baru: tambahkan getter-nya di sini.
+window.qiBacaGlobal = (function () {
+    const peta = {
+        PANEL_META: () => PANEL_META, WL_GROUPS: () => WL_GROUPS, _activePanel: () => _activePanel,
+        _lwChart: () => _lwChart, _lwSeries: () => _lwSeries, _lwLastCandles: () => _lwLastCandles,
+        _lwDrawings: () => _lwDrawings, _lwTool: () => _lwTool, _lwRsi: () => _lwRsi,
+        _lwBbUpper: () => _lwBbUpper, _lwBbMiddle: () => _lwBbMiddle, _lwBbLower: () => _lwBbLower,
+        _lwEma20: () => _lwEma20, _lwEma50: () => _lwEma50, _lwEma200: () => _lwEma200,
+        _tvInterval: () => _tvInterval, _tvSymbol: () => _tvSymbol, _tvSymLabel: () => _tvSymLabel,
+        _lastPrices: () => _lastPrices, _ptBalance: () => _ptBalance, _ptHistory: () => _ptHistory, _ptPositions: () => _ptPositions,
+    };
+    return nama => { try { return Object.prototype.hasOwnProperty.call(peta, nama) ? peta[nama]() : undefined; } catch (e) { return undefined; } };
+})();

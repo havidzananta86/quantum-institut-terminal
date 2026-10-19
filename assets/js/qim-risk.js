@@ -16,7 +16,8 @@
     if (window.QimRisk) return;
 
     const $ = id => document.getElementById(id);
-    const g = nama => { try { return (0, eval)(nama); } catch (e) { return undefined; } };
+    // Baca global let/const dashboard-app.js lewat getter-nya (dulu (0, eval)(nama) — dilarang CSP tanpa 'unsafe-eval').
+    const g = nama => (typeof window.qiBacaGlobal === 'function' ? window.qiBacaGlobal(nama) : undefined);
     const uang = v => (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const st = { profil: null, aktif: false };
     try { st.aktif = localStorage.getItem('qim_lot_risiko') === '1'; } catch (e) {}

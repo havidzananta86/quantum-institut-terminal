@@ -201,7 +201,7 @@ function renderPanelWatchlist() {
                 + '<div class="text-slate-400 text-xs font-semibold mb-1">Watchlist masih kosong</div>'
                 + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Tambahkan instrumen yang Anda pantau agar harganya '
                 + 'muncul di sini dan di sidebar.</div>'
-                + '<button type="button" onclick="if(typeof addToWatchlist===\'function\')addToWatchlist()" '
+                + '<button type="button" data-qi-aksi="addToWatchlist" '
                 + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">＋ Tambah instrumen</button>'
                 + '</td></tr>'
             : '<div class="px-3 py-4 text-center"><div class="text-slate-400 text-[10px] font-semibold mb-1">Watchlist masih kosong</div>'
@@ -217,17 +217,17 @@ function renderPanelWatchlist() {
         var lbl = labels[sym] || sym;
         var d = dp[sym] || 2;
         var priceStr = price > 0 ? price.toFixed(d) : '—';
-        var click = 'switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')';
-        var remove = '<button onclick="event.stopPropagation();removeFromWatchlist(\'' + sym + '\')" class="text-slate-600 hover:text-qi-red text-xs">✕</button>';
+        var click = 'data-qi-aksi="bukaChartSimbol" data-qi-arg="' + QIAksi.arg(sym) + '"';
+        var remove = '<button data-qi-aksi="hapusDariWatchlist" data-qi-arg="' + QIAksi.arg(sym) + '" class="text-slate-600 hover:text-qi-red text-xs">✕</button>';
         if (isTable) {
-            html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="' + click + '">' +
+            html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" ' + click + '>' +
                 '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl + '</td>' +
                 '<td class="px-3 py-2 font-mono text-xs text-slate-400">' + sym + '</td>' +
                 '<td class="px-3 py-2 font-mono text-right text-white" id="wl_p_' + sym + '">' + priceStr + '</td>' +
                 '<td class="px-3 py-2 text-right"><span id="wl_c_' + sym + '" class="text-[10px] font-mono text-slate-500">—</span></td>' +
                 '<td class="px-3 py-2 text-right">' + remove + '</td></tr>';
         } else {
-            html += '<div class="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-qi-border/30 hover:bg-qi-surface/40 cursor-pointer" onclick="' + click + '">' +
+            html += '<div class="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-qi-border/30 hover:bg-qi-surface/40 cursor-pointer" ' + click + '>' +
                 '<div class="min-w-0"><div class="font-mono font-semibold text-white text-[11px]">' + lbl + '</div>' +
                 '<div class="font-mono text-[9px] text-slate-500">' + sym + '</div></div>' +
                 '<div class="text-right"><div class="font-mono text-[11px] text-white" id="wl_p_' + sym + '">' + priceStr + '</div>' +
@@ -250,6 +250,11 @@ function updateWatchlistPrices() {
 }
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
+// Aksi baris watchlist (data-qi-aksi). Tombol ✕ menghentikan klik supaya baris (buka chart) tidak ikut jalan.
+QIAksi.daftar({
+    bukaChartSimbol: function(el, e, sym) { switchPanel('panel-charts'); if (typeof selectChartSym === 'function') selectChartSym(sym); },
+    hapusDariWatchlist: function(el, e, sym) { e.stopPropagation(); removeFromWatchlist(sym); }
+});
 window.renderPanelWatchlist = renderPanelWatchlist;
 loadWatchlist();
 
@@ -511,7 +516,7 @@ function renderLeaderboard() {
                 + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada data peringkat</div>'
                 + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Peringkat dihitung dari hasil paper trading '
                 + '(minimal 3 trade). Mulai catat trade Anda untuk masuk daftar.</div>'
-                + '<button type="button" onclick="if(typeof switchPanel===\'function\')switchPanel(\'panel-paper\')" '
+                + '<button type="button" data-qi-aksi="switchPanel" data-qi-arg="' + QIAksi.arg('panel-paper') + '" '
                 + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">Mulai Paper Trading</button>'
                 + '</td></tr>';
         }

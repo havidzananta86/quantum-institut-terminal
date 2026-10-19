@@ -129,7 +129,7 @@
         if (banner && naik) {
             banner.hidden = false;
             const teks = $('apBannerTeks'); if (teks) teks.textContent = '🤖 Ikuti Auto Analisa di akun simulasi tersedia untuk paket PRO ke atas.';
-            const taut = $('apBannerTaut'); if (taut) { taut.textContent = 'Upgrade →'; taut.onclick = null; taut.href = 'pricing.html'; }
+            const taut = $('apBannerTaut'); if (taut) { taut.textContent = 'Upgrade →'; taut.removeAttribute('data-qi-aksi'); taut.href = 'pricing.html'; }
         }
     }
 

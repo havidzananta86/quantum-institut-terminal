@@ -113,7 +113,7 @@ function renderAlerts() {
             + '<div class="text-3xl mb-2">🔔</div>'
             + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada price alert aktif</div>'
             + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Alert muncul di sini dan dikirim sebagai notifikasi saat harga menyentuh target Anda.</div>'
-            + '<button type="button" onclick="var i=document.getElementById(\'alertPrice\');if(i){i.focus();i.scrollIntoView({behavior:\'smooth\',block:\'center\'});}" '
+            + '<button type="button" data-qi-aksi="fokus" data-qi-arg="' + QIAksi.arg('#alertPrice') + '" '
             + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">＋ Buat alert pertama</button>'
             + '</div>';
         return;
@@ -128,7 +128,7 @@ function renderAlerts() {
             '<span class="text-[10px] ' + dirCls + '">' + dirLabel + '</span>' +
             '<span class="font-mono text-xs text-qi-cyan">' + a.price + '</span>' +
             '</div>' +
-            '<button onclick="removeAlert(' + a.id + ')" class="text-slate-600 hover:text-qi-red text-xs">&#10005;</button>' +
+            '<button data-qi-aksi="removeAlert" data-qi-arg="' + QIAksi.arg(Number(a.id)) + '" class="text-slate-600 hover:text-qi-red text-xs">&#10005;</button>' +
             '</div>';
     });
     el.innerHTML = html;
@@ -215,7 +215,7 @@ function filterCmdPalette(q) {
     if (filtered.length === 0) { list.innerHTML = '<div class="text-center text-slate-600 text-xs py-4">Tidak ditemukan</div>'; return; }
     var html = '';
     filtered.slice(0, 15).forEach(function(item, idx) {
-        html += '<button onclick="_cmdItems.forEach(function(i){if(i.id===\'' + item.id.replace(/'/g, "\\'") + '\')i.action()});closeCommandPalette()" ' +
+        html += '<button data-qi-aksi="jalankanPerintahPalet" data-qi-arg="' + QIAksi.arg(item.id) + '" ' +
             'class="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-qi-surface transition-colors' + (idx === 0 ? ' bg-qi-surface' : '') + '">' +
             '<span class="text-base">' + item.icon + '</span>' +
             '<span class="text-xs text-white">' + item.label + '</span>' +
@@ -223,6 +223,13 @@ function filterCmdPalette(q) {
     });
     list.innerHTML = html;
 }
+QIAksi.daftar({
+    // Item palet perintah (data-qi-aksi): jalankan aksi item ber-id itu lalu tutup palet.
+    jalankanPerintahPalet: function(el, e, id) {
+        _cmdItems.forEach(function(i) { if (i.id === id) i.action(); });
+        closeCommandPalette();
+    }
+});
 
 document.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -466,9 +473,9 @@ function renderJournal() {
             + '<div class="text-slate-400 text-xs font-semibold mb-1">Belum ada catatan trading</div>'
             + '<div class="text-slate-600 text-[10px] leading-relaxed mb-3">Catatan terisi otomatis dari posisi yang Anda tutup di Paper Trading, atau bisa ditambah sendiri.</div>'
             + '<span class="flex items-center justify-center gap-2 flex-wrap">'
-            + '<button type="button" onclick="if(typeof switchPanel===\'function\')switchPanel(\'panel-paper\')" '
+            + '<button type="button" data-qi-aksi="switchPanel" data-qi-arg="' + QIAksi.arg('panel-paper') + '" '
             + 'class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">Buka Paper Trading</button>'
-            + '<button type="button" onclick="var i=document.getElementById(\'jnlSymbol\');if(i){i.focus();i.scrollIntoView({behavior:\'smooth\',block:\'center\'});}" '
+            + '<button type="button" data-qi-aksi="fokus" data-qi-arg="' + QIAksi.arg('#jnlSymbol') + '" '
             + 'class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold hover:bg-slate-700">＋ Tambah manual</button>'
             + '</span></td></tr>';
         return;
@@ -485,7 +492,7 @@ function renderJournal() {
             '<td class="px-2 py-2 font-mono text-slate-300">' + (e.entry || '-') + '</td>' +
             '<td class="px-2 py-2 font-semibold ' + resCls + '">' + (e.result || '-') + '</td>' +
             '<td class="px-2 py-2 font-mono ' + pnlCls + '">' + (e.pnl > 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>' +
-            '<td class="px-2 py-2"><button onclick="deleteJournalEntry(' + e.id + ')" class="text-slate-600 hover:text-qi-red text-[10px]">&#10005;</button></td></tr>';
+            '<td class="px-2 py-2"><button data-qi-aksi="deleteJournalEntry" data-qi-arg="' + QIAksi.arg(Number(e.id)) + '" class="text-slate-600 hover:text-qi-red text-[10px]">&#10005;</button></td></tr>';
     });
     el.innerHTML = html;
 }
@@ -576,7 +583,7 @@ function runScreener() {
                 var lbl = (typeof SYMBOL_LABELS !== 'undefined' && SYMBOL_LABELS[sym]) ? SYMBOL_LABELS[sym] : sym;
                 var chg = (typeof d.change === 'number') ? d.change : null;
 
-                html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" onclick="switchPanel(\'panel-charts\');if(typeof selectChartSym===\'function\')selectChartSym(\'' + sym + '\')">' +
+                html += '<tr class="border-b border-qi-border/50 hover:bg-qi-surface/50 cursor-pointer" data-qi-aksi="bukaChartSimbol" data-qi-arg="' + QIAksi.arg(sym) + '">' +
                     '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl +
                         (chg === null ? '' : '<div class="text-[9px] ' + (chg >= 0 ? 'text-qi-green' : 'text-qi-red') + '">' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</div>') + '</td>' +
                     '<td class="px-3 py-2"><span class="' + trendCls + '">' + trend + '</span>' +
@@ -979,7 +986,7 @@ function showShortcutsModal() {
     var modal = document.createElement('div');
     modal.id = 'shortcutsModal';
     modal.style.cssText = 'position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;';
-    modal.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" onclick="document.getElementById(\'shortcutsModal\').remove()"></div>' +
+    modal.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" data-qi-aksi="hapusElemen" data-qi-arg="' + QIAksi.arg('#shortcutsModal') + '"></div>' +
         '<div class="relative bg-qi-card border border-qi-border rounded-2xl p-5 w-80 shadow-2xl">' + html + '</div>';
     document.body.appendChild(modal);
 }
@@ -1080,12 +1087,17 @@ function maybeShowOnboarding() {
             html += '<div class="flex items-start gap-2 mb-2"><span class="text-base">' + s.icon + '</span>' +
                 '<span class="text-[11px] text-slate-300">' + s.text + '</span></div>';
         });
-        html += '<button onclick="document.getElementById(\'onboardTour\').remove();window.__qimDialogAktif=null;try{localStorage.setItem(\'qi_onboarding_v2\',\'1\')}catch(e){}" class="w-full mt-3 py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30">Mengerti!</button>';
+        html += '<button data-tur-tutup class="w-full mt-3 py-2 rounded-xl bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-xs font-semibold hover:bg-qi-cyan/30">Mengerti!</button>';
         var modal = document.createElement('div');
         modal.id = 'onboardTour';
         modal.style.cssText = 'position:fixed;inset:0;z-index:101;display:flex;align-items:center;justify-content:center;';
         modal.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,.6)"></div>' +
             '<div class="relative bg-qi-card border border-qi-border rounded-2xl p-5 w-80 shadow-2xl" style="animation:panelFadeIn .3s ease">' + html + '</div>';
+        modal.querySelector('[data-tur-tutup]').addEventListener('click', function() {
+            modal.remove();
+            window.__qimDialogAktif = null;
+            try { localStorage.setItem('qi_onboarding_v2', '1'); } catch(e) {}
+        });
         document.body.appendChild(modal);
     } catch(e) {}
 }

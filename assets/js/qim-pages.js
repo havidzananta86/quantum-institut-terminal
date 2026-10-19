@@ -20,7 +20,8 @@
     const toast = (m, t, lama) => { try { if (typeof window.showQuantumToast === 'function') window.showQuantumToast(m, t || 'info', lama || 4000); } catch (e) {} };
     const simpan = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
     const baca = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-    const g = (nama) => { try { return (0, eval)(nama); } catch (e) { return undefined; } };   // baca global let/const dashboard-app.js
+    // Baca global let/const dashboard-app.js lewat getter-nya (dulu (0, eval)(nama) — dilarang CSP tanpa 'unsafe-eval').
+    const g = nama => (typeof window.qiBacaGlobal === 'function' ? window.qiBacaGlobal(nama) : undefined);
 
     const I = {
         chart: '<path d="M7 3v4M7 17v4M17 3v6M17 15v6"/><rect x="5" y="7" width="4" height="10" rx="1"/><rect x="15" y="9" width="4" height="6" rx="1"/>',
@@ -183,7 +184,8 @@
         document.querySelectorAll('.qim-top-link').forEach(b => {
             const h = HALAMAN.find(x => x.label.toLowerCase() === b.textContent.trim().toLowerCase());
             if (!h) return;
-            b.removeAttribute('onclick');
+            b.removeAttribute('data-qi-aksi');
+            b.removeAttribute('data-qi-arg');
             b.removeAttribute('data-qim-panel');
             b.dataset.qimPage = h.kunci;
             b.addEventListener('click', () => buka(h.kunci));

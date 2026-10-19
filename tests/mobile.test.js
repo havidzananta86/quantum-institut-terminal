@@ -14,15 +14,19 @@ const idx = s => html.indexOf(s);
 console.log('Muat awal');
 cek('qim-chart-store.js dimuat SEBELUM dashboard-app.js (semua modul memakai fetch yang sama)', idx('qim-chart-store.js') > 0 && idx('qim-chart-store.js') < idx('assets/js/dashboard-app.js'));
 cek('qim-chart-store.js dimuat SETELAH qim-auth-fetch.js (token sudah terpasang saat dikunci)', idx('qim-auth-fetch.js') < idx('qim-chart-store.js'));
-cek('font Google tidak memblokir tampilan pertama (preload + onload) dengan cadangan noscript', /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com[^"]+" onload="this\.onload=null;this\.rel='stylesheet'"/.test(html) && /<noscript><link href="https:\/\/fonts\.googleapis\.com/.test(html));
-cek('layar pembuka ditutup saat DOMContentLoaded (tidak menunggu window.load)', /document\.addEventListener\('DOMContentLoaded', tutup\)/.test(html));
-cek('layar pembuka punya batas waktu pengaman', /setTimeout\(tutup, \d+\)/.test(html));
+// Skrip inline dashboard sudah dipindah ke assets/js/halaman-dashboard-*.js (CSP tanpa 'unsafe-inline').
+const kepala = read('assets/js/halaman-dashboard-kepala.js'), pemuat = read('assets/js/halaman-dashboard-pemuat.js'), awal = read('assets/js/halaman-dashboard-awal.js');
+cek('font Google tidak memblokir tampilan pertama (preload, dipasang skrip) dengan cadangan noscript',
+    /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com[^"]+" data-qi-gaya-tunda>/.test(html) && /<noscript><link href="https:\/\/fonts\.googleapis\.com/.test(html)
+    && /link\[data-qi-gaya-tunda\][\s\S]*g\.rel = 'stylesheet'/.test(kepala) && idx('halaman-dashboard-kepala.js') > idx('data-qi-gaya-tunda'));
+cek('layar pembuka ditutup saat DOMContentLoaded (tidak menunggu window.load)', /document\.addEventListener\('DOMContentLoaded', tutup\)/.test(pemuat));
+cek('layar pembuka punya batas waktu pengaman', /setTimeout\(tutup, \d+\)/.test(pemuat));
 
 console.log('Dialog pertama kali');
-cek('sambutan hanya sekali (diingat saat ditutup, tanpa kotak centang)', /localStorage\.setItem\('qi_dashboard_onboarded', '1'\)/.test(html) && !/qiOnboardingSkipAlways/.test(html));
+cek('sambutan hanya sekali (diingat saat ditutup, tanpa kotak centang)', /localStorage\.setItem\('qi_dashboard_onboarded', '1'\)/.test(awal) && !/qiOnboardingSkipAlways/.test(html + awal));
 const pf = read('assets/js/pro-features.js'), ui = read('assets/js/ui-improvements.js');
 cek('tips pintasan keyboard dilewati di layar sentuh', /pointer: coarse\)'\)\.matches\) \{ localStorage\.setItem\('qi_onboarding_v2'/.test(pf));
-cek('tips & "apa yang baru" menunggu dialog lain (window.__qimDialogAktif)', /__qimDialogAktif/.test(pf) && /__qimDialogAktif/.test(ui) && /__qimDialogAktif = 'sambutan'/.test(html));
+cek('tips & "apa yang baru" menunggu dialog lain (window.__qimDialogAktif)', /__qimDialogAktif/.test(pf) && /__qimDialogAktif/.test(ui) && /__qimDialogAktif = 'sambutan'/.test(awal));
 cek('pengguna baru tidak mendapat "apa yang baru"', /qi_dashboard_onboarded'\) !== '1'\) \{ localStorage\.setItem\(key, CHANGELOG_VERSION\); return; \}/.test(ui));
 
 console.log('Target sentuh & input');

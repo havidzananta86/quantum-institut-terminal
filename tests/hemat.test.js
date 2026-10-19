@@ -10,7 +10,7 @@ let gagal = 0;
 function cek(nama, kondisi) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama); if (!kondisi) gagal++; }
 
 const app = read('assets/js/dashboard-app.js');
-const html = read('dashboard.html');
+const lw =read('assets/js/halaman-dashboard-lw.js');   // modul chart (dulu <script type="module"> inline)
 
 console.log('Kuota data');
 cek('order book widget tidak polling bila wadahnya tidak ada (dulu 40 permintaan/menit)',
@@ -22,7 +22,7 @@ cek('chart: 1000 candle diunduh ulang hanya saat batang baru seharusnya muncul',
 cek('Mesin 9 memakai kunci data watchlist (BTC = BTCUSDT, bukan "BTCUSD" yang berbuah data simulasi)',
     /WL_GROUPS\.flatMap\(g => g\.syms\)\.find\(x => x\.tv === s\)/.test(read('assets/js/dashboard-pro.js')));
 cek('alat gambar dimuat SETELAH chart (chart tidak menunggu unduhan opsional)',
-    html.indexOf("window.dispatchEvent(new CustomEvent('lc-modules-ready'))") < html.indexOf('lightweight-charts-drawing@') && /lc-drawing-ready/.test(app) && /function pasangAlatGambar\(\)/.test(app));
+    lw.indexOf("window.dispatchEvent(new CustomEvent('lc-modules-ready'))") < lw.indexOf('lightweight-charts-drawing@') && /lc-drawing-ready/.test(app) && /function pasangAlatGambar\(\)/.test(app));
 
 console.log('CPU & baterai');
 const a11y = read('assets/js/a11y.js');

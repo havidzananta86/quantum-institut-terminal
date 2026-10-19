@@ -457,6 +457,10 @@
             tampil('border-rose-500/40 bg-rose-500/10 text-rose-300', '⚠ Gagal menghubungi webhook: ' + e.message);
         }
     }
+    // Dipanggil tombol "Salin" & "Uji kirim" di kartu Webhook TradingView (data-qi-aksi). Dulu tidak diekspos sehingga
+    // onclick="salinTeks(...)" / onclick="ujiKirimWebhookTv()" melempar ReferenceError.
+    window.salinTeks = salinTeks;
+    window.ujiKirimWebhookTv = ujiKirimWebhookTv;
     // Saat panel AI Radar dibuka → muat info webhook sekali (tanpa memblokir).
     document.addEventListener('click', (e) => {
         try { if (e.target.closest('[data-panel="panel-radar"]')) setTimeout(() => muatInfoWebhookTv(false), 500); } catch (err) {}
@@ -552,7 +556,7 @@
                             + '<span class="text-qi-gold">' + esc(x.rr) + '</span>'
                             + '</div>'
                             + '<div class="flex items-center gap-2">'
-                            + '<button type="button" class="px-2 py-0.5 rounded bg-qi-blue/20 hover:bg-qi-blue/40 text-qi-blue border border-qi-blue/40 font-sans text-[9px] font-semibold transition cursor-pointer" onclick="if(window.ptOpenDirectPosition)ptOpenDirectPosition(\'' + esc(x.simbol) + '\',\'' + esc(x.arah) + '\',' + x.entry + ',' + x.sl + ',' + x.tp + ',0.05)">⚡ Trade Paper</button>'
+                            + '<button type="button" class="px-2 py-0.5 rounded bg-qi-blue/20 hover:bg-qi-blue/40 text-qi-blue border border-qi-blue/40 font-sans text-[9px] font-semibold transition cursor-pointer" data-qi-aksi="ptOpenDirectPosition" data-qi-arg="' + QIAksi.arg(String(x.simbol), String(x.arah), Number(x.entry), Number(x.sl), Number(x.tp), 0.05) + '">⚡ Trade Paper</button>'
                             + '</div>'
                             + '</div>').join('');
                 } else {
@@ -922,7 +926,7 @@
                     ${m.melawanTren ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[9px] font-bold" title="Arah mesin ini berlawanan dengan tren EMA200">⚑ TREN</span>' : ''}
                     <span class="ml-auto flex items-center gap-1.5 shrink-0">
                         <span class="text-[10px] font-mono text-slate-400">skor ${m.skor}</span>
-                        ${m.valid ? `<button type="button" onclick="gambarLevelMesin(this)" data-mesin="${m.kode}" data-arah="${m.arah}" data-entry="${m.level.entry}" data-tp="${m.level.tp}" data-sl="${m.level.sl}" data-rr="${m.level.rr || ''}" class="nine-gambar px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold hover:bg-cyan-500/25">Gambar</button>` : ''}
+                        ${m.valid ? `<button type="button" data-qi-aksi="gambarLevelMesin" data-qi-arg='["$el"]' data-mesin="${m.kode}" data-arah="${m.arah}" data-entry="${m.level.entry}" data-tp="${m.level.tp}" data-sl="${m.level.sl}" data-rr="${m.level.rr || ''}" class="nine-gambar px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold hover:bg-cyan-500/25">Gambar</button>` : ''}
                     </span>
                 </div>
                 <div class="mt-1.5 h-1 rounded bg-slate-800 overflow-hidden"><div class="h-full ${m.arah === 'BUY' ? 'bg-emerald-500' : m.arah === 'SELL' ? 'bg-rose-500' : 'bg-slate-600'}" style="width:${m.skor}%"></div></div>
@@ -932,10 +936,10 @@
             daftar.appendChild(baris);
         }
 
-        // SATU mekanisme klik yang paling andal: atribut onclick langsung pada tombol
-        // (dipasang di templat tombol) → fungsi global di bawah. Tidak bergantung pada
-        // pendengar yang bisa tertinggal saat daftar digambar ulang, dan tidak
-        // bergantung closure. Ini pengganti delegasi yang sempat dipakai.
+        // SATU mekanisme klik: atribut data-qi-aksi pada tombol (dipasang di templat tombol)
+        // → fungsi global di bawah, lewat delegasi qim-aksi.js di document. Tidak bergantung
+        // pada pendengar yang bisa tertinggal saat daftar digambar ulang, dan tidak
+        // bergantung closure. (Dulu atribut onclick="..." — dilarang CSP tanpa 'unsafe-inline'.)
         window.gambarLevelMesin = function (btn) {
             try {
                 if (!btn) return;
