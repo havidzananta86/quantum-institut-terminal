@@ -41,6 +41,26 @@ Options -Indexes
 # Blokir folder sensitif: config, engine, database, cache, scratch, .vercel
 RewriteRule ^(config|engine|database|cache|scratch|tests|\.vercel)/ - [F,L]
 
+# SALINAN NYASAR hasil copy/rename yang terputus: config.5493/, api.3155/, assets.9489/,
+# .claude.8513/, .github.8445/, .vercel.1915/ — lihat juga daftarnya di .gitignore.
+#
+# MENGAPA PENTING: aturan di atas mengunci `config/` dengan tegas, tetapi TIDAK menyentuh
+# `config.5493/` — padahal isinya kredensial asli. Diperiksa pada produksi 2026-10-20:
+#   /config/bridge.php          → 403  (terblokir)
+#   /config.5493/api_keys.php   → 200  (badan kosong)
+#   /config.5493/database.php   → 200  (badan kosong)
+# Badannya kosong HANYA karena PHP masih mengeksekusi berkas itu (isinya cuma define()).
+# Begitu penanganan PHP di direktori tersebut berubah — salah edit .htaccess, ganti versi
+# PHP, pindah server — isinya langsung terbaca publik sebagai teks biasa. Jangan bergantung
+# pada kebetulan itu.
+#
+# Aturan pertama menangkap pola umum "nama.ANGKA/" (semua salinan nyasar memakai bentuk ini,
+# termasuk yang berawalan titik). Aturan kedua menangkap akhiran non-angka seperti
+# config.bak/ atau config.old/ pada nama folder yang memang sensitif. `api/` dan `assets/`
+# sendiri TIDAK ikut terblokir karena kedua pola mewajibkan ada titik + akhiran.
+RewriteRule ^[^/]*\.[0-9]+/ - [F,L]
+RewriteRule ^(config|engine|database|cache|scratch|tests|api|assets|uploads|deploy|pine|mt5-bridge|tv-bridge)\.[A-Za-z0-9_-]+/ - [F,L]
+
 # Bridge data (kode & skrip setup VPS), alat deploy, dan dokumentasi internal: hanya untuk repo/VPS,
 # tidak boleh diunduh lewat web. Folder assets/mt-bridge (unduhan EA MT5) sengaja TIDAK diblokir.
 RewriteRule ^(mt5-bridge|tv-bridge|deploy|pine|\.github|\.githooks)/ - [F,L]

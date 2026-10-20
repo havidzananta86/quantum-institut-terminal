@@ -130,6 +130,39 @@ if (klaim) {
 }
 cek('klaim lama "43 permintaan menjadi 4" sudah dihapus', !/43 permintaan menjadi 4/.test(changelog));
 
+// ── 6. .htaccess: salinan nyasar tidak boleh bisa diunduh ────────────────────
+// Aturan diambil LANGSUNG dari .htaccess lalu dijalankan terhadap jalur nyata, jadi
+// mengubah polanya akan tertangkap di sini — termasuk perubahan yang tanpa sengaja
+// memblokir situs sendiri.
+console.log('\nProteksi .htaccess');
+const htaccess = baca('.htaccess');
+const aturan = [];
+for (const b of htaccess.split('\n')) {
+  const m = b.match(/^\s*RewriteRule\s+(\S+)\s+-\s+\[F,L\]/);
+  if (!m) continue;
+  try { aturan.push(new RegExp(m[1])); } catch (e) { cek(`pola .htaccess tidak sah: ${m[1]}`, false); }
+}
+cek('aturan pemblokiran terbaca dari .htaccess', aturan.length >= 8, aturan.length);
+const diblokir = (p) => aturan.some((re) => re.test(p));
+
+const WAJIB_BLOKIR = [
+  'config.5493/api_keys.php', 'config.5493/database.php', 'api.3155/health.php',
+  'assets.9489/css/tailwind.css', '.claude.8513/settings.json', '.vercel.1915/output/x',
+  'config.bak/api_keys.php', 'config/database.php', 'api/_middleware.php',
+  'database/seed.sql', 'tests/publik.test.js', 'mt5-bridge/main.py',
+];
+const WAJIB_LOLOS = [
+  'index.html', 'dashboard.html', 'bantuan.html', 'sw.js', 'manifest.json', 'favicon.ico',
+  'api/health.php', 'api/get-chart-data.php', 'api/signals.php',
+  'assets/js/main.js', 'assets/css/tailwind.css', 'assets/dist/inti.9464590294.js',
+  'assets/mt-bridge/QuantumBridge.ex5', 'uploads/avatars/u1.png', 'robots.txt', 'og-image.png',
+];
+const bocor = WAJIB_BLOKIR.filter((p) => !diblokir(p));
+const terblokirSalah = WAJIB_LOLOS.filter((p) => diblokir(p));
+cek(`${WAJIB_BLOKIR.length} jalur sensitif semuanya diblokir`, bocor.length === 0, bocor);
+cek(`${WAJIB_LOLOS.length} jalur publik semuanya tetap bisa diakses`, terblokirSalah.length === 0, terblokirSalah);
+cek('ada aturan khusus untuk salinan nyasar "nama.ANGKA/"', /RewriteRule\s+\^\[\^\/\]\*\\\.\[0-9\]\+\//.test(htaccess));
+
 // ── Bagian PHP (fungsi murni) ────────────────────────────────────────────────────────
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });
 if (probe.error || probe.status !== 0) {
