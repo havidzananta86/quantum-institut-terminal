@@ -2283,8 +2283,15 @@
 
         <!-- Trade form -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-qi-border">
+            <div class="px-4 py-3 border-b border-qi-border flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Buka Posisi Baru</span>
+                <label class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">Akun
+                    <select id="ptAkun" data-qi-aksi-change="ptGantiAkun" class="text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 outline-none focus:border-qi-cyan/50">
+                        <option value="sim">Simulasi</option>
+                        <option value="real">Real MT5</option>
+                    </select>
+                </label>
+                <span id="ptAkunNota" class="text-[10px] text-slate-500">Posisi simulasi — tanpa uang sungguhan.</span>
             </div>
             <div class="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <div>
@@ -2333,7 +2340,7 @@
             </div>
             <div class="px-4 pb-4 flex items-center gap-3">
                 <div class="text-[10px] text-slate-500 font-mono">Live: <span id="ptLivePrice" class="text-white font-semibold">—</span></div>
-                <button data-qi-aksi="ptOpenPosition" class="ml-auto px-4 py-2 rounded-lg font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">+ Buka Posisi</button>
+                <button id="ptOpenBtn" data-qi-aksi="ptOpenPosition" class="ml-auto px-4 py-2 rounded-lg font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">+ Buka Posisi</button>
             </div>
             <!-- Pengaman posisi: SL/TP otomatis, break-even, trailing stop (qim-trading-tools.js) -->
             <div class="px-4 py-3 border-t border-qi-border flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-slate-400">
@@ -4095,7 +4102,7 @@
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════ -->
 <!-- bundel:inti · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): qim-price-store.js, qim-chart-store.js, qim-paper-math.js, dashboard-app.js, qim-dashboard.js, qim-indicators.js, qim-trading-tools.js, qim-mt5-socket.js, qim-notifications.js, qim-pages.js, qim-risk.js, qim-alerts.js -->
-<script src="assets/dist/inti.dedce8ed4a.js"></script>
+<script src="assets/dist/inti.59d2ccd232.js"></script>
 <!-- /bundel:inti -->
 
 <!-- Sidebar toggle floating button -->
@@ -4104,7 +4111,7 @@
 </button>
 
 <!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
-<script src="assets/dist/fitur.2b07e7000b.js"></script>
+<script src="assets/dist/fitur.ceb2b794e6.js"></script>
 <!-- /bundel:fitur -->
 <!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
 <script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>

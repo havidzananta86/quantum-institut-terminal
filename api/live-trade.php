@@ -117,7 +117,17 @@ try {
         qi_log('warning', 'Live execution emergency stop', ['user_id' => $uid, 'account_id' => $accountId]);
         echo json_encode(['status' => 'success', 'message' => 'Tombol darurat aktif. Antrean order dibatalkan.']); exit();
     }
-    if ($action === 'queue_signal') {
+    // queue_signal = order dari mesin sinyal · queue_manual = order yang ditekan pengguna
+    // sendiri di panel Quick Trade. Keduanya memakai gerbang, pemetaan simbol, dan
+    // guardrail yang SAMA PERSIS — satu-satunya perbedaan adalah kolom `source`, yang
+    // dipakai laporan untuk memisahkan kualitas sinyal dari keputusan manual.
+    //
+    // Batas rugi harian dan batas posisi TIDAK diperiksa di sini dengan sengaja: keduanya
+    // ditegakkan di api/mt-execution.php saat EA meminta instruksi berikutnya, yaitu saat
+    // angkanya benar-benar mutakhir. Order yang terlanjur masuk antrean tetap tidak akan
+    // dikirim bila batasnya sudah tersentuh.
+    if ($action === 'queue_signal' || $action === 'queue_manual') {
+        $sumber = $action === 'queue_manual' ? 'manual' : 'signal';
         if (!(int)$account['enabled'] || (int)$account['emergency_stop'] || $account['connection_status'] !== 'active') qi_live_fail(409, 'Eksekusi real belum aktif atau terminal belum tersambung.', 'EXECUTION_NOT_READY');
         $symbol = strtoupper(qi_sanitize_string($input['symbol'] ?? '', 32));
         $side = strtoupper(qi_sanitize_string($input['side'] ?? '', 4));
@@ -132,12 +142,15 @@ try {
         $symbol = $symbolBroker;
         $allowed = json_decode($account['allowed_symbols'] ?: '[]', true) ?: [];
         $validLevels = $side === 'BUY' ? ($sl !== false && $tp !== false && $entry !== false && $sl > 0 && $tp > $entry && $sl < $entry) : ($side === 'SELL' ? ($sl !== false && $tp !== false && $entry !== false && $tp > 0 && $tp < $entry && $sl > $entry) : false);
-        if (!in_array($symbol, $allowed, true) || !in_array($side, ['BUY','SELL'], true) || $volume === false || $volume <= 0 || $volume > (float)$account['max_lot'] || !$validLevels) qi_live_fail(422, 'Instruksi sinyal tidak memenuhi guardrail (simbol, lot, SL, atau TP).', 'INVALID_SIGNAL_ORDER');
+        // SL dan TP WAJIB, juga untuk order manual. MT5 sendiri membolehkan order tanpa
+        // keduanya, tetapi di sini uang sungguhan dieksekusi oleh EA tanpa ada manusia yang
+        // mengawasi detik per detik — posisi tanpa SL bisa berjalan sampai margin habis.
+        if (!in_array($symbol, $allowed, true) || !in_array($side, ['BUY','SELL'], true) || $volume === false || $volume <= 0 || $volume > (float)$account['max_lot'] || !$validLevels) qi_live_fail(422, 'Order tidak memenuhi guardrail (simbol, lot, SL, atau TP).', 'INVALID_SIGNAL_ORDER');
         $token = bin2hex(random_bytes(4)) . '-' . bin2hex(random_bytes(2)) . '-4' . substr(bin2hex(random_bytes(2)), 1) . '-a' . substr(bin2hex(random_bytes(2)), 1) . '-' . bin2hex(random_bytes(6));
-        $stmt = $pdo->prepare("INSERT INTO trading_execution_orders (order_token, trading_account_id, source, symbol, side, volume, stop_loss, take_profit, requested_price, status, expires_at) VALUES (:token,:account,'signal',:symbol,:side,:volume,:sl,:tp,:entry,'queued',DATE_ADD(NOW(), INTERVAL 5 MINUTE))");
-        $stmt->execute([':token'=>$token, ':account'=>$accountId, ':symbol'=>$symbol, ':side'=>$side, ':volume'=>$volume, ':sl'=>$sl, ':tp'=>$tp, ':entry'=>$entry]);
-        qi_log('warning', 'Live signal order queued', ['user_id'=>$uid, 'account_id'=>$accountId, 'symbol'=>$symbol, 'side'=>$side]);
-        echo json_encode(['status'=>'success','message'=>'Order masuk antrean aman selama lima menit.','order_token'=>$token]); exit();
+        $stmt = $pdo->prepare("INSERT INTO trading_execution_orders (order_token, trading_account_id, source, symbol, side, volume, stop_loss, take_profit, requested_price, status, expires_at) VALUES (:token,:account,:source,:symbol,:side,:volume,:sl,:tp,:entry,'queued',DATE_ADD(NOW(), INTERVAL 5 MINUTE))");
+        $stmt->execute([':token'=>$token, ':account'=>$accountId, ':source'=>$sumber, ':symbol'=>$symbol, ':side'=>$side, ':volume'=>$volume, ':sl'=>$sl, ':tp'=>$tp, ':entry'=>$entry]);
+        qi_log('warning', 'Live order queued', ['user_id'=>$uid, 'account_id'=>$accountId, 'symbol'=>$symbol, 'side'=>$side, 'source'=>$sumber]);
+        echo json_encode(['status'=>'success','message'=>'Order masuk antrean aman selama lima menit.','order_token'=>$token,'source'=>$sumber]); exit();
     }
     qi_live_fail(400, 'Action tidak dikenal.', 'INVALID_ACTION');
 } catch (Exception $e) {

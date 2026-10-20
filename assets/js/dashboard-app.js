@@ -5530,6 +5530,60 @@ function ptRender() {
     try { qiGambarGarisPosisi(); } catch (e) {}
 }
 
+/** Akun tujuan formulir "Buka Posisi": 'sim' (bawaan) atau 'real'. */
+function ptAkunAktif() {
+    return document.getElementById('ptAkun')?.value === 'real' ? 'real' : 'sim';
+}
+
+/**
+ * Pemilih akun diubah → tombol dan keterangannya ikut berubah.
+ * Tombol merah untuk akun real BUKAN hiasan: satu-satunya pembeda antara menekan
+ * tombol yang membuka posisi simulasi dan tombol yang mengirim uang sungguhan ke
+ * broker adalah isi dropdown yang mungkin sudah tidak dilihat lagi.
+ */
+function ptGantiAkun() {
+    const real = ptAkunAktif() === 'real';
+    const btn  = document.getElementById('ptOpenBtn');
+    const nota = document.getElementById('ptAkunNota');
+    if (btn) {
+        btn.textContent = real ? 'KIRIM ORDER REAL' : '+ Buka Posisi';
+        btn.style.background = real ? 'linear-gradient(135deg,#FF5252,#B71C1C)' : 'linear-gradient(135deg,#00E5FF,#7C4DFF)';
+        btn.style.color = real ? '#fff' : '';
+    }
+    if (nota) {
+        nota.textContent = real
+            ? 'Uang sungguhan — SL dan TP wajib, order dikirim ke terminal MT5.'
+            : 'Posisi simulasi — tanpa uang sungguhan.';
+        nota.className = real ? 'text-[10px] text-qi-red font-semibold' : 'text-[10px] text-slate-500';
+    }
+}
+
+/**
+ * Order manual ke akun MT5 sungguhan. Melewati guardrail server yang sama dengan
+ * order dari mesin sinyal (api/live-trade.php aksi queue_manual): akun harus aktif,
+ * tidak sedang emergency stop, simbol dipetakan & diizinkan, lot <= max_lot, SL/TP sah.
+ * Batas rugi harian dan batas posisi ditegakkan belakangan oleh api/mt-execution.php
+ * saat EA meminta instruksi, memakai angka yang sudah mutakhir.
+ */
+async function ptKirimOrderReal(o) {
+    if (!(o.sl > 0) || !(o.tp > 0)) {
+        showQuantumToast('Akun real wajib memakai SL dan TP.', 'warning');
+        return;
+    }
+    const ringkas = `${o.side} ${o.symbol} ${o.lots} lot\nEntry ${o.entryPrice}\nSL ${o.sl} · TP ${o.tp}`;
+    if (!window.confirm(`Kirim order ke MT5 dengan UANG SUNGGUHAN?\n\n${ringkas}\n\nOrder berlaku lima menit di antrean.`)) return;
+    try {
+        const data = await liveAction({
+            action: 'queue_manual', symbol: o.symbol, side: o.side, volume: o.lots,
+            entry_price: o.entryPrice, stop_loss: o.sl, take_profit: o.tp,
+        });
+        showQuantumToast(data?.message || 'Order masuk antrean.', 'success');
+        if (typeof loadLiveExecution === 'function') { try { loadLiveExecution(); } catch (e) {} }
+    } catch (e) {
+        showQuantumToast(e?.message || 'Order real ditolak server.', 'error');
+    }
+}
+
 function ptOpenPosition() {
     const sym   = document.getElementById('ptSymbol')?.value;
     const side  = document.getElementById('ptSide')?.value;
@@ -5542,6 +5596,10 @@ function ptOpenPosition() {
     const cur = _lastPrices[sym];
     const entryPrice = epRaw ? parseFloat(epRaw) : (cur ? parseFloat(cur.price) : null);
     if (!entryPrice) { showQuantumToast('Tunggu harga live termuat.', 'warning'); return; }
+
+    // Akun real tidak pernah menyentuh _ptPositions: posisinya hidup di terminal MT5,
+    // dan statusnya dibaca dari panel Eksekusi Real, bukan dari simulasi.
+    if (ptAkunAktif() === 'real') { ptKirimOrderReal({ symbol: sym, side, lots, entryPrice, sl, tp }); return; }
 
     const pos = {
         id: 'PT-' + Date.now(),
