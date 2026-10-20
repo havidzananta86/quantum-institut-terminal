@@ -367,7 +367,7 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         // Versi pada URL memaksa browser mengambil service worker terbaru;
         // tanpa itu .js yang di-cache "immutable" bisa menahan versi lama.
-        navigator.serviceWorker.register('sw.js?v=59f9fd3ed6').then((reg) => {
+        navigator.serviceWorker.register('sw.js?v=c66a615a4f').then((reg) => {
             if (reg && reg.update) reg.update();
         }).catch(() => {});
     });

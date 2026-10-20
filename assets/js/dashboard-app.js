@@ -5385,6 +5385,64 @@ function fmtRaw(sym, price) {
     return p.toFixed(5);
 }
 
+// ─── Garis posisi terbuka di chart (entry / SL / TP) ─────────────────────────
+// MENGAPA: tabel posisi memberi angka, tetapi trader membaca posisinya DI CHART —
+// di mana harga sekarang relatif terhadap entry, SL, dan TP. Tanpa garis ini
+// pengguna harus membandingkan angka di kepala sambil melihat candle bergerak.
+// Garis dikelola terpisah dari garis indikator (_lwPriceLines) supaya keduanya
+// tidak saling menghapus: indikator digambar ulang saat data chart berubah,
+// posisi digambar ulang saat POSISI berubah.
+let _lwPosLines = [];
+
+function qiHapusGarisPosisi() {
+    _lwPosLines.forEach(pl => { if (_lwSeries) { try { _lwSeries.removePriceLine(pl); } catch (e) {} } });
+    _lwPosLines = [];
+}
+
+/** Simbol aplikasi yang sedang tampil di chart ('XAUUSD'), atau '' bila belum ada. */
+function qiSimbolChart() {
+    const f = WL_GROUPS.flatMap(g => g.syms).find(s => s.tv === _tvSymbol);
+    return f ? f.key : '';
+}
+
+function qiGambarGarisPosisi() {
+    if (!_lwSeries) return;
+    qiHapusGarisPosisi();
+    const simbol = qiSimbolChart();
+    if (!simbol) return;
+    const dp  = DP[simbol] || 4;
+    const fmt = (v) => Number(v).toFixed(dp);
+    // Hanya posisi untuk simbol yang sedang tampil — garis dari simbol lain akan
+    // menyesatkan karena skala harganya berbeda jauh.
+    const posisi = (_ptPositions || []).filter(p => p && p.symbol === simbol);
+    for (const p of posisi) {
+        const beli  = p.side === 'BUY';
+        const warna = beli ? '#00E676' : '#FF5252';
+        const lot   = Number(p.lots || 0).toFixed(2);
+        const entry = Number(p.entryPrice);
+        if (!Number.isFinite(entry)) continue;
+        const tambah = (harga, color, style, judul, width) => {
+            const n = Number(harga);
+            if (!Number.isFinite(n) || n <= 0) return;
+            try {
+                _lwPosLines.push(_lwSeries.createPriceLine({
+                    price: n, color, lineWidth: width || 1, lineStyle: style,
+                    axisLabelVisible: true, title: judul
+                }));
+            } catch (e) { /* seri chart sedang diganti — abaikan */ }
+        };
+        // Entry tebal & utuh; SL/TP putus-putus supaya mudah dibedakan sekilas.
+        tambah(entry, warna, 0, `${p.side} ${lot} @ ${fmt(entry)}`, 2);
+        tambah(p.sl, '#FF5252', 2, `SL ${fmt(p.sl)}`);
+        tambah(p.tp, '#00E676', 2, `TP ${fmt(p.tp)}`);
+    }
+}
+
+// Chart berganti simbol / timeframe → seri digambar ulang, garis posisi ikut menyesuaikan.
+try {
+    window.addEventListener('qi-chart-data', () => { try { qiGambarGarisPosisi(); } catch (e) {} });
+} catch (e) {}
+
 function ptRender() {
     // Balance
     const floatPnl = _ptPositions.reduce((sum, p) => {
@@ -5465,6 +5523,11 @@ function ptRender() {
             }).join('');
         }
     }
+
+    // Posisi berubah (buka, tutup, SL/TP digeser, muat ulang dari server) → garis
+    // di chart ikut menyesuaikan. ptRender() adalah satu-satunya jalur render posisi,
+    // jadi memanggilnya di sini mencakup semua perubahan tanpa pemanggil lain lupa.
+    try { qiGambarGarisPosisi(); } catch (e) {}
 }
 
 function ptOpenPosition() {
