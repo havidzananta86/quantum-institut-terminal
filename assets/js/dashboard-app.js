@@ -6135,9 +6135,23 @@ let _ohlcHover = false;    // true saat kursor menunjuk candle historis di chart
 let _lwCandlesMeta = null; // { source, generatedAt } dari api/get-chart-data
 
 const OHLC_SOURCE_LABELS = {
-    oanda_tv: 'OANDA', binance: 'BINANCE', binance_ws: 'BINANCE · STREAM', mt5_tick: 'MT5 · TICK', binance_paxg: 'BINANCE·PAXG (proksi)',
+    oanda_tv: 'OANDA', binance: 'BINANCE', binance_ws: 'BINANCE · STREAM', binance_paxg: 'BINANCE·PAXG (proksi)',
+    // Feed terminal MT5 milik Quantum Institut (bridge di VPS). Diberi label "BROKER QI",
+    // bukan "MT5" saja: pengguna harus tahu ini harga broker KAMI, bukan broker mereka —
+    // spread, swap, dan harga pastinya bisa berbeda beberapa poin dari akun mereka sendiri.
+    mt5: 'MT5 · BROKER QI', mt5_tick: 'MT5 TICK · BROKER QI',
     twelvedata: 'TWELVEDATA', biquote: 'BIQUOTE', candle_m1: 'BIQUOTE M1', candle_h1: 'BIQUOTE H1',
     simulasi: 'DATA SIMULASI', unknown: 'SUMBER ?'
+};
+
+// Penjelasan yang muncul saat lencana disentuh/di-hover. Sumber yang tidak terdaftar
+// memakai teks bawaan elemen ("Sumber data candle").
+const OHLC_SOURCE_NOTES = {
+    mt5: 'Candle dari terminal MetaTrader 5 milik Quantum Institut. Harga broker Anda sendiri bisa berbeda beberapa poin — gunakan ini sebagai acuan struktur, bukan harga eksekusi Anda.',
+    mt5_tick: 'Harga tick langsung dari terminal MetaTrader 5 milik Quantum Institut. Harga broker Anda sendiri bisa berbeda beberapa poin.',
+    simulasi: 'Data CONTOH, bukan harga pasar sebenarnya. Jangan dipakai untuk mengambil keputusan.',
+    binance_paxg: 'Proksi: harga PAXG di Binance dipakai sebagai pendekatan emas, bukan XAUUSD broker.',
+    unknown: 'Sumber data candle tidak dikenali.'
 };
 
 // Menampilkan asal data candle + umurnya. Data simulasi diberi warna peringatan
@@ -6148,10 +6162,13 @@ function updateOhlcSourceBadge() {
     const base = 'ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold border ';
     if (!_lwCandlesMeta || !_lwCandlesMeta.source) {
         el.textContent = '—';
+        el.title = 'Sumber data candle';   // jangan tinggalkan penjelasan sumber sebelumnya
         el.className = base + 'bg-slate-800/80 text-slate-500 border-slate-700/60';
         return;
     }
-    const simulasi = _lwCandlesMeta.source === 'simulasi';
+    const sumber   = _lwCandlesMeta.source;
+    const simulasi = sumber === 'simulasi';
+    const brokerQi = sumber === 'mt5' || sumber === 'mt5_tick';
     let umur = '';
     if (_lwCandlesMeta.generatedAt) {
         // Candle terakhir diperbarui tiap tick (lihat updateOhlcBar), jadi umur = yang terbaru dari keduanya.
@@ -6159,10 +6176,15 @@ function updateOhlcSourceBadge() {
         const detik = Math.max(0, Math.round((Date.now() - t) / 1000));
         if (Number.isFinite(detik)) umur = ' · ' + (detik <= 5 ? 'baru' : detik + 's');
     }
-    el.textContent = (OHLC_SOURCE_LABELS[_lwCandlesMeta.source] || String(_lwCandlesMeta.source).toUpperCase()) + umur;
+    el.textContent = (OHLC_SOURCE_LABELS[sumber] || String(sumber).toUpperCase()) + umur;
+    el.title = OHLC_SOURCE_NOTES[sumber] || 'Sumber data candle';
+    // Tiga keadaan, tiga warna: simulasi = peringatan (jangan dipercaya sebagai harga pasar),
+    // feed broker QI = disorot (harganya bukan harga broker pengguna), sisanya netral.
     el.className = base + (simulasi
         ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-        : 'bg-slate-800/80 text-slate-400 border-slate-700/60');
+        : brokerQi
+            ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
+            : 'bg-slate-800/80 text-slate-400 border-slate-700/60');
 }
 
 // Menuliskan satu candle ke bar OHLC (dipakai untuk kursor maupun data live).

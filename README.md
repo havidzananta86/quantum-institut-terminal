@@ -95,16 +95,49 @@ dibuka (`assets/js/qim-muat-fitur.js`).
 
 ## Konfigurasi
 
-Dua file ini **tidak masuk repo** (ada di `.gitignore`) dan harus dibuat
+File-file ini **tidak masuk repo** (ada di `.gitignore`) dan harus dibuat
 manual di tiap environment:
 
 | File | Isi |
 | --- | --- |
 | `config/database.php` | Kredensial MySQL, mengekspor `getDBConnection()` |
 | `config/api_keys.php` | `TWELVE_DATA_KEY`, `GROQ_API_KEY`, `CRON_SECRET_KEY`, dll |
+| `config/bridge.php` | Alamat & rahasia bridge TV/MT5 (lihat di bawah) |
 
-Jangan pernah commit keduanya. `api/health.php` melaporkan kunci mana yang
-belum terisi.
+Jangan pernah commit ketiganya. `api/health.php` melaporkan kunci mana yang
+belum terisi, dan `api/health.php?bridges=1` memeriksa kedua bridge.
+
+### Siapa yang memakai feed broker MT5
+
+`QI_MT5_BRIDGE_AUDIENCE` menentukan siapa yang mendapat candle dan tick dari
+terminal MetaTrader 5 (bridge di VPS Windows):
+
+| Nilai | Yang berhak |
+| --- | --- |
+| `'owner'` (bawaan) | Pemilik akun `QI_MT5_BRIDGE_ACCOUNT` + admin |
+| `'pro'` | Semua PRO, VIP, dan admin (`qi_tingkat_peran() >= 1`) |
+
+Satu konstanta ini menyalakan tiga jalur sekaligus — candle chart
+(`qi_chart_use_mt5()`), harga live (`api/live-price.php`), dan tick WebSocket
+(`api/mt5-bridge-token.php`, scope `ticks candles`). Candle broker disimpan di
+berkas cache terpisah (akhiran `_mt5`) supaya tidak tercampur dengan feed
+pengguna gratis.
+
+Sebelum mengubahnya menjadi `'pro'`, pertimbangkan:
+
+- **Lisensi data broker.** Kuotasi broker umumnya dilisensikan ke pemegang akun.
+  Menyebarkannya ke pengguna lain bisa melanggar syarat broker — periksa dulu.
+- **Kapasitas.** `MAX_CLIENTS` di `mt5-bridge/.env` bawaannya 200 sambungan
+  WebSocket; satu dashboard terbuka memakai satu sambungan.
+- **Titik tunggal.** Semua chart PRO/VIP bergantung pada satu terminal MT5.
+  Saat bridge mati, token dijawab `status: disabled` dan dashboard otomatis
+  kembali ke polling sumber biasa.
+- **Kejujuran ke pengguna.** Chart menandai feed ini dengan lencana
+  `MT5 · BROKER QI` beserta keterangan bahwa harga broker mereka sendiri bisa
+  berbeda. Jangan hapus penanda itu (dikunci `tests/mt5-feed-akses.test.js`).
+
+Aturan akses ini ditulis di dua tempat — `api/mt5-bridge-token.php` dan
+`qi_mt5_allowed()` di `api/_middleware.php` — dan tes menjaga keduanya tetap sama.
 
 ---
 
