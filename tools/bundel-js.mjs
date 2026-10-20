@@ -165,6 +165,26 @@ for (const { file: rel, dimuat } of HALAMAN_SW) {
     }
 }
 
+// CSS yang dimuat langsung di-cache "immutable" 30 hari oleh .htaccess, persis seperti
+// bundel JS. Tanpa stempel isi, mengedit CSS TIDAK PERNAH sampai ke pengunjung lama —
+// browser tidak akan memeriksa ulang sampai cache kedaluwarsa, bahkan setelah deploy.
+// Terbukti 2026-10-21: kartu Quick Trade tayang tanpa gaya sama sekali karena
+// assets/css/qim-dashboard.css berubah sementara ?v= di dashboard.html tetap 1.2.6.
+// Sekarang ?v= setiap <link> CSS = hash isi berkasnya, jadi tidak ada lagi yang perlu
+// diingat manusia. Cakupannya dua halaman yang memang dikelola build ini.
+const HALAMAN_CSS = ['dashboard.html', 'index.html'];
+const CSS_RE = /href="(assets\/css\/[A-Za-z0-9._-]+\.css)\?v=[^"]*"/g;
+for (const halaman of HALAMAN_CSS) {
+    ubahTeks(halaman, html => {
+        if (!CSS_RE.test(html)) gagal(`${halaman}: <link href="assets/css/….css?v=…"> tidak ditemukan`);
+        CSS_RE.lastIndex = 0;
+        return html.replace(CSS_RE, (_, rel) => {
+            if (!fs.existsSync(p(rel))) gagal(`${halaman}: ${rel} dirujuk tetapi tidak ada`);
+            return `href="${rel}?v=${sha(baca(rel)).slice(0, 10)}"`;
+        });
+    });
+}
+
 const petaLazy = {};
 for (const [nama, file] of Object.entries(konf.lazy)) {
     const b = await bangun('lazy-' + nama, file, sumber, info);

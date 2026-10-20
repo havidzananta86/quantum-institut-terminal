@@ -67,6 +67,20 @@ if (man) {
     const hi = sha(read('assets/js/halaman-index.js').replace(/\r\n/g, '\n')).slice(0, 10);
     cek('index.html memuat halaman-index.js?v=<hash isi> (file .js di-cache 30 hari)', read('index.html').includes('src="assets/js/halaman-index.js?v=' + hi + '"'));
     cek('bundel awal ikut di-precache Service Worker', Object.values(man.bundel).every(b => sw.includes(`'${b.file}',`)));
+
+    // CSS di-cache "immutable" 30 hari oleh .htaccess. Bila ?v= tidak ikut berubah saat
+    // berkasnya diedit, perubahan gaya TIDAK PERNAH sampai ke pengunjung lama — pernah
+    // terjadi 2026-10-21 (kartu Quick Trade tayang tanpa gaya). 'npm run build:js'
+    // menstempel ?v= dengan hash isi; di sini dipastikan stempelnya masih cocok.
+    console.log('Stempel versi CSS');
+    for (const halaman of ['dashboard.html', 'index.html']) {
+        const isi = read(halaman);
+        const tautan = [...isi.matchAll(/href="(assets\/css\/[A-Za-z0-9._-]+\.css)\?v=([^"]*)"/g)];
+        cek(`${halaman}: ada <link> CSS ber-?v=`, tautan.length > 0, tautan.length);
+        const basi = tautan.filter(([, rel, v]) => v !== sha(read(rel).replace(/\r\n/g, '\n')).slice(0, 10))
+            .map(([, rel, v]) => `${rel}?v=${v}`);
+        cek(`${halaman}: ${tautan.length} berkas CSS, semua ?v= = hash isinya`, basi.length === 0, basi);
+    }
 }
 
 console.log(gagal ? `FAIL — ${gagal} pemeriksaan gagal` : 'PASS — bundel JS');
