@@ -22,13 +22,20 @@
 
 if (!function_exists('qi_news_cari_event')) :
 
-/** Ambil angka dari teks kalender ("0.3%", "175K", "-", "1.2M"). */
+/**
+ * Ambil angka dari teks kalender ("0.3%", "175K", "-", "1.2M", "-175K").
+ *
+ * TANDA MINUS WAJIB IKUT TERTANGKAP. Nilai ini dipakai qi_news_arah_fundamental()
+ * (forecast vs previous) dan qi_news_analisa_deviasi() (actual vs forecast), yang
+ * keduanya menentukan ARAH sinyal NEWS. Tanpa `-?`, "-175K" terbaca +175000 dan
+ * arah sinyal bisa terbalik pada rilis yang memang negatif.
+ */
 function qi_news_angka($teks): ?float
 {
     $t = trim((string)$teks);
     if ($t === '' || $t === '-' || strtoupper($t) === 'N/A') return null;
     $faktor = 1.0;
-    if (preg_match('/([0-9]+(?:\.[0-9]+)?)\s*([KMBT])/i', $t, $m)) {
+    if (preg_match('/(-?[0-9]+(?:\.[0-9]+)?)\s*([KMBT])/i', $t, $m)) {
         $faktor = ['K' => 1e3, 'M' => 1e6, 'B' => 1e9, 'T' => 1e12][strtoupper($m[2])] ?? 1.0;
         return (float)$m[1] * $faktor;
     }

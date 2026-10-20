@@ -98,9 +98,13 @@ try {
     if ($action === 'set_enabled') {
         if (($input['confirm_text'] ?? '') !== 'AKTIFKAN REAL') qi_live_fail(422, 'Ketik AKTIFKAN REAL untuk mengaktifkan eksekusi.', 'CONFIRMATION_REQUIRED');
         if ($account['connection_status'] !== 'active') qi_live_fail(409, 'Terminal MT5 belum mengirim snapshot aktif.', 'BRIDGE_NOT_ACTIVE');
-        $stmt = $pdo->prepare('UPDATE trading_execution_profiles SET enabled = :enabled, emergency_stop = :stop, enabled_at = IF(:enabled = 1, NOW(), NULL) WHERE trading_account_id = :id');
+        // :enabled_cek adalah NILAI YANG SAMA dengan :enabled, hanya namanya dibedakan. Prepare natif
+        // (PDO::ATTR_EMULATE_PREPARES = false, lihat config/database.php) menolak satu nama placeholder
+        // yang dipakai dua kali → PDOException "Invalid parameter number" → HTTP 500. Bug yang sama pernah
+        // terjadi di api/mt-execution.php; pola perbaikannya sengaja disamakan.
+        $stmt = $pdo->prepare('UPDATE trading_execution_profiles SET enabled = :enabled, emergency_stop = :stop, enabled_at = IF(:enabled_cek = 1, NOW(), NULL) WHERE trading_account_id = :id');
         $enabled = !empty($input['enabled']) ? 1 : 0;
-        $stmt->execute([':enabled' => $enabled, ':stop' => $enabled ? 0 : 1, ':id' => $accountId]);
+        $stmt->execute([':enabled' => $enabled, ':enabled_cek' => $enabled, ':stop' => $enabled ? 0 : 1, ':id' => $accountId]);
         if (!$stmt->rowCount()) qi_live_fail(409, 'Simpan guardrail terlebih dahulu.', 'CONFIGURATION_REQUIRED');
         qi_log('warning', 'Live execution state changed', ['user_id' => $uid, 'account_id' => $accountId, 'enabled' => $enabled]);
         echo json_encode(['status' => 'success', 'message' => $enabled ? 'Eksekusi real diaktifkan.' : 'Eksekusi real dihentikan.']); exit();

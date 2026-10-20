@@ -272,7 +272,11 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
                 'exit_price'  => round($keluar, 6),
                 'closed_at'   => qi_sig_waktu_utc($c['time']),
                 'pnl'         => round($selisih, 6),
-                'pnl_usd'     => round($selisih * qi_paper_pip_mult((string)$sig['symbol']), 4),
+                // Harga keluar WAJIB dikirim: untuk pair berbasis USD (USDJPY/USDCHF/USDCAD)
+                // qi_paper_pip_mult() mengonversi ke USD dengan 100.000/harga, dan hanya jatuh
+                // ke konvensi lama 1000 bila harga tidak diberikan — selisihnya ~50% pada USDJPY.
+                // Semua pemanggil lain (_auto_paper.php, ai-jelaskan.php) sudah mengirim harga.
+                'pnl_usd'     => round($selisih * qi_paper_pip_mult((string)$sig['symbol'], $keluar), 4),
             ], $biaya, $luar);
         }
     }

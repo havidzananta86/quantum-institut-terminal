@@ -97,10 +97,13 @@ if ($action === 'enable') {
 
     $lots = max(0.01, min(10.0, (float)($body['lots'] ?? 0.10)));
 
+    // VALUES(kolom) mengulang nilai dari klausa VALUES di atas — jauh lebih aman daripada menulis
+    // :syms/:lots untuk kedua kalinya: prepare natif menolak nama placeholder yang dipakai ulang
+    // (PDOException → HTTP 500). Pola ini sama dengan api/live-trade.php aksi `configure`.
     $stmt = $pdo->prepare(
         'INSERT INTO ai_settings (user_id, enabled, symbols, lots)
          VALUES (:uid, 1, :syms, :lots)
-         ON DUPLICATE KEY UPDATE enabled = 1, symbols = :syms, lots = :lots'
+         ON DUPLICATE KEY UPDATE enabled = 1, symbols = VALUES(symbols), lots = VALUES(lots)'
     );
     $stmt->execute([':uid' => $uid, ':syms' => json_encode($syms), ':lots' => $lots]);
     echo json_encode(['status' => 'success', 'message' => 'AI Auto-Trade diaktifkan', 'symbols' => $syms]);
