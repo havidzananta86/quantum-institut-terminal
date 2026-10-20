@@ -8,8 +8,8 @@
 
 // CACHE_NAME & STATIC_CACHE DITULIS OTOMATIS oleh 'npm run build:js' (hash build) — jangan diubah tangan.
 // Bundel JS ber-hash (assets/dist/) baru → cache lama dibuang saat SW baru aktif.
-const CACHE_NAME = 'quantum-terminal-57a1afbb6d';
-const STATIC_CACHE = 'quantum-static-57a1afbb6d';
+const CACHE_NAME = 'quantum-terminal-f94deeac11';
+const STATIC_CACHE = 'quantum-static-f94deeac11';
 
 const CORE_ASSETS = [
 
@@ -32,8 +32,8 @@ const CORE_ASSETS = [
     'assets/dist/kepala.8f6bd896c5.js',
     'assets/dist/pemuat.a1fbccf661.js',
     'assets/dist/awal.532802c85b.js',
-    'assets/dist/inti.59d2ccd232.js',
-    'assets/dist/fitur.ceb2b794e6.js',
+    'assets/dist/inti.d72e4ed181.js',
+    'assets/dist/fitur.0dd41eb3cb.js',
     'assets/dist/tunda.7a7be7a1eb.js',
     // bundel:akhir
 ];

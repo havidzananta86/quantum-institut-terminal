@@ -552,6 +552,8 @@ setInterval(mtfBiasBilaTerlihat, 60000);
 setInterval(() => {
     if (_activePanel === 'panel-paper') { ptUpdateLivePrice(); ptRender(); }
     if (_activePanel === 'panel-radar') renderRadarQuickScan();
+    // Quick Trade ada di rail kanan (terlihat di banyak panel), jadi disegarkan tanpa syarat panel.
+    try { qtSegarkan(); } catch (e) {}
 }, 5000);
 // Auto-refresh order book — semua pair sekaligus
 const OB_SYMS = ['XAUUSD','BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
@@ -5529,6 +5531,137 @@ function ptRender() {
     // jadi memanggilnya di sini mencakup semua perubahan tanpa pemanggil lain lupa.
     try { qiGambarGarisPosisi(); } catch (e) {}
 }
+
+// ─── QUICK TRADE (kartu di rail kanan) ──────────────────────────────────────
+// Order untuk simbol yang SEDANG tampil di chart, tanpa berpindah panel.
+// Akun (Simulasi / Real MT5) dipilih di baris paling atas dan ikut mewarnai tombol
+// kirim — tanpa tanda visual, satu-satunya pembeda antara simulasi dan uang sungguhan
+// adalah teks kecil yang gampang terlewat.
+const QT = { akun: 'sim', arah: 'BUY' };
+const qtEl = (id) => document.getElementById(id);
+
+/** Harga sisi beli & jual. Memakai ask/bid broker bila ada; kalau tidak, harga tengah
+ *  dipakai untuk KEDUANYA — lebih baik dua angka sama daripada spread karangan. */
+function qtHarga() {
+    const sym = qiSimbolChart();
+    const d = sym ? _lastPrices[sym] : null;
+    if (!d) return { sym, beli: null, jual: null, nyata: false };
+    const mid = parseFloat(d.price);
+    const ask = d.ask != null ? parseFloat(d.ask) : NaN;
+    const bid = d.bid != null ? parseFloat(d.bid) : NaN;
+    const ada = Number.isFinite(ask) && Number.isFinite(bid);
+    return { sym, beli: ada ? ask : mid, jual: ada ? bid : mid, nyata: ada };
+}
+
+/** Satu pip untuk simbol ini (XAUUSD 0.1 · EURUSD 0.0001). */
+function qtLangkah(sym) { return Math.pow(10, -(DP[sym] || 4)) * 10; }
+
+function qtSetAkun(el, e, akun) { QT.akun = akun === 'real' ? 'real' : 'sim'; qtSegarkan(); }
+function qtSetArah(el, e, arah) { QT.arah = arah === 'SELL' ? 'SELL' : 'BUY'; qtSegarkan(); }
+
+function qtStep(el, e, id, naik) {
+    const inp = qtEl(id); if (!inp) return;
+    const sym = qiSimbolChart();
+    const lot = id === 'qtLot';
+    const dp  = lot ? 2 : (DP[sym] || 4);
+    let v = parseFloat(inp.value);
+    if (!Number.isFinite(v)) {
+        // SL/TP masih kosong → mulai dari harga sekarang, bukan dari nol.
+        const h = qtHarga();
+        v = lot ? 0.01 : (QT.arah === 'BUY' ? h.beli : h.jual);
+        if (!Number.isFinite(v) || v <= 0) return;
+    } else {
+        v += (lot ? 0.01 : qtLangkah(sym)) * (naik < 0 ? -1 : 1);
+    }
+    inp.value = Math.max(0, v).toFixed(dp);
+    qtHitung();
+}
+
+/** Perkiraan untung/rugi dari level yang diisi. Angkanya KOTOR — spread dan komisi
+ *  tidak dikurangi di sini, dan itu dikatakan apa adanya. Margin sengaja tidak
+ *  ditampilkan: leverage akun broker tidak diketahui klien, jadi angkanya akan karangan. */
+function qtHitung() {
+    const info = qtEl('qtInfo'); if (!info) return;
+    const h = qtHarga();
+    const entry = QT.arah === 'BUY' ? h.beli : h.jual;
+    const lots = parseFloat(qtEl('qtLot')?.value);
+    if (!h.sym || !Number.isFinite(entry) || !Number.isFinite(lots) || lots <= 0) {
+        info.textContent = 'Menunggu harga live.';
+        return;
+    }
+    const sl = parseFloat(qtEl('qtSL')?.value);
+    const tp = parseFloat(qtEl('qtTP')?.value);
+    const adaSL = Number.isFinite(sl) && sl > 0, adaTP = Number.isFinite(tp) && tp > 0;
+    const beli = QT.arah === 'BUY';
+    if ((adaSL && (beli ? sl >= entry : sl <= entry)) || (adaTP && (beli ? tp <= entry : tp >= entry))) {
+        info.textContent = beli
+            ? 'Untuk BUY: SL harus di BAWAH harga, TP di ATAS.'
+            : 'Untuk SELL: SL harus di ATAS harga, TP di BAWAH.';
+        return;
+    }
+    const mult = ptPnlMult(h.sym, entry);
+    const uang = (jarak) => '$' + Math.abs(jarak * lots * mult).toFixed(2);
+    const bagian = [];
+    if (adaTP) bagian.push('Est. untung ' + uang(tp - entry));
+    if (adaSL) bagian.push('Est. rugi ' + uang(entry - sl));
+    if (adaSL && adaTP) {
+        const risiko = Math.abs(entry - sl);
+        if (risiko > 0) bagian.push('R:R 1:' + (Math.abs(tp - entry) / risiko).toFixed(2));
+    }
+    info.textContent = bagian.length
+        ? bagian.join(' · ') + ' — kotor, belum dikurangi spread & komisi.'
+        : 'Isi SL dan TP untuk melihat perkiraan untung/rugi.';
+}
+
+function qtSegarkan() {
+    const h = qtHarga();
+    const fmtH = (v) => Number.isFinite(v) ? v.toFixed(DP[h.sym] || 4) : '—';
+    const set = (id, teks) => { const el = qtEl(id); if (el) el.textContent = teks; };
+    set('qtSym', h.sym || '—');
+    set('qtBuyHarga', fmtH(h.beli));
+    set('qtSellHarga', fmtH(h.jual));
+
+    const real = QT.akun === 'real';
+    qtEl('qtAkunSim')?.classList.toggle('is-active', !real);
+    qtEl('qtAkunReal')?.classList.toggle('is-active', real);
+    qtEl('qtBuy')?.classList.toggle('is-active', QT.arah === 'BUY');
+    qtEl('qtSell')?.classList.toggle('is-active', QT.arah === 'SELL');
+
+    const kirim = qtEl('qtKirim');
+    if (kirim) {
+        kirim.textContent = real ? `KIRIM ${QT.arah} REAL` : `Place Order · ${QT.arah}`;
+        kirim.classList.toggle('is-real', real);
+    }
+    const nota = qtEl('qtNota');
+    if (nota) {
+        nota.textContent = real
+            ? 'Uang sungguhan — SL dan TP wajib, order dikirim ke terminal MT5.'
+            : 'Simulasi — tanpa uang sungguhan.';
+        nota.classList.toggle('is-real', real);
+    }
+    qtHitung();
+}
+
+function qtKirim() {
+    const h = qtHarga();
+    if (!h.sym) { showQuantumToast('Pilih simbol di chart lebih dulu.', 'warning'); return; }
+    const entry = QT.arah === 'BUY' ? h.beli : h.jual;
+    if (!Number.isFinite(entry) || entry <= 0) { showQuantumToast('Tunggu harga live termuat.', 'warning'); return; }
+    const lots = parseFloat(qtEl('qtLot')?.value);
+    if (!Number.isFinite(lots) || lots <= 0) { showQuantumToast('Lot harus lebih besar dari nol.', 'warning'); return; }
+    const sl = parseFloat(qtEl('qtSL')?.value) || null;
+    const tp = parseFloat(qtEl('qtTP')?.value) || null;
+
+    if (QT.akun === 'real') { ptKirimOrderReal({ symbol: h.sym, side: QT.arah, lots, entryPrice: entry, sl, tp }); return; }
+    ptOpenDirectPosition(h.sym, QT.arah, entry, sl, tp, lots);
+    showQuantumToast(`Posisi simulasi ${QT.arah} ${h.sym} ${lots} lot dibuka.`, 'success');
+}
+
+// Harga & simbol chart berubah → kartu ikut menyesuaikan.
+try {
+    window.addEventListener('qi-chart-data', () => { try { qtSegarkan(); } catch (e) {} });
+    window.addEventListener('load', () => { try { qtSegarkan(); } catch (e) {} });
+} catch (e) {}
 
 /** Akun tujuan formulir "Buka Posisi": 'sim' (bawaan) atau 'real'. */
 function ptAkunAktif() {
