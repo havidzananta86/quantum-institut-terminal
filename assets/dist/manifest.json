@@ -20,10 +20,10 @@
       }
     },
     "pemuat": {
-      "file": "assets/dist/pemuat.a1fbccf661.js",
+      "file": "assets/dist/pemuat.7d11cff66d.js",
       "muat": "sinkron",
       "sumber": {
-        "halaman-dashboard-pemuat.js": "e069fc4f9fbd9463"
+        "halaman-dashboard-pemuat.js": "e05bab0cc7d94787"
       }
     },
     "awal": {
@@ -52,7 +52,7 @@
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.2acbafe7dd.js",
+      "file": "assets/dist/fitur.787769dfb2.js",
       "muat": "sinkron",
       "sumber": {
         "pro-features.js": "e76de5bafd70616e",
@@ -76,7 +76,7 @@
         "ui-improvements.js": "005c82eec7d07aa0",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "c252a05fbb6611f5",
-        "halaman-dashboard.js": "32ce304fe83a4c9d"
+        "halaman-dashboard.js": "64d543dced5d5475"
       }
     },
     "tunda": {
@@ -110,5 +110,5 @@
       }
     }
   },
-  "versi": "b2bee74c87"
+  "versi": "e69ee1c879"
 }

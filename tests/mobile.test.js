@@ -21,8 +21,10 @@ const kepala = read('assets/js/halaman-dashboard-kepala.js'), pemuat = read('ass
 cek('font Google tidak memblokir tampilan pertama (preload, dipasang skrip) dengan cadangan noscript',
     /rel="preload" as="style" href="https:\/\/fonts\.googleapis\.com[^"]+" data-qi-gaya-tunda>/.test(html) && /<noscript><link href="https:\/\/fonts\.googleapis\.com/.test(html)
     && /link\[data-qi-gaya-tunda\][\s\S]*g\.rel = 'stylesheet'/.test(kepala) && idx('halaman-dashboard-kepala.js') > idx('data-qi-gaya-tunda'));
-cek('layar pembuka ditutup saat DOMContentLoaded (tidak menunggu window.load)', /document\.addEventListener\('DOMContentLoaded', tutup\)/.test(pemuat));
-cek('layar pembuka punya batas waktu pengaman', /setTimeout\(tutup, \d+\)/.test(pemuat));
+// Sejak 2026-10-21 pemuatnya berbasis kejadian (lihat tests/layar-pembuka.test.js):
+// penutupan dipicu domSelesai() pada DOMContentLoaded, bukan menunggu window.load.
+cek('layar pembuka ditutup saat DOMContentLoaded (tidak menunggu window.load)', /addEventListener\('DOMContentLoaded', domSelesai\)/.test(pemuat));
+cek('layar pembuka punya batas waktu pengaman', /BATAS\s*=\s*\d+/.test(pemuat) && /setTimeout\(function \(\) \{ domSiap = true; tutup\(\); \}, BATAS\)/.test(pemuat));
 
 console.log('Dialog pertama kali');
 cek('sambutan hanya sekali (diingat saat ditutup, tanpa kotak centang)', /localStorage\.setItem\('qi_dashboard_onboarded', '1'\)/.test(awal) && !/qiOnboardingSkipAlways/.test(html + awal));

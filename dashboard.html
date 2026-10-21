@@ -382,6 +382,18 @@
         .qi-ring { width:90px; height:90px; border:1px solid rgba(124,77,255,.2); border-radius:50%; position:absolute; animation:qiPulseRing 2s ease-in-out infinite; }
         .qi-ring:nth-child(2){animation-delay:.5s;border-color:rgba(0,229,255,.15);}
         #qiLoadScreen.done { animation:qiFadeOut .25s forwards; }
+        .qi-boot-langkah { display:flex; flex-direction:column; gap:5px; margin:0 0 14px; padding:0; list-style:none; }
+        .qi-boot-langkah-item { position:relative; padding-left:16px; color:#334155; font-family:ui-monospace,monospace; font-size:9px; letter-spacing:.08em; transition:color .25s ease; }
+        .qi-boot-langkah-item::before { content:''; position:absolute; left:0; top:4px; width:6px; height:6px; border:1px solid #1e293b; border-radius:50%; transition:border-color .25s ease, background-color .25s ease; }
+        .qi-boot-langkah-item.is-jalan { color:#94a3b8; }
+        .qi-boot-langkah-item.is-jalan::before { border-color:#00E5FF; animation:qiPulseRing 1.2s ease-in-out infinite; }
+        .qi-boot-langkah-item.is-selesai { color:#64748b; }
+        .qi-boot-langkah-item.is-selesai::before { border-color:#00E5FF; background:#00E5FF; animation:none; }
+        /* Animasi berputar/berdenyut dimatikan bagi yang memintanya lewat setelan sistem. */
+        @media (prefers-reduced-motion: reduce) {
+            .qi-cube, .qi-ring, .qi-boot-langkah-item.is-jalan::before { animation:none !important; }
+            #qiLoadScreen.done { animation:none; opacity:0; visibility:hidden; }
+        }
     </style>
     <div class="relative flex items-center justify-center mb-6">
         <div class="qi-ring"></div><div class="qi-ring"></div>
@@ -390,14 +402,20 @@
             <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
         </div></div>
     </div>
-    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-3">Quantum Institut</div>
-    <div class="text-[9px] font-mono text-slate-600 mb-4" id="qiLoadStatus">Initializing Command Center…</div>
+    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-1">Quantum Institut</div>
+    <div class="text-[8px] font-mono text-slate-600 uppercase tracking-[0.2em] mb-4">Market Terminal</div>
+    <ol class="qi-boot-langkah" aria-hidden="true">
+        <li id="qiBootSesi" class="qi-boot-langkah-item">Memverifikasi sesi</li>
+        <li id="qiBootData" class="qi-boot-langkah-item">Menyambungkan data pasar</li>
+        <li id="qiBootSiap" class="qi-boot-langkah-item">Menyiapkan terminal</li>
+    </ol>
+    <div class="text-[9px] font-mono text-slate-500 mb-4" id="qiLoadStatus" role="status" aria-live="polite">Memverifikasi sesi…</div>
     <div class="w-48 h-[2px] bg-[#0F1A2E] rounded-full overflow-hidden">
-        <div class="h-full rounded-full bg-gradient-to-r from-qi-cyan to-qi-purple" style="animation:qiBarLoad 2s ease-out forwards;"></div>
+        <div class="h-full rounded-full bg-gradient-to-r from-qi-cyan to-qi-purple" style="animation:qiBarLoad 2.4s ease-out forwards;"></div>
     </div>
 </div>
 <!-- bundel:pemuat · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-pemuat.js -->
-<script src="assets/dist/pemuat.a1fbccf661.js"></script>
+<script src="assets/dist/pemuat.7d11cff66d.js"></script>
 <!-- /bundel:pemuat -->
 
 <!-- Panel load bar -->
@@ -4164,7 +4182,7 @@
 </button>
 
 <!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
-<script src="assets/dist/fitur.2acbafe7dd.js"></script>
+<script src="assets/dist/fitur.787769dfb2.js"></script>
 <!-- /bundel:fitur -->
 <!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
 <script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>
