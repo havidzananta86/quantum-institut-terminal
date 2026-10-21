@@ -173,10 +173,20 @@ SMOKE_BASE_URL=http://localhost:8788 npm run test:smoke
 
 ## Cron
 
-| Skrip | Anjuran jadwal | Fungsi |
+| Skrip | Jadwal | Fungsi |
 | --- | --- | --- |
-| `api/ai-cron.php` | tiap 15 menit | Sinyal AI, buka/tutup paper trade |
-| `api/maintenance-cron.php` | tiap 6 jam | Hapus log & cache kedaluwarsa |
+| `api/ai-cron.php` | **tiap 15 menit** | Sinyal AI, buka/tutup paper trade |
+| `api/maintenance-cron.php` | **tiap 15 menit** | Penilaian TP/SL, sinyal bayangan, pemindai Pine, brief harian, retensi snapshot, penurunan role lisensi kedaluwarsa, hapus log & cache |
+| `api/alert-cron.php` | tiap 5 menit | Price alert pengguna |
+
+⚠️ **`maintenance-cron.php` BUKAN lagi sekadar pembersih cache.** Dulu tabel ini
+menganjurkan 6 jam; sejak penilaian sinyal, sinyal bayangan, pemindai Pine, dan brief
+harian menumpang skrip ini, jadwalnya harus **15 menit**. `api/_detak_cron.php` menandai
+detak sebagai BASI setelah 45 menit, jadi jadwal 6 jam membuat `api/health.php` selalu
+melaporkan `degraded`.
+
+Setiap cron menulis detaknya sendiri (`cache/cron_heartbeat*.json`) dan dilaporkan
+`api/health.php` — satu cron yang mati tidak lagi bisa diam-diam berhenti berminggu-minggu.
 
 Keduanya jalan lewat CLI, atau lewat HTTP dengan `CRON_SECRET_KEY`:
 

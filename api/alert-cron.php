@@ -25,4 +25,11 @@ if (PHP_SAPI !== 'cli') {
 $pdo = qi_db(false);
 if (!$pdo) { echo json_encode(['status' => 'error', 'message' => 'Database tidak tersedia.']); exit(1); }
 $hasil = qi_alert_periksa($pdo);
+
+// DETAK: bukti putaran ini selesai, dibaca api/health.php (lihat api/_detak_cron.php).
+try {
+    require_once __DIR__ . '/_detak_cron.php';
+    qi_cron_detak(array_intersect_key($hasil, array_flip(['diperiksa', 'terpicu', 'dikirim'])), 'alert');
+} catch (Throwable $e) { error_log('[QI Alert Cron] detak gagal: ' . $e->getMessage()); }
+
 echo json_encode(['status' => 'success', 'waktu' => date('c')] + $hasil, JSON_UNESCAPED_UNICODE) . (PHP_SAPI === 'cli' ? "\n" : '');

@@ -41,6 +41,28 @@ git push origin feat/oanda-tv-bridge:master
 ```
 - [ ] Tunggu 1-2 menit sampai Hostinger menarik. Di halaman Git ada tombol **Deploy** bila penarikan tidak otomatis.
 
+## Langkah 6b - Pasang Cron Jobs  (kamu)  ← WAJIB, sering terlewat
+
+Tanpa langkah ini situs tetap tayang, tetapi **penilaian TP/SL, sinyal bayangan, pemindai
+Pine, dan brief harian tidak pernah berjalan** — tanpa pesan error apa pun. Diperiksa
+2026-10-20: `api/health.php` melaporkan `cron: "belum_pernah"` dan `sinyal_pine.rekor = 0`.
+
+- [ ] hPanel -> **Advanced** -> **Cron Jobs**.
+- [ ] Tambahkan tiga tugas berikut (ganti `USER` dengan nama akun hosting-mu):
+
+```
+*/15 * * * *  /usr/bin/php /home/USER/public_html/api/maintenance-cron.php
+*/15 * * * *  /usr/bin/php /home/USER/public_html/api/ai-cron.php
+*/5  * * * *  /usr/bin/php /home/USER/public_html/api/alert-cron.php
+```
+
+- [ ] Jadwal `maintenance-cron` **harus 15 menit**, bukan 6 jam: detak dianggap basi
+      setelah 45 menit dan halaman status akan terus melaporkan `degraded`.
+- [ ] Alternatif tanpa CLI: panggil lewat HTTP dengan `?key=<CRON_SECRET_KEY>`.
+- [ ] Verifikasi setelah ~20 menit: `https://quantum-institut.com/api/health.php`
+      -> `checks.cron.status` harus `ok` (bukan `belum_pernah` atau `basi`), dan
+      `checks.cron_lain.ai.status` serta `checks.cron_lain.alert.status` juga `ok`.
+
 ## Langkah 7 - Verifikasi
 - [ ] `https://quantum-institut.com/api/health.php` -> `php`, `db`, `cache_writable` bernilai `true`.
 - [ ] `https://quantum-institut.com/assets/css/qim-mockup.css` -> tidak lagi 404.

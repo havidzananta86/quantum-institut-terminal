@@ -55,6 +55,12 @@ $RULES = [
     'chart'          => ['pattern' => '/^[0-9a-f]{32}\.json(\.lock)?$/',     'max_age' => 86400],
     // Ditulis api/live-price.php (TTL 1 dtk; sapuan sendiri hanya 1 dari 20 permintaan).
     'live-price'     => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 3600],
+    // Snapshot chart per sinyal dari api/signal-snapshot.php (nama = id sinyal, hingga ~1,5 MB
+    // per berkas). Sebelumnya TIDAK ADA aturannya sama sekali — hanya 'chart' (cache JSON
+    // candle, direktori lain) yang terdaftar — sehingga folder ini tumbuh tanpa batas sampai
+    // kuota disk habis. 90 hari: lebih lama dari jendela penilaian sinyal, jadi gambar masih
+    // ada selama rekornya mungkin ditinjau.
+    'charts'         => ['pattern' => '/^[A-Za-z0-9\-]+\.(png|jpe?g|webp)$/i', 'max_age' => 90 * 86400],
     // Ditulis api/get-history.php untuk backtest (data historis panjang).
     'history'        => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 7 * 86400],
     'td'             => ['pattern' => '/^[0-9a-f]{32}\.json$/',              'max_age' => 86400],

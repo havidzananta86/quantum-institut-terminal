@@ -335,4 +335,11 @@ $summary = [
 
 cron_log("=== Done: opened={$openedCount} skipped={$skippedCount} closed={$closedCount} ===");
 
+// DETAK: bukti putaran ini selesai, dibaca api/health.php. Tanpa ini, cron sinyal AI bisa
+// berhenti berminggu-minggu tanpa ada yang tahu — tidak ada error, semuanya hanya diam.
+try {
+    require_once __DIR__ . '/_detak_cron.php';
+    qi_cron_detak(['dibuka' => $openedCount, 'dilewati' => $skippedCount, 'ditutup' => $closedCount], 'ai');
+} catch (Throwable $e) { error_log('[QI AI Cron] detak gagal: ' . $e->getMessage()); }
+
 if (!$isCli) echo json_encode($summary, JSON_PRETTY_PRINT);

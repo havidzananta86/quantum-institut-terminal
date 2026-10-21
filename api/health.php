@@ -131,6 +131,19 @@ if (isset($_GET['bridges']) && !$qiAdmin) {
 // lalu berhenti > 45 menit = degraded + Telegram admin (paling sering 6 jam sekali).
 require_once __DIR__ . '/_detak_cron.php';
 $checks['cron'] = qi_cron_status(qi_cron_baca(), time());
+
+// Cron lain punya detaknya sendiri (api/ai-cron.php, api/alert-cron.php). Dilaporkan
+// terpisah supaya berhentinya salah satu terlihat — sebelumnya hanya cron pemeliharaan
+// yang terpantau, sehingga sinyal AI bisa mati tanpa satu pun tanda di halaman status.
+// Hanya BASI yang membuat degraded; 'belum_pernah' dilaporkan apa adanya (cron opsional).
+$checks['cron_lain'] = [];
+foreach (qi_cron_daftar() as $nama => $label) {
+    if ($nama === '') continue;
+    $s = qi_cron_status(qi_cron_baca($nama), time());
+    $checks['cron_lain'][$nama] = ['label' => $label] + $s;
+    if ($s['basi']) $status = 'degraded';
+}
+
 if ($checks['cron']['basi']) {
     $status = 'degraded';
     $alarm = qi_cron_alarm($checks['cron']);
