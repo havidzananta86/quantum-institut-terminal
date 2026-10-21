@@ -27,8 +27,11 @@ cek('POST: sample_size tidak lagi bawaan 100', !/sample_size'\]\s*\?\?\s*100/.te
 cek('POST: menulis lewat kunci bersama', /qi_json_ubah\(\$historyFile/.test(riwayat));
 const evaluator = fs.readFileSync(path.join(root, 'api/signal-evaluator.php'), 'utf8');
 cek('evaluator: tidak lagi menulis ulang salinan lama tanpa kunci', !/file_put_contents\(\$historyFile/.test(evaluator) && /qi_json_ubah\(\$historyFile/.test(evaluator));
-const ptt = fs.readFileSync(path.join(root, 'assets/js/pro-trading-tools.js'), 'utf8');
-cek('dashboard: skor kosong tampil "—", bukan 0%', /confluence_score == null[^`]*'—'/.test(ptt));
+// Dulu pemeriksaan ini menunjuk QuantumTrackRecord di assets/js/pro-trading-tools.js,
+// modul yang merender ke #panelTrackRecord — elemen yang tidak ada di dashboard.html,
+// jadi seluruhnya kode mati dan sudah dihapus. Aturan yang sama sekarang ditegakkan
+// di sumbernya: server mengirim null (bukan 0) ketika skornya memang tidak ada.
+cek('server: confluence_score kosong dikirim null, bukan angka', /is_numeric\(\$input\['confluence_score'\] \?\? null\)[^;]*: null,/.test(riwayat));
 cek('migrasi 026 tersimpan sebagai catatan skema', fs.existsSync(path.join(root, 'database/migrations/026_signal_records.sql')));
 
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });

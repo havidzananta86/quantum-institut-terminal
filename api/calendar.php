@@ -16,7 +16,23 @@ if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0755, true);
 }
 
-$cacheFile = $cacheDir . '/calendar.json';
+// ── MINGGU YANG DIMINTA ─────────────────────────────────────────────────────
+// ForexFactory menerbitkan TIGA umpan terpisah. Sebelumnya hanya "thisweek" yang
+// pernah diambil, sehingga tombol ‹ › di panel Kalender mengubah labelnya tetapi
+// isi tabelnya persis sama — pengguna mengira tombolnya rusak.
+//
+// PENTING: hanya minggu berjalan yang boleh menulis cache/calendar.json, karena berkas
+// itu dipakai pipeline sinyal (blackout berita, signal-news, _fundamental, brief harian)
+// dan harus selalu berarti "keadaan SEKARANG". Minggu lain ditulis ke berkas sendiri.
+$UMPAN = [
+    'last' => 'ff_calendar_lastweek.json',
+    'this' => 'ff_calendar_thisweek.json',
+    'next' => 'ff_calendar_nextweek.json',
+];
+$week = strtolower(trim((string)($_GET['week'] ?? 'this')));
+if (!isset($UMPAN[$week])) $week = 'this';
+
+$cacheFile = $cacheDir . ($week === 'this' ? '/calendar.json' : '/calendar-' . $week . '.json');
 $cacheTime = 300; // 5 minutes TTL
 
 // Check cached data
@@ -40,7 +56,7 @@ try {
         ]
     ]);
 
-    $ffContent = @file_get_contents('https://nfs.faireconomy.media/ff_calendar_thisweek.json', false, $context);
+    $ffContent = @file_get_contents('https://nfs.faireconomy.media/' . $UMPAN[$week], false, $context);
     if ($ffContent !== false) {
         $ffData = json_decode($ffContent, true);
         if (is_array($ffData)) {
@@ -108,6 +124,7 @@ if (empty($events)) {
     echo json_encode([
         'status'                => 'gagal',
         'timestamp'             => date('Y-m-d H:i:s'),
+        'week'                  => $week,
         'count'                 => 0,
         'cache_expires_in_sec'  => $cacheTime,
         'data'                  => [],
@@ -125,6 +142,7 @@ usort($events, function($a, $b) {
 $result = [
     'status' => 'success',
     'timestamp' => date('Y-m-d H:i:s'),
+    'week' => $week,
     'count' => count($events),
     'cache_expires_in_sec' => $cacheTime,
     'data' => $events

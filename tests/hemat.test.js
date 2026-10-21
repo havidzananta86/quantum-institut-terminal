@@ -13,8 +13,11 @@ const app = read('assets/js/dashboard-app.js');
 const lw =read('assets/js/halaman-dashboard-lw.js');   // modul chart (dulu <script type="module"> inline)
 
 console.log('Kuota data');
-cek('order book widget tidak polling bila wadahnya tidak ada (dulu 40 permintaan/menit)',
-    /if \(!document\.getElementById\('orderBookContainer'\)\) return;/.test(read('assets/js/pro-trading-tools.js')));
+// Dulu modul QuantumOrderBook polling 40x/menit dan hanya dijaga pemeriksaan
+// #orderBookContainer. Wadah itu sudah lama hilang dari dashboard.html, jadi seluruh
+// modulnya dihapus — nol permintaan lebih hemat daripada permintaan yang dijaga.
+cek('modul order book lama (polling 40 permintaan/menit) sudah tidak ada',
+    !/QuantumOrderBook/.test(read('assets/js/pro-trading-tools.js')));
 const rt = read('assets/js/realtime.js');
 cek('tick broker: 1,5 dtk hanya saat EA streaming, 15 dtk bila tidak', /INTERVAL_BROKER_DIAM = 15000/.test(rt) && /if \(j && j\.streaming\) berikut = INTERVAL_BROKER;/.test(rt) && !/setInterval\(ambilTickBroker/.test(rt));
 cek('MTF bias (5 timeframe) hanya saat Overview/MTF tampil, maks sekali per menit', /function mtfBiasBilaTerlihat\(\)/.test(app) && !/^fetchMtfBias\('XAUUSD'\);/m.test(app) && /setInterval\(mtfBiasBilaTerlihat, 60000\)/.test(app));

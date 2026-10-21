@@ -31,7 +31,6 @@ const panelsToCheck = [
     'panel-account',
     'panel-charts',
     'panel-autosignal',
-    'panel-sessions',
     'panel-crypto',
     'panel-risk',
     'panel-alerts',

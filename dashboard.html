@@ -39,7 +39,7 @@
 <!-- /bundel:kepala -->
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=09f8f1cdf8">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=8641382455">
     <!-- Responsive overrides -->
     <link rel="stylesheet" href="assets/css/responsive.css?v=ba959512cd">
     <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=8707a1819d">
@@ -198,7 +198,6 @@
         #chartWatchlist.hidden-list { width: 0 !important; overflow: hidden !important; border: none !important; }
         #chartBottomPanel.hidden-panel { display: none !important; }
         body.charts-active #floatingTicker { display: none !important; }
-        .chart-tab-btn.active { color: var(--qi-cyan); border-bottom: 2px solid var(--qi-cyan); background: rgba(0,229,255,.05); }
         .wl-row { cursor:pointer; transition: background .15s; }
         .wl-row:hover { background: rgba(128,128,128,.08); }
         .wl-row.active-sym { background: rgba(0,229,255,.07); border-left: 2px solid var(--qi-cyan); }
@@ -808,9 +807,6 @@
                 <span class="ml-auto text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-1">NEW</span>
             </button>
             <div class="px-2 mt-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Live Market Data</div>
-            <button data-panel="panel-sessions" data-qi-aksi="switchPanel" data-qi-arg='["panel-sessions"]' class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
-                <span class="text-base">🕸️</span> Market Galaxy
-            </button>
             <button data-panel="panel-crypto" data-qi-aksi="switchPanel" data-qi-arg='["panel-crypto"]' class="nav-item w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md text-slate-400">
                 <span class="text-base">🐋</span> Crypto Terminal
             </button>
@@ -1094,7 +1090,9 @@
                     <span class="text-[10px] text-slate-500" id="mtfUpdated">—</span>
                 </div>
             </div>
-            <div id="mtfGrid" class="grid grid-cols-3 gap-3">
+            <div id="mtfGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div class="skel h-16 rounded-lg"></div>
+                <div class="skel h-16 rounded-lg"></div>
                 <div class="skel h-16 rounded-lg"></div>
                 <div class="skel h-16 rounded-lg"></div>
                 <div class="skel h-16 rounded-lg"></div>
@@ -1131,7 +1129,7 @@
 
         <!-- ── QUICK LINKS ── -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            <a href="dashboard.html" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-cyan/40 hover:bg-qi-cyan/5 transition-all cursor-pointer">
+            <a href="dashboard.html?panel=panel-charts" class="bg-qi-card border border-qi-border rounded-lg p-3 flex flex-col items-center gap-1.5 hover:border-qi-cyan/40 hover:bg-qi-cyan/5 transition-all cursor-pointer">
                 <span class="text-xl">📈</span>
                 <span class="text-[10px] text-slate-400">Charts</span>
             </a>
@@ -1216,96 +1214,106 @@
                 <div class="mt-2 flex flex-col gap-2 sm:flex-row"><code id="bridgeKeyValue" data-qi-aksi="selectBridgeKey" title="Klik untuk memilih seluruh key" class="min-w-0 flex-1 cursor-text select-all break-all rounded bg-black/20 px-2 py-2 text-[10px] text-white"></code><button type="button" data-qi-aksi="copyBridgeKey" class="rounded border border-amber-300/30 px-3 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-300/10">Salin</button></div>
                 <ol class="mt-3 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300"><li>Unduh <a href="api/mt-bridge-ea.php?platform=mt4" download class="text-qi-cyan hover:underline">EA MT4</a> atau <a href="api/mt-bridge-ea.php?platform=mt5" download class="text-qi-cyan hover:underline">EA MT5</a> — input <code>Endpoint</code> di dalamnya sudah terisi otomatis untuk domain ini (versi manual: <a href="assets/mt-bridge/QuantumReadOnlyBridge.mq5" download class="text-qi-cyan hover:underline">template MT5</a>).</li><li>Buka file itu di MetaEditor, compile, lalu pasang EA ke satu grafik di terminal yang memakai akun ini.</li><li>Centang <span class="text-slate-300">Allow WebRequest for listed URL</span> dan tambahkan <code id="bridgeOriginStep" class="text-qi-cyan">…</code>.</li><li>Isi input <code>BridgeKey</code> pada EA dengan key di atas, lalu aktifkan AutoTrading — hanya supaya timer EA berjalan, EA tidak mengirim order.</li><li>Status pada kartu <span class="text-slate-300">Akun Trading</span> berubah menjadi TERHUBUNG otomatis setelah snapshot pertama diterima (maksimal 60 detik).</li></ol>
             </div>
-            <section class="mt-4 rounded-lg border border-qi-red/30 bg-qi-red/5 p-3">
-                <div class="text-[11px] font-bold text-qi-red">Eksekusi MT5 akun real — nonaktif secara default</div>
-                <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Buat dan aktifkan hanya setelah EA MT5 terhubung. Limit ini adalah batas keras server: 0,01 lot, rugi harian maksimal 50%, dan 10 posisi.</p>
-                <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4"><select id="liveAccountId" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"></select><input id="liveSymbols" value="XAUUSD,EURUSD,GBPUSD,USDJPY" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white" aria-label="Simbol yang diizinkan"><button type="button" data-qi-aksi="saveLiveGuardrails" class="rounded border border-qi-red/40 px-2 py-2 text-[10px] font-semibold text-qi-red hover:bg-qi-red/10">Simpan Guardrail</button><button type="button" data-qi-aksi="emergencyStopLive" class="rounded border border-amber-400/40 px-2 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10">Hentikan Darurat</button></div>
-                <div class="mt-2 flex flex-col gap-2 sm:flex-row"><input id="liveConfirmText" placeholder="Ketik AKTIFKAN REAL" class="min-w-0 flex-1 rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[true]' class="rounded bg-qi-red/20 px-3 py-2 text-[10px] font-bold text-qi-red hover:bg-qi-red/30">Aktifkan Real</button><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[false]' class="rounded border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Nonaktifkan</button></div>
-                <div id="liveExecutionState" class="mt-2 text-[10px] text-slate-500">Memuat status eksekusi MT5…</div>
-                <a href="api/mt-bridge-ea.php?platform=mt5-exec" download class="mt-2 inline-block text-[10px] font-semibold text-qi-cyan hover:underline">Unduh EA Eksekusi MT5 (Endpoint terisi otomatis)</a>
 
-                <!-- ── Pemetaan simbol, batas risiko, status, dan panduan ─────── -->
-                <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div>
-                        <label for="liveSymbolMap" class="text-[10px] font-semibold text-slate-300">Pemetaan simbol broker <span class="text-slate-500">(satu per baris)</span></label>
-                        <textarea id="liveSymbolMap" rows="4" spellcheck="false" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 font-mono text-[10px] text-white" placeholder="XAUUSD=XAUUSD.pro&#10;EURUSD=EURUSD"></textarea>
-                        <p class="mt-1 text-[9px] leading-relaxed text-slate-500">Nama simbol berbeda antar broker (<span class="text-slate-400">XAUUSD</span> vs <span class="text-slate-400">XAUUSD.pro</span> vs <span class="text-slate-400">GOLD</span>). Tanpa pemetaan, EA menolak dengan “Symbol is unavailable”. Tulis <code>XAUUSD=</code> (nilai kosong) bila simbol itu tidak ingin dieksekusi di akun ini. Huruf besar/kecil nilai dipertahankan.</p>
-                    </div>
-                    <div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label for="liveDailyLoss" class="text-[10px] font-semibold text-slate-300">Batas rugi harian (%)</label>
-                                <input id="liveDailyLoss" type="number" min="0.5" max="50" step="0.5" value="5" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                            </div>
-                            <div>
-                                <label for="liveMaxPositions" class="text-[10px] font-semibold text-slate-300">Maks posisi terbuka</label>
-                                <input id="liveMaxPositions" type="number" min="1" max="10" step="1" value="3" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                            </div>
+        </section>
+
+        <!-- tgKartu SENGAJA di LUAR #bridgeSetup. Dulu ia bersarang di dalamnya, sehingga
+             muatTelegramStatus() memanggil kartu.classList.remove('hidden') tetapi kartunya
+             tetap tak terlihat karena INDUKNYA masih hidden — admin praktis tidak pernah
+             bisa melihat pengaturan Telegram kecuali kebetulan membuka form bridge. -->
+        <!-- ══ NOTIFIKASI TELEGRAM (khusus admin) ═══════════════════════════
+             Pengiriman otomatis setiap sinyal baru dicatat (semua mesin:
+             AUTO_SIGNAL, AI, NEWS, TradingView). Bila bot/chat belum diatur,
+             statusnya ditampilkan JUJUR beserta apa yang masih kurang — sinyal
+             tetap tercatat normal, hanya notifikasinya yang tidak terkirim.
+             Token bot tidak pernah ditampilkan kembali (hanya 4 karakter akhir). -->
+        <section id="tgKartu" class="hidden mt-4 rounded-xl border border-qi-border bg-black/20 p-4">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white">Notifikasi Telegram</h3>
+                    <p class="mt-1 text-[11px] text-slate-400">Kirim sinyal baru (entry, SL, TP, grade) langsung ke Telegram Anda.</p>
+                </div>
+                <span id="tgStatusBadge" class="shrink-0 rounded-full border border-qi-border px-2 py-0.5 text-[10px] font-mono text-slate-400">memuat…</span>
+            </div>
+            <div id="tgCatatan" class="mt-2 text-[10px] leading-relaxed text-slate-500"></div>
+            <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                <div>
+                    <label class="text-[10px] text-slate-400" for="tgToken">Token bot (dari @BotFather)</label>
+                    <input id="tgToken" type="password" autocomplete="off" placeholder="123456789:AA…" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400" for="tgChat">Chat id (angka) atau @nama-kanal</label>
+                    <input id="tgChat" type="text" autocomplete="off" placeholder="-1001234567890 atau @kanalsaya" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
+                </div>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[false]' class="rounded-lg border border-qi-cyan/40 bg-qi-cyan/10 px-3 py-2 text-[10px] font-semibold text-qi-cyan hover:bg-qi-cyan/20">Simpan</button>
+                <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[true]' class="rounded-lg border border-qi-green/40 bg-qi-green/10 px-3 py-2 text-[10px] font-semibold text-qi-green hover:bg-qi-green/20">Simpan &amp; Kirim Uji</button>
+                <button type="button" data-qi-aksi="tgHapus" class="rounded-lg border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Hapus Pengaturan</button>
+                <span id="tgHasil" class="text-[10px] font-mono text-slate-400"></span>
+            </div>
+            <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
+                <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Cara mendapatkan token &amp; chat id</summary>
+                <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
+                    <li>Buka Telegram → cari <span class="text-white">@BotFather</span> → kirim <code class="text-qi-cyan">/newbot</code> → ikuti petunjuk.</li>
+                    <li>BotFather memberi <span class="text-white">token</span> berbentuk <code class="text-qi-cyan">123456789:AA…</code> → tempel di kolom Token.</li>
+                    <li>Kirim pesan apa pun ke bot Anda, lalu buka <code class="text-qi-cyan">https://api.telegram.org/bot&lt;token&gt;/getUpdates</code> dan ambil nilai <code class="text-qi-cyan">chat.id</code>.</li>
+                    <li>Untuk kanal: tambahkan bot sebagai admin kanal, lalu pakai <code class="text-qi-cyan">@namakanal</code>.</li>
+                    <li>Tekan <span class="text-white">Simpan &amp; Kirim Uji</span> — pesan uji harus masuk ke Telegram Anda.</li>
+                </ol>
+            </details>
+        </section>
+
+        <!-- EKSEKUSI MT5 AKUN REAL — juga sengaja di LUAR #bridgeSetup. Dulu blok ini
+             bersarang di dalam form "Buat Bridge Key" yang tersembunyi, sehingga pengguna
+             yang bridge-nya SUDAH jadi tidak punya jalan wajar untuk membuka guardrail,
+             status EA, maupun tombol Hentikan Darurat. -->
+        <section class="mt-4 rounded-lg border border-qi-red/30 bg-qi-red/5 p-3">
+            <div class="text-[11px] font-bold text-qi-red">Eksekusi MT5 akun real — nonaktif secara default</div>
+            <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Buat dan aktifkan hanya setelah EA MT5 terhubung. Limit ini adalah batas keras server: 0,01 lot, rugi harian maksimal 50%, dan 10 posisi.</p>
+            <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4"><select id="liveAccountId" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"></select><input id="liveSymbols" value="XAUUSD,EURUSD,GBPUSD,USDJPY" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white" aria-label="Simbol yang diizinkan"><button type="button" data-qi-aksi="saveLiveGuardrails" class="rounded border border-qi-red/40 px-2 py-2 text-[10px] font-semibold text-qi-red hover:bg-qi-red/10">Simpan Guardrail</button><button type="button" data-qi-aksi="emergencyStopLive" class="rounded border border-amber-400/40 px-2 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10">Hentikan Darurat</button></div>
+            <div class="mt-2 flex flex-col gap-2 sm:flex-row"><input id="liveConfirmText" placeholder="Ketik AKTIFKAN REAL" class="min-w-0 flex-1 rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[true]' class="rounded bg-qi-red/20 px-3 py-2 text-[10px] font-bold text-qi-red hover:bg-qi-red/30">Aktifkan Real</button><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[false]' class="rounded border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Nonaktifkan</button></div>
+            <div id="liveExecutionState" class="mt-2 text-[10px] text-slate-500">Memuat status eksekusi MT5…</div>
+            <a href="api/mt-bridge-ea.php?platform=mt5-exec" download class="mt-2 inline-block text-[10px] font-semibold text-qi-cyan hover:underline">Unduh EA Eksekusi MT5 (Endpoint terisi otomatis)</a>
+
+            <!-- ── Pemetaan simbol, batas risiko, status, dan panduan ─────── -->
+            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                    <label for="liveSymbolMap" class="text-[10px] font-semibold text-slate-300">Pemetaan simbol broker <span class="text-slate-500">(satu per baris)</span></label>
+                    <textarea id="liveSymbolMap" rows="4" spellcheck="false" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 font-mono text-[10px] text-white" placeholder="XAUUSD=XAUUSD.pro&#10;EURUSD=EURUSD"></textarea>
+                    <p class="mt-1 text-[9px] leading-relaxed text-slate-500">Nama simbol berbeda antar broker (<span class="text-slate-400">XAUUSD</span> vs <span class="text-slate-400">XAUUSD.pro</span> vs <span class="text-slate-400">GOLD</span>). Tanpa pemetaan, EA menolak dengan “Symbol is unavailable”. Tulis <code>XAUUSD=</code> (nilai kosong) bila simbol itu tidak ingin dieksekusi di akun ini. Huruf besar/kecil nilai dipertahankan.</p>
+                </div>
+                <div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="liveDailyLoss" class="text-[10px] font-semibold text-slate-300">Batas rugi harian (%)</label>
+                            <input id="liveDailyLoss" type="number" min="0.5" max="50" step="0.5" value="5" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
                         </div>
-                        <div class="mt-2 flex flex-wrap items-center gap-2">
-                            <button type="button" data-qi-aksi="muatStatusEksekusi" class="rounded border border-qi-border px-2 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">⟳ Muat status eksekusi</button>
-                            <span class="text-[9px] text-slate-500">Lot tetap 0,01 (batas keras server &amp; EA).</span>
+                        <div>
+                            <label for="liveMaxPositions" class="text-[10px] font-semibold text-slate-300">Maks posisi terbuka</label>
+                            <input id="liveMaxPositions" type="number" min="1" max="10" step="1" value="3" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
                         </div>
-                        <div id="liveExecStatus" class="mt-2 text-[10px] leading-relaxed text-slate-400">Tekan “Muat status eksekusi” untuk melihat kesegaran EA dan perintah terakhir.</div>
-                        <div id="liveExecOrders" class="mt-2 space-y-1"></div>
                     </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <button type="button" data-qi-aksi="muatStatusEksekusi" class="rounded border border-qi-border px-2 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">⟳ Muat status eksekusi</button>
+                        <span class="text-[9px] text-slate-500">Lot tetap 0,01 (batas keras server &amp; EA).</span>
+                    </div>
+                    <div id="liveExecStatus" class="mt-2 text-[10px] leading-relaxed text-slate-400">Tekan “Muat status eksekusi” untuk melihat kesegaran EA dan perintah terakhir.</div>
+                    <div id="liveExecOrders" class="mt-2 space-y-1"></div>
                 </div>
+            </div>
 
-                <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
-                    <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Panduan memasang EA EKSEKUSI (5 langkah)</summary>
-                    <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
-                        <li>Akun ini harus berpaket <span class="text-white">PRO/VIP</span>, dan guardrail sudah disimpan (minimal satu simbol diizinkan).</li>
-                        <li>Unduh <span class="text-white">EA Eksekusi MT5</span> di tautan di atas → buka di MetaEditor → <span class="text-white">Compile</span>.</li>
-                        <li>Di MT5: <span class="text-white">Tools → Options → Expert Advisors</span> → centang <span class="text-white">Allow WebRequest for listed URL</span> → tambahkan <code class="text-qi-cyan">https://quantum-institut.com</code>.</li>
-                        <li>Pasang EA ke <span class="text-white">satu</span> grafik, isi input <code>BridgeKey</code> akun ini, <span class="text-white">biarkan <code>AllowRealExecution=false</code> lebih dulu</span>, lalu nyalakan tombol <span class="text-white">AutoTrading</span>. Status di atas harus berubah menjadi “EA hidup”.</li>
-                        <li>Setelah yakin, ubah <code>AllowRealExecution=true</code> lalu tekan <span class="text-white">Aktifkan Real</span>. MT5 harus tetap berjalan — PC sendiri atau VPS Windows.</li>
-                    </ol>
-                    <p class="mt-2 text-[9px] leading-relaxed text-slate-500">Perintah hanya dikirim bila <span class="text-slate-400">semua</span> terpenuhi: akun PRO/VIP, eksekusi aktif, terminal tersambung, simbol diizinkan, lot ≤ 0,01, rugi harian di bawah batas, dan posisi belum penuh. Satu sinyal = satu perintah per akun. EA memeriksa ulang semuanya secara lokal sebelum mengirim order, dan melaporkan tiket + kode hasil kembali ke sini.</p>
-                </details>
-            </section>
-
-            <!-- ══ NOTIFIKASI TELEGRAM (khusus admin) ═══════════════════════════
-                 Pengiriman otomatis setiap sinyal baru dicatat (semua mesin:
-                 AUTO_SIGNAL, AI, NEWS, TradingView). Bila bot/chat belum diatur,
-                 statusnya ditampilkan JUJUR beserta apa yang masih kurang — sinyal
-                 tetap tercatat normal, hanya notifikasinya yang tidak terkirim.
-                 Token bot tidak pernah ditampilkan kembali (hanya 4 karakter akhir). -->
-            <section id="tgKartu" class="hidden mt-4 rounded-xl border border-qi-border bg-black/20 p-4">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Notifikasi Telegram</h3>
-                        <p class="mt-1 text-[11px] text-slate-400">Kirim sinyal baru (entry, SL, TP, grade) langsung ke Telegram Anda.</p>
-                    </div>
-                    <span id="tgStatusBadge" class="shrink-0 rounded-full border border-qi-border px-2 py-0.5 text-[10px] font-mono text-slate-400">memuat…</span>
-                </div>
-                <div id="tgCatatan" class="mt-2 text-[10px] leading-relaxed text-slate-500"></div>
-                <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                    <div>
-                        <label class="text-[10px] text-slate-400" for="tgToken">Token bot (dari @BotFather)</label>
-                        <input id="tgToken" type="password" autocomplete="off" placeholder="123456789:AA…" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400" for="tgChat">Chat id (angka) atau @nama-kanal</label>
-                        <input id="tgChat" type="text" autocomplete="off" placeholder="-1001234567890 atau @kanalsaya" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                    </div>
-                </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2">
-                    <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[false]' class="rounded-lg border border-qi-cyan/40 bg-qi-cyan/10 px-3 py-2 text-[10px] font-semibold text-qi-cyan hover:bg-qi-cyan/20">Simpan</button>
-                    <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[true]' class="rounded-lg border border-qi-green/40 bg-qi-green/10 px-3 py-2 text-[10px] font-semibold text-qi-green hover:bg-qi-green/20">Simpan &amp; Kirim Uji</button>
-                    <button type="button" data-qi-aksi="tgHapus" class="rounded-lg border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Hapus Pengaturan</button>
-                    <span id="tgHasil" class="text-[10px] font-mono text-slate-400"></span>
-                </div>
-                <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
-                    <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Cara mendapatkan token &amp; chat id</summary>
-                    <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
-                        <li>Buka Telegram → cari <span class="text-white">@BotFather</span> → kirim <code class="text-qi-cyan">/newbot</code> → ikuti petunjuk.</li>
-                        <li>BotFather memberi <span class="text-white">token</span> berbentuk <code class="text-qi-cyan">123456789:AA…</code> → tempel di kolom Token.</li>
-                        <li>Kirim pesan apa pun ke bot Anda, lalu buka <code class="text-qi-cyan">https://api.telegram.org/bot&lt;token&gt;/getUpdates</code> dan ambil nilai <code class="text-qi-cyan">chat.id</code>.</li>
-                        <li>Untuk kanal: tambahkan bot sebagai admin kanal, lalu pakai <code class="text-qi-cyan">@namakanal</code>.</li>
-                        <li>Tekan <span class="text-white">Simpan &amp; Kirim Uji</span> — pesan uji harus masuk ke Telegram Anda.</li>
-                    </ol>
-                </details>
-            </section>
+            <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
+                <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Panduan memasang EA EKSEKUSI (5 langkah)</summary>
+                <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
+                    <li>Akun ini harus berpaket <span class="text-white">PRO/VIP</span>, dan guardrail sudah disimpan (minimal satu simbol diizinkan).</li>
+                    <li>Unduh <span class="text-white">EA Eksekusi MT5</span> di tautan di atas → buka di MetaEditor → <span class="text-white">Compile</span>.</li>
+                    <li>Di MT5: <span class="text-white">Tools → Options → Expert Advisors</span> → centang <span class="text-white">Allow WebRequest for listed URL</span> → tambahkan <code class="text-qi-cyan">https://quantum-institut.com</code>.</li>
+                    <li>Pasang EA ke <span class="text-white">satu</span> grafik, isi input <code>BridgeKey</code> akun ini, <span class="text-white">biarkan <code>AllowRealExecution=false</code> lebih dulu</span>, lalu nyalakan tombol <span class="text-white">AutoTrading</span>. Status di atas harus berubah menjadi “EA hidup”.</li>
+                    <li>Setelah yakin, ubah <code>AllowRealExecution=true</code> lalu tekan <span class="text-white">Aktifkan Real</span>. MT5 harus tetap berjalan — PC sendiri atau VPS Windows.</li>
+                </ol>
+                <p class="mt-2 text-[9px] leading-relaxed text-slate-500">Perintah hanya dikirim bila <span class="text-slate-400">semua</span> terpenuhi: akun PRO/VIP, eksekusi aktif, terminal tersambung, simbol diizinkan, lot ≤ 0,01, rugi harian di bawah batas, dan posisi belum penuh. Satu sinyal = satu perintah per akun. EA memeriksa ulang semuanya secara lokal sebelum mengirim order, dan melaporkan tiket + kode hasil kembali ke sini.</p>
+            </details>
         </section>
 
         <section class="rounded-xl border border-qi-border bg-qi-panel p-4">
@@ -1698,7 +1706,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button data-qi-aksi="calNavWeek" data-qi-arg='[-1]' class="w-6 h-6 rounded border border-qi-border text-slate-400 hover:border-slate-500 text-xs flex items-center justify-center">‹</button>
-                    <span class="text-[11px] font-mono text-slate-300" id="calWeekLabel">This week</span>
+                    <span class="text-[11px] font-mono text-slate-300" id="calWeekLabel">Minggu ini</span>
                     <button data-qi-aksi="calNavWeek" data-qi-arg='[1]' class="w-6 h-6 rounded border border-qi-border text-slate-400 hover:border-slate-500 text-xs flex items-center justify-center">›</button>
                 </div>
             </div>
@@ -1832,7 +1840,7 @@
         </div>
         <!-- COT Chart Visualization -->
         <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
-            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Commercial Position — 12 Week Chart</div>
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Posisi Non-Commercial (spekulan) — hingga 8 minggu terakhir</div>
             <canvas id="cotChartCanvas"></canvas>
         </div>
     </div>
@@ -1845,8 +1853,6 @@
             <div class="flex gap-1">
                 <button data-qi-aksi="setImpactWindow" data-qi-arg='["30m"]' data-window="30m" class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">30m</button>
                 <button data-qi-aksi="setImpactWindow" data-qi-arg='["1h"]'  data-window="1h"  class="impact-win-btn active px-2.5 py-1 rounded text-[10px] font-mono border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">1h</button>
-                <button data-qi-aksi="setImpactWindow" data-qi-arg='["2h"]'  data-window="2h"  class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">2h</button>
-                <button data-qi-aksi="setImpactWindow" data-qi-arg='["4h"]'  data-window="4h"  class="impact-win-btn px-2.5 py-1 rounded text-[10px] font-mono border border-qi-border text-slate-400">4h</button>
             </div>
             <!-- Sort -->
             <select id="impactSort" data-qi-aksi-change="fetchNewsImpact" class="text-[10px] bg-qi-card border border-qi-border text-slate-300 rounded px-2 py-1 outline-none">
@@ -1873,7 +1879,7 @@
             </select>
         </div>
         <!-- Stats header -->
-        <div class="text-[10px] font-mono text-slate-500" id="impactStats">21,042 releases measured · <span id="impactRowCount">—</span> rows</div>
+        <div class="text-[10px] font-mono text-slate-500" id="impactStats"><span id="impactRilis">—</span> rilis terukur · <span id="impactRowCount">—</span> baris</div>
         <!-- Table -->
         <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
             <div class="overflow-x-auto">
@@ -1939,12 +1945,11 @@
             <!-- Category filters -->
             <div class="flex flex-wrap gap-1.5" id="newsCatFilters">
                 <button data-qi-aksi="setNewsCat" data-qi-arg='["All"]' class="news-cat-btn active text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-cyan/40 bg-qi-cyan/10 text-qi-cyan">All</button>
-                <button data-qi-aksi="setNewsCat" data-qi-arg='["Breaking"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Breaking</button>
+                <button data-qi-aksi="setNewsCat" data-qi-arg='["Gold"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Gold</button>
                 <button data-qi-aksi="setNewsCat" data-qi-arg='["Forex"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Forex</button>
-                <button data-qi-aksi="setNewsCat" data-qi-arg='["Economy"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Economy</button>
-                <button data-qi-aksi="setNewsCat" data-qi-arg='["Central Banks"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Central Banks</button>
+                <button data-qi-aksi="setNewsCat" data-qi-arg='["Macro"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Macro</button>
+                <button data-qi-aksi="setNewsCat" data-qi-arg='["Crypto"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Crypto</button>
                 <button data-qi-aksi="setNewsCat" data-qi-arg='["Commodities"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Commodities</button>
-                <button data-qi-aksi="setNewsCat" data-qi-arg='["Geopolitical"]' class="news-cat-btn text-[10px] font-semibold px-3 py-1 rounded-full border border-qi-border text-slate-400 hover:border-slate-500">Geopolitical</button>
             </div>
         </div>
         <!-- Articles list -->
@@ -2491,7 +2496,7 @@
              → AKTIVASI oleh admin. Server MENOLAK aktivasi bila bukti kurang atau bila
              winrate/profit factor lebih buruk dari versi aktif. AI tidak pernah
              mengaktifkan versi sendiri. -->
-        <div id="metodeKartu" class="bg-qi-card border border-qi-border rounded-xl p-4 space-y-3">
+        <div id="metodeKartu" data-qi-admin="1" class="hidden bg-qi-card border border-qi-border rounded-xl p-4 space-y-3">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-2">
                     <span class="text-base">⚙️</span>
@@ -2745,6 +2750,8 @@
                     <option value="AUTO_SIGNAL">Mesin Otomatis</option>
                     <option value="AI">Analisa AI</option>
                     <option value="TRADINGVIEW">TradingView + AI</option>
+                    <option value="NEWS">Berita (News Setup)</option>
+                    <option value="MANUAL">Manual</option>
                 </select>
                 <span class="text-[9px] font-mono text-slate-600" title="Panel ini memperbarui diri secara otomatis">● otomatis</span>
             </div>
@@ -2914,7 +2921,7 @@
         </div>
 
         <!-- SAKLAR DARURAT: hanya ADMIN yang berhasil mengubah (server menegakkan) -->
-        <div id="gwKartuJeda" class="bg-qi-card border border-amber-500/30 rounded-xl p-4 space-y-2">
+        <div id="gwKartuJeda" data-qi-admin="1" class="hidden bg-qi-card border border-amber-500/30 rounded-xl p-4 space-y-2">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-heading font-semibold text-white text-sm uppercase">Saklar Darurat (Pause Sinyal)</span>
                 <span id="gwJedaStatus" class="text-[10px] font-mono px-2 py-0.5 rounded border border-qi-border text-slate-400">memuat…</span>
@@ -2933,7 +2940,7 @@
         </div>
 
         <!-- GERBANG KONFLUENSI MESIN: syarat minimal 3 mesin searah (spesifikasi Bagian 2 & 10) -->
-        <div id="gwKartuGerbang" class="bg-qi-card border border-qi-cyan/30 rounded-xl p-4 space-y-2">
+        <div id="gwKartuGerbang" data-qi-admin="1" class="hidden bg-qi-card border border-qi-cyan/30 rounded-xl p-4 space-y-2">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="font-heading font-semibold text-white text-sm uppercase">Gerbang Konfluensi Mesin</span>
                 <span id="gwGerbangStatus" class="text-[10px] font-mono px-2 py-0.5 rounded border border-qi-border text-slate-400">memuat…</span>
@@ -3105,53 +3112,6 @@
         </div>
     </div>
 
-    <!-- ══ PANEL: Market Galaxy — Network Map ══ -->
-    <div id="panel-sessions" class="panel-content hidden p-4 space-y-4">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">🕸️</span>
-                    <span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Market Galaxy</span>
-                    <span class="text-[9px] bg-qi-cyan/10 text-qi-cyan border border-qi-cyan/30 rounded px-2 py-0.5">LIVE</span>
-                </div>
-                <p class="text-[10px] text-slate-500 mt-0.5">Visualisasi korelasi antar aset crypto — ukuran node = volume, warna = arah 24h</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <span id="galaxyLastUpdate" class="text-[10px] text-slate-500 font-mono">Memuat…</span>
-                <button data-qi-aksi="refreshGalaxy" class="px-3 py-1.5 rounded-lg border border-qi-cyan/40 text-qi-cyan text-[10px] font-semibold hover:bg-qi-cyan/10 transition-all">↻ Refresh</button>
-            </div>
-        </div>
-
-        <!-- Network graph canvas -->
-        <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden relative" style="height:400px">
-            <canvas id="galaxyCanvas" style="width:100%;height:100%;display:block"></canvas>
-            <div id="galaxyTooltip" class="absolute hidden bg-qi-panel border border-qi-cyan/30 rounded-xl px-3 py-2 text-[11px] font-mono pointer-events-none z-10 shadow-lg"></div>
-            <div class="absolute bottom-3 left-3 flex items-center gap-3 text-[10px] font-mono text-slate-500">
-                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10B981"></span> Naik</div>
-                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF4444"></span> Turun</div>
-                <div class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#64748B"></span> Flat</div>
-                <div class="flex items-center gap-1 ml-2 text-slate-600">Garis = korelasi kuat</div>
-            </div>
-            <div class="absolute top-3 right-3 text-[9px] text-slate-600 font-mono">drag tidak tersedia · hover untuk info</div>
-        </div>
-
-        <!-- Asset data cards -->
-        <div id="galaxyDataTable" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-            <div class="col-span-full text-center py-4 text-slate-600 text-sm animate-pulse">Memuat data pasar…</div>
-        </div>
-
-        <!-- Best trading hours -->
-        <div class="bg-qi-card border border-qi-border rounded-2xl p-4">
-            <div class="text-[10px] text-slate-500 font-semibold uppercase mb-3">🔥 Best Trading Hours (WIB)</div>
-            <div class="space-y-2 text-[10px]">
-                <div class="flex items-center gap-3"><span class="w-32 shrink-0 text-slate-400">🌅 06:00–09:00</span><div class="flex-1 h-2.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-yellow-400/60 rounded-full" style="width:40%"></div></div><span class="text-slate-500 shrink-0 w-20 text-right">Tokyo Open</span></div>
-                <div class="flex items-center gap-3"><span class="w-32 shrink-0 text-slate-400">⚡ 14:00–16:00</span><div class="flex-1 h-2.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-qi-cyan/80 rounded-full" style="width:85%"></div></div><span class="text-qi-cyan font-bold shrink-0 w-20 text-right">London Open</span></div>
-                <div class="flex items-center gap-3"><span class="w-32 shrink-0 text-slate-400">🔥 19:00–23:00</span><div class="flex-1 h-2.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-orange-400/80 rounded-full" style="width:100%"></div></div><span class="text-orange-400 font-bold shrink-0 w-20 text-right">NY+LDN ⚡</span></div>
-                <div class="flex items-center gap-3"><span class="w-32 shrink-0 text-slate-400">🌙 23:00–04:00</span><div class="flex-1 h-2.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-slate-600/60 rounded-full" style="width:25%"></div></div><span class="text-slate-500 shrink-0 w-20 text-right">NY Alone</span></div>
-                <div class="flex items-center gap-3"><span class="w-32 shrink-0 text-slate-400">😴 02:00–06:00</span><div class="flex-1 h-2.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-slate-700 rounded-full" style="width:8%"></div></div><span class="text-slate-600 shrink-0 w-20 text-right">Dead Zone</span></div>
-            </div>
-        </div>
-    </div>
 
     <!-- ══ PANEL: Crypto Terminal ══ -->
     <div id="panel-crypto" class="panel-content hidden p-4 space-y-4">
@@ -3514,7 +3474,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-2"><span class="text-base">🔍</span><span class="font-heading font-bold text-white text-sm uppercase tracking-wide">Market Screener</span></div>
-                <p class="text-[10px] text-slate-500 mt-0.5">Filter pair berdasarkan trend, RSI, posisi EMA, dan volatilitas</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Peringkat pair menurut tren, RSI, posisi EMA dan volume — terisi otomatis</p>
             </div>
             <span class="text-[9px] font-mono text-slate-600" title="Panel ini memperbarui diri secara otomatis">● otomatis</span>
         </div>
@@ -3524,9 +3484,9 @@
                     <thead><tr class="border-b border-qi-border text-[9px] text-slate-500 uppercase">
                         <th class="px-3 py-2 text-left">Pair</th><th class="px-3 py-2 text-left">Trend</th>
                         <th class="px-3 py-2 text-right">RSI(14)</th><th class="px-3 py-2 text-right">EMA 200</th>
-                        <th class="px-3 py-2 text-center">Volatilitas</th><th class="px-3 py-2 text-right">Aksi</th>
+                        <th class="px-3 py-2 text-center">Volume</th><th class="px-3 py-2 text-right">Aksi</th>
                     </tr></thead>
-                    <tbody id="screenerBody"><tr><td colspan="6" class="text-center py-4 text-slate-600 text-xs">Klik Scan untuk mulai</td></tr></tbody>
+                    <tbody id="screenerBody"><tr><td colspan="6" class="text-center py-4 text-slate-600 text-xs">Memuat data screener…</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -3850,7 +3810,7 @@
                     <span class="font-heading font-bold text-white text-sm">Arsitektur 9 Mesin Kuantum AI Terminal</span>
                 </div>
                 <p class="text-[11px] text-slate-400 leading-relaxed">
-                    Setiap sinyal yang diproduksi oleh Quantum Command Center merupakan hasil konsensus dari 9 algoritma kuantitatif independen. Sinyal dinyatakan valid jika minimal 6 dari 9 mesin menghasilkan bias yang searah.
+                    Setiap sinyal yang diproduksi oleh Quantum Command Center merupakan hasil konsensus dari 9 algoritma kuantitatif independen. Sinyal dinyatakan valid jika minimal 3 dari 9 mesin menghasilkan bias yang searah DAN sisi itu unggul minimal 2× dibanding sisi lawan (MIN_SEPAKAT = 3).
                 </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -4173,7 +4133,7 @@
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════ -->
 <!-- bundel:inti · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): qim-price-store.js, qim-chart-store.js, qim-paper-math.js, dashboard-app.js, qim-dashboard.js, qim-indicators.js, qim-trading-tools.js, qim-mt5-socket.js, qim-notifications.js, qim-pages.js, qim-risk.js, qim-alerts.js -->
-<script src="assets/dist/inti.7df44706de.js"></script>
+<script src="assets/dist/inti.1c0be51324.js"></script>
 <!-- /bundel:inti -->
 
 <!-- Sidebar toggle floating button -->
@@ -4182,7 +4142,7 @@
 </button>
 
 <!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
-<script src="assets/dist/fitur.787769dfb2.js"></script>
+<script src="assets/dist/fitur.3c50afa12f.js"></script>
 <!-- /bundel:fitur -->
 <!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
 <script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>

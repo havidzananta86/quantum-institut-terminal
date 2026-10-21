@@ -1,106 +1,93 @@
 /**
- * Unit test — Correlation Matrix math (QuantumCorrelation)
- * Dependency-free. Loads the REAL assets/js/pro-trading-tools.js via a
- * minimal window/document shim, then asserts the pure math functions.
+ * Matriks korelasi — uji matematika DAN sikap saat data tidak ada.
+ *
+ * Sebelumnya berkas ini menguji QuantumCorrelation di assets/js/pro-trading-tools.js:
+ * modul itu merender ke #panelCorrelation, elemen yang TIDAK PERNAH ADA di dashboard.html,
+ * jadi seluruhnya kode mati dan sudah dihapus. Panel korelasi yang benar-benar dipakai
+ * adalah fetchCorrelation()/pearson() di assets/js/dashboard-app.js — itu yang diuji di sini.
  *
  * Run:  node tests/correlation.test.js
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
-// ---- minimal shim so the IIFE loads without a browser ----
-const win = { addEventListener() {} };
-const doc = {
-  readyState: 'loading',          // prevents initProTools() from firing on load
-  addEventListener() {},
-  getElementById() { return null; },
-  querySelectorAll() { return []; },
+const root = path.join(__dirname, '..');
+const SRC = fs.readFileSync(path.join(root, 'assets/js/dashboard-app.js'), 'utf8');
+let gagal = 0;
+const cek = (nama, ok, info) => {
+  console.log(`  ${ok ? '✓' : '✗'} ${nama}${ok || info === undefined ? '' : '  ' + JSON.stringify(info)}`);
+  if (!ok) gagal++;
 };
-const src = fs.readFileSync(path.join(__dirname, '..', 'assets', 'js', 'pro-trading-tools.js'), 'utf8');
-// The file ends with `})(window, document);` — feed our stubs as those identifiers.
-// QIAksi (assets/js/qim-aksi.js, delegasi data-qi-aksi) dimuat lebih dulu di dashboard; di sini cukup stub.
-const QIAksi = { daftar() {}, arg: (...a) => JSON.stringify(a) };
-new Function('window', 'document', 'QIAksi', src)(win, doc, QIAksi);
+const dekat = (nama, a, b, eps = 1e-9) => cek(`${nama} (${a} ≈ ${b})`, Math.abs(a - b) <= eps, { a, b });
 
-const C = win.QuantumCorrelation;
-if (!C) { console.error('FAIL: QuantumCorrelation not exported'); process.exit(1); }
+// ── Jalankan berkas asli di sandbox ────────────────────────────────────────
+// dashboard-app.js menyentuh DOM, timer dan fetch saat dimuat; semuanya distub
+// sekadar supaya modul selesai dievaluasi dan fungsi tingkat-atasnya bisa dipanggil.
+const elemenPalsu = () => ({
+  innerHTML: '', textContent: '', value: '', style: {}, dataset: {}, classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
+  addEventListener(){}, removeEventListener(){}, appendChild(){}, remove(){}, querySelector(){ return null; },
+  querySelectorAll(){ return []; }, getBoundingClientRect(){ return { width: 0, height: 0, top: 0, left: 0 }; },
+  children: [], focus(){}, click(){}, setAttribute(){}, getAttribute(){ return null; }, closest(){ return null; },
+});
+const ctx = {
+  console, Date, Math, Number, Array, JSON, isNaN, parseFloat, parseInt, String, Object, Boolean, Error, Promise, Set, Map, RegExp, Intl,
+  setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
+  requestAnimationFrame: () => 0, cancelAnimationFrame: () => {},
+  fetch: () => Promise.reject(new Error('tidak ada jaringan dalam uji')),
+  localStorage: { getItem: () => null, setItem(){}, removeItem(){} },
+  sessionStorage: { getItem: () => null, setItem(){}, removeItem(){} },
+  navigator: { onLine: true, clipboard: { writeText: () => Promise.resolve() } },
+  location: { href: '', search: '', pathname: '/dashboard.html' },
+  document: {
+    readyState: 'loading', documentElement: elemenPalsu(), body: elemenPalsu(),
+    getElementById: () => null, querySelector: () => null, querySelectorAll: () => [],
+    createElement: () => elemenPalsu(), addEventListener(){}, removeEventListener(){}, visibilityState: 'visible',
+  },
+};
+ctx.addEventListener = () => {};
+ctx.removeEventListener = () => {};
+ctx.dispatchEvent = () => true;
+ctx.matchMedia = () => ({ matches: false, addEventListener(){}, removeEventListener(){} });
+ctx.CustomEvent = function CustomEvent(t, o) { return { type: t, detail: o && o.detail }; };
+ctx.window = ctx;
+ctx.globalThis = ctx;
+ctx.QIAksi = { daftar(){}, arg: (...a) => JSON.stringify(a) };
+ctx.QuantumAuth = { getToken: () => null, authHeaders: (h) => h || {} };
+vm.createContext(ctx);
+// Fungsi tingkat-atas `function pearson(...)` tidak otomatis jadi properti context di
+// sandbox vm, jadi diambil lewat ekspresi penutup.
+const pearson = vm.runInContext(SRC + '\n;pearson;', ctx);
 
-// ---- tiny assert harness ----
-let passed = 0, failed = 0;
-const EPS = 1e-9;
-function ok(name, cond) {
-  if (cond) { passed++; console.log('  ✓ ' + name); }
-  else { failed++; console.error('  ✗ ' + name); }
+console.log('\npearson()');
+cek('fungsi pearson terbaca dari dashboard-app.js', typeof pearson === 'function');
+if (typeof pearson !== 'function') { console.error('\nFAIL'); process.exit(1); }
+
+dekat('deret identik → +1', pearson([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]), 1, 1e-12);
+dekat('deret berlawanan → −1', pearson([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]), -1, 1e-12);
+dekat('skala tidak mengubah korelasi', pearson([1, 2, 3, 4], [10, 20, 30, 40]), 1, 1e-12);
+dekat('geseran tidak mengubah korelasi', pearson([1, 2, 3, 4], [101, 102, 103, 104]), 1, 1e-12);
+cek('deret konstan → 0 (penyebut nol), bukan NaN', pearson([2, 2, 2, 2], [1, 2, 3, 4]) === 0);
+cek('hasil selalu di dalam [−1, +1]', (() => {
+  const a = [0.4, -0.2, 0.9, -1.1, 0.3, 0.7, -0.5];
+  const b = [-0.1, 0.5, 0.2, 0.8, -0.9, 0.1, 0.6];
+  const r = pearson(a, b);
+  return r >= -1 && r <= 1;
+})());
+cek('panjang berbeda → dipotong ke yang terpendek, tidak melempar', (() => {
+  try { const r = pearson([1, 2, 3, 4, 5, 6], [1, 2, 3]); return Number.isFinite(r); } catch (e) { return false; }
+})());
+{
+  // Nilai acuan dihitung tangan: r untuk x=[1,2,3,4,5], y=[2,4,5,4,5] adalah 0.7745966692…
+  dekat('contoh berangka tetap', pearson([1, 2, 3, 4, 5], [2, 4, 5, 4, 5]), 0.7745966692414834, 1e-12);
 }
-function near(name, a, b, eps = 1e-9) { ok(`${name} (${a} ≈ ${b})`, Math.abs(a - b) <= eps); }
 
-console.log('logReturns:');
-(() => {
-  const r = C.logReturns([100, 110, 121]);
-  ok('length 2 from 3 closes', r.length === 2);
-  near('ln(1.1) twice', r[0], Math.log(1.1), EPS);
-  near('second equals first', r[1], Math.log(1.1), EPS);
-  // any return-pair touching a non-positive price is skipped: 100→110 ok, 110→0 skip, 0→120 skip, 120→132 ok
-  ok('skips pairs touching non-positive prices', C.logReturns([100, 110, 0, 120, 132]).length === 2);
-  ok('empty on single value', C.logReturns([100]).length === 0);
-})();
+console.log('\nSikap saat data tidak ada (statis)');
+cek('candle `simulated` ditolak sebelum dihitung', /res\.value\.simulated === true\) return \[\]/.test(SRC));
+cek('kegagalan total TIDAK digambar sebagai 0,00', /terbaca\.length < 2/.test(SRC) && /Matriks sengaja dikosongkan/.test(SRC));
+cek('sel tanpa data bernilai null, bukan 0', /aligned\[i\]\.length === 0 \|\| aligned\[j\]\.length === 0\) return null/.test(SRC));
+cek('pasangan tanpa data tidak masuk peringkat "Korelasi Tertinggi"', /if \(matrix\[i\]\[j\] === null\) continue/.test(SRC));
 
-console.log('pearson:');
-(() => {
-  near('identical series = 1',  C.pearson([1, 2, 3, 4], [2, 4, 6, 8]),  1, 1e-12);
-  near('negated series = -1',   C.pearson([1, 2, 3, 4], [8, 6, 4, 2]), -1, 1e-12);
-  ok('NaN when < 2 points',     Number.isNaN(C.pearson([1], [1])));
-  ok('NaN on zero variance',    Number.isNaN(C.pearson([5, 5, 5], [1, 2, 3])));
-  // hand-computed: a=[1,2,3,4,5], b=[2,1,4,3,6] -> cov=10, va=10, vb=14.8 -> r = 10/sqrt(148)
-  near('known case = 10/sqrt(148)', C.pearson([1, 2, 3, 4, 5], [2, 1, 4, 3, 6]), 10 / Math.sqrt(148), 1e-12);
-  // symmetry
-  near('symmetric', C.pearson([3, 1, 4, 1, 5], [9, 2, 6, 5, 3]), C.pearson([9, 2, 6, 5, 3], [3, 1, 4, 1, 5]), EPS);
-})();
-
-console.log('buildMatrix:');
-(() => {
-  const syms = ['A', 'B', 'C'];
-  const rets = { A: [1, 2, 3, 4], B: [2, 4, 6, 8], C: [4, 3, 2, 1] };
-  const m = C.buildMatrix(rets, syms);
-  ok('3x3 shape', m.length === 3 && m.every(r => r.length === 3));
-  ok('diagonal = 1', m[0][0] === 1 && m[1][1] === 1 && m[2][2] === 1);
-  near('A/B perfectly correlated', m[0][1], 1, 1e-12);
-  near('A/C perfectly anti-correlated', m[0][2], -1, 1e-12);
-  near('symmetric off-diagonal', m[0][1], m[1][0], EPS);
-})();
-
-console.log('dayKey / alignByDay:');
-(() => {
-  ok('dayKey buckets same UTC day', C.dayKey(1791331200) === C.dayKey(1791331200 + 3600));
-  ok('dayKey different days differ', C.dayKey(1791331200) !== C.dayKey(1791331200 + 86400));
-  // two symbols whose epochs are offset within the same calendar days must still align
-  const DAY = 86400;
-  const base = 20000 * DAY;
-  const A = [0,1,2,3,4].map(i => ({ d: C.dayKey(base + i*DAY),            c: 100 + i }));        // midnight
-  const B = [0,1,2,3,4].map(i => ({ d: C.dayKey(base + i*DAY + 50000),    c: 200 + i*2 }));      // +~14h offset
-  const { days, closesBySym } = C.alignByDay({ A, B }, ['A', 'B'], 10);
-  ok('aligns across epoch offset (5 shared days)', days.length === 5);
-  ok('A closes aligned in day order', JSON.stringify(closesBySym.A) === JSON.stringify([100,101,102,103,104]));
-  ok('B closes aligned in day order', JSON.stringify(closesBySym.B) === JSON.stringify([200,202,204,206,208]));
-  // intersection drops non-shared days (e.g. crypto weekend vs forex)
-  const F = [0,1,2,3].map(i => ({ d: 100 + i, c: i }));          // days 100,101,102,103
-  const X = [1,2,3,4].map(i => ({ d: 100 + i, c: i }));          // days 101,102,103,104
-  const r2 = C.alignByDay({ F, X }, ['F', 'X'], 10);
-  ok('intersection keeps only shared days', JSON.stringify(r2.days) === JSON.stringify([101,102,103]));
-  // slice keeps the LAST `need` shared days
-  const G = Array.from({length:10}, (_,i) => ({ d: 500 + i, c: i }));
-  const r3 = C.alignByDay({ G }, ['G'], 3);
-  ok('keeps last `need` days', JSON.stringify(r3.days) === JSON.stringify([507,508,509]));
-})();
-
-console.log('cellColor:');
-(() => {
-  ok('NaN -> neutral slate', /1e293b|64748b/.test(C.cellColor(NaN)));
-  ok('null -> neutral slate', /1e293b/.test(C.cellColor(null)));
-  ok('positive -> red rgba', /239,68,68/.test(C.cellColor(0.5)));
-  ok('negative -> blue rgba', /59,130,246/.test(C.cellColor(-0.5)));
-})();
-
-console.log(`\n${failed === 0 ? 'PASS' : 'FAIL'} — ${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+console.log(gagal ? `\n${gagal} uji GAGAL` : '\nSemua lulus');
+process.exit(gagal ? 1 : 0);

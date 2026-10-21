@@ -53,7 +53,7 @@ function toggleAiSym(sym) {
 }
 
 async function loadAiStatus() {
-    const tok = localStorage.getItem('qi_session');
+    const tok = (window.QuantumAuth && QuantumAuth.getToken()) || null;
     if (!tok) return;
     try {
         const res  = await fetch('api/ai-auto-trade.php', { headers: { 'Authorization': 'Bearer ' + tok } });
@@ -100,7 +100,7 @@ function updateAiStatusUI() {
 }
 
 async function toggleAiAutoTrade() {
-    const tok = localStorage.getItem('qi_session');
+    const tok = (window.QuantumAuth && QuantumAuth.getToken()) || null;
     if (!tok) { showQuantumToast('Login diperlukan', 'error'); return; }
     const lots = parseFloat(document.getElementById('aiLotsSelect')?.value || '0.10');
     const body = aiEnabled
@@ -147,7 +147,7 @@ function aiStatusRekor(d) {
 }
 
 async function refreshAiSignals() {
-    const tok = localStorage.getItem('qi_session');
+    const tok = (window.QuantumAuth && QuantumAuth.getToken()) || null;
     if (!tok) return;
     const wrap = document.getElementById('aiSignalCards');
     if (!wrap) return;
@@ -200,7 +200,7 @@ async function refreshAiSignals() {
 }
 
 async function executeAiTrade(sym) {
-    const tok = localStorage.getItem('qi_session');
+    const tok = (window.QuantumAuth && QuantumAuth.getToken()) || null;
     if (!tok) { showQuantumToast('Login diperlukan', 'error'); return; }
     const sig = aiSignalData[sym];
     if (!sig) { showQuantumToast('Sinyal belum tersedia', 'error'); return; }
@@ -220,7 +220,7 @@ async function executeAiTrade(sym) {
 }
 
 async function closeAiPosition(posId, closePrice) {
-    const tok = localStorage.getItem('qi_session');
+    const tok = (window.QuantumAuth && QuantumAuth.getToken()) || null;
     if (!tok) return;
     try {
         const res  = await fetch('api/ai-auto-trade.php', {

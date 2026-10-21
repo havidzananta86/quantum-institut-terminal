@@ -7,7 +7,10 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 qi_rate_limit(30, 60);
 
-$window   = $_GET['window']   ?? '1h';
+// Dataset ini HANYA punya dua jendela pengukuran: 30 menit (avg30m) dan 1 jam (avg1h).
+// Nilai lain ditolak ke '1h' supaya klien tidak bisa menampilkan jendela yang tidak ada
+// datanya (sebelumnya '2h' dan '4h' diterima lalu diam-diam memakai angka 1 jam).
+$window   = in_array(($_GET['window'] ?? '1h'), ['30m', '1h'], true) ? $_GET['window'] : '1h';
 $groupBy  = $_GET['group_by'] ?? 'event_pair';
 $impact   = strtoupper($_GET['impact'] ?? 'HIGH');
 $currency = strtoupper($_GET['currency'] ?? 'ALL');
@@ -107,5 +110,8 @@ echo json_encode([
     'window'  => $window,
     'sort'    => $sort,
     'total'   => count($filtered),
+    // Jumlah rilis yang benar-benar diukur pada baris yang dikirim — dihitung, bukan ditulis
+    // tangan di HTML (dulu halaman mengklaim "21.042 releases measured" tanpa dasar).
+    'rilis'   => array_sum(array_column($filtered, 'rel')),
     'data'    => $filtered,
 ]);

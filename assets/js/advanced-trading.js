@@ -46,19 +46,29 @@ const QIExport = {
             }).catch(function() { if (window.showQuantumToast) showQuantumToast('Gagal mengambil data sinyal', 'error'); });
     },
     paperTrades() {
-        var saved = null;
-        try { saved = JSON.parse(localStorage.getItem('QI_PAPER_TRADING')); } catch(e) {}
-        if (!saved || (!saved.positions.length && !saved.history.length)) {
+        // Sumbernya panel Paper Trading (server), bukan localStorage 'QI_PAPER_TRADING' —
+        // kunci milik mesin kedua yang sudah dihapus. Setiap daftar dipastikan berupa array
+        // lebih dulu: dulu `saved.positions.length` dibaca langsung dan melempar TypeError
+        // untuk data lama yang tidak punya kunci itu.
+        var baca = function (nama) {
+            try {
+                var v = (typeof window.qiBacaGlobal === 'function') ? window.qiBacaGlobal(nama) : null;
+                return Array.isArray(v) ? v : [];
+            } catch (e) { return []; }
+        };
+        var posisi = baca('_ptPositions');
+        var riwayat = baca('_ptHistory');
+        if (!posisi.length && !riwayat.length) {
             if (window.showQuantumToast) showQuantumToast('Belum ada paper trades', 'warning'); return;
         }
         var csv = 'ID,Symbol,Side,Lots,Entry,SL,TP,ClosePrice,PnL,Status,OpenTime,CloseTime\n';
-        saved.positions.forEach(function(p) {
+        posisi.forEach(function(p) {
             csv += [p.id, p.symbol, p.side, p.lots, p.entryPrice, p.sl, p.tp, '-', p.floatingPnL || 0,
                 'OPEN', p.openTime || '', ''].join(',') + '\n';
         });
-        saved.history.forEach(function(p) {
+        riwayat.forEach(function(p) {
             csv += [p.id, p.symbol, p.side, p.lots, p.entryPrice, p.sl, p.tp, p.closePrice || '',
-                p.realizedPnL || 0, 'CLOSED', p.openTime || '', p.closeTime || ''].join(',') + '\n';
+                (p.pnl != null ? p.pnl : p.realizedPnL) || 0, 'CLOSED', p.openTime || '', p.closeTime || ''].join(',') + '\n';
         });
         this._dl('quantum_paper_trades_' + new Date().toISOString().split('T')[0] + '.csv', csv);
     }
@@ -188,6 +198,28 @@ function removeFromWatchlist(sym) {
     saveWatchlist();
     renderPanelWatchlist();
 }
+/**
+ * Kutipan satu simbol untuk watchlist: harga + perubahan 24 jam.
+ *
+ * MENGAPA BUKAN window._livePrices SAJA: cache itu hanya terisi untuk simbol yang
+ * SEDANG dibuka di chart (ditulis poller chart / stream Binance / tick MT5). Di panel
+ * Watchlist — yang justru dibuka saat chart tidak dilihat — hampir semua baris jadi "—".
+ * Sumber yang benar adalah _lastPrices milik dashboard-app.js: diisi api/live-price.php
+ * untuk SELURUH daftar simbol sekaligus, lengkap dengan chgPct. Dulu kolom "Change"
+ * memang tidak pernah diisi apa pun karena datanya tidak pernah dibaca.
+ */
+function wlKutipan(sym) {
+    var d = null;
+    try { d = (typeof window.qiBacaGlobal === 'function') ? (window.qiBacaGlobal('_lastPrices') || {})[sym] : null; } catch (e) { d = null; }
+    if (d) {
+        var hrg = parseFloat(d.price);
+        var pct = (d.chgPct === null || d.chgPct === undefined || d.chgPct === '') ? null : parseFloat(d.chgPct);
+        return { price: isFinite(hrg) ? hrg : 0, chgPct: (pct !== null && isFinite(pct)) ? pct : null };
+    }
+    var l = (window._livePrices || {})[sym];
+    return { price: (typeof l === 'number' && isFinite(l)) ? l : 0, chgPct: null };
+}
+
 function renderPanelWatchlist() {
     var el = document.getElementById('panelWatchlistBody');
     if (!el) return;
@@ -208,15 +240,16 @@ function renderPanelWatchlist() {
                 + '<div class="text-slate-600 text-[10px] leading-relaxed">Tambahkan instrumen yang Anda pantau.</div></div>';
         return;
     }
-    var prices = window._livePrices || {};
     var labels = window.SYMBOL_LABELS || {};
     var dp = window.DP || {};
     var html = '';
     _watchlist.forEach(function(sym) {
-        var price = prices[sym] || 0;
+        var q = wlKutipan(sym);
         var lbl = labels[sym] || sym;
         var d = dp[sym] || 2;
-        var priceStr = price > 0 ? price.toFixed(d) : '—';
+        var priceStr = q.price > 0 ? q.price.toFixed(d) : '—';
+        var chgStr = (q.chgPct === null) ? '—' : ((q.chgPct >= 0 ? '+' : '') + q.chgPct.toFixed(2) + '%');
+        var chgCls = (q.chgPct === null) ? 'text-slate-500' : (q.chgPct >= 0 ? 'text-qi-green' : 'text-qi-red');
         var click = 'data-qi-aksi="bukaChartSimbol" data-qi-arg="' + QIAksi.arg(sym) + '"';
         var remove = '<button data-qi-aksi="hapusDariWatchlist" data-qi-arg="' + QIAksi.arg(sym) + '" class="text-slate-600 hover:text-qi-red text-xs">✕</button>';
         if (isTable) {
@@ -224,32 +257,40 @@ function renderPanelWatchlist() {
                 '<td class="px-3 py-2 font-mono font-semibold text-white">' + lbl + '</td>' +
                 '<td class="px-3 py-2 font-mono text-xs text-slate-400">' + sym + '</td>' +
                 '<td class="px-3 py-2 font-mono text-right text-white" id="wl_p_' + sym + '">' + priceStr + '</td>' +
-                '<td class="px-3 py-2 text-right"><span id="wl_c_' + sym + '" class="text-[10px] font-mono text-slate-500">—</span></td>' +
+                '<td class="px-3 py-2 text-right"><span id="wl_c_' + sym + '" class="text-[10px] font-mono ' + chgCls + '">' + chgStr + '</span></td>' +
                 '<td class="px-3 py-2 text-right">' + remove + '</td></tr>';
         } else {
             html += '<div class="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-qi-border/30 hover:bg-qi-surface/40 cursor-pointer" ' + click + '>' +
                 '<div class="min-w-0"><div class="font-mono font-semibold text-white text-[11px]">' + lbl + '</div>' +
                 '<div class="font-mono text-[9px] text-slate-500">' + sym + '</div></div>' +
                 '<div class="text-right"><div class="font-mono text-[11px] text-white" id="wl_p_' + sym + '">' + priceStr + '</div>' +
-                '<div class="font-mono text-[9px] text-slate-500" id="wl_c_' + sym + '">—</div></div>' +
+                '<div class="font-mono text-[9px] ' + chgCls + '" id="wl_c_' + sym + '">' + chgStr + '</div></div>' +
                 '<div class="shrink-0">' + remove + '</div></div>';
         }
     });
     el.innerHTML = html;
 }
 function updateWatchlistPrices() {
-    var prices = window._livePrices || {};
     var dp = window.DP || {};
     _watchlist.forEach(function(sym) {
-        var price = prices[sym];
-        if (!price) return;
+        var q = wlKutipan(sym);
         var d = dp[sym] || 2;
         var el = document.getElementById('wl_p_' + sym);
-        if (el) el.textContent = price.toFixed(d);
+        if (el && q.price > 0) el.textContent = q.price.toFixed(d);
+        var cEl = document.getElementById('wl_c_' + sym);
+        if (cEl) {
+            cEl.textContent = (q.chgPct === null) ? '—' : ((q.chgPct >= 0 ? '+' : '') + q.chgPct.toFixed(2) + '%');
+            cEl.classList.remove('text-qi-green', 'text-qi-red', 'text-slate-500');
+            cEl.classList.add(q.chgPct === null ? 'text-slate-500' : (q.chgPct >= 0 ? 'text-qi-green' : 'text-qi-red'));
+        }
     });
 }
 window.addToWatchlist = addToWatchlist;
 window.removeFromWatchlist = removeFromWatchlist;
+// qim-pages.js (tombol bintang favorit di chart) menulis daftar baru ke localStorage lalu
+// memanggil window.loadWatchlist() untuk memuat ulang daftar di memori. Tanpa ekspor ini
+// panggilan itu diam-diam dilewati dan panel merender daftar lama.
+window.loadWatchlist = loadWatchlist;
 // Aksi baris watchlist (data-qi-aksi). Tombol ✕ menghentikan klik supaya baris (buka chart) tidak ikut jalan.
 QIAksi.daftar({
     bukaChartSimbol: function(el, e, sym) { switchPanel('panel-charts'); if (typeof selectChartSym === 'function') selectChartSym(sym); },
@@ -262,27 +303,65 @@ loadWatchlist();
 /* ═══════════════════════════════════════════════════════════
    C11  PERFORMANCE ANALYTICS DASHBOARD
    ═══════════════════════════════════════════════════════════ */
+
+/** Riwayat paper trading dari panel Paper Trading (satu-satunya mesin yang nyata). */
+function qiPaperRiwayat() {
+    try {
+        var h = (typeof window.qiBacaGlobal === 'function') ? window.qiBacaGlobal('_ptHistory') : null;
+        return Array.isArray(h) ? h : [];
+    } catch (e) { return []; }
+}
+
+/** Saldo awal = saldo berjalan dikurangi seluruh P/L yang sudah terealisasi. */
+function qiSaldoAwalPaper() {
+    var BAWAAN = 10000;
+    try {
+        var saldo = (typeof window.qiBacaGlobal === 'function') ? window.qiBacaGlobal('_ptBalance') : null;
+        if (typeof saldo !== 'number' || !isFinite(saldo)) return BAWAAN;
+        var realisasi = qiPaperRiwayat().reduce(function (jml, h) {
+            var v = parseFloat(h.pnl != null ? h.pnl : h.realizedPnL);
+            return jml + (isFinite(v) ? v : 0);
+        }, 0);
+        var awal = saldo - realisasi;
+        return isFinite(awal) && awal > 0 ? awal : BAWAAN;
+    } catch (e) { return BAWAAN; }
+}
+
+/**
+ * Tanggal (YYYY-MM-DD) saat posisi paper DITUTUP.
+ * Dulu bagian ini memakai `new Date()` sehingga SETIAP transaksi paper — sejauh apa pun ke
+ * belakang — menumpuk di bulan berjalan dan "Monthly P&L Breakdown" selalu salah.
+ */
+function qiTanggalTutup(h) {
+    var kandidat = h.closedAt || h.closeTime || h.openedAt || h.openTime;
+    var d = kandidat ? new Date(kandidat) : null;
+    if (d && !isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0];
+}
 function renderPerformanceDashboard() {
     var entries = [];
     try { entries = JSON.parse(localStorage.getItem('qi_journal') || '[]'); } catch(e) {}
-    var ptSaved = null;
-    try { ptSaved = JSON.parse(localStorage.getItem('QI_PAPER_TRADING')); } catch(e) {}
     var allTrades = [];
     entries.forEach(function(e) {
         if (e.result === 'WIN' || e.result === 'LOSS') {
             allTrades.push({ date: e.date, pnl: parseFloat(e.pnl) || 0, source: 'journal' });
         }
     });
-    if (ptSaved && ptSaved.history) {
-        ptSaved.history.forEach(function(h) {
-            allTrades.push({ date: new Date().toISOString().split('T')[0], pnl: parseFloat(h.realizedPnL) || 0, source: 'paper' });
-        });
-    }
+    // SUMBER PAPER TRADING: riwayat milik panel Paper Trading (dashboard-app.js), yang
+    // tersimpan di server lewat api/paper-trading.php. Dulu bagian ini membaca localStorage
+    // 'QI_PAPER_TRADING' — kunci milik mesin paper trading KEDUA yang sudah dihapus dan
+    // tidak pernah ditulis panel mana pun, sehingga seluruh transaksi paper nyata diabaikan.
+    qiPaperRiwayat().forEach(function(h) {
+        allTrades.push({ date: qiTanggalTutup(h), pnl: parseFloat(h.pnl != null ? h.pnl : h.realizedPnL) || 0, source: 'paper' });
+    });
     allTrades.sort(function(a, b) { return a.date > b.date ? 1 : -1; });
 
-    var equity = [10000];
-    var cum = 10000;
-    var peak = 10000;
+    // Saldo awal diambil dari mesin paper trading yang sama supaya "Current Equity" di sini
+    // tidak bertengkar dengan kartu Evaluasi Performa di panel Akun.
+    var saldoAwal = qiSaldoAwalPaper();
+    var equity = [saldoAwal];
+    var cum = saldoAwal;
+    var peak = saldoAwal;
     var maxDD = 0;
     var streakW = 0, streakL = 0, maxStreakW = 0, maxStreakL = 0;
     var monthlyPnl = {};
@@ -302,8 +381,8 @@ function renderPerformanceDashboard() {
     var statsEl = document.getElementById('perfStats');
     if (statsEl) {
         statsEl.innerHTML =
-            '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Starting Balance</div><div class="font-mono font-bold text-sm text-white">$10,000</div></div>' +
-            '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Current Equity</div><div class="font-mono font-bold text-sm ' + (cum >= 10000 ? 'text-qi-green' : 'text-qi-red') + '">$' + cum.toFixed(2) + '</div></div>' +
+            '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Starting Balance</div><div class="font-mono font-bold text-sm text-white">$' + saldoAwal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div></div>' +
+            '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Current Equity</div><div class="font-mono font-bold text-sm ' + (cum >= saldoAwal ? 'text-qi-green' : 'text-qi-red') + '">$' + cum.toFixed(2) + '</div></div>' +
             '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Max Drawdown</div><div class="font-mono font-bold text-sm text-qi-red">' + maxDD.toFixed(1) + '%</div></div>' +
             '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Total Trades</div><div class="font-mono font-bold text-sm text-white">' + allTrades.length + '</div></div>' +
             '<div class="bg-qi-panel border border-qi-border rounded-xl p-3 text-center"><div class="text-[9px] text-slate-500 uppercase mb-1">Best Streak</div><div class="font-mono font-bold text-sm text-qi-green">' + maxStreakW + ' W</div></div>' +
@@ -431,6 +510,9 @@ window.renderMTFView = renderMTFView;
 /* ═══════════════════════════════════════════════════════════
    C15  COT REPORT VISUAL (Canvas chart with REAL CFTC data)
    ═══════════════════════════════════════════════════════════ */
+var _cotTungguTimer = null;
+var _cotTungguSampai = 0;
+
 function renderCotChart() {
     var canvas = document.getElementById('cotChartCanvas');
     if (!canvas) return;
@@ -456,9 +538,19 @@ function renderCotChart() {
         ctx.fillStyle = '#64748B';
         ctx.font = '11px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Memuat data historis CFTC COT real-time...', w / 2, h / 2);
+        ctx.fillText(cot ? 'Riwayat COT belum tersedia untuk instrumen ini.' : 'Memuat data CFTC COT\u2026', w / 2, h / 2);
+        // api/cot.php diambil secara asinkron oleh dashboard-app.js. Bila panel dibuka
+        // sebelum datanya tiba, dulu kanvas berhenti di teks "Memuat\u2026" selamanya karena
+        // tidak ada yang memanggil fungsi ini lagi. Sekarang dicoba ulang sampai 10 detik.
+        if (!cot) {
+            if (_cotTungguTimer) clearTimeout(_cotTungguTimer);
+            if (_cotTungguSampai === 0) _cotTungguSampai = Date.now() + 10000;
+            if (Date.now() < _cotTungguSampai) _cotTungguTimer = setTimeout(renderCotChart, 600);
+        }
         return;
     }
+    _cotTungguSampai = 0;
+    if (_cotTungguTimer) { clearTimeout(_cotTungguTimer); _cotTungguTimer = null; }
 
     var len = history.length;
     var barW = (w - 60) / len;
@@ -554,7 +646,10 @@ function renderLeaderboard() {
     el.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-slate-500 text-xs">Memuat leaderboard...</td></tr>';
 
     var token = null;
-    try { var s = localStorage.getItem('qi_session'); if (s) token = JSON.parse(s).token || null; } catch(e) {}
+    // Kunci 'qi_session' TIDAK PERNAH ditulis siapa pun — auth.js menyimpan token di
+    // 'qi_token' (localStorage ATAU sessionStorage, tergantung "ingat saya"). Akibatnya
+    // token selalu null dan setiap permintaan dari modul ini dijawab 401.
+    try { token = (window.QuantumAuth && QuantumAuth.getToken()) || null; } catch (e) { token = null; }
 
     var headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -587,7 +682,7 @@ window.initProPanel = function(id) {
     if (id === 'panel-leaderboard') { renderLeaderboard(); }
     if (id === 'panel-journal') { renderJournalStats(); }
     if (id === 'panel-alerts') { renderAlertHistory(); }
-    if (id === 'panel-cot') { setTimeout(renderCotChart, 100); }
+    if (id === 'panel-cot') { _cotTungguSampai = 0; setTimeout(renderCotChart, 100); }
 };
 
 setInterval(updateWatchlistPrices, 3000);

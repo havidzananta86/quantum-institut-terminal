@@ -392,9 +392,30 @@ function loadUserInfo() {
         const raw  = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
         const userData = raw ? JSON.parse(raw) : null;
         const adminLink = document.getElementById('sidebarAdminLink');
-        if (adminLink && userData?.role === 'admin') adminLink.classList.remove('hidden');
-    } catch(e) {}
+        const admin = userData?.role === 'admin';
+        if (adminLink && admin) adminLink.classList.remove('hidden');
+        qiTampilkanKartuAdmin(admin);
+    } catch (e) {
+        // Gagal membaca sesi = anggap BUKAN admin. Kartu admin tetap tersembunyi.
+        qiTampilkanKartuAdmin(false);
+    }
 }
+
+/**
+ * Menampilkan elemen bertanda data-qi-admin hanya untuk admin.
+ *
+ * Server sudah menegakkan haknya (POST api/metode.php, gateway jeda/gerbang menolak
+ * non-admin), tetapi sebelumnya tidak ada satu baris JavaScript pun yang menyembunyikan
+ * kartunya. Akibatnya setiap pengguna PRO melihat "Saklar Darurat (Pause Sinyal)",
+ * "Gerbang Konfluensi Mesin" dan form TINDAKAN ADMIN "Versi Metode" — kontrol yang
+ * pasti ditolak saat ditekan. Ini murni kejujuran tampilan, BUKAN pengganti izin server.
+ */
+function qiTampilkanKartuAdmin(admin) {
+    document.querySelectorAll('[data-qi-admin]').forEach(el => {
+        el.classList.toggle('hidden', !admin);
+    });
+}
+window.qiTampilkanKartuAdmin = qiTampilkanKartuAdmin;
 
 // ─── Sidebar toggle (mobile) ──────────────────────────────────────────────
 function toggleSidebar() {
@@ -420,15 +441,41 @@ setInterval(updateClocks, 1000);
 
 // ─── Calendar Heatmap ─────────────────────────────────────────────────────
 let _calEvents  = [];
+// Penggeser minggu panel Kalender. Dideklarasikan DI SINI, bukan di dekat
+// calNavWeek(), karena fetchCalendarHeatmap() di bawah dipanggil saat halaman dimuat
+// — jauh sebelum baris itu dieksekusi. `const`/`let` yang belum diinisialisasi berada
+// di temporal dead zone, dan menyentuhnya (bahkan lewat `typeof`) melempar ReferenceError.
+//
+// ForexFactory hanya menerbitkan TIGA umpan (minggu lalu, berjalan, depan), jadi
+// penggesernya dibatasi −1..+1 — bukan tak terbatas seperti dulu, yang membuat label
+// berubah jadi "+3 week" padahal isi tabelnya tidak pernah ikut berganti.
+let _calWeekOff = 0;
+const CAL_MINGGU = { '-1': 'last', '0': 'this', '1': 'next' };
+const CAL_MINGGU_LABEL = { '-1': 'Minggu lalu', '0': 'Minggu ini', '1': 'Minggu depan' };
 let _calSelected = null;
 
 async function fetchCalendarHeatmap() {
     try {
-        const res  = await fetch('api/calendar.php');
+        const minggu = CAL_MINGGU[String(_calWeekOff)] || 'this';
+        const res  = await fetch('api/calendar.php?week=' + minggu);
         if (!res.ok) return;
         const data = await res.json();
         _calEvents = data.events || data.data || [];
-    } catch(e) {}
+    } catch (e) {
+        console.warn('[kalender] gagal memuat api/calendar.php:', e);
+    }
+}
+
+/**
+ * Ambil ulang DAN gambar ulang. Dipakai penyegar 12 detik panel Kalender: sebelumnya
+ * penyegar hanya memanggil fetchCalendarHeatmap(), yang cuma mengisi ulang variabel
+ * _calEvents dan tidak pernah mengubah satu piksel pun di layar.
+ */
+async function segarkanKalender() {
+    await fetchCalendarHeatmap();
+    try { renderCalTable(); } catch (e) {}
+    try { renderCalGrid2(_calEvents); } catch (e) {}
+    try { renderCalFullList(_calEvents); } catch (e) {}
 }
 
 // ─── MTF Bias Panel ────────────────────────────────────────────────────────
@@ -472,7 +519,12 @@ async function fetchMtfBias(sym) {
     let html = '', jumlahBull = 0, jumlahBear = 0, jumlahTerbaca = 0;
     results.forEach((res, i) => {
         const tf = MTF_TFS[i];
-        const adaData = res.status === 'fulfilled' && res.value && Array.isArray(res.value.candles) && res.value.candles.length >= 5;
+        // api/get-chart-data.php MEMBANGKITKAN 201 candle acak (rand) bila semua penyedia
+        // gagal, ditandai `simulated: true`. Candle itu TIDAK boleh dipakai menghitung bias:
+        // arah "BULLISH/BEARISH" dari angka acak sama saja membohongi pengguna. Konsumen lain
+        // sudah menolaknya (dashboard-pro.js:692, qim-setups.js:463) — di sini ikut ditolak.
+        const palsu   = res.status === 'fulfilled' && res.value && res.value.simulated === true;
+        const adaData = !palsu && res.status === 'fulfilled' && res.value && Array.isArray(res.value.candles) && res.value.candles.length >= 5;
         let bias = null, chgPct = 0, sumber = '';
         if (adaData) {
             const candles = res.value.candles.slice(-10);
@@ -491,10 +543,13 @@ async function fetchMtfBias(sym) {
         // JUJUR: bila data tidak tersedia, katakan apa adanya — jangan mengarang arah.
         const color = !adaData ? '#64748B' : bias === 'BULLISH' ? '#10B981' : bias === 'BEARISH' ? '#EF4444' : '#94A3B8';
         const icon  = !adaData ? '—' : bias === 'BULLISH' ? '▲' : bias === 'BEARISH' ? '▼' : '◆';
-        const label = !adaData ? 'data tidak tersedia' : bias;
+        const label = !adaData ? (palsu ? 'data simulasi — tidak dipakai' : 'data tidak tersedia') : bias;
         const chgStr = adaData ? ((chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%') : '';
+        const judul = adaData ? ('Sumber: ' + sumber)
+            : palsu ? 'Sumber data nyata gagal; server mengirim candle simulasi, jadi bias tidak dihitung'
+            : 'Candle tidak tersedia dari sumber data';
         html += `
-            <div class="rounded-lg p-3 text-center" style="background:${color}18;border:1px solid ${color}30" title="${adaData ? ('Sumber: ' + sumber) : 'Candle tidak tersedia dari sumber data'}">
+            <div class="rounded-lg p-3 text-center" style="background:${color}18;border:1px solid ${color}30" title="${judul}">
                 <div class="text-[10px] font-semibold text-slate-400 mb-1">${tf.label}</div>
                 <div class="text-sm font-bold" style="color:${color}">${icon} ${label}</div>
                 <div class="text-[10px] mt-1" style="color:${color}99">${chgStr}</div>
@@ -508,7 +563,7 @@ async function fetchMtfBias(sym) {
     if (biasEl) {
         if (jumlahTerbaca === 0) {
             biasEl.innerHTML = '<span class="font-mono font-bold text-lg text-slate-400">DATA TIDAK TERSEDIA</span>'
-                + '<span class="text-[10px] text-slate-500 block">sumber candle belum bisa dihubungi</span>';
+                + '<span class="text-[10px] text-slate-500 block">sumber candle nyata belum bisa dihubungi — candle simulasi sengaja tidak dihitung</span>';
         } else {
             const arah = jumlahBull > jumlahBear ? 'BUY' : jumlahBear > jumlahBull ? 'SELL' : 'NEUTRAL';
             const cls  = arah === 'BUY' ? 'text-qi-green' : arah === 'SELL' ? 'text-qi-red' : 'text-qi-gold';
@@ -584,7 +639,6 @@ const PANEL_META = {
     'panel-autosignal':   { icon:'🎯', title:'Auto Signal' },
     'panel-rencana':      { icon:'🧭', title:'Rencana Live (TV)' },
     'panel-gateway':      { icon:'🛰️', title:'Quantum AI Signal Gateway' },
-    'panel-sessions':     { icon:'🕸️', title:'Market Galaxy — Network Map' },
     'panel-crypto':       { icon:'🐋', title:'Crypto Terminal' },
     'panel-risk':         { icon:'🧮', title:'Risk Calculator' },
     'panel-alerts':       { icon:'🔔', title:'Price Alerts' },
@@ -699,7 +753,6 @@ const QI_PANEL_MIN = {
     'panel-heatmap': 0,       // Economic Heatmap
     'panel-correlation': 0,   // Correlation Matrix
     'panel-strength': 0,      // Currency Strength
-    'panel-sessions': 0,      // Market Galaxy
     'panel-academy': 0,       // Academy & Cheatsheet
     'panel-track': 0,         // Track Record (transparansi → justru membangun kepercayaan)
     'panel-account': 0,       // Akun & Kinerja (halaman akun sendiri, jangan dikunci)
@@ -1601,7 +1654,6 @@ function initPanel(id) {
     if (id === 'panel-autosignal')  { refreshAutoSignals(); if (typeof _asMuatServer === 'function') _asMuatServer().then(function () { if (typeof _asRenderRecords === 'function') _asRenderRecords(); }); }
     if (id === 'panel-rencana')     { if (typeof setRencanaMode === 'function') setRencanaMode(_rlMode); }
     if (id === 'panel-gateway')     { if (typeof muatGateway === 'function') muatGateway(); }
-    if (id === 'panel-sessions')    initNetworkGalaxy();
     if (id === 'panel-crypto')      initCryptoTerminal();
     if (id === 'panel-academy')     initAcademyPanel();
     if (typeof initProPanel === 'function') initProPanel(id);
@@ -1613,7 +1665,7 @@ function initPanel(id) {
    Prinsip yang dipegang:
      · HANYA panel yang SEDANG DILIHAT yang disegarkan — bukan semua panel sekaligus —
        supaya tampilan selalu baru tanpa membanjiri server & kuota sumber data.
-     · Fungsi INIT (chart, heatmap, galaxy, terminal kripto, mini chart) SENGAJA tidak
+     · Fungsi INIT (chart, heatmap, terminal kripto, mini chart) SENGAJA tidak
        diikutkan: memanggilnya ulang akan membuat timer/chart GANDA.
      · Berhenti saat tab tidak terlihat (document.hidden) untuk menghemat baterai/kuota.
      · Tidak menumpuk: bila penyegaran sebelumnya belum selesai, siklus berikut dilewati.
@@ -1630,7 +1682,9 @@ const QI_PANEL_SEGAR = {
     'panel-orderbook':   [() => fetchAllOrderBooks()],
     'panel-news':        [() => fetchDashNews()],
     'panel-strength':    [() => fetchStrengthFull()],
-    'panel-radar':       [() => renderRadarQuickScan()],
+    // Badge panel berbunyi "● otomatis", jadi tabel scan-nya HARUS ikut diperbarui.
+    // Dulu hanya kartu ringkas yang disegarkan; 8 kolom tabel beku sejak panel dibuka.
+    'panel-radar':       [() => renderRadarQuickScan(), () => runRadarScanBerkala()],
     'panel-paper':       [() => ptLoadFromServer()],
     'panel-track':       [() => fetchTrackRecord()],
     'panel-correlation': [() => fetchCorrelation()],
@@ -1638,9 +1692,15 @@ const QI_PANEL_SEGAR = {
     'panel-impact':      [() => fetchNewsImpact()],
     'panel-autosignal':  [() => refreshAutoSignals()],
     'panel-screener':    [() => runScreener()],
-    'panel-volatility':  [() => renderVolatilityDash()],
-    'panel-heatmap':     [() => fetchCalendarHeatmap()],
+    // Ketiganya dirender saat panel dibuka, jadi ketiganya pula yang harus disegarkan —
+    // dulu Spread Monitor & Swap dibiarkan basi padahal panel lain disegarkan terus.
+    'panel-volatility':  [() => renderVolatilityDash(), () => renderSpreadMonitor(), () => renderDxyTracker()],
+    'panel-heatmap':     [() => segarkanKalender()],
     'panel-mtf':         [() => mtfBiasBilaTerlihat()],
+    // Dulu kedua panel ini TIDAK ada di daftar: angkanya beku sejak kunjungan pertama
+    // sampai halaman dimuat ulang — termasuk lencana "● Connected" gateway yang bisa menipu.
+    'panel-performance': [() => { if (typeof renderPerformanceDashboard === 'function') renderPerformanceDashboard(); }],
+    'panel-gateway':     [() => { if (typeof muatGateway === 'function') muatGateway(); }],
 };
 let _qiSegarJalan = false;
 function qiSegarkanPanelAktif() {
@@ -2527,6 +2587,10 @@ async function fetchCot() {
         const data = await res.json();
         if (data.status !== 'success') throw new Error(data.message);
         _cotData = data;
+        // `let` tingkat-atas TIDAK menjadi properti window, sehingga grafik COT di
+        // assets/js/advanced-trading.js (yang membaca window._cotData) selamanya kosong.
+        // Datanya diterbitkan di sini supaya grafiknya punya sumber.
+        window._cotData = data;
         const srcEl = document.getElementById('cotSource');
         if (srcEl && data.currencies) {
             const dates = Object.values(data.currencies).map(c=>c.reportDate).filter(Boolean);
@@ -2783,7 +2847,9 @@ async function fetchNewsImpact() {
         const data = await res.json();
         const rows = data.data || [];
         const rcEl = document.getElementById('impactRowCount');
-        if (rcEl) rcEl.textContent = `${rows.length} rows`;
+        if (rcEl) rcEl.textContent = String(rows.length);   // HTML sudah menulis kata "baris" sesudah span ini
+        const rilisEl = document.getElementById('impactRilis');
+        if (rilisEl) rilisEl.textContent = Number(data.rilis || 0).toLocaleString('id-ID');
         if (!rows.length) { body.innerHTML = '<tr><td colspan="11" class="px-4 py-6 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
         body.innerHTML = rows.map((r, i) => {
             const impCls  = r.impact==='HIGH'?'badge-high':r.impact==='MED'?'badge-med':'badge-low';
@@ -2837,13 +2903,16 @@ function filterNewsItems() {
     const query  = (document.getElementById('newsSearch')?.value || '').toLowerCase();
     const el     = document.getElementById('dashNewsList');
     if (!el) return;
+    // Kunci di bawah HARUS merupakan kategori yang benar-benar dihasilkan
+    // api/news.php → qi_detect_category(): GOLD, CRYPTO, MACRO, COMMODITY, FOREX.
+    // Sebelumnya ada tombol 'Breaking' dan 'Geopolitical' yang tidak pernah dikeluarkan
+    // server sehingga selalu kosong, dan 'Commodities' ikut memanggil 'crypto'.
     const catMap = {
-        'Forex':         ['forex'],
-        'Economy':       ['macro','economy'],
-        'Central Banks': ['central-banks','central_banks','centralbanks','fed','boe','ecb','boj','rba'],
-        'Commodities':   ['commodities','gold','oil','crypto'],
-        'Geopolitical':  ['geopolitical'],
-        'Breaking':      ['breaking'],
+        'Forex':       ['forex'],
+        'Macro':       ['macro'],
+        'Gold':        ['gold'],
+        'Crypto':      ['crypto'],
+        'Commodities': ['commodity'],
     };
     const filtered = _newsItems.filter(n => {
         const title = (n.title || '').toLowerCase();
@@ -2892,34 +2961,47 @@ function renderNewsItems(items) {
     const el = document.getElementById('dashNewsList');
     if (!el) return;
     if (!items.length) { el.innerHTML = '<div class="px-4 py-8 text-center text-slate-600 text-xs">Tidak ada berita</div>'; return; }
+    // Judul, sumber, kategori dan URL berasal dari RSS pihak ketiga — DIANGGAP TIDAK AMAN.
+    // Semuanya di-escape sebelum masuk HTML, dan URL hanya diterima bila skemanya http/https
+    // (menolak `javascript:`), karena CSP halaman ini masih mengizinkan 'unsafe-inline'.
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const urlAman = (u) => /^https?:\/\//i.test(String(u || '')) ? esc(u) : '#';
     el.innerHTML = items.map(n => {
         const sent = getSentiment(n);
         const sentHtml = `<span class="sent-${sent}">${sent === 'bullish' ? '→ bullish' : sent === 'bearish' ? '→ bearish' : '— neutral'}</span>`;
         const catCls = getCatStyle(n.category);
         const ago = timeAgo(n.published_at || n.date);
-        const url = n.url || n.link || '#';
-        return `<a href="${url}" target="_blank" rel="noopener"
+        // api/news.php sudah menghitung thumbnail (qi_news_gambar) dan hanya mengembalikan
+        // URL https; sebelum ini field `image` tidak pernah dipakai sama sekali, sedangkan
+        // field `summary` TIDAK PERNAH dikirim server — barisnya dibuang, bukan dibiarkan kosong.
+        const gbr = /^https:\/\//i.test(String(n.image || '')) ? esc(n.image) : '';
+        return `<a href="${urlAman(n.url || n.link)}" target="_blank" rel="noopener"
             class="flex items-start gap-3 px-4 py-3 hover:bg-white/[.025] transition-colors cursor-pointer news-item border-b border-qi-border/30"
-            data-title="${(n.title||'').replace(/"/g,'&quot;')}" data-cat="${n.category||''}">
+            data-title="${esc(n.title)}" data-cat="${esc(n.category)}">
+            ${gbr ? `<img src="${gbr}" alt="" loading="lazy" referrerpolicy="no-referrer"
+                 class="w-14 h-14 rounded-lg object-cover flex-shrink-0 bg-qi-card border border-qi-border/40"
+                 data-qi-berita-gbr="1">` : ''}
             <div class="flex-1 min-w-0">
-                <div class="text-[12px] text-slate-100 leading-snug line-clamp-2 font-medium mb-1">${n.title||'—'}</div>
-                <div class="text-[10px] text-slate-500 leading-tight mb-1.5 line-clamp-1">${n.summary||n.description||''}</div>
+                <div class="text-[12px] text-slate-100 leading-snug line-clamp-2 font-medium mb-1.5">${esc(n.title) || '—'}</div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    ${n.source?`<span class="text-[9px] font-mono text-slate-500">${n.source}</span>`:''}
-                    ${n.author?`<span class="text-[9px] text-slate-600">· ${n.author}</span>`:''}
-                    ${n.category?`<span class="text-[9px] font-mono font-semibold ${catCls}">${n.category}</span>`:''}
+                    ${n.source?`<span class="text-[9px] font-mono text-slate-500">${esc(n.source)}</span>`:''}
+                    ${n.category?`<span class="text-[9px] font-mono font-semibold ${catCls}">${esc(n.category)}</span>`:''}
                     ${sentHtml}
-                    ${ago?`<span class="text-[9px] text-slate-600 ml-auto">${ago}</span>`:''}
+                    ${ago?`<span class="text-[9px] text-slate-600 ml-auto">${esc(ago)}</span>`:''}
                 </div>
             </div>
             <span class="text-slate-600 text-xs mt-0.5 flex-shrink-0">↗</span>
         </a>`;
     }).join('');
+    // Thumbnail yang gagal dimuat dibuang supaya tidak meninggalkan kotak kosong.
+    // Dipasang di sini, bukan lewat atribut onerror, karena CSP melarang penangan sebaris.
+    el.querySelectorAll('img[data-qi-berita-gbr]').forEach(img => {
+        img.addEventListener('error', () => img.remove(), { once: true });
+    });
 }
 
 // ─── Economic Calendar (redesigned) ────────────────────────────────────────
 let _calFilters  = { high:true, med:true, low:true };
-let _calWeekOff  = 0;
 
 function toggleCalFilter(type) {
     _calFilters[type] = !_calFilters[type];
@@ -2929,10 +3011,17 @@ function toggleCalFilter(type) {
 }
 
 function calNavWeek(dir) {
-    _calWeekOff += dir;
+    const baru = Math.max(-1, Math.min(1, _calWeekOff + dir));
+    if (baru === _calWeekOff) return;
+    _calWeekOff = baru;
     const label = document.getElementById('calWeekLabel');
-    if (label) label.textContent = _calWeekOff === 0 ? 'This week' : _calWeekOff > 0 ? `+${_calWeekOff} week` : `${_calWeekOff} week`;
-    renderCalTable();
+    if (label) label.textContent = CAL_MINGGU_LABEL[String(_calWeekOff)];
+    // Datanya harus DIAMBIL ULANG: setiap minggu adalah umpan yang berbeda di server.
+    fetchCalendarHeatmap().then(() => {
+        renderCalTable();
+        try { renderCalGrid2(_calEvents); } catch (e) {}
+        try { renderCalFullList(_calEvents); } catch (e) {}
+    });
 }
 
 function renderCalTable() {
@@ -2945,6 +3034,7 @@ function renderCalTable() {
         if (imp === 'high' && !_calFilters.high) return false;
         if (imp === 'medium' && !_calFilters.med) return false;
         if (imp === 'low' && !_calFilters.low) return false;
+        // 'holiday' sengaja TIDAK disaring tombol Low: libur bursa selalu relevan.
         if (cur !== 'ALL' && (e.currency||'').toUpperCase() !== cur) return false;
         return true;
     });
@@ -2960,8 +3050,12 @@ function renderCalTable() {
     let lastDay = '';
     body.innerHTML = filtered.map(e => {
         const impLvl = (e.impact||'').toLowerCase();
+        // ForexFactory juga mengirim 'holiday' (libur bursa). Dulu nilai itu jatuh ke
+        // cabang terakhir dan tampil sebagai "Low" — padahal libur justru penting
+        // (likuiditas tipis), dan ikut tersembunyi saat filter Low dimatikan.
         const impHtml = impLvl === 'high' ? '<span class="badge-high">High</span>'
                       : impLvl === 'medium' ? '<span class="badge-med">Med</span>'
+                      : impLvl === 'holiday' ? '<span class="badge-med" title="Hari libur bursa — likuiditas tipis">Libur</span>'
                       : '<span class="badge-low">Low</span>';
 
         const actual   = e.actual   ?? '—';
@@ -3095,7 +3189,6 @@ let _lwTool      = null;
 let _tvSymbol    = 'OANDA:BTCUSD';
 let _tvSymLabel  = 'BTC/USDT';
 let _tvInterval  = '60';
-let _chartTab    = 'positions';
 let _wlVisible   = true;
 
 // Watchlist groups & symbols
@@ -3134,7 +3227,6 @@ const WL_GROUPS = [
 function initTvChart() {
     renderWatchlist();
     updateChartHeader();
-    renderChartTab();
     buildLwChart();
 }
 
@@ -4415,77 +4507,6 @@ function setChartInterval(iv) {
     if (typeof segarkanWidgetTvBilaPerlu === 'function') segarkanWidgetTvBilaPerlu();
 }
 
-function setChartTab(tab) {
-    _chartTab = tab;
-    document.querySelectorAll('.chart-tab-btn').forEach(b => {
-        const active = b.dataset.ctab === tab;
-        b.className = active
-            ? 'chart-tab-btn active text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-qi-cyan border-b-2 border-b-qi-cyan bg-qi-cyan/5'
-            : 'chart-tab-btn text-[10px] font-semibold px-4 py-2 border-r border-qi-border text-slate-400 hover:text-white';
-    });
-    renderChartTab();
-}
-
-function renderChartTab() {
-    const el = document.getElementById('chartTabContent');
-    if (!el) return;
-    if (_chartTab === 'positions') {
-        // Show open positions from paper trading
-        if (!_ptPositions.length) {
-            el.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-[10px]">Tidak ada posisi terbuka. Klik BUY/SELL untuk membuka trade.</div>';
-            return;
-        }
-        let floatTotal = 0;
-        const rows = _ptPositions.map(p => {
-            const cur = _lastPrices[p.symbol];
-            let pnl = 0;
-            if (cur) {
-                const curP  = parseFloat(cur.price);
-                const entP  = parseFloat(p.entryPrice);
-                const diff  = p.side==='BUY' ? curP - entP : entP - curP;
-                pnl = diff * p.lots * ptPnlMult(p.symbol, curP);
-            }
-            floatTotal += pnl;
-            const pnlCls = pnl >= 0 ? 'text-qi-green' : 'text-qi-red';
-            return `<tr class="border-b border-qi-border/30 text-[10px] font-mono">
-                <td class="px-3 py-1.5 text-white font-bold">${SYMBOL_LABELS[p.symbol]||p.symbol}</td>
-                <td class="px-2 py-1.5 ${p.side==='BUY'?'text-qi-green':'text-qi-red'} font-bold">${p.side}</td>
-                <td class="px-2 py-1.5 text-slate-300">${p.lots}</td>
-                <td class="px-2 py-1.5 text-slate-300">${parseFloat(p.entryPrice).toFixed(4)}</td>
-                <td class="px-2 py-1.5 ${pnlCls} font-bold">${pnl>=0?'+':''}$${pnl.toFixed(2)}</td>
-                <td class="px-2 py-1.5"><button data-qi-aksi="ptClosePosition" data-qi-arg="${QIAksi.arg(String(p.id))}" class="text-qi-red hover:underline text-[9px]">Tutup</button></td>
-            </tr>`;
-        }).join('');
-        const flCls = floatTotal >= 0 ? 'text-qi-green' : 'text-qi-red';
-        const flEl  = document.getElementById('chartFloatPnl');
-        if (flEl) { flEl.textContent = `P&L: ${floatTotal>=0?'+':''}$${floatTotal.toFixed(2)}`; flEl.className = `text-[11px] font-mono font-bold ${flCls}`; }
-        el.innerHTML = `<table class="w-full"><thead><tr class="text-[9px] text-slate-500 uppercase border-b border-qi-border">
-            <th class="px-3 py-1 text-left">Simbol</th><th class="px-2 py-1 text-left">Arah</th>
-            <th class="px-2 py-1 text-left">Lot</th><th class="px-2 py-1 text-left">Entry</th>
-            <th class="px-2 py-1 text-left">P&L</th><th class="px-2 py-1"></th>
-        </tr></thead><tbody>${rows}</tbody></table>`;
-    } else if (_chartTab === 'history') {
-        const hist = (_ptHistory || []).slice(0, 20);
-        if (!hist.length) { el.innerHTML = '<div class="px-4 py-3 text-center text-slate-600 text-[10px]">Belum ada riwayat trade.</div>'; return; }
-        const rows = hist.map(h => {
-            const pnlCls = (h.pnl||0) >= 0 ? 'text-qi-green' : 'text-qi-red';
-            return `<tr class="border-b border-qi-border/30 text-[10px] font-mono">
-                <td class="px-3 py-1.5 text-white">${SYMBOL_LABELS[h.symbol]||h.symbol}</td>
-                <td class="px-2 py-1.5 ${h.side==='BUY'?'text-qi-green':'text-qi-red'}">${h.side}</td>
-                <td class="px-2 py-1.5 text-slate-300">${h.lots}</td>
-                <td class="px-2 py-1.5 ${pnlCls}">${(h.pnl||0)>=0?'+':''}$${(h.pnl||0).toFixed(2)}</td>
-                <td class="px-2 py-1.5 text-slate-500 text-[9px]">${h.closedAt?new Date(h.closedAt).toLocaleString('id-ID'):(h.closeTime||'—')}</td>
-            </tr>`;
-        }).join('');
-        el.innerHTML = `<table class="w-full"><thead><tr class="text-[9px] text-slate-500 uppercase border-b border-qi-border">
-            <th class="px-3 py-1 text-left">Simbol</th><th class="px-2 py-1">Arah</th>
-            <th class="px-2 py-1">Lot</th><th class="px-2 py-1">P&L</th><th class="px-2 py-1 text-left">Waktu Tutup</th>
-        </tr></thead><tbody>${rows}</tbody></table>`;
-    } else {
-        el.innerHTML = '<div class="px-4 py-3 text-center text-slate-500 text-[10px]">Fitur jurnal akan segera hadir.</div>';
-    }
-}
-
 function chartQuickOrder(side) {
     // Determine key from current TV symbol
     const allSyms = WL_GROUPS.flatMap(g => g.syms);
@@ -4506,7 +4527,6 @@ function chartQuickOrder(side) {
     };
     _ptPositions.push(newPos);
     ptSaveToServer();
-    renderChartTab();
     updateChartHeader();
     // Flash feedback
     const btn = side === 'BUY'
@@ -4547,7 +4567,6 @@ function updateWatchlistPrices() {
     renderPriceFreshness();
     renderWatchlist(document.getElementById('watchlistSearch')?.value || '');
     updateChartHeader();
-    renderChartTab();
     // Update account balance
     const balEl = document.getElementById('chartAccBalance');
     if (balEl && _ptBalance !== undefined) balEl.textContent = '$' + _ptBalance.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -4569,7 +4588,11 @@ const SIGNAL_TFS  = [
 async function fetchSignalMatrix() {
     const body = document.getElementById('signalMatrixBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-slate-600 text-xs animate-pulse">Memuat data TradingView untuk ${SIGNAL_SYMS.length} instrumen…</td></tr>`;
+    // Penyegar terpusat memanggil fungsi ini tiap 12 detik selama panel terbuka. Mengosongkan
+    // tabel di sini membuat 15 baris hilang-muncul terus dan melompatkan posisi gulir, jadi
+    // keadaan "memuat" hanya ditampilkan saat tabel memang masih kosong.
+    const kosong = body.querySelector('td[colspan]') !== null || body.children.length === 0;
+    if (kosong) body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-slate-600 text-xs animate-pulse">Memuat data TradingView untuk ${SIGNAL_SYMS.length} instrumen…</td></tr>`;
 
     const tvSigCls = {
         STRONG_BUY:'text-qi-green font-bold', BUY:'text-qi-green',
@@ -4655,8 +4678,12 @@ async function fetchSignalMatrix() {
                 <td class="px-3 py-2.5 text-center font-mono text-[11px] ${sumCls}">${summary}</td>
             </tr>`;
         }).join('');
-    } catch(err) {
+    } catch (err) {
         body.innerHTML = `<tr><td colspan="8" class="px-4 py-4 text-center text-qi-red text-xs">Gagal memuat data TradingView: ${err.message}</td></tr>`;
+        // Cap waktu ikut ditandai gagal. Tanpa ini jam lama tetap terpampang sehingga data
+        // basi terlihat seolah baru saja diperbarui.
+        const srcEl = document.getElementById('signalSource');
+        if (srcEl) srcEl.textContent = `Source: TradingView · gagal diperbarui ${new Date().toLocaleTimeString('id-ID')}`;
     }
 }
 
@@ -4678,10 +4705,18 @@ function loadTvTaWidget(tvSym) {
     const wrap = document.getElementById('tvTaWidgetWrap');
     if (!wrap) return;
 
+    // Widget ini adalah iframe pihak ketiga. Membangunnya ulang tiap 12 detik (lewat
+    // penyegar panel) membuatnya berkedip DAN me-reset tab interval yang baru dipilih
+    // pengguna di dalam widget. Jadi hanya dibangun ulang bila simbol atau temanya berubah.
+    const isLightSekarang = typeof isQIThemeLight === 'function' && isQIThemeLight();
+    const sidik = String(tvSym) + '|' + (isLightSekarang ? 'light' : 'dark');
+    if (wrap.dataset.qiSidik === sidik && wrap.querySelector('.tradingview-widget-container')) return;
+    wrap.dataset.qiSidik = sidik;
+
     // Clear old widget
     wrap.innerHTML = '<div class="tradingview-widget-container" style="height:100%;width:100%;"><div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%;"></div><div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div></div>';
 
-    const isLight = typeof isQIThemeLight === 'function' && isQIThemeLight();
+    const isLight = isLightSekarang;
     const config = {
         interval: '1D',
         width: '100%',
@@ -4708,7 +4743,10 @@ async function fetchOutlook() {
 
     loadTvTaWidget(_outlookSym);
 
-    grid.innerHTML = SYMBOLS.map(() => '<div class="skel h-28 rounded-xl"></div>').join('');
+    // Skeleton hanya saat grid masih kosong (lihat alasan yang sama di fetchSignalMatrix).
+    if (!grid.children.length || grid.querySelector('.skel')) {
+        grid.innerHTML = SYMBOLS.map(() => '<div class="skel h-28 rounded-xl"></div>').join('');
+    }
 
     try {
         const res  = await fetch('api/tv-scan.php?symbols=' + SYMBOLS.join(','));
@@ -4925,7 +4963,11 @@ function buildObCard(sym) {
     return `<div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden" id="ob-card-${sym}">
         <div class="px-3 py-2 border-b border-qi-border flex items-center justify-between">
             <span class="font-mono font-bold text-xs text-white">${label}</span>
-            <span class="text-[11px] font-mono font-bold text-qi-cyan" id="ob-${sym}-mid">—</span>
+            <span class="flex items-center gap-1.5">
+                <span class="hidden text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border border-qi-gold/40 bg-qi-gold/10 text-qi-gold"
+                      id="ob-${sym}-tanda">perkiraan</span>
+                <span class="text-[11px] font-mono font-bold text-qi-cyan" id="ob-${sym}-mid">—</span>
+            </span>
         </div>
         <div class="px-3 py-1 text-[9px] font-semibold text-qi-red uppercase tracking-wider">ASKS</div>
         <div id="ob-${sym}-asks" class="divide-y divide-qi-border/20">
@@ -4951,6 +4993,20 @@ async function fetchOrderBook(sym) {
     try {
         const res  = await fetch(`api/orderbook.php?symbol=${sym}&limit=8`);
         const data = await res.json();
+        // api/orderbook.php JUJUR menandai kartu yang kedalamannya hanya diperkirakan dari
+        // harga tengah (`nyata: false`, `source: 'perkiraan_mid'`) — misalnya XAUUSD, yang
+        // tidak punya order book publik. Dulu klien mengabaikan ketiga field itu sehingga
+        // kartu perkiraan digambar persis sama dengan kartu Binance yang datanya asli.
+        const tandaEl = document.getElementById(`ob-${sym}-tanda`);
+        if (tandaEl) {
+            const perkiraan = (data.nyata === false) || (data.source === 'perkiraan_mid');
+            tandaEl.classList.toggle('hidden', !perkiraan);
+            tandaEl.title = perkiraan
+                ? (data.catatan || 'Kedalaman diperkirakan dari harga tengah, bukan order book nyata.')
+                : '';
+        }
+        const kartuEl = document.getElementById(`ob-card-${sym}`);
+        if (kartuEl) kartuEl.classList.toggle('opacity-70', data.nyata === false);
         const asks = (data.asks || []).slice(0, 8).reverse();
         const bids = (data.bids || []).slice(0, 8);
         const maxAskVol = Math.max(...asks.map(r => parseFloat(r[1]||0)), 1);
@@ -4975,7 +5031,12 @@ async function fetchOrderBook(sym) {
         }
         const updEl = document.getElementById('obUpdated');
         if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID');
-    } catch(e) {}
+    } catch (e) {
+        // Jangan biarkan kartu macet di "Memuat…" tanpa penjelasan.
+        const pesan = '<div class="px-3 py-4 text-center text-qi-red/70 text-[10px]">Gagal memuat</div>';
+        if (asksEl) asksEl.innerHTML = pesan;
+        if (bidsEl) bidsEl.innerHTML = '';
+    }
 }
 
 async function fetchAllOrderBooks() {
@@ -5009,7 +5070,8 @@ async function fetchStrengthFull() {
         const res  = await fetch('api/currency-strength.php');
         const data = await res.json();
         const currencies = (data.currencies || []).sort((a, b) => b.score - a.score);
-        if (stackEl && currencies.length) {
+        if (!currencies.length) throw new Error('daftar mata uang kosong');
+        if (stackEl) {
             stackEl.innerHTML = currencies.map((c, i) => {
                 const color = CUR_COLORS[c.currency] || '#94A3B8';
                 const chg   = parseFloat(c.chgPct ?? 0);
@@ -5027,7 +5089,14 @@ async function fetchStrengthFull() {
             }).join('');
         }
         if (updEl) updEl.textContent = new Date().toLocaleTimeString('id-ID');
-    } catch(e) {}
+    } catch (e) {
+        // Dulu `catch(e) {}` kosong: saat endpoint gagal, kartu tertinggal di teks
+        // "Memuat…" selamanya tanpa pesan apa pun dan tanpa jejak di konsol.
+        if (stackEl) stackEl.innerHTML = '<div class="text-center text-qi-red/70 text-xs py-6">'
+            + 'Gagal memuat kekuatan mata uang.<br><span class="text-slate-500 text-[10px]">api/currency-strength.php tidak membalas data.</span></div>';
+        if (updEl) updEl.textContent = 'gagal';
+        console.warn('[strength] gagal memuat api/currency-strength.php:', e);
+    }
 
     // Pair prices from _lastPrices
     if (pairEl && Object.keys(_lastPrices).length) {
@@ -5193,14 +5262,21 @@ async function fetchCommodityStrength() {
 }
 
 // ─── Radar Quick Scan (mover bars) ────────────────────────────────────────
+// Timer tunggu harga. Dulu setTimeout dipanggil tanpa disimpan/dibatalkan, sementara
+// penyegar panel (tiap 12 detik) memanggil fungsi yang sama — saat sumber harga mati,
+// timernya beranak-pinak dan render berjalan tiap 2 detik tanpa henti.
+let _radarTungguTimer = null;
+
 function renderRadarQuickScan() {
     const el  = document.getElementById('radarQuickScan');
     const upd = document.getElementById('radarMoverUpdated');
     if (!el || !Object.keys(_lastPrices).length) {
         if (el) el.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Memuat data harga…</div>';
-        setTimeout(renderRadarQuickScan, 2000);
+        if (_radarTungguTimer) clearTimeout(_radarTungguTimer);
+        _radarTungguTimer = setTimeout(() => { _radarTungguTimer = null; renderRadarQuickScan(); }, 2000);
         return;
     }
+    if (_radarTungguTimer) { clearTimeout(_radarTungguTimer); _radarTungguTimer = null; }
     const sorted = Object.entries(_lastPrices)
         .map(([sym, d]) => ({ sym, pct: parseFloat(d.chgPct ?? 0), price: d.price }))
         .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
@@ -5226,12 +5302,40 @@ function renderRadarQuickScan() {
 // ─── AI Radar Full Scan ────────────────────────────────────────────────────
 const RADAR_SYMS = ['XAUUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT','BNBUSDT'];
 
+/**
+ * Pemindaian berkala untuk penyegar panel Radar.
+ *
+ * Panel ini menampilkan badge "● otomatis" dan tulisan "Diperbarui <jam>", tetapi
+ * runRadarScan() dulu hanya dijalankan SEKALI (saat panel pertama dibuka) sehingga
+ * kedelapan kolom tabelnya beku dan cap waktunya jadi bohong.
+ *
+ * Satu pemindaian = satu permintaan api/get-chart-data.php per instrumen, jadi ia TIDAK
+ * boleh ikut irama 12 detik milik penyegar panel. Di sini dibatasi paling cepat 2 menit
+ * sekali, dan hanya saat tab benar-benar terlihat.
+ */
+let _radarScanTerakhir = 0;
+let _radarScanJalan = false;
+function runRadarScanBerkala() {
+    if (_radarScanJalan) return;
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - _radarScanTerakhir < 120000) return;
+    _radarScanJalan = true;
+    Promise.resolve(runRadarScan()).finally(() => {
+        _radarScanJalan = false;
+        _radarScanTerakhir = Date.now();
+    });
+}
+
 async function runRadarScan() {
     const body   = document.getElementById('radarScanBody');
     const status = document.getElementById('radarStatus');
     if (!body) return;
     if (status) status.textContent = 'Scanning…';
-    body.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-600 text-xs">Menganalisa ${RADAR_SYMS.length} instrumen…</td></tr>`;
+    // Keadaan "menganalisa" hanya saat tabel masih kosong, supaya pemindaian berkala
+    // tidak membuat 8 baris hilang-muncul di depan mata pengguna.
+    if (!body.children.length || body.querySelector('td[colspan]')) {
+        body.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-600 text-xs">Menganalisa ${RADAR_SYMS.length} instrumen…</td></tr>`;
+    }
 
     const results = await Promise.allSettled(
         RADAR_SYMS.map(sym =>
@@ -5259,28 +5363,62 @@ async function runRadarScan() {
             </tr>`;
         }
         const candles = res.value.candles;
+        const closes  = candles.map(c => parseFloat(c.close)).filter(v => isFinite(v));
         const last20  = candles.slice(-20);
-        const last14  = candles.slice(-14);
 
-        // RSI estimate from gain/loss ratio
-        const gains  = last14.reduce((s,c) => s + (c.close > c.open ? c.close - c.open : 0), 0);
-        const losses = last14.reduce((s,c) => s + (c.close < c.open ? c.open - c.close : 0), 0);
-        const rs     = losses > 0 ? gains / losses : 100;
-        const rsi    = Math.round(100 - 100 / (1 + rs));
+        // Butuh minimal 22 harga tutup supaya EMA21 punya seed SMA + sedikit pemanasan.
+        // Dulu bagian ini memakai candles.slice(-20) lalu memanggil ema(last20, 21):
+        // periodenya LEBIH PANJANG daripada datanya, dan seed-nya cuma arr[0].close,
+        // sehingga EMA21 tidak pernah konvergen dan kolom "EMA Bias" (yang ikut menyumbang
+        // skor kolom "Signal") terdistorsi.
+        if (closes.length < 22) {
+            neut++;
+            return `<tr class="border-b border-qi-border/50">
+                <td class="px-4 py-2.5 font-semibold text-white">${label}</td>
+                <td class="px-3 py-2.5 text-center font-mono text-slate-400">${priceStr}</td>
+                <td class="px-3 py-2.5 text-center font-mono ${pctCls}">${pctStr}</td>
+                <td colspan="5" class="px-3 py-2.5 text-center text-slate-600 text-[10px]">Candle belum cukup (butuh 22, ada ${closes.length})</td>
+            </tr>`;
+        }
+
+        // RSI(14) Wilder yang sebenarnya: dari perubahan CLOSE-ke-CLOSE, bukan dari badan
+        // lilin (close−open) seperti sebelumnya — yang bukan RSI sama sekali.
+        const rsiWilder = (nilai, periode) => {
+            if (nilai.length < periode + 1) return null;
+            let naik = 0, turun = 0;
+            for (let i = 1; i <= periode; i++) {
+                const d = nilai[i] - nilai[i - 1];
+                if (d > 0) naik += d; else turun -= d;
+            }
+            naik /= periode; turun /= periode;
+            for (let i = periode + 1; i < nilai.length; i++) {
+                const d = nilai[i] - nilai[i - 1];
+                naik = (naik * (periode - 1) + (d > 0 ? d : 0)) / periode;
+                turun = (turun * (periode - 1) + (d < 0 ? -d : 0)) / periode;
+            }
+            if (naik + turun === 0) return 50;
+            return 100 - 100 / (1 + naik / (turun || 1e-9));
+        };
+        const rsiNilai = rsiWilder(closes, 14);
+        const rsi    = rsiNilai === null ? 50 : Math.round(rsiNilai);
         const rsiCls = rsi > 65 ? 'text-qi-red' : rsi < 35 ? 'text-qi-cyan' : 'text-slate-400';
 
-        // EMA9 & EMA21 bias (simplified)
-        function ema(arr, period) {
-            const k = 2 / (period + 1);
-            let e = arr[0].close;
-            for (let i = 1; i < arr.length; i++) e = arr[i].close * k + e * (1 - k);
+        // EMA dengan seed SMA (konvensi baku), bukan harga pertama.
+        const emaAkhir = (nilai, periode) => {
+            if (nilai.length < periode) return null;
+            const k = 2 / (periode + 1);
+            let e = 0;
+            for (let i = 0; i < periode; i++) e += nilai[i];
+            e /= periode;
+            for (let i = periode; i < nilai.length; i++) e = nilai[i] * k + e * (1 - k);
             return e;
-        }
-        const ema9  = ema(last20, 9);
-        const ema21 = ema(last20, 21);
-        const lastClose = last20[last20.length - 1].close;
-        const emaBias = lastClose > ema9 && ema9 > ema21 ? 'BULLISH' :
-                        lastClose < ema9 && ema9 < ema21 ? 'BEARISH' : 'MIXED';
+        };
+        const ema9  = emaAkhir(closes, 9);
+        const ema21 = emaAkhir(closes, 21);
+        const lastClose = closes[closes.length - 1];
+        const emaBias = (ema9 === null || ema21 === null) ? 'MIXED'
+                      : lastClose > ema9 && ema9 > ema21 ? 'BULLISH'
+                      : lastClose < ema9 && ema9 < ema21 ? 'BEARISH' : 'MIXED';
         const emaCls = emaBias === 'BULLISH' ? 'text-qi-green' : emaBias === 'BEARISH' ? 'text-qi-red' : 'text-slate-400';
 
         // H1 trend (last 10 candles bullish count)
@@ -5942,7 +6080,7 @@ async function fetchTrackRecord() {
     const sym = document.getElementById('trFilterSym')?.value || '';
     const eng = document.getElementById('trFilterEng')?.value || '';
     const body = document.getElementById('trackHistoryBody');
-    if (body) body.innerHTML = '<tr><td colspan="10" class="px-4 py-4 text-center text-slate-600">Memuat…</td></tr>';
+    if (body) body.innerHTML = '<tr><td colspan="12" class="px-4 py-4 text-center text-slate-600">Memuat…</td></tr>';
 
     try {
         let url = 'api/signal-history.php';
@@ -6281,7 +6419,7 @@ async function fetchTrackRecord() {
         } catch (e) {}
 
         if (!body) return;
-        if (!hist.length) { body.innerHTML = '<tr><td colspan="11" class="px-4 py-8 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
+        if (!hist.length) { body.innerHTML = '<tr><td colspan="12" class="px-4 py-8 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
 
         const STATUS_CLS = { 'HIT TP 🎯': 'text-qi-green', 'HIT SL 🛑': 'text-qi-red', 'AKTIF': 'text-qi-cyan', 'EXPIRED': 'text-slate-500' };
         if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar(hist);
@@ -6304,7 +6442,8 @@ async function fetchTrackRecord() {
         const tombolFoto = (s) => {
             const id = String((s && s.id) ? s.id : '');
             if (!/^SIG-[A-Za-z0-9\-]{4,60}$/.test(id)) return '';
-            const tok = (function () { try { return localStorage.getItem('qi_session') || ''; } catch (e) { return ''; } })();
+            // 'qi_session' tidak pernah ada; token sesungguhnya dipegang QuantumAuth.
+            const tok = (function () { try { return (window.QuantumAuth && QuantumAuth.getToken()) || ''; } catch (e) { return ''; } })();
             if (s && s.chart_image_url) {
                 const url = String(s.chart_image_url) + (tok ? ('&t=' + encodeURIComponent(tok)) : '');
                 return ' <a href="' + url + '" target="_blank" rel="noopener" title="Buka snapshot chart sinyal ini" class="text-[9px] text-qi-cyan hover:underline whitespace-nowrap">🖼️ lihat</a>';
@@ -6344,7 +6483,7 @@ async function fetchTrackRecord() {
             </tr>`;
         }).join('');
     } catch(e) {
-        if (body) body.innerHTML = '<tr><td colspan="11" class="px-4 py-4 text-center text-slate-600">Gagal memuat data</td></tr>';
+        if (body) body.innerHTML = '<tr><td colspan="12" class="px-4 py-4 text-center text-slate-600">Gagal memuat data</td></tr>';
     }
 }
 
@@ -6374,9 +6513,12 @@ async function fetchCorrelation() {
         )
     );
 
-    // Extract close price arrays (align by length)
+    // Extract close price arrays (align by length).
+    // Candle `simulated: true` dari api/get-chart-data.php adalah angka acak — korelasi
+    // yang dihitung darinya tidak berarti apa pun, jadi instrumennya dianggap tidak terbaca.
     const closes = results.map(res => {
-        if (res.status !== 'fulfilled' || !res.value.candles?.length) return [];
+        if (res.status !== 'fulfilled' || !res.value || res.value.simulated === true) return [];
+        if (!res.value.candles?.length) return [];
         return res.value.candles.map(c => parseFloat(c.close));
     });
 
@@ -6387,14 +6529,29 @@ async function fetchCorrelation() {
         return r;
     });
 
-    // Min length alignment
-    const minLen = Math.min(...returns.filter(r=>r.length).map(r=>r.length));
-    const aligned = returns.map(r => r.slice(-minLen));
+    // Min length alignment.
+    // Bila TIDAK ADA satu pun instrumen yang terbaca, Math.min(...[]) bernilai Infinity dan
+    // seluruh matriks terisi 0 — dulu tabel 10×10 penuh "0.00" tampil seolah hasil hitungan.
+    // Sekarang kegagalan total dikatakan apa adanya dan fungsi berhenti.
+    const terbaca = returns.filter(r => r.length >= 3);
+    if (terbaca.length < 2) {
+        const pesan = '<div class="text-center text-qi-red/80 text-xs py-8 leading-relaxed">'
+            + 'Tidak ada data harga yang bisa dipakai menghitung korelasi.<br>'
+            + '<span class="text-slate-500 text-[10px]">Sumber candle gagal dihubungi (atau hanya mengembalikan data simulasi). '
+            + 'Matriks sengaja dikosongkan daripada menampilkan angka 0,00 yang menyesatkan.</span></div>';
+        if (matEl) matEl.innerHTML = pesan;
+        if (topEl) topEl.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Belum ada korelasi yang bisa dihitung.</div>';
+        if (updEl) updEl.textContent = 'gagal';
+        return;
+    }
+    const minLen = Math.min(...terbaca.map(r => r.length));
+    const aligned = returns.map(r => r.length >= 3 ? r.slice(-minLen) : []);
 
     // Build correlation matrix
     const n = CORR_SYMS.length;
+    // null = instrumen tidak terbaca, dibedakan dari korelasi 0 yang nyata.
     const matrix = Array.from({length:n}, (_,i) => Array.from({length:n}, (_,j) => {
-        if (aligned[i].length === 0 || aligned[j].length === 0) return 0;
+        if (aligned[i].length === 0 || aligned[j].length === 0) return null;
         return pearson(aligned[i], aligned[j]);
     }));
 
@@ -6411,18 +6568,23 @@ async function fetchCorrelation() {
                 <td class="px-2 py-1 font-semibold text-slate-300 text-[9px] whitespace-nowrap">${CORR_LABELS[CORR_SYMS[i]]}</td>`;
             for (let j=0; j<n; j++) {
                 const v = matrix[i][j];
-                const r = Math.round(v * 100) / 100;
+                const kosong = (v === null);
+                const r = kosong ? 0 : Math.round(v * 100) / 100;
                 const isDiag = i === j;
                 let bg = 'bg-slate-800/30';
-                if (!isDiag) {
+                if (kosong) bg = 'bg-slate-800/10 text-slate-700';
+                else if (!isDiag) {
                     if (v >= 0.7)  bg = 'bg-qi-green/20 text-qi-green';
                     else if (v >= 0.4)  bg = 'bg-qi-green/8 text-qi-green/70';
                     else if (v <= -0.7) bg = 'bg-qi-red/20 text-qi-red';
                     else if (v <= -0.4) bg = 'bg-qi-red/8 text-qi-red/70';
                     else bg = 'bg-slate-800/20 text-slate-500';
                 }
-                html += `<td class="px-1 py-1.5 text-center ${cellSize} ${bg} rounded-sm m-0.5 cursor-default" title="${CORR_LABELS[CORR_SYMS[i]]} vs ${CORR_LABELS[CORR_SYMS[j]]}: ${r}">
-                    ${isDiag ? '<span class="text-slate-600">1.00</span>' : (r >= 0 ? '' : '') + r.toFixed(2)}
+                const judulSel = kosong
+                    ? (CORR_LABELS[CORR_SYMS[i]] + ' vs ' + CORR_LABELS[CORR_SYMS[j]] + ': data tidak tersedia')
+                    : (CORR_LABELS[CORR_SYMS[i]] + ' vs ' + CORR_LABELS[CORR_SYMS[j]] + ': ' + r);
+                html += `<td class="px-1 py-1.5 text-center ${cellSize} ${bg} rounded-sm m-0.5 cursor-default" title="${judulSel}">
+                    ${kosong ? '—' : isDiag ? '<span class="text-slate-600">1.00</span>' : (r >= 0 ? '' : '') + r.toFixed(2)}
                 </td>`;
             }
             html += '</tr>';
@@ -6435,10 +6597,12 @@ async function fetchCorrelation() {
     if (topEl) {
         const pairs = [];
         for (let i=0; i<n; i++) for (let j=i+1; j<n; j++) {
+            if (matrix[i][j] === null) continue;   // pasangan tanpa data tidak masuk peringkat
             pairs.push({ a: CORR_SYMS[i], b: CORR_SYMS[j], r: matrix[i][j] });
         }
         pairs.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
-        topEl.innerHTML = pairs.slice(0, 8).map(p => {
+        if (!pairs.length) topEl.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Belum ada pasangan dengan data yang cukup.</div>';
+        else topEl.innerHTML = pairs.slice(0, 8).map(p => {
             const r = Math.round(p.r * 100) / 100;
             const cls = r >= 0.7 ? 'text-qi-green' : r <= -0.7 ? 'text-qi-red' : r >= 0.4 ? 'text-qi-green/60' : r <= -0.4 ? 'text-qi-red/60' : 'text-slate-500';
             const barW = Math.abs(r) * 100;
@@ -7000,7 +7164,11 @@ async function sendAiMessage(preset) {
             body: JSON.stringify({ message: text, image: imgToSend, history: _aiHistory.slice(-12), context: aiContext })
         });
         const data = await res.json();
-        const reply = data.reply || data.error || 'Maaf, terjadi kesalahan.';
+        // Penolakan dari _middleware.php (403 PRO_REQUIRED, 429 rate limit, 401) mengirim
+        // alasannya di kunci `message`, BUKAN `error`. Tanpa itu di rantai cadangan, pengguna
+        // hanya melihat "Maaf, terjadi kesalahan." dan tidak pernah tahu alasan sebenarnya.
+        const reply = data.reply || data.message || data.error
+            || (res.ok ? 'Maaf, terjadi kesalahan.' : `Permintaan ditolak server (HTTP ${res.status}).`);
 
         document.getElementById(tid)?.remove();
 
@@ -7188,7 +7356,11 @@ function _asRenderRecords() {
 async function refreshAutoSignals() {
     const grid = document.getElementById('asSignalGrid');
     if (!grid) return;
-    grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-600 text-sm animate-pulse">⏳ Memuat sinyal semua pair...</div>';
+    // Sama seperti Signal Matrix: keadaan "memuat" hanya untuk grid yang masih kosong,
+    // supaya 13 kartu (beserta level entry/SL/TP yang sedang dibaca) tidak lenyap tiap 12 detik.
+    if (!grid.children.length || grid.querySelector('.col-span-full')) {
+        grid.innerHTML = '<div class="col-span-full text-center py-8 text-slate-600 text-sm animate-pulse">⏳ Memuat sinyal semua pair...</div>';
+    }
 
     // Use _lastSignals if available, else fetch
     let signals = _lastSignals;
@@ -7328,446 +7500,6 @@ setInterval(function() {
 }, 30000);
 
 // ═══════════════════════════════════════════════════════════
-// MARKET GALAXY — NETWORK MAP PANEL
-// ═══════════════════════════════════════════════════════════
-let _galaxyRAF = null;
-
-const GALAXY_NODES = [
-    { id:'BTC',  sym:'BTCUSDT',  label:'BTC',  color:'#F7931A', r:22, x:0, y:0, vx:0, vy:0 },
-    { id:'ETH',  sym:'ETHUSDT',  label:'ETH',  color:'#627EEA', r:18, x:0, y:0, vx:0, vy:0 },
-    { id:'SOL',  sym:'SOLUSDT',  label:'SOL',  color:'#9945FF', r:14, x:0, y:0, vx:0, vy:0 },
-    { id:'BNB',  sym:'BNBUSDT',  label:'BNB',  color:'#F3BA2F', r:13, x:0, y:0, vx:0, vy:0 },
-    { id:'XRP',  sym:'XRPUSDT',  label:'XRP',  color:'#00AAE4', r:12, x:0, y:0, vx:0, vy:0 },
-    { id:'DOGE', sym:'DOGEUSDT', label:'DOGE', color:'#C3A634', r:10, x:0, y:0, vx:0, vy:0 },
-    { id:'ADA',  sym:'ADAUSDT',  label:'ADA',  color:'#3CC8C8', r:10, x:0, y:0, vx:0, vy:0 },
-    { id:'LINK', sym:'LINKUSDT', label:'LINK', color:'#2A5ADA', r:9,  x:0, y:0, vx:0, vy:0 },
-];
-
-const GALAXY_EDGES = [
-    { a:'BTC', b:'ETH',  strength:0.9 },
-    { a:'BTC', b:'BNB',  strength:0.7 },
-    { a:'BTC', b:'SOL',  strength:0.75 },
-    { a:'ETH', b:'SOL',  strength:0.8 },
-    { a:'ETH', b:'LINK', strength:0.7 },
-    { a:'ETH', b:'ADA',  strength:0.65 },
-    { a:'BNB', b:'XRP',  strength:0.5 },
-    { a:'SOL', b:'ADA',  strength:0.6 },
-    { a:'XRP', b:'DOGE', strength:0.45 },
-    { a:'LINK', b:'ADA', strength:0.55 },
-];
-
-function initNetworkGalaxy() {
-    const canvas = document.getElementById('galaxyCanvas');
-    if (!canvas || canvas._inited) return;
-    canvas._inited = true;
-
-    const ctx = canvas.getContext('2d');
-    const tooltip = document.getElementById('galaxyTooltip');
-    const nodes = GALAXY_NODES.map(n => ({ ...n }));
-
-    function resetPositions() {
-        const W = canvas.width, H = canvas.height;
-        const cx = W / 2, cy = H / 2;
-        const rr = Math.min(W, H) * 0.30;
-        nodes.forEach((n, i) => {
-            const angle = (i / nodes.length) * Math.PI * 2;
-            n.x = cx + rr * Math.cos(angle);
-            n.y = cy + rr * Math.sin(angle);
-            n.vx = 0; n.vy = 0;
-        });
-    }
-
-    function resize() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width  = rect.width  || 600;
-        canvas.height = rect.height || 380;
-        resetPositions();
-    }
-    resize();
-    new ResizeObserver(resize).observe(canvas.parentElement);
-
-    async function fetchGalaxyData() {
-        try {
-            const syms = nodes.map(n => n.sym);
-            const url = `https://data-api.binance.vision/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(syms))}`;
-            const res = await fetch(url);
-            const arr = await res.json();
-            const map = {};
-            arr.forEach(t => { map[t.symbol] = t; });
-            nodes.forEach(n => {
-                const t = map[n.sym];
-                if (!t) return;
-                n.price = parseFloat(t.lastPrice);
-                n.chg   = parseFloat(t.priceChangePercent);
-                n.vol   = parseFloat(t.quoteVolume);
-                n.ringColor = n.chg >= 0 ? '#00C853' : '#FF1744';
-            });
-            const lu = document.getElementById('galaxyLastUpdate');
-            if (lu) lu.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-            const el = document.getElementById('galaxyDataTable');
-            if (el) {
-                const sorted = [...nodes].sort((a, b) => (b.vol || 0) - (a.vol || 0));
-                el.innerHTML = sorted.map(n => {
-                    const chgColor = (n.chg || 0) >= 0 ? 'text-green-400' : 'text-red-400';
-                    const sign = (n.chg || 0) >= 0 ? '+' : '';
-                    const price = n.price
-                        ? (n.price >= 1000 ? n.price.toLocaleString('en', {maximumFractionDigits:0})
-                            : n.price >= 1 ? n.price.toFixed(3) : n.price.toFixed(5))
-                        : '—';
-                    return `<div class="rounded-xl border border-qi-border bg-qi-card px-3 py-2 flex flex-col gap-0.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[11px] font-bold font-mono" style="color:${n.color}">${n.label}</span>
-                            <span class="text-[10px] font-mono ${chgColor}">${sign}${(n.chg||0).toFixed(2)}%</span>
-                        </div>
-                        <div class="text-[12px] font-mono text-qi-text">${price}</div>
-                    </div>`;
-                }).join('');
-            }
-        } catch(e) {}
-    }
-    fetchGalaxyData();
-    setInterval(fetchGalaxyData, 30000);
-
-    let hoveredNode = null;
-    canvas.addEventListener('mousemove', e => {
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        hoveredNode = null;
-        for (const n of nodes) {
-            const dx = mx - n.x, dy = my - n.y;
-            if (Math.sqrt(dx*dx + dy*dy) <= n.r + 5) { hoveredNode = n; break; }
-        }
-        if (hoveredNode && tooltip) {
-            const sign = (hoveredNode.chg || 0) >= 0 ? '+' : '';
-            const ps = hoveredNode.price
-                ? `$${hoveredNode.price >= 1000 ? hoveredNode.price.toLocaleString('en',{maximumFractionDigits:0}) : hoveredNode.price.toFixed(4)}`
-                : 'Loading…';
-            tooltip.innerHTML = `<span class="font-bold">${hoveredNode.label}</span><br>${ps}<br><span class="${(hoveredNode.chg||0)>=0?'text-green-400':'text-red-400'}">${sign}${(hoveredNode.chg||0).toFixed(2)}%</span>`;
-            tooltip.style.display = 'block';
-            tooltip.style.left = (mx + 14) + 'px';
-            tooltip.style.top  = (my - 36) + 'px';
-        } else if (tooltip) {
-            tooltip.style.display = 'none';
-        }
-        canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
-    });
-    canvas.addEventListener('mouseleave', () => {
-        hoveredNode = null;
-        if (tooltip) tooltip.style.display = 'none';
-    });
-
-    const REPULSION = 2400, SPRING_K = 0.012, GRAVITY = 0.016, DAMPING = 0.85;
-    function idxOf(id) { return nodes.findIndex(n => n.id === id); }
-
-    function simulate() {
-        const W = canvas.width, H = canvas.height;
-        const cx = W / 2, cy = H / 2;
-        nodes.forEach(n => { n.fx = 0; n.fy = 0; });
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                const a = nodes[i], b = nodes[j];
-                let dx = b.x - a.x, dy = b.y - a.y;
-                const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
-                const f = REPULSION / (d * d);
-                const fx = f * dx / d, fy = f * dy / d;
-                a.fx -= fx; a.fy -= fy;
-                b.fx += fx; b.fy += fy;
-            }
-        }
-        GALAXY_EDGES.forEach(e => {
-            const ai = idxOf(e.a), bi = idxOf(e.b);
-            if (ai < 0 || bi < 0) return;
-            const a = nodes[ai], b = nodes[bi];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            const d = Math.max(Math.sqrt(dx*dx + dy*dy), 1);
-            const restLen = 75 + (1 - e.strength) * 55;
-            const f = SPRING_K * (d - restLen) * e.strength;
-            const fx = f * dx / d, fy = f * dy / d;
-            a.fx += fx; a.fy += fy;
-            b.fx -= fx; b.fy -= fy;
-        });
-        nodes.forEach(n => {
-            n.fx += (cx - n.x) * GRAVITY;
-            n.fy += (cy - n.y) * GRAVITY;
-            n.vx = (n.vx + n.fx) * DAMPING;
-            n.vy = (n.vy + n.fy) * DAMPING;
-            n.x += n.vx; n.y += n.vy;
-            const m = n.r + 10;
-            n.x = Math.max(m, Math.min(W - m, n.x));
-            n.y = Math.max(m, Math.min(H - m, n.y));
-        });
-    }
-
-    function draw() {
-        const W = canvas.width, H = canvas.height;
-        ctx.clearRect(0, 0, W, H);
-        GALAXY_EDGES.forEach(e => {
-            const ai = idxOf(e.a), bi = idxOf(e.b);
-            if (ai < 0 || bi < 0) return;
-            const a = nodes[ai], b = nodes[bi];
-            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(0,229,255,${e.strength * 0.22})`;
-            ctx.lineWidth = e.strength * 1.5;
-            ctx.stroke();
-        });
-        nodes.forEach(n => {
-            const ringColor = n.ringColor || n.color;
-            const isHov = hoveredNode === n;
-            const glowR = n.r + (isHov ? 16 : 9);
-            const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
-            grd.addColorStop(0, n.color + '44'); grd.addColorStop(1, 'transparent');
-            ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI*2);
-            ctx.fillStyle = grd; ctx.fill();
-            ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3, 0, Math.PI*2);
-            ctx.strokeStyle = ringColor + 'BB'; ctx.lineWidth = isHov ? 2.5 : 1.5; ctx.stroke();
-            ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
-            ctx.fillStyle = n.color + 'CC'; ctx.fill();
-            ctx.strokeStyle = n.color; ctx.lineWidth = 1; ctx.stroke();
-            ctx.font = `bold ${Math.max(8, Math.round(n.r * 0.60))}px 'Space Grotesk',monospace`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#fff'; ctx.shadowColor = n.color; ctx.shadowBlur = 6;
-            ctx.fillText(n.label, n.x, n.y); ctx.shadowBlur = 0;
-            if (n.chg !== undefined) {
-                const sign = n.chg >= 0 ? '+' : '';
-                ctx.font = `${Math.max(7, Math.round(n.r * 0.48))}px monospace`;
-                ctx.fillStyle = n.chg >= 0 ? '#00C853' : '#FF1744';
-                ctx.fillText(`${sign}${n.chg.toFixed(1)}%`, n.x, n.y + n.r + 9);
-            }
-        });
-    }
-
-    function loop() { simulate(); draw(); _galaxyRAF = requestAnimationFrame(loop); }
-    if (_galaxyRAF) cancelAnimationFrame(_galaxyRAF);
-    loop();
-}
-
-function refreshGalaxy() {
-    const canvas = document.getElementById('galaxyCanvas');
-    if (canvas) canvas._inited = false;
-    if (_galaxyRAF) { cancelAnimationFrame(_galaxyRAF); _galaxyRAF = null; }
-    initNetworkGalaxy();
-}
-
-// Legacy stubs kept to avoid reference errors if called elsewhere
-function initGlobe() {
-    const canvas = document.getElementById('globeCanvas');
-    if (!canvas || canvas._inited) return;
-    canvas._inited = true;
-
-    function resize() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width  = rect.width  || 320;
-        canvas.height = rect.height || 280;
-    }
-    resize();
-    new ResizeObserver(resize).observe(canvas.parentElement);
-
-    // Drag to spin
-    canvas.addEventListener('mousedown', e => { _globeDragging = true; _globeDragX = e.clientX; canvas.style.cursor = 'grabbing'; });
-    canvas.addEventListener('touchstart', e => { _globeDragging = true; _globeDragX = e.touches[0].clientX; }, {passive:true});
-    window.addEventListener('mouseup', () => { _globeDragging = false; canvas.style.cursor = 'grab'; });
-    window.addEventListener('touchend', () => { _globeDragging = false; });
-    window.addEventListener('mousemove', e => { if (_globeDragging) { _globeRot += (e.clientX - _globeDragX) * 0.5; _globeDragX = e.clientX; } });
-    window.addEventListener('touchmove', e => { if (_globeDragging) { _globeRot += (e.touches[0].clientX - _globeDragX) * 0.5; _globeDragX = e.touches[0].clientX; } }, {passive:true});
-
-    const CITIES = [
-        { name:'Sydney',   lat:-34, lon:151, id:'sydney',  color:'#FBBF24' },
-        { name:'Tokyo',    lat:35,  lon:139, id:'tokyo',   color:'#EC4899' },
-        { name:'London',   lat:51,  lon:-0,  id:'london',  color:'#818CF8' },
-        { name:'NY',       lat:41,  lon:-74, id:'ny',      color:'#34D399' },
-    ];
-
-    function project(lat, lon, rot, R, cx, cy) {
-        const phi   = (90 - lat) * Math.PI / 180;
-        const theta = (lon + rot) * Math.PI / 180;
-        const x3 = Math.sin(phi) * Math.cos(theta);
-        const y3 = -Math.cos(phi);
-        const z3 = Math.sin(phi) * Math.sin(theta);
-        return { x: cx + R * x3, y: cy + R * y3, z: z3, visible: z3 >= -0.15 };
-    }
-
-    function drawFrame() {
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-        const R  = Math.min(W, H) * 0.40;
-        const cx = W / 2, cy = H / 2;
-
-        if (!_globeDragging) _globeRot += 0.18;
-
-        ctx.clearRect(0, 0, W, H);
-
-        // Sphere base
-        const sph = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.05, cx, cy, R);
-        sph.addColorStop(0, '#0D2040');
-        sph.addColorStop(0.6, '#061220');
-        sph.addColorStop(1, '#020810');
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = sph; ctx.fill();
-
-        // Grid lines
-        ctx.lineWidth = 0.4;
-        for (let lat = -80; lat <= 80; lat += 20) {
-            ctx.beginPath(); let first = true;
-            for (let lon = -180; lon <= 180; lon += 4) {
-                const p = project(lat, lon, _globeRot, R, cx, cy);
-                if (!p.visible) { first = true; continue; }
-                first ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
-                first = false;
-            }
-            ctx.strokeStyle = lat === 0 ? 'rgba(0,229,255,0.18)' : 'rgba(0,229,255,0.06)';
-            ctx.stroke();
-        }
-        for (let lon = -180; lon < 180; lon += 20) {
-            ctx.beginPath(); let first = true;
-            for (let lat = -90; lat <= 90; lat += 4) {
-                const p = project(lat, lon, _globeRot, R, cx, cy);
-                if (!p.visible) { first = true; continue; }
-                first ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
-                first = false;
-            }
-            ctx.strokeStyle = 'rgba(0,229,255,0.06)';
-            ctx.stroke();
-        }
-
-        // Active sessions
-        const activeSess = _getActiveSessions ? _getActiveSessions() : [];
-
-        // Cities (back-to-front)
-        const projected = CITIES.map(c => ({ ...c, ...project(c.lat, c.lon, _globeRot, R, cx, cy) }))
-                                 .sort((a, b) => a.z - b.z);
-        projected.forEach(c => {
-            if (!c.visible) return;
-            const isActive = activeSess.includes(c.id);
-            const alpha    = isActive ? 1 : 0.35;
-            const dotR     = isActive ? 7 : 4;
-
-            if (isActive) {
-                // Pulse glow
-                const grd = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, 24);
-                grd.addColorStop(0, c.color + '66');
-                grd.addColorStop(1, 'transparent');
-                ctx.beginPath(); ctx.arc(c.x, c.y, 24, 0, Math.PI * 2);
-                ctx.fillStyle = grd; ctx.fill();
-                // Outer ring
-                ctx.beginPath(); ctx.arc(c.x, c.y, dotR + 4, 0, Math.PI * 2);
-                ctx.strokeStyle = c.color + '80'; ctx.lineWidth = 1; ctx.stroke();
-            }
-
-            ctx.beginPath(); ctx.arc(c.x, c.y, dotR, 0, Math.PI * 2);
-            ctx.fillStyle = c.color + (isActive ? 'FF' : '66'); ctx.fill();
-
-            // Label
-            ctx.font = `${isActive ? 'bold ' : ''}${isActive ? 10 : 8}px 'Space Grotesk', monospace`;
-            ctx.fillStyle = isActive ? c.color : '#475569';
-            ctx.fillText(c.name, c.x + dotR + 4, c.y + 4);
-        });
-
-        // Edge atmosphere
-        const atm = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R);
-        atm.addColorStop(0, 'transparent');
-        atm.addColorStop(1, 'rgba(0,229,255,0.12)');
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-        ctx.fillStyle = atm; ctx.fill();
-
-        _globeRAF = requestAnimationFrame(drawFrame);
-    }
-    if (_globeRAF) cancelAnimationFrame(_globeRAF);
-    drawFrame();
-}
-
-function _getActiveSessions() {
-    const now = new Date();
-    const wibH = (now.getUTCHours() + 7) % 24;
-    const active = [];
-    if (wibH >= 4  && wibH < 13) active.push('sydney');
-    if (wibH >= 6  && wibH < 15) active.push('tokyo');
-    if (wibH >= 14 && wibH < 23) active.push('london');
-    if (wibH >= 19 || wibH < 4)  active.push('ny');
-    return active;
-}
-
-function initSessions() {
-    initGlobe();
-    updateSessions();
-    setInterval(updateSessions, 60000);
-}
-
-function updateSessions() {
-    const now = new Date();
-    const h = now.getHours(), m = now.getMinutes();
-    const minTotal = h * 60 + m;
-    const timeStr = now.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const el = document.getElementById('sessCurrentTime');
-    if (el) el.textContent = `WIB ${timeStr}`;
-
-    // Sessions in WIB (UTC+7): start, end minutes
-    const sessions = {
-        sydney:  { start: 4*60,   end: 13*60,  el: 'sessCardSydney',  status: 'sessSydStatus',  color: '#3B82F6' },
-        tokyo:   { start: 6*60,   end: 15*60,  el: 'sessCardTokyo',   status: 'sessTokyoStatus', color: '#F59E0B' },
-        london:  { start: 14*60,  end: 23*60,  el: 'sessCardLondon',  status: 'sessLondonStatus', color: '#00E5FF' },
-        ny:      { start: 19*60,  end: 4*60,   el: 'sessCardNY',      status: 'sessNYStatus',    color: '#A855F7' },
-    };
-
-    let activeSessions = [];
-    for (const [key, s] of Object.entries(sessions)) {
-        let active;
-        if (s.end < s.start) active = minTotal >= s.start || minTotal < s.end;
-        else active = minTotal >= s.start && minTotal < s.end;
-
-        const card = document.getElementById(s.el);
-        const stEl = document.getElementById(s.status);
-        if (card) {
-            card.className = `rounded-xl border p-3 transition-all ${active ? 'border-current bg-current/5' : 'border-qi-border'}`;
-            if (active) { card.style.borderColor = s.color; card.style.backgroundColor = s.color + '10'; } else { card.style.borderColor = ''; card.style.backgroundColor = ''; }
-        }
-        if (stEl) {
-            stEl.textContent = active ? '● OPEN' : '○ CLOSED';
-            stEl.className = `mt-2 text-[9px] font-mono font-bold ${active ? 'text-qi-green' : 'text-slate-600'}`;
-        }
-        if (active) activeSessions.push(key);
-    }
-
-    // Render timeline bar
-    const timeline = document.getElementById('sessTimeline');
-    if (timeline) {
-        const pct = (minTotal / (24*60) * 100).toFixed(1);
-        timeline.innerHTML = `
-            <div class="absolute inset-0 flex">
-                <div class="h-full opacity-30" style="width:${(4/24*100).toFixed(1)}%; background:transparent"></div>
-                <div class="h-full rounded-sm opacity-60" style="width:${(9/24*100).toFixed(1)}%; background:#3B82F6" title="Sydney"></div>
-                <div class="h-full rounded-sm opacity-60" style="width:${(9/24*100).toFixed(1)}%; background:var(--qi-gold)" title="Tokyo"></div>
-                <div class="h-full rounded-sm opacity-60" style="width:${(9/24*100).toFixed(1)}%; background:var(--qi-cyan)" title="London"></div>
-                <div class="h-full rounded-sm opacity-60" style="width:${(9/24*100).toFixed(1)}%; background:#A855F7" title="New York"></div>
-            </div>
-            <div class="absolute top-0 bottom-0 w-0.5 bg-white" style="left:${pct}%">
-                <div class="absolute -top-5 left-1 text-[8px] text-white font-mono whitespace-nowrap">${timeStr}</div>
-            </div>
-            <div class="absolute bottom-1 left-0 right-0 flex justify-between px-1 text-[7px] text-slate-600">
-                <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
-            </div>`;
-    }
-
-    // Overlap banner
-    const banner = document.getElementById('sessOverlapBanner');
-    if (banner) {
-        const overlaps = [];
-        if (activeSessions.includes('sydney') && activeSessions.includes('tokyo')) overlaps.push('Sydney + Tokyo (06:00–13:00 WIB)');
-        if (activeSessions.includes('tokyo') && activeSessions.includes('london')) overlaps.push('Tokyo + London (14:00–15:00 WIB)');
-        if (activeSessions.includes('london') && activeSessions.includes('ny')) overlaps.push('London + New York (19:00–23:00 WIB) ⚡ PALING LIKUID!');
-        if (overlaps.length) {
-            banner.classList.remove('hidden');
-            banner.innerHTML = `⚡ OVERLAP AKTIF: ${overlaps.join(' · ')}`;
-        } else if (activeSessions.length) {
-            banner.classList.remove('hidden');
-            banner.textContent = `Sesi aktif: ${activeSessions.join(', ').toUpperCase()}`;
-            banner.className = 'mt-4 rounded-xl border border-slate-600/40 bg-slate-800/30 px-4 py-3 text-[11px] text-slate-400 text-center';
-        } else {
-            banner.classList.add('hidden');
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════
 // CRYPTO TERMINAL PANEL
 // ═══════════════════════════════════════════════════════════
 async function initCryptoTerminal() {
@@ -7776,11 +7508,20 @@ async function initCryptoTerminal() {
     fetchCryptoAIOutlook();
 }
 
+// Satu tempat untuk menyatakan "sumber gagal" supaya tidak ada lagi kartu yang
+// tertinggal di teks "Loading..." ketika API pihak ketiga membalas 429/offline.
+function ctTandaiGagal(id, teks) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = teks;
+    el.classList.add('text-qi-red/70');
+}
+
 async function fetchFearGreed() {
     try {
         const r = await fetch('https://api.alternative.me/fng/?limit=1');
         const j = await r.json();
-        if (!j.data?.length) return;
+        if (!j.data?.length) throw new Error('data kosong');
         const val = parseInt(j.data[0].value);
         const label = j.data[0].value_classification;
         const valEl = document.getElementById('ctFGValue');
@@ -7790,9 +7531,11 @@ async function fetchFearGreed() {
         if (valEl) { valEl.textContent = val; valEl.className = `text-4xl font-mono font-bold ${cls}`; }
         if (lblEl) { lblEl.textContent = label; lblEl.className = `text-xs mt-1 font-semibold ${cls}`; }
         if (barEl) barEl.style.width = val + '%';
-    } catch(e) {
+    } catch (e) {
         const el = document.getElementById('ctFGValue');
         if (el) el.textContent = 'N/A';
+        // Dulu hanya nilainya jadi 'N/A' sementara labelnya tetap "Loading..." selamanya.
+        ctTandaiGagal('ctFGLabel', 'sumber tidak tersedia');
     }
 }
 
@@ -7826,7 +7569,7 @@ async function fetchGlobalMarket() {
         const r = await fetch('https://api.coingecko.com/api/v3/global');
         const j = await r.json();
         const d = j.data;
-        if (!d) return;
+        if (!d) throw new Error('data kosong');   // CoinGecko gratis sering membalas 429
         const dom = d.market_cap_percentage?.btc?.toFixed(1);
         const mc  = d.total_market_cap?.usd ? (d.total_market_cap.usd / 1e12).toFixed(2) : null;
         const vol = d.total_volume?.usd ? (d.total_volume.usd / 1e9).toFixed(1) : null;
@@ -7838,7 +7581,12 @@ async function fetchGlobalMarket() {
         if (domNote) domNote.textContent = parseFloat(dom) > 55 ? 'BTC dominan — altcoin lemah' : parseFloat(dom) < 45 ? 'Altcoin season' : 'Market seimbang';
         if (mcEl) mcEl.textContent = mc ? '$' + mc + 'T' : '—';
         if (volEl) volEl.textContent = vol ? '$' + vol + 'B' : '—';
-    } catch(e) {}
+    } catch (e) {
+        // Jangan telan diam-diam: tanpa ini #ctDomNote tetap bertuliskan "Loading..." selamanya.
+        ctTandaiGagal('ctDomNote', 'sumber tidak tersedia');
+        const domVal = document.getElementById('ctDomValue');
+        if (domVal && /^\s*(—|-|)\s*$/.test(domVal.textContent)) domVal.textContent = '—';
+    }
 }
 
 async function fetchLiquidations() {

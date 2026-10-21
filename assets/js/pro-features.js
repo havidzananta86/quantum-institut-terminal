@@ -632,13 +632,13 @@ function renderSpreadMonitor() {
             + '<td class="px-3 py-2 text-right text-slate-500 text-[10px]">' + sumber + '</td>'
             + '<td class="px-3 py-2 text-center"><span class="' + stCls + '">' + status + '</span></td></tr>';
     };
-    // Daftar pasar bisa panjang → dirender progresif (hanya sebagian masuk DOM).
-    // Bila qiRenderProgresif tidak ada, jatuh kembali ke render penuh seperti semula.
-    if (typeof qiRenderProgresif === 'function') {
-        qiRenderProgresif(el, kripto, function (s) { return baris(s, null, 'memuat…'); }, { awal: 40, tambah: 40 });
-    } else {
-        el.innerHTML = kripto.map(function (s) { return baris(s, null, 'memuat…'); }).join('');
-    }
+    // CATATAN PERBAIKAN: dulu baris FX/XAU ditulis sebagai `+ fx.map(…)` BERDIRI SENDIRI
+    // sesudah kurung tutup blok if/else. JavaScript menyisipkan titik koma otomatis
+    // setelah `}`, lalu menilai `+fx.map(…)` sebagai ekspresi unary-plus yang hasilnya
+    // dibuang — jadi 6 baris (XAUUSD, EURUSD, GBPUSD, USDJPY, AUDUSD, NZDUSD) tidak
+    // pernah muncul, tanpa galat merah di konsol. Tabelnya hanya 11 baris, jadi render
+    // progresif tidak diperlukan dan seluruh baris ditulis sekali jalan.
+    el.innerHTML = kripto.map(function (s) { return baris(s, null, 'memuat…'); }).join('')
         + fx.map(function (s) { return baris(s, null, 'tidak tersedia'); }).join('');
 
     // Ambil order book NYATA (Binance) untuk kripto; hitung spread dalam bps.
@@ -747,7 +747,9 @@ function initProPanel(id) {
     if (id === 'panel-alerts') initAlertPanel();
     if (id === 'panel-journal') { loadJournal(); renderJournal(); }
     if (id === 'panel-screener') runScreener();
-    if (id === 'panel-volatility') { renderVolatilityDash(); renderSpreadMonitor(); renderSwapRates(); }
+    // renderDxyTracker() dulu ditulis lengkap tetapi TIDAK pernah dipanggil dari mana pun,
+    // sehingga kartu Dollar Index di paling atas panel Volatility selamanya '—' / 'memuat…'.
+    if (id === 'panel-volatility') { renderDxyTracker(); renderVolatilityDash(); renderSpreadMonitor(); renderSwapRates(); }
     if (id === 'panel-tools') { calcPivotPoints(); }
 }
 
