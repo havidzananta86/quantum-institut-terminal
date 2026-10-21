@@ -63,7 +63,7 @@ RewriteRule ^(config|engine|database|cache|scratch|tests|api|assets|uploads|depl
 
 # Bridge data (kode & skrip setup VPS), alat deploy, dan dokumentasi internal: hanya untuk repo/VPS,
 # tidak boleh diunduh lewat web. Folder assets/mt-bridge (unduhan EA MT5) sengaja TIDAK diblokir.
-RewriteRule ^(mt5-bridge|tv-bridge|deploy|pine|\.github|\.githooks)/ - [F,L]
+RewriteRule ^(mt5-bridge|tv-bridge|deploy|pine|tools|\.github|\.githooks)/ - [F,L]
 RewriteRule ^(PANDUAN-DEPLOY-VPS|README)\.md$ - [F,L]
 RewriteRule \.(ps1|cmd|vbs|py)$ - [F,L]
 
@@ -81,7 +81,7 @@ RewriteRule ^api/_.*\.php$ - [F,L]
 # dependensi + skrip internal): package.json, package-lock.json, composer.*,
 # .env, .git*, dan berkas editor. Ditemukan saat verifikasi deploy: package.json
 # ternyata bisa diunduh siapa saja.
-RewriteRule ^(package(-lock)?\.json|composer\.(json|lock)|\.env(\..*)?|\.git.*|yarn\.lock|pnpm-lock\.yaml|\.editorconfig|\.eslintrc.*|tsconfig\.json)$ - [F,L]
+RewriteRule ^(package(-lock)?\.json|composer\.(json|lock)|\.env(\..*)?|\.git.*|yarn\.lock|pnpm-lock\.yaml|\.editorconfig|\.eslintrc.*|tsconfig\.json|vercel\.json|tailwind\.config\.js)$ - [F,L]
 RewriteRule \.env$ - [F,L]
 RewriteRule \.log$ - [F,L]
 RewriteRule \.bak$ - [F,L]

@@ -93,7 +93,19 @@ if ($method === 'POST') {
             $stmt->execute([':id'=>$targetId]);
             $sNew = $pdo->prepare('SELECT is_active FROM users WHERE id = :id');
             $sNew->execute([':id'=>$targetId]);
-            echo json_encode(['status'=>'success','is_active'=>(int)$sNew->fetchColumn()]);
+            $aktif = (int)$sNew->fetchColumn();
+            // Menonaktifkan akun harus MEMUTUS aksesnya sekarang juga, bukan menunggu
+            // sesinya kedaluwarsa (30 hari). qi_validate_token() kini juga menolak akun
+            // non-aktif, tetapi sesinya tetap dihapus supaya tidak ada token menganggur
+            // yang kembali berlaku kalau akunnya diaktifkan lagi nanti.
+            $sesiDihapus = 0;
+            if ($aktif === 0) {
+                $hapus = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :id');
+                $hapus->execute([':id'=>$targetId]);
+                $sesiDihapus = $hapus->rowCount();
+                qi_log('warning', 'Akun dinonaktifkan admin, sesi dicabut', ['admin_id'=>(int)$user['user_id'], 'user_id'=>$targetId, 'sesi_dicabut'=>$sesiDihapus]);
+            }
+            echo json_encode(['status'=>'success','is_active'=>$aktif,'sesi_dicabut'=>$sesiDihapus]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['status'=>'error','message'=>'Database error']);

@@ -229,10 +229,11 @@ function qi_db($fatal = true) {
 }
 
 /**
- * Validasi token autentikasi dari header Authorization atau X-QI-Token
- * Mengembalikan data user atau null jika token tidak valid
+ * Token sesi MENTAH dari header permintaan ini (tanpa divalidasi ke database), atau null.
+ * Dipisah supaya pemanggil yang perlu mengenali SESI SAAT INI — mis. api/change-password.php
+ * yang mencabut semua sesi lain — tidak menyalin ulang penguraian header di sini.
  */
-function qi_validate_token() {
+function qi_token_mentah(): ?string {
     $token = null;
 
     // Coba ambil dari header Authorization: Bearer xxx.
@@ -256,6 +257,15 @@ function qi_validate_token() {
         $token = $_SERVER['HTTP_X_QI_TOKEN'];
     }
 
+    return $token !== null && $token !== '' ? $token : null;
+}
+
+/**
+ * Validasi token autentikasi dari header Authorization atau X-QI-Token
+ * Mengembalikan data user atau null jika token tidak valid
+ */
+function qi_validate_token() {
+    $token = qi_token_mentah();
     if (!$token) return null;
 
     // Validasi token ke database (non-fatal: kalau DB belum siap, anggap token invalid)
@@ -263,10 +273,21 @@ function qi_validate_token() {
         $pdo = qi_db(false);
         if (!$pdo) return null;
 
-        $stmt = $pdo->prepare('SELECT u.id, u.email, u.role, s.expires_at
-                               FROM user_sessions s 
-                               JOIN users u ON u.id = s.user_id 
-                               WHERE s.token = :token AND s.expires_at > NOW()');
+        // AKUN YANG DINONAKTIFKAN HARUS LANGSUNG KEHILANGAN AKSES.
+        // Sebelumnya query ini hanya memeriksa token + masa berlaku, sementara
+        // api/admin-users.php (toggle_active) hanya membalik kolom is_active tanpa
+        // menyentuh user_sessions. Karena sesi berumur 30 hari, orang yang baru saja
+        // dinonaktifkan tetap bisa memakai terminal sampai sebulan selama tidak logout —
+        // padahal api/auth.php dan api/login.php sudah menolaknya saat login baru.
+        // Daftar status memakai nilai yang sama dengan api/competition.php (banned,
+        // suspended, inactive, disabled) supaya tidak ada nilai lain yang tiba-tiba
+        // ikut terkunci; status kosong/NULL tetap dianggap sah.
+        $stmt = $pdo->prepare("SELECT u.id, u.email, u.role, s.expires_at
+                               FROM user_sessions s
+                               JOIN users u ON u.id = s.user_id
+                               WHERE s.token = :token AND s.expires_at > NOW()
+                                 AND u.is_active = 1
+                                 AND (u.status IS NULL OR LOWER(u.status) NOT IN ('banned','suspended','inactive','disabled'))");
         $stmt->execute([':token' => hash('sha256', $token)]);
         $user = $stmt->fetch();
 

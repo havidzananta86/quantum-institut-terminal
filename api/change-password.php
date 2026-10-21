@@ -61,7 +61,38 @@ try {
     $stmt = $pdo->prepare('UPDATE users SET password_hash = :hash WHERE id = :id');
     $stmt->execute([':hash' => $newHash, ':id' => $user['user_id']]);
 
-    echo json_encode(['status' => 'success', 'message' => 'Kata sandi berhasil diubah.']);
+    // MENGGANTI KATA SANDI HARUS MENGUSIR PERANGKAT LAIN.
+    // Token sesi berumur 30 hari dan disimpan di localStorage. Kalau seseorang memakai
+    // terminal di komputer bersama lalu tokennya tersalin, mengganti kata sandi sebelumnya
+    // TIDAK memutus akses penyerang sama sekali — ia tetap masuk sampai token kedaluwarsa
+    // sendiri. Itu perilaku yang orang anggap pasti ada, jadi sekarang benar-benar ada.
+    // Sesi yang sedang dipakai sengaja DIPERTAHANKAN supaya pengguna tidak terlempar keluar
+    // tepat setelah berhasil mengganti kata sandinya sendiri.
+    $sesiDicabut = 0;
+    try {
+        $tokenIni = function_exists('qi_token_mentah') ? qi_token_mentah() : null;
+        if ($tokenIni !== null) {
+            $cabut = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :id AND token <> :token');
+            $cabut->execute([':id' => $user['user_id'], ':token' => hash('sha256', $tokenIni)]);
+        } else {
+            // Token tidak terbaca (jalur tak terduga) → lebih aman cabut SEMUA sesi
+            // daripada meninggalkan token curian tetap hidup.
+            $cabut = $pdo->prepare('DELETE FROM user_sessions WHERE user_id = :id');
+            $cabut->execute([':id' => $user['user_id']]);
+        }
+        $sesiDicabut = $cabut->rowCount();
+        if (function_exists('qi_log')) qi_log('warning', 'Kata sandi diganti, sesi lain dicabut', ['user_id' => (int)$user['user_id'], 'sesi_dicabut' => $sesiDicabut]);
+    } catch (Throwable $e) {
+        error_log('[QI ChangePassword] Pencabutan sesi gagal: ' . $e->getMessage());
+    }
+
+    echo json_encode([
+        'status'       => 'success',
+        'message'      => $sesiDicabut > 0
+            ? "Kata sandi berhasil diubah. $sesiDicabut perangkat lain telah dikeluarkan."
+            : 'Kata sandi berhasil diubah.',
+        'sesi_dicabut' => $sesiDicabut,
+    ]);
 
 } catch (PDOException $e) {
     error_log('[QI ChangePassword] DB error: ' . $e->getMessage());

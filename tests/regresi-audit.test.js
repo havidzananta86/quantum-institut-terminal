@@ -150,6 +150,7 @@ const WAJIB_BLOKIR = [
   'assets.9489/css/tailwind.css', '.claude.8513/settings.json', '.vercel.1915/output/x',
   'config.bak/api_keys.php', 'config/database.php', 'api/_middleware.php',
   'database/seed.sql', 'tests/publik.test.js', 'mt5-bridge/main.py',
+  'tools/bundel-js.mjs', 'vercel.json', 'tailwind.config.js',
 ];
 const WAJIB_LOLOS = [
   'index.html', 'dashboard.html', 'bantuan.html', 'sw.js', 'manifest.json', 'favicon.ico',

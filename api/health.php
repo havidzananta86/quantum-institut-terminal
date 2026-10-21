@@ -2,10 +2,28 @@
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
 
+// Endpoint ini DIPANGGIL ANONIM oleh status.html dan pemantau uptime, jadi ia tetap
+// terbuka — tetapi tidak lagi telanjang:
+//   · rate limit, supaya tidak bisa dipakai memaksa server menembak bridge berulang kali
+//     (satu permintaan ?bridges=1 memicu hingga 3 probe dengan timeout 10 detik);
+//   · detail infrastruktur (versi PHP persis, sisa disk, alamat host bridge VPS) hanya
+//     untuk admin. Versi PHP persis adalah peta bagi pencari exploit, dan status.html
+//     memang tidak pernah menampilkannya (dikunci tests/publik.test.js).
+// _middleware.php aman dimuat walau DB mati: qi_validate_token() memakai qi_db(false)
+// dan dibungkus try/catch, jadi pemanggil tanpa DB hanya dianggap anonim.
+require_once __DIR__ . '/_middleware.php';
+try { qi_rate_limit(30, 60); } catch (Throwable $e) { /* cache tidak writable → jangan jatuhkan health check */ }
+
+$qiAdmin = false;
+try {
+    $qiUser  = qi_validate_token();
+    $qiAdmin = is_array($qiUser) && qi_tingkat_peran($qiUser['role'] ?? null) >= 3;
+} catch (Throwable $e) { $qiAdmin = false; }
+
 $checks = ['php' => true, 'db' => false, 'disk' => false];
 $status = 'ok';
 
-$checks['php_version'] = PHP_VERSION;
+if ($qiAdmin) $checks['php_version'] = PHP_VERSION;
 
 $configPath = __DIR__ . '/../config/database.php';
 if (file_exists($configPath)) {
@@ -30,7 +48,8 @@ $free = @disk_free_space(__DIR__);
 $total = @disk_total_space(__DIR__);
 if ($free !== false && $total !== false && $total > 0) {
     $checks['disk'] = true;
-    $checks['disk_free_gb'] = round($free / 1073741824, 2);
+    // Persentase cukup untuk halaman status; angka GB sisa hanya untuk admin.
+    if ($qiAdmin) $checks['disk_free_gb'] = round($free / 1073741824, 2);
     $checks['disk_pct_used'] = round((1 - $free / $total) * 100, 1);
     if ($checks['disk_pct_used'] > 90) $status = 'degraded';
 }
@@ -60,9 +79,13 @@ if (file_exists($cfgPath)) {
     $status = 'degraded';
 }
 
-// ?bridges=1 : uji koneksi Hostinger -> bridge VPS. Hanya alamat publik, kode HTTP, dan galat curl;
-// kunci tidak pernah ditampilkan. Tidak dijalankan pada pemanggilan biasa (monitor uptime).
-if (isset($_GET['bridges'])) {
+// ?bridges=1 : uji koneksi Hostinger -> bridge VPS. KHUSUS ADMIN — balasannya memuat
+// nama host bridge (Tailscale Funnel milik pemilik), dan setiap pemanggilan memaksa server
+// menembak hingga 3 permintaan keluar bertimeout 10 detik. Keduanya tidak boleh terbuka
+// untuk siapa saja. Kunci tetap tidak pernah ditampilkan.
+if (isset($_GET['bridges']) && !$qiAdmin) {
+    $checks['bridges'] = 'admin_only';
+} elseif (isset($_GET['bridges'])) {
     $bridgeCfg = __DIR__ . '/../config/bridge.php';
     if (!defined('QI_TV_BRIDGE_URL') && !defined('QI_MT5_BRIDGE_URL') && is_file($bridgeCfg)) require_once $bridgeCfg;
     $probe = function (string $url, array $header = []): array {
