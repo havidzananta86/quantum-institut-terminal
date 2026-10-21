@@ -13,7 +13,7 @@ function cek(nama, kondisi, info) { console.log((kondisi ? '  ✓ ' : '  ✗ ') 
 
 const BERSIH = ['index.html', 'login.html', 'register.html', 'pricing.html', 'transparansi.html', 'pwa.html', 'status.html',
   'economic-calendar.html', 'profile.html', 'admin.html', '404.html', 'privacy.html', 'terms.html', 'dashboard.html',
-  'metodologi.html', 'risiko.html', 'changelog.html', 'bantuan.html'];
+  'metodologi.html', 'risiko.html', 'changelog.html', 'bantuan.html', 'kompetisi.html'];
 
 // <script> tanpa src yang dieksekusi browser (blok data JSON/JSON-LD tidak terkena script-src).
 const scriptInline = s => [...s.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
