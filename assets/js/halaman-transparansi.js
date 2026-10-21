@@ -34,6 +34,19 @@
             var exp = el('kExp'); if (exp) { exp.textContent = r(st.expectancy_r, 2); exp.className = 'font-heading font-bold text-3xl mt-1 tabular-nums ' + (st.expectancy_r == null ? 'text-white' : kelasR(st.expectancy_r)); }
             var tot = el('kTotal'); if (tot) { tot.textContent = r(st.total_r, 1); tot.className = 'font-heading font-bold text-3xl mt-1 tabular-nums ' + (st.total_r == null ? 'text-white' : kelasR(st.total_r)); }
             set('kPf', st.profit_factor != null ? 'profit factor ' + st.profit_factor : '');
+
+            // Penurunan terdalam (drawdown). Ditampilkan sejajar win rate supaya tidak ada
+            // yang menilai sistem ini hanya dari angka yang enak dilihat.
+            var dd = st.drawdown || {};
+            var ddEl = el('kDd');
+            if (ddEl) {
+                ddEl.textContent = dd.maks_r != null ? '-' + r(Math.abs(dd.maks_r), 1) : '—';
+                ddEl.className = 'font-heading font-bold text-3xl mt-1 tabular-nums ' + (dd.maks_r ? 'text-qi-red' : 'text-white');
+            }
+            set('kDdDetail', dd.dari_transaksi
+                ? 'R · dari ' + dd.dari_transaksi + ' transaksi' + (dd.maks_pct != null ? ' · ' + dd.maks_pct + '% dari puncak' : '')
+                : (dd.catatan || 'belum ada transaksi tertutup'));
+            set('kDdArti', dd.dari_transaksi ? (dd.arti || '') : '');
             set('kImpas', st.titik_impas_pct != null
                 ? 'Dengan rasio risk:reward rata-rata 1:' + st.rr_rata + ', titik impas win rate adalah ±' + st.titik_impas_pct + '%. Win rate di bawah angka itu berarti rugi bersih, di atasnya untung — sebelum spread dan komisi.'
                 : '');

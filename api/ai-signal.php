@@ -4,6 +4,24 @@
  * GET ?symbol=BTCUSDT  → AI analysis + trade decision
  * Auth required. Cached 15 min per symbol.
  */
+// ── SUMBER CANDLE: SELALU FEED BROKER MT5 ─────────────────────────────────
+// Analisa yang diterbitkan sebagai "sinyal resmi" TIDAK BOLEH bergantung pada siapa
+// yang kebetulan memuat halaman lebih dulu. Sebelum ini ai_load_candles() memilih berkas
+// cache lewat qi_chart_use_mt5($sym), yang bernilai true untuk pengunjung PRO/VIP tetapi
+// false untuk proses server dan pengunjung gratis — jadi sinyal yang sama bisa lahir dari
+// harga broker MT5 ATAU dari OANDA, tergantung siapa yang mengisi cache duluan. Dua
+// pengguna bisa melihat "sinyal resmi" yang berbeda untuk simbol dan waktu yang sama.
+//
+// QI_SERVER_MT5 menyamakan perlakuan dengan api/signal-generator.php dan
+// api/signal-setup-shadow.php: analisa selalu memakai candle broker MT5. Rantai cadangan
+// di api/get-chart-data.php tetap berlaku bila bridge mati atau simbolnya tidak didukung,
+// dan penilaian TP/SL di api/signal-evaluator.php sudah lebih dulu memakai aturan yang sama
+// — jadi sinyal dinilai dengan harga dari feed yang sama dengan yang menerbitkannya.
+//
+// Ini tidak membocorkan harga broker ke pengguna gratis: berkas ini hanya mengembalikan
+// hasil analisa, bukan candle mentahnya.
+if (!defined('QI_SERVER_MT5')) define('QI_SERVER_MT5', true);
+
 // ── PELINDUNG LIBRARY ─────────────────────────────────────────────────────
 // Berkas ini bisa DIPAKAI ULANG oleh endpoint lain (mis. webhook TradingView)
 // dengan mendefinisikan QI_AI_SIGNAL_LIB lebih dulu. Saat itu terjadi, hanya

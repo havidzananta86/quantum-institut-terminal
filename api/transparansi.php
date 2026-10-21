@@ -44,6 +44,18 @@ $ambil = static fn(array $st) => array_intersect_key($st, array_flip([
 
 // ── Sinyal resmi ─────────────────────────────────────────────────────────────
 $stat = qi_signal_statistik($resmi);
+// Kurva modal dalam R, dihitung dari transaksi tertutup berurutan waktu. 'pct' sengaja
+// null bila kurva belum pernah di atas titik awal — "0%" di situ menyesatkan.
+$dd = qi_signal_drawdown($resmi);
+$drawdown = [
+    'maks_r'       => $dd['r'],
+    'maks_pct'     => $dd['pct'],
+    'r_terburuk'   => $dd['r_terburuk'],
+    'dari_transaksi' => $dd['dinilai'],
+    'satuan'       => 'R (kelipatan risiko; 1R = jarak entry ke stop loss)',
+    'arti'         => 'Penurunan terbesar dari puncak ke dasar kurva modal. Semakin besar, semakin dalam kerugian beruntun yang pernah terjadi sebelum pulih.',
+    'catatan'      => $dd['catatan'] ?? null,
+];
 $perSimbol = array_map(fn($x) => [
     'simbol' => $x['nama'], 'dinilai' => $x['sinyal'], 'menang' => $x['menang'], 'win_rate' => $x['win_rate'], 'total_r' => $x['total_r'],
     'sampel_kecil' => $x['sinyal'] < 30,
@@ -106,7 +118,11 @@ echo json_encode([
     'status' => 'success',
     'diperbarui' => gmdate('c'),
     'sinyal_resmi' => [
-        'statistik' => $ambil($stat) + ['per_simbol' => $perSimbol],
+        // Drawdown DIPUBLIKASIKAN, bukan hanya win rate. qi_signal_drawdown() sudah lama
+        // menghitungnya untuk panel internal, tetapi halaman publik hanya menampilkan win
+        // rate dan expectancy — padahal justru penurunan puncak-ke-dasar yang menentukan
+        // apakah sebuah sistem bisa diikuti tanpa membuat akun habis di tengah jalan.
+        'statistik' => $ambil($stat) + ['per_simbol' => $perSimbol, 'drawdown' => $drawdown],
         'terakhir' => $terakhir,
         'periode' => $periode,
         'total_tercatat' => count($resmi),
