@@ -192,6 +192,24 @@ body.charts-active #panelTitleBar { display:none !important; }
 .qim-qt-kirim:hover { background:#2a86f5; }
 .qim-qt-kirim.is-real { background:#c62828; }
 .qim-qt-kirim.is-real:hover { background:#d93b3b; }
+.qim-qt-saldo { display:flex; justify-content:space-between; gap:8px; padding:8px 10px 0; color:var(--qim-muted); font-size:9.5px; }
+.qim-qt-saldo b { color:var(--qim-text); font-variant-numeric:tabular-nums; }
+.qim-qt-saldo b.naik { color:var(--qim-green); }
+.qim-qt-saldo b.turun { color:var(--qim-red); }
+.qim-qt-posisi-judul { display:flex; justify-content:space-between; margin:10px 10px 0; padding-top:8px; border-top:1px solid #1e222d99; color:var(--qim-muted); font-size:9px; font-weight:650; text-transform:uppercase; letter-spacing:.06em; }
+.qim-qt-posisi { padding:0 10px; }
+.qim-qt-pos { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:6px; padding:6px 0; border-top:1px solid #1e222d66; font-size:10px; }
+.qim-qt-pos:first-child { border-top:0; }
+.qim-qt-pos-nama { min-width:0; color:var(--qim-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qim-qt-pos-nama i { font-style:normal; font-weight:700; }
+.qim-qt-pos-nama i.buy { color:var(--qim-green); }
+.qim-qt-pos-nama i.sell { color:var(--qim-red); }
+.qim-qt-pos-pnl { font-variant-numeric:tabular-nums; }
+.qim-qt-pos-pnl.naik { color:var(--qim-green); }
+.qim-qt-pos-pnl.turun { color:var(--qim-red); }
+.qim-qt-tutup { padding:3px 8px; border:1px solid #ef535066; border-radius:5px; background:none; color:var(--qim-red); font-size:9px; font-weight:650; cursor:pointer; }
+.qim-qt-tutup:hover { background:#ef53501f; }
+.qim-qt-kosong { padding:8px 0 2px; color:var(--qim-muted); font-size:9.5px; }
 .qim-qt-nota { margin:6px 10px 10px; color:var(--qim-muted); font-size:9px; line-height:1.5; }
 .qim-qt-nota.is-real { color:var(--qim-red); font-weight:650; }
 

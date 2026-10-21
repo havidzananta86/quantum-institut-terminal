@@ -48,6 +48,10 @@ function sandbox(opsi = {}) {
     qiSimbolChart: () => (opsi.simbol !== undefined ? opsi.simbol : 'XAUUSD'),
     ptPnlMult: (sym) => (sym === 'XAUUSD' ? 100 : 100000),
     ptOpenDirectPosition: (...a) => jejak.sim.push(a),
+    // qtSegarkan() kini ikut menggambar saldo & daftar posisi.
+    _ptPositions: opsi.posisi || [],
+    _ptBalance: opsi.saldo !== undefined ? opsi.saldo : 10000,
+    QIAksi: { arg: (v) => JSON.stringify([v]).replace(/"/g, '&quot;') },
     ptKirimOrderReal: (o) => jejak.real.push(o),
     showQuantumToast: (pesan, jenis) => jejak.toast.push({ pesan, jenis }),
     console,
@@ -120,7 +124,7 @@ console.log('\nPerkiraan untung / rugi');
 }
 {
   const s = sandbox({ input: { qtLot: '0.10', qtSL: '4000', qtTP: '4200' } });
-  s.ctx.qtSetArah(null, null, 'SELL');
+  vm.runInContext('QT.arah = "SELL"', s.ctx); s.ctx.qtSegarkan();
   cek('SELL dengan SL di bawah harga → diperingatkan', /SL harus di ATAS/.test(s.el('qtInfo').textContent), s.el('qtInfo').textContent);
 }
 {
@@ -142,18 +146,18 @@ console.log('\nTampilan mengikuti akun & arah');
   cek('harga BUY ditampilkan dengan 2 desimal', s.el('qtBuyHarga').textContent === '4123.79');
   cek('harga SELL ditampilkan', s.el('qtSellHarga').textContent === '4123.69');
   cek('BUY aktif secara bawaan', s.el('qtBuy').classList.contains('is-active') && !s.el('qtSell').classList.contains('is-active'));
-  cek('tombol kirim bawaan bukan mode real', s.el('qtKirim').textContent === 'Place Order · BUY' && !s.el('qtKirim').classList.contains('is-real'));
+  cek('saldo simulasi ditampilkan', /^\$/.test(s.el('qtSaldo').textContent), s.el('qtSaldo').textContent);
   cek('keterangan bawaan menegaskan simulasi', /tanpa uang sungguhan/i.test(s.el('qtNota').textContent));
 
   s.ctx.qtSetAkun(null, null, 'real');
-  cek('mode real: tombol berubah dan ditandai is-real', s.el('qtKirim').textContent === 'KIRIM BUY REAL' && s.el('qtKirim').classList.contains('is-real'));
+  cek('mode real ditandai pada keterangan', s.el('qtNota').classList.contains('is-real'));
   cek('mode real: keterangan jadi peringatan', /[Uu]ang sungguhan/.test(s.el('qtNota').textContent) && s.el('qtNota').classList.contains('is-real'));
   cek('tab akun real ditandai aktif', s.el('qtAkunReal').classList.contains('is-active') && !s.el('qtAkunSim').classList.contains('is-active'));
 
-  s.ctx.qtSetArah(null, null, 'SELL');
-  cek('ganti arah ikut mengubah tombol', s.el('qtKirim').textContent === 'KIRIM SELL REAL');
+  vm.runInContext('QT.arah = "SELL"', s.ctx); s.ctx.qtSegarkan();
+  cek('arah tersimpan di state', vm.runInContext('QT.arah', s.ctx) === 'SELL');
   s.ctx.qtSetAkun(null, null, 'sim');
-  cek('kembali ke simulasi: penanda real dilepas', !s.el('qtKirim').classList.contains('is-real') && !s.el('qtNota').classList.contains('is-real'));
+  cek('kembali ke simulasi: penanda real dilepas', !s.el('qtNota').classList.contains('is-real'));
 }
 
 console.log('\nMengirim order');
@@ -175,7 +179,7 @@ console.log('\nMengirim order');
 }
 {
   const s = sandbox({ input: { qtLot: '0.10' } });
-  s.ctx.qtSetArah(null, null, 'SELL');
+  vm.runInContext('QT.arah = "SELL"', s.ctx); s.ctx.qtSegarkan();
   s.ctx.qtKirim();
   cek('SELL memakai harga bid', (s.jejak.sim[0] || [])[2] === 4123.69, s.jejak.sim[0]);
 }
@@ -196,14 +200,70 @@ console.log('\nMengirim order');
   cek('lot nol ditolak', s.jejak.sim.length === 0 && s.jejak.toast.some(t => /Lot/i.test(t.pesan)));
 }
 
+// == Tiga bug yang dilaporkan pemilik produk (2026-10-21) ====================
+console.log('\nBUY/SELL = tombol order, satu tekan satu order');
+{
+  const s = sandbox({ input: { qtLot: '0.10' } });
+  s.ctx.qtOrder(null, null, 'SELL');
+  cek('menekan SELL langsung mengirim order', s.jejak.sim.length === 1, s.jejak.sim.length);
+  cek('arahnya SELL', (s.jejak.sim[0] || [])[1] === 'SELL', s.jejak.sim[0]);
+  cek('SELL memakai harga bid', (s.jejak.sim[0] || [])[2] === 4123.69);
+  const t = sandbox({ input: { qtLot: '0.10' } });
+  t.ctx.qtOrder(null, null, 'BUY');
+  cek('menekan BUY langsung mengirim order', t.jejak.sim.length === 1);
+  cek('BUY memakai harga ask', (t.jejak.sim[0] || [])[2] === 4123.79);
+  cek('tidak ada lagi tombol "Place Order" terpisah', !/id="qtKirim"/.test(HTML));
+}
+
+console.log('\nPosisi terbuka tampil beserta tombol Tutup');
+{
+  const posisi = [
+    { id: 'P1', symbol: 'XAUUSD', side: 'BUY', lots: 0.1, entryPrice: 4100, sl: null, tp: null },
+    { id: 'P2', symbol: 'XAUUSD', side: 'SELL', lots: 0.2, entryPrice: 4130, sl: null, tp: null },
+  ];
+  const s = sandbox({ posisi });
+  s.ctx.qtRenderPosisi();
+  const html = s.el('qtPosisi').innerHTML || '';
+  cek('kedua posisi dirender', (html.match(/qim-qt-pos"/g) || []).length === 2);
+  cek('ada tombol Tutup untuk tiap posisi', (html.match(/qim-qt-tutup/g) || []).length === 2);
+  cek('tombol Tutup memanggil ptClosePosition', /data-qi-aksi="ptClosePosition"/.test(html));
+  cek('id posisi diteruskan ke tombolnya', /P1/.test(html) && /P2/.test(html));
+  cek('jumlah posisi ditampilkan', s.el('qtPosisiJml').textContent === '2', s.el('qtPosisiJml').textContent);
+
+  const kosong = sandbox({ posisi: [] });
+  kosong.ctx.qtRenderPosisi();
+  cek('tanpa posisi -> pesan jelas', /Belum ada posisi terbuka/.test(kosong.el('qtPosisi').innerHTML || ''));
+  cek('jumlah posisi 0', kosong.el('qtPosisiJml').textContent === '0');
+}
+
+console.log('\nSaldo simulasi bergerak');
+{
+  const s = sandbox({ saldo: 10000, posisi: [{ id: 'P1', symbol: 'XAUUSD', side: 'BUY', lots: 0.1, entryPrice: 4100 }] });
+  s.ctx.qtSaldo();
+  cek('saldo ditampilkan dengan format uang', s.el('qtSaldo').textContent === '$10,000.00', s.el('qtSaldo').textContent);
+  cek('P/L mengambang dihitung dari harga berjalan', s.el('qtFloat').textContent === '+$237.40', s.el('qtFloat').textContent);
+  cek('mengambang positif ditandai naik', s.el('qtFloat').className === 'naik');
+
+  const r = sandbox({ saldo: 9500, posisi: [{ id: 'P1', symbol: 'XAUUSD', side: 'SELL', lots: 0.1, entryPrice: 4100 }] });
+  r.ctx.qtSaldo();
+  cek('posisi SELL yang rugi ditandai turun', r.el('qtFloat').className === 'turun', r.el('qtFloat').textContent);
+  cek('saldo mengikuti nilai sebenarnya', r.el('qtSaldo').textContent === '$9,500.00');
+
+  const n = sandbox({ saldo: 10000, posisi: [] });
+  n.ctx.qtSaldo();
+  cek('tanpa posisi -> mengambang nol', n.el('qtFloat').textContent === '+$0.00');
+}
+
+cek('menutup posisi dari mana pun menyegarkan Quick Trade', /qtSaldo\(\); qtRenderPosisi\(\);/.test(JS));
+
 // ── Kontrak markup & gaya ────────────────────────────────────────────────────
 console.log('\nMarkup & gaya');
-for (const id of ['qtSym', 'qtAkunSim', 'qtAkunReal', 'qtBuy', 'qtSell', 'qtBuyHarga', 'qtSellHarga', 'qtLot', 'qtSL', 'qtTP', 'qtInfo', 'qtKirim', 'qtNota']) {
+for (const id of ['qtSym', 'qtAkunSim', 'qtAkunReal', 'qtBuy', 'qtSell', 'qtBuyHarga', 'qtSellHarga', 'qtLot', 'qtSL', 'qtTP', 'qtInfo', 'qtSaldo', 'qtFloat', 'qtPosisi', 'qtPosisiJml', 'qtNota']) {
   cek(`dashboard.html punya #${id}`, new RegExp(`id="${id}"`).test(HTML));
 }
 cek('kartu Quick Trade berada di dalam rail kanan', /id="qimRightPanel"[\s\S]{0,400}qim-qt-card/.test(HTML));
 cek('kartu Quick Trade adalah kartu PERTAMA di rail kanan', /id="qimRightPanel"[^>]*>\s*(?:<!--[\s\S]*?-->\s*)*<section class="qim-card qim-qt-card"/.test(HTML));
-cek('semua aksi memakai delegasi CSP-safe (tanpa on*=)', /data-qi-aksi="qtKirim"/.test(HTML) && /data-qi-aksi="qtSetAkun"/.test(HTML) && /data-qi-aksi="qtStep"/.test(HTML));
+cek('semua aksi memakai delegasi CSP-safe (tanpa on*=)', /data-qi-aksi="qtOrder"/.test(HTML) && /data-qi-aksi="qtSetAkun"/.test(HTML) && /data-qi-aksi="qtStep"/.test(HTML));
 cek('gaya kartu ada di qim-dashboard.css', /\.qim-qt-card/.test(CSS) && /\.qim-qt-kirim\.is-real/.test(CSS));
 cek('Quick Trade disegarkan berkala', /try \{ qtSegarkan\(\); \} catch \(e\) \{\}\s*\}, 5000\);/.test(JS));
 

@@ -5530,6 +5530,9 @@ function ptRender() {
     // di chart ikut menyesuaikan. ptRender() adalah satu-satunya jalur render posisi,
     // jadi memanggilnya di sini mencakup semua perubahan tanpa pemanggil lain lupa.
     try { qiGambarGarisPosisi(); } catch (e) {}
+    // Kartu Quick Trade di rail kanan ikut menyegarkan saldo & daftar posisinya, supaya
+    // menutup posisi dari mana pun langsung terlihat di sana tanpa menunggu 5 detik.
+    try { qtSaldo(); qtRenderPosisi(); } catch (e) {}
 }
 
 // ─── QUICK TRADE (kartu di rail kanan) ──────────────────────────────────────
@@ -5557,7 +5560,21 @@ function qtHarga() {
 function qtLangkah(sym) { return Math.pow(10, -(DP[sym] || 4)) * 10; }
 
 function qtSetAkun(el, e, akun) { QT.akun = akun === 'real' ? 'real' : 'sim'; qtSegarkan(); }
-function qtSetArah(el, e, arah) { QT.arah = arah === 'SELL' ? 'SELL' : 'BUY'; qtSegarkan(); }
+
+/**
+ * BUY / SELL = TOMBOL ORDER, bukan pemilih arah.
+ *
+ * Versi pertama kartu ini memakai keduanya hanya untuk memilih arah, lalu order dikirim
+ * lewat tombol "Place Order" terpisah. Itu salah: di MT5 — dan di rancangan yang diminta —
+ * BUY dan SELL ADALAH tombol ordernya. Akibatnya pengguna melaporkan "SELL tidak bisa
+ * ditekan dan tidak bisa order", karena menekannya memang tidak menghasilkan apa-apa yang
+ * terlihat. Sekarang satu tekan = satu order, dan tidak ada dua cara melakukan hal sama.
+ */
+function qtOrder(el, e, arah) {
+    QT.arah = arah === 'SELL' ? 'SELL' : 'BUY';
+    qtSegarkan();
+    qtKirim();
+}
 
 function qtStep(el, e, id, naik) {
     const inp = qtEl(id); if (!inp) return;
@@ -5627,11 +5644,8 @@ function qtSegarkan() {
     qtEl('qtBuy')?.classList.toggle('is-active', QT.arah === 'BUY');
     qtEl('qtSell')?.classList.toggle('is-active', QT.arah === 'SELL');
 
-    const kirim = qtEl('qtKirim');
-    if (kirim) {
-        kirim.textContent = real ? `KIRIM ${QT.arah} REAL` : `Place Order · ${QT.arah}`;
-        kirim.classList.toggle('is-real', real);
-    }
+    qtSaldo();
+    qtRenderPosisi();
     const nota = qtEl('qtNota');
     if (nota) {
         nota.textContent = real
@@ -5640,6 +5654,65 @@ function qtSegarkan() {
         nota.classList.toggle('is-real', real);
     }
     qtHitung();
+}
+
+/**
+ * Saldo & P/L mengambang akun simulasi, ditampilkan di kartu Quick Trade.
+ * Saldo hanya berubah saat posisi DITUTUP (sama seperti MT5: Balance vs Equity), jadi
+ * "mengambang" ditampilkan terpisah supaya angkanya terlihat bergerak saat posisi hidup.
+ */
+function qtSaldo() {
+    const bEl = qtEl('qtSaldo'), fEl = qtEl('qtFloat');
+    if (!bEl && !fEl) return;
+    let ambang = 0;
+    for (const p of (_ptPositions || [])) {
+        const cur = _lastPrices[p.symbol];
+        if (!cur) continue;
+        const harga = parseFloat(cur.price);
+        const masuk = parseFloat(p.entryPrice);
+        if (!Number.isFinite(harga) || !Number.isFinite(masuk)) continue;
+        const beda = p.side === 'BUY' ? harga - masuk : masuk - harga;
+        ambang += beda * p.lots * ptPnlMult(p.symbol, harga);
+    }
+    if (bEl) bEl.textContent = '$' + Number(_ptBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (fEl) {
+        fEl.textContent = (ambang >= 0 ? '+$' : '-$') + Math.abs(ambang).toFixed(2);
+        fEl.className = ambang > 0 ? 'naik' : (ambang < 0 ? 'turun' : '');
+    }
+}
+
+/**
+ * Daftar posisi terbuka + tombol Tutup, langsung di kartu Quick Trade.
+ *
+ * Sebelumnya tombol Tutup HANYA ada di panel Trading Workspace, sementara order dibuka
+ * dari panel Chart — jadi setelah order pengguna tidak melihat cara menutupnya sama
+ * sekali, dan karena saldo baru bergerak saat posisi ditutup, saldo pun tampak membeku.
+ * Ketiganya satu akar masalah.
+ */
+function qtRenderPosisi() {
+    const wadah = qtEl('qtPosisi');
+    const jml = qtEl('qtPosisiJml');
+    if (!wadah) return;
+    const daftar = _ptPositions || [];
+    if (jml) jml.textContent = String(daftar.length);
+    if (!daftar.length) {
+        wadah.innerHTML = '<div class="qim-qt-kosong">Belum ada posisi terbuka.</div>';
+        return;
+    }
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    wadah.innerHTML = daftar.map((p) => {
+        const cur = _lastPrices[p.symbol];
+        const harga = cur ? parseFloat(cur.price) : parseFloat(p.entryPrice);
+        const masuk = parseFloat(p.entryPrice);
+        const beda = p.side === 'BUY' ? harga - masuk : masuk - harga;
+        const pnl = Number.isFinite(beda) ? beda * p.lots * ptPnlMult(p.symbol, harga) : 0;
+        const kelas = pnl > 0 ? 'naik' : (pnl < 0 ? 'turun' : '');
+        return `<div class="qim-qt-pos">
+            <span class="qim-qt-pos-nama"><i class="${p.side === 'BUY' ? 'buy' : 'sell'}">${esc(p.side)}</i> ${esc(p.symbol)} ${Number(p.lots).toFixed(2)}</span>
+            <span class="qim-qt-pos-pnl ${kelas}">${pnl >= 0 ? '+$' : '-$'}${Math.abs(pnl).toFixed(2)}</span>
+            <button type="button" class="qim-qt-tutup" data-qi-aksi="ptClosePosition" data-qi-arg="${QIAksi.arg(String(p.id))}">Tutup</button>
+        </div>`;
+    }).join('');
 }
 
 function qtKirim() {
