@@ -1629,8 +1629,43 @@ async function copyBridgeKey() {
         : 'Penyalinan otomatis gagal — teksnya sudah diseleksi, tekan Ctrl+C (atau tekan lama → Copy).', ok ? 'success' : 'warning');
 }
 
+// Rekor sinyal terakhir dari fetchTrackRecord(). Dipakai dua panel: panel-track
+// (tabel Riwayat Sinyal) dan panel-sentiment (Monthly P&L Calendar).
+let _trRiwayatTerakhir = [];
+
+/**
+ * Isi panel "Sessions & P&L Calendar".
+ *
+ * #monthlyCalendar hanya bisa diisi renderMonthlyCalendar(), dan satu-satunya
+ * pemanggilnya ada DI DALAM fetchTrackRecord() — pengisi panel-track. Tidak ada cabang
+ * 'panel-sentiment' di initPanel() maupun initProPanel(), jadi membuka menu ini langsung
+ * dari sidebar meninggalkan kartunya di teks "Loading..." tanpa batas waktu.
+ */
+function initPanelSentimen() {
+    if (typeof updateSessionClocks === 'function') updateSessionClocks();
+    const el = document.getElementById('monthlyCalendar');
+    if (!el) return;
+    if (_trRiwayatTerakhir.length) {
+        if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar(_trRiwayatTerakhir);
+        return;
+    }
+    el.innerHTML = '<div class="text-center text-slate-600 text-xs py-4">Memuat rekor sinyal…</div>';
+    Promise.resolve(fetchTrackRecord())
+        .then(() => {
+            if (_trRiwayatTerakhir.length) {
+                if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar(_trRiwayatTerakhir);
+            } else {
+                el.innerHTML = '<div class="text-center text-slate-600 text-xs py-4">Belum ada rekor sinyal bulan ini.</div>';
+            }
+        })
+        .catch(() => {
+            el.innerHTML = '<div class="text-center text-qi-red/70 text-xs py-4">Gagal memuat rekor sinyal.</div>';
+        });
+}
+
 function initPanel(id) {
     if (id === 'panel-account')     { loadAccountAnalytics(); startAccountRefresh(); if (typeof muatTelegramStatus === 'function') muatTelegramStatus(); }
+    if (id === 'panel-sentiment')   initPanelSentimen();
     if (id === 'panel-charts')      initTvChart();
     if (id === 'panel-signal')      fetchSignalMatrix();
     if (id === 'panel-outlook')     fetchOutlook();
@@ -1688,6 +1723,7 @@ const QI_PANEL_SEGAR = {
     'panel-paper':       [() => ptLoadFromServer()],
     'panel-track':       [() => fetchTrackRecord()],
     'panel-correlation': [() => fetchCorrelation()],
+    'panel-sentiment':   [() => { if (typeof updateSessionClocks === 'function') updateSessionClocks(); }],
     'panel-cot':         [() => fetchCot()],
     'panel-impact':      [() => fetchNewsImpact()],
     'panel-autosignal':  [() => refreshAutoSignals()],
@@ -2251,23 +2287,10 @@ async function gatewayGerbang(aktif) {
     }
 }
 
-/** Salin URL webhook (berisi kunci) ke papan klip — khusus PRO. */async function gatewaySalinUrl() {
-    const out = document.getElementById('gwUjiHasil');
-    try {
-        const info = await fetch('api/tv-webhook.php?info=1', { headers: QuantumAuth.authHeaders(), cache: 'no-store' }).then(x => x.json()).catch(() => null);
-        if (!info || !info.url) { if (out) out.textContent = 'URL webhook tidak dapat diambil (perlu sesi PRO).'; return; }
-        const teks = 'URL webhook:\n' + info.url + '\n\nTemplate pesan alert:\n' + (info.template || '');
-        if (navigator.clipboard) await navigator.clipboard.writeText(teks);
-        if (out) out.textContent = 'URL + template disalin. Tempel di kolom Webhook URL TradingView, dan template JSON di kotak pesan alert. Kunci bersifat rahasia — jangan dibagikan.';
-    } catch (e) {
-        if (out) out.textContent = 'Gagal menyalin: ' + e.message;
-    }
-}
 window.muatGateway = muatGateway;
 window.gatewayJeda = gatewayJeda;
 window.gatewayUjiWebhook = gatewayUjiWebhook;
 window.gatewayGerbang = gatewayGerbang;
-window.gatewaySalinUrl = gatewaySalinUrl;
 
 /**
  * RENDER PROGRESIF untuk daftar panjang (spesifikasi Bagian 9: "virtual scrolling").
@@ -3186,7 +3209,7 @@ function pasangAlatGambar() {
 }
 window.addEventListener('lc-drawing-ready', () => pasangAlatGambar());
 let _lwTool      = null;
-let _tvSymbol    = 'OANDA:BTCUSD';
+let _tvSymbol    = 'BINANCE:BTCUSDT';
 let _tvSymLabel  = 'BTC/USDT';
 let _tvInterval  = '60';
 let _wlVisible   = true;
@@ -3194,7 +3217,11 @@ let _wlVisible   = true;
 // Watchlist groups & symbols
 const WL_GROUPS = [
     { label: 'CRYPTO', syms: [
-        { label:'BTC/USDT', key:'BTCUSDT',  tv:'OANDA:BTCUSD' },
+        // Harga di kepala chart & tape diambil dari api/live-price.php untuk kunci BTCUSDT
+        // (Binance). Dulu baris ini memetakan BTC ke CFD 'OANDA:BTCUSD' — instrumen LAIN
+        // dengan harga lain — sehingga chart TradingView tidak cocok dengan angka di tape.
+        // Empat kripto lain sudah memakai BINANCE; BTC kini ikut.
+        { label:'BTC/USDT', key:'BTCUSDT',  tv:'BINANCE:BTCUSDT' },
         { label:'ETH/USDT', key:'ETHUSDT',  tv:'BINANCE:ETHUSDT' },
         { label:'SOL/USDT', key:'SOLUSDT',  tv:'BINANCE:SOLUSDT' },
         { label:'BNB/USDT', key:'BNBUSDT',  tv:'BINANCE:BNBUSDT' },
@@ -4121,8 +4148,9 @@ function lwClearAll() {
 
 function setChartSymbolFull(key, tvSym, label) {
     // Kode `tv` yang dipakai chart SELALU yang ada di WL_GROUPS (lwFetchAndSetData mencarinya dengan
-    // kecocokan persis). Pemanggil lain (watchlist kolom kiri) boleh membawa kode `tv` lama, mis.
-    // BINANCE:BTCUSDT padahal chart memakai OANDA:BTCUSD — tanpa normalisasi ini chart menjadi kosong.
+    // kecocokan persis). Pemanggil lain (watchlist kolom kiri, deep link lama, localStorage) boleh
+    // membawa kode `tv` usang — mis. 'OANDA:BTCUSD' untuk BTCUSDT yang kini memakai
+    // 'BINANCE:BTCUSDT' — dan tanpa normalisasi ini chart menjadi kosong.
     const entri = WL_GROUPS.flatMap(g => g.syms).find(s => s.key === key);
     _tvSymbol   = entri ? entri.tv : tvSym;
     _tvSymLabel = label;
@@ -6422,6 +6450,9 @@ async function fetchTrackRecord() {
         if (!hist.length) { body.innerHTML = '<tr><td colspan="12" class="px-4 py-8 text-center text-slate-600">Tidak ada data</td></tr>'; return; }
 
         const STATUS_CLS = { 'HIT TP 🎯': 'text-qi-green', 'HIT SL 🛑': 'text-qi-red', 'AKTIF': 'text-qi-cyan', 'EXPIRED': 'text-slate-500' };
+        // Disimpan supaya panel "Sessions & P&L Calendar" bisa menggambar kalendernya
+        // tanpa harus mengambil ulang seluruh rekor (lihat initPanel panel-sentiment).
+        _trRiwayatTerakhir = hist;
         if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar(hist);
         // Bukti konfluensi ('basis') boleh berupa TEKS (mesin AUTO_SIGNAL/AI/NEWS) atau
         // belum ada pada rekor LAMA (sebelum kolom ini diperkenalkan). Rekor lama TIDAK

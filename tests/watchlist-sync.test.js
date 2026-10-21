@@ -20,7 +20,12 @@ const beda = kiri.filter(k => k.chart && chart[k.key] !== undefined && chart[k.k
 cek('kode tv watchlist = kode tv chart untuk semua simbol', beda.length === 0, beda);
 const hilang = kiri.filter(k => k.chart && chart[k.key] === undefined);
 cek('setiap simbol watchlist yang bisa dicharting ada di chart', hilang.length === 0, hilang);
-cek('BTCUSDT memakai OANDA:BTCUSD di kedua daftar', chart.BTCUSDT === 'OANDA:BTCUSD' && (kiri.find(k => k.key === 'BTCUSDT') || {}).tv === 'OANDA:BTCUSD');
+// BTC dilabeli "BTC/USDT" dan harganya diambil dari api/live-price.php untuk kunci
+// BTCUSDT (Binance). Dulu kedua daftar memetakannya ke CFD 'OANDA:BTCUSD' — instrumen
+// LAIN dengan harga lain — sehingga chart tidak cocok dengan angka di tape.
+cek('BTCUSDT memakai BINANCE:BTCUSDT di kedua daftar (cocok dengan sumber harganya)',
+    chart.BTCUSDT === 'BINANCE:BTCUSDT' && (kiri.find(k => k.key === 'BTCUSDT') || {}).tv === 'BINANCE:BTCUSDT',
+    { chart: chart.BTCUSDT, kiri: (kiri.find(k => k.key === 'BTCUSDT') || {}).tv });
 
 // Perilaku: setChartSymbolFull memakai tv milik chart walau pemanggil membawa kode lama.
 const a = app.indexOf('function setChartSymbolFull(');
@@ -32,8 +37,8 @@ const f = new Function('WL_GROUPS', 'updateChartHeader', 'renderWatchlist', 'bui
 const grup = [{ syms: Object.entries(chart).map(([key, tv]) => ({ key, tv, label: key })) }];
 let dibangun = 0;
 const api = f(grup, () => {}, () => {}, () => { dibangun++; });
-api.set('BTCUSDT', 'BINANCE:BTCUSDT', 'BTC/USDT');
-cek('klik BTCUSDT dengan kode lama BINANCE:BTCUSDT → chart memakai OANDA:BTCUSD', api.tv() === 'OANDA:BTCUSD' && dibangun === 1, api.tv());
+api.set('BTCUSDT', 'OANDA:BTCUSD', 'BTC/USDT');
+cek('klik BTCUSDT dengan kode lama OANDA:BTCUSD → chart menormalkan ke BINANCE:BTCUSDT', api.tv() === 'BINANCE:BTCUSDT' && dibangun === 1, api.tv());
 api.set('ETHUSDT', 'BINANCE:ETHUSDT', 'ETH/USDT');
 cek('ETHUSDT tetap BINANCE:ETHUSDT', api.tv() === 'BINANCE:ETHUSDT');
 api.set('ZZZ', 'X:ZZZ', 'ZZZ');

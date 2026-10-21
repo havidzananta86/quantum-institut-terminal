@@ -58,6 +58,22 @@
             const msg = k.symbol + ' ' + (k.arah === 'above' ? 'naik ke ' : 'turun ke ') + k.target + ' (sekarang ' + k.harga + ')';
             toast('🔔 Price alert: ' + msg, 'success');
             try { if (typeof window.sendBrowserNotification === 'function') window.sendBrowserNotification('Price Alert: ' + k.symbol, msg); } catch (e) {}
+            // Alert yang dipicu SERVER juga masuk kotak "Riwayat Alert Terpicu".
+            // Dulu fungsi ini hanya memunculkan toast + notifikasi desktop, sehingga alert yang
+            // kena saat dashboard tertutup — justru alasan utama alert dipindah ke server —
+            // tidak pernah tercatat di riwayat mana pun.
+            try {
+                if (typeof window.catatAlertKena === 'function') {
+                    window.catatAlertKena({
+                        symbol: k.symbol,
+                        price: k.target,
+                        direction: k.arah,
+                        currentPrice: k.harga,
+                        triggeredAt: k.kena_pada || k.triggeredAt || new Date().toISOString(),
+                        sumber: 'server',
+                    });
+                }
+            } catch (e) {}
         });
     }
 

@@ -2963,8 +2963,13 @@
         <div class="bg-qi-card border border-qi-border rounded-xl p-4 space-y-2">
             <span class="font-heading font-semibold text-white text-sm uppercase">Webhook TradingView</span>
             <div class="flex flex-wrap items-center gap-2">
+                <!-- SATU SUMBER KEBENARAN: pengaturan webhook (URL, template pesan alert, daftar
+                     simbol yang didukung) hanya ada di panel Quantum AI Radar. Dulu panel ini
+                     punya salinan tombol "Salin URL webhook" sendiri — dua tempat menampilkan URL
+                     yang sama dan berpeluang berbeda. Tombol uji TETAP di sini karena hasilnya
+                     memang langsung muncul di log tepat di bawahnya. -->
                 <button data-qi-aksi="gatewayUjiWebhook" class="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-qi-cyan/40 text-qi-cyan hover:bg-qi-cyan/10">🧪 Uji kirim webhook</button>
-                <button data-qi-aksi="gatewaySalinUrl" class="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-qi-border text-slate-300 hover:bg-white/5">🔗 Salin URL webhook</button>
+                <button type="button" data-qi-aksi="switchPanel" data-qi-arg='["panel-radar"]' class="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-qi-border text-slate-300 hover:bg-white/5">🔗 Buka pengaturan webhook</button>
                 <span class="text-[10px] text-slate-500">Uji mengirim alert contoh (simbol uji) — hasilnya langsung muncul di log di bawah.</span>
             </div>
             <div id="gwUjiHasil" class="text-[10px] text-slate-400 font-mono"></div>
@@ -3146,12 +3151,16 @@
                 </div>
             </div>
         </div>
-        <!-- Liquidation Terbesar 24h -->
+        <!-- Pergerakan Futures 24h (dulu berjudul "Liquidation Terbesar 24h") -->
         <div class="bg-qi-card border border-qi-border rounded-2xl overflow-hidden">
             <div class="px-4 py-3 border-b border-qi-border flex items-center justify-between">
                 <div>
-                    <span class="font-heading font-semibold text-white text-sm uppercase">🐋 Liquidation Terbesar 24h</span>
-                    <span class="ml-2 text-[9px] text-slate-500 font-mono">dari Binance Futures</span>
+                    <!-- JUDUL DIPERBAIKI: endpoint yang dipanggil adalah ticker 24 jam
+                         (/fapi/v1/ticker/24hr), BUKAN data likuidasi — Binance tidak
+                         menyediakan likuidasi di API publiknya. Kolom "Liq Dominan" pun hanya
+                         tebakan dari persen perubahan harga, jadi diberi nama apa adanya. -->
+                    <span class="font-heading font-semibold text-white text-sm uppercase">🐋 Pergerakan Futures 24h</span>
+                    <span class="ml-2 text-[9px] text-slate-500 font-mono">Binance Futures · ticker 24 jam</span>
                 </div>
                 <button data-qi-aksi="fetchLiquidations" class="text-[10px] text-qi-cyan hover:underline font-mono">↻ Refresh</button>
             </div>
@@ -3162,7 +3171,7 @@
                         <th class="px-3 py-2 text-right">Harga</th>
                         <th class="px-3 py-2 text-right">24h %</th>
                         <th class="px-3 py-2 text-right">Volume 24h</th>
-                        <th class="px-3 py-2 text-center">Liq Dominan</th>
+                        <th class="px-3 py-2 text-center" title="Bukan data likuidasi: hanya arah tekanan yang disimpulkan dari perubahan harga 24 jam (turun ≥3% → LONG tertekan, naik ≥3% → SHORT tertekan).">Tekanan (perkiraan)</th>
                         <th class="px-3 py-2 text-right">Funding Rate</th>
                     </tr></thead>
                     <tbody id="ctLiqBody"><tr><td colspan="6" class="px-4 py-6 text-center text-slate-600">Loading…</td></tr></tbody>
@@ -3454,8 +3463,11 @@
                     </tr></thead>
                     <tbody id="journalBody"><tr><td colspan="7" class="px-4 py-8 text-center">
                         <div class="text-slate-400 text-xs font-semibold mb-1">Belum ada catatan trading</div>
-                        <div class="text-slate-600 text-[10px] leading-relaxed mb-3">Catatan terisi otomatis dari posisi yang Anda tutup di Paper Trading,
-                            atau Anda bisa menambahkannya sendiri.</div>
+                        <!-- JUJUR: tidak ada kode yang menulis entri jurnal saat posisi paper ditutup
+                             (ptClosePosition hanya menyimpan ke server lalu merender ulang). Janji
+                             "terisi otomatis" membuat pengguna menunggu data yang tidak akan datang. -->
+                        <div class="text-slate-600 text-[10px] leading-relaxed mb-3">Jurnal diisi sendiri — catat alasan masuk,
+                            hasil, dan pelajarannya. Posisi Paper Trading <b class="text-slate-500">tidak</b> otomatis masuk ke sini.</div>
                         <span class="flex items-center justify-center gap-2 flex-wrap">
                             <button type="button" data-qi-aksi="switchPanel" data-qi-arg='["panel-paper"]'
                                 class="px-3 py-1.5 rounded-lg bg-qi-cyan/20 border border-qi-cyan/40 text-qi-cyan text-[10px] font-bold hover:bg-qi-cyan/30">Buka Paper Trading</button>
@@ -3507,15 +3519,20 @@
                 <div id="dxyValue" class="text-3xl font-mono font-bold text-white">—</div>
                 <div id="dxyChange" class="text-xs font-mono text-slate-500">memuat…</div>
             </div>
+            <!-- Dulu dua kartu ini berisi "2.4%" dan "14:00 - 18:00 WIB" yang DITULIS TANGAN
+                 di HTML: tanpa id, tanpa satu baris JavaScript pun yang menyentuhnya, jadi
+                 angkanya tidak akan pernah berubah apa pun kondisi pasarnya — padahal dipajang
+                 sejajar dengan kartu DXY dan tabel ATR yang datanya nyata. Sekarang dihitung
+                 dari tabel ATR di bawah (renderVolatilityDash), atau dikatakan belum tersedia. -->
             <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
-                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Avg Market Volatility</div>
-                <div class="text-3xl font-mono font-bold text-qi-gold">2.4%</div>
-                <div class="text-[10px] text-slate-500">ATR-normalized (14 pairs)</div>
+                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Rata-rata Volatilitas Pasar</div>
+                <div id="volRataNilai" class="text-3xl font-mono font-bold text-qi-gold">—</div>
+                <div id="volRataKet" class="text-[10px] text-slate-500">menunggu tabel ATR</div>
             </div>
             <div class="bg-qi-card border border-qi-border rounded-2xl p-4 text-center">
-                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Best Time to Trade</div>
-                <div class="text-lg font-mono font-bold text-qi-cyan">14:00 - 18:00 WIB</div>
-                <div class="text-[10px] text-slate-500">London–NY Overlap</div>
+                <div class="text-[10px] text-slate-500 font-semibold uppercase mb-1">Sesi Paling Likuid</div>
+                <div class="text-lg font-mono font-bold text-qi-cyan">14:00–23:00 WIB</div>
+                <div class="text-[10px] text-slate-500">Tumpang tindih London–New York (jadwal tetap, bukan hasil hitungan)</div>
             </div>
         </div>
         <!-- ATR Table -->
@@ -4133,7 +4150,7 @@
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════ -->
 <!-- bundel:inti · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): qim-price-store.js, qim-chart-store.js, qim-paper-math.js, dashboard-app.js, qim-dashboard.js, qim-indicators.js, qim-trading-tools.js, qim-mt5-socket.js, qim-notifications.js, qim-pages.js, qim-risk.js, qim-alerts.js -->
-<script src="assets/dist/inti.1c0be51324.js"></script>
+<script src="assets/dist/inti.6bef35c94f.js"></script>
 <!-- /bundel:inti -->
 
 <!-- Sidebar toggle floating button -->
@@ -4142,7 +4159,7 @@
 </button>
 
 <!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
-<script src="assets/dist/fitur.3c50afa12f.js"></script>
+<script src="assets/dist/fitur.74df44def6.js"></script>
 <!-- /bundel:fitur -->
 <!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
 <script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>

@@ -462,8 +462,17 @@
     window.salinTeks = salinTeks;
     window.ujiKirimWebhookTv = ujiKirimWebhookTv;
     // Saat panel AI Radar dibuka → muat info webhook sekali (tanpa memblokir).
-    document.addEventListener('click', (e) => {
-        try { if (e.target.closest('[data-panel="panel-radar"]')) setTimeout(() => muatInfoWebhookTv(false), 500); } catch (err) {}
+    //
+    // PERBAIKAN: dulu ini HANYA mendengarkan klik pada tombol sidebar [data-panel="panel-radar"].
+    // Pintasan keyboard (Alt+4) dan Command Palette memanggil switchPanel() langsung, sehingga
+    // pendengar itu tidak pernah jalan: #tvWebhookUrl tetap bernilai "Memuat…", templatnya kosong,
+    // dan tombol "Salin" menyalin teks "Memuat…" ke papan klip. Sekarang memakai event
+    // 'qim:panel-change' yang dikirim switchPanel() apa pun cara panelnya dibuka.
+    document.addEventListener('qim:panel-change', (e) => {
+        try {
+            if ((e.detail && e.detail.panel) !== 'panel-radar') return;
+            setTimeout(() => muatInfoWebhookTv(false), 300);
+        } catch (err) {}
     });
 
     // ── PEMBANGKIT SINYAL OTOMATIS (penyembuh sendiri) ──────────────────────

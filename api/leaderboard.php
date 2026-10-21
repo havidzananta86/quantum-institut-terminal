@@ -1,8 +1,16 @@
 <?php
 /**
  * Trading Leaderboard API
- * GET → top 10 traders by realized P&L dari paper_positions (public, tidak butuh auth)
- *       Optional: jika token dikirim, kembalikan juga stats & rank user tersebut
+ *
+ * GET → top 10 trader menurut P&L terealisasi dari paper_positions.
+ *
+ * BUTUH PAKET PRO. Baris qi_require_level('pro') di bawah menolak permintaan tanpa token
+ * yang sah — endpoint ini TIDAK publik. (Blok dokumentasi sebelumnya menyatakan "public,
+ * tidak butuh auth"; komentar yang salah itulah yang kemungkinan membuat sisi klien tidak
+ * pernah diuji dengan token yang benar, sehingga panel Leaderboard selalu berakhir di
+ * pesan "Gagal memuat data.")
+ *
+ * Bila token dikirim, respons juga memuat `my_stats` — statistik & peringkat pemanggil.
  */
 
 header('Content-Type: application/json; charset=utf-8');

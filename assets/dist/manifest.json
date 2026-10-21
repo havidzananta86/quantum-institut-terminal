@@ -34,28 +34,28 @@
       }
     },
     "inti": {
-      "file": "assets/dist/inti.1c0be51324.js",
+      "file": "assets/dist/inti.6bef35c94f.js",
       "muat": "sinkron",
       "sumber": {
         "qim-price-store.js": "352ac0b781a22a7c",
         "qim-chart-store.js": "b19a3cf8bac1c78f",
         "qim-paper-math.js": "aee88cf55d36654c",
-        "dashboard-app.js": "90b4ef2f8d55cb07",
-        "qim-dashboard.js": "34b84487289194e8",
+        "dashboard-app.js": "6b6277f1985e9c9e",
+        "qim-dashboard.js": "7fb9c4c53681cb71",
         "qim-indicators.js": "865b12d971fb3be1",
         "qim-trading-tools.js": "effc8efc7a189e34",
         "qim-mt5-socket.js": "56b7070dfcd743c8",
         "qim-notifications.js": "78fa5e780d4db523",
         "qim-pages.js": "421bcdad660193e8",
         "qim-risk.js": "b2e6279cbc6bcbd2",
-        "qim-alerts.js": "c2240339a4c0cb4f"
+        "qim-alerts.js": "7f281183be087286"
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.3c50afa12f.js",
+      "file": "assets/dist/fitur.74df44def6.js",
       "muat": "sinkron",
       "sumber": {
-        "pro-features.js": "556b10191a530046",
+        "pro-features.js": "668f6b3e81cc8de7",
         "pro-trading-tools.js": "41f59da4da5220eb",
         "chart-style.js": "36b18e58ca10d64c",
         "chart-zones.js": "2ee750876a9aa508",
@@ -70,13 +70,13 @@
         "qim-batas-rugi.js": "5bf1c70825ac61a6",
         "qim-brief-harian.js": "35d06ba5cf71ab56",
         "qim-mobile.js": "bd80a6a3bacf9526",
-        "dashboard-pro.js": "dee01078ad4b64f2",
-        "advanced-trading.js": "9d14312bccbfcadb",
-        "perf-upgrades.js": "0bd5552f901855cb",
-        "ui-improvements.js": "005c82eec7d07aa0",
+        "dashboard-pro.js": "38ac17290c7a5f41",
+        "advanced-trading.js": "0eb845c9ef29dc69",
+        "perf-upgrades.js": "7c09df0e5d70d2d9",
+        "ui-improvements.js": "1263b37ebfe2d850",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "1755101f1c5e1e42",
-        "halaman-dashboard.js": "673c2621837377cb"
+        "halaman-dashboard.js": "8da6e88336ac798e"
       }
     },
     "tunda": {
@@ -110,5 +110,5 @@
       }
     }
   },
-  "versi": "bda2863c5b"
+  "versi": "0cb8f242a9"
 }

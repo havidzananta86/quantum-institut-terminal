@@ -75,50 +75,13 @@ function updateLastUpdatedTime() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// #19 — Empty States with Illustrations + CTA
+// #19 — Empty States: DIHAPUS (kode mati)
 // ═══════════════════════════════════════════════════════════
-// fokus = selektor elemen yang difokuskan tombol CTA (data-qi-aksi="fokus").
-var EMPTY_STATES = {
-    'panel-journal': {
-        icon: '📔',
-        title: 'Belum ada catatan trading',
-        desc: 'Catat trade pertama Anda untuk membangun track record.',
-        cta: 'Buat Entri Pertama',
-        fokus: '#panel-journal form input'
-    },
-    'panel-alerts': {
-        icon: '🔔',
-        title: 'Belum ada price alert',
-        desc: 'Pasang alert untuk mendapat notifikasi saat harga mencapai target.',
-        cta: 'Buat Alert Pertama',
-        fokus: '#panel-alerts input'
-    },
-    'panel-paper': {
-        icon: '💼',
-        title: 'Belum ada paper trade',
-        desc: 'Latih strategi tanpa risiko — buka posisi paper trading pertama.',
-        cta: 'Buka Posisi Pertama',
-        fokus: '#ptSymbol'
-    },
-    'panel-watchlist': {
-        icon: '⭐',
-        title: 'Watchlist kosong',
-        desc: 'Tambahkan instrumen favorit untuk pantau harga secara real-time.',
-        cta: 'Tambah Instrumen',
-        fokus: '#panel-watchlist select'
-    }
-};
-
-window._qiEmptyState = function(panelId) {
-    var cfg = EMPTY_STATES[panelId];
-    if (!cfg) return '';
-    return '<div class="flex flex-col items-center justify-center py-10 px-4 text-center">' +
-        '<div class="text-4xl mb-3">' + cfg.icon + '</div>' +
-        '<div class="text-sm font-semibold text-white mb-1">' + cfg.title + '</div>' +
-        '<div class="text-[11px] text-slate-500 mb-4 max-w-xs">' + cfg.desc + '</div>' +
-        '<button data-qi-aksi="fokus" data-qi-arg="' + QIAksi.arg(cfg.fokus) + '" class="px-4 py-2 rounded-lg text-[11px] font-semibold bg-qi-cyan/15 text-qi-cyan border border-qi-cyan/30 hover:bg-qi-cyan/25 transition-all">' + cfg.cta + '</button>' +
-    '</div>';
-};
+// window._qiEmptyState dan tabel EMPTY_STATES-nya tidak pernah dipanggil dari mana pun
+// (pencarian '_qiEmptyState' di seluruh repo hanya menemukan definisinya sendiri).
+// Salah satu konfigurasinya bahkan menunjuk '#panel-journal form input', padahal
+// panel-journal tidak memuat satu pun elemen <form>. Tiap panel sudah menulis keadaan
+// kosongnya masing-masing, jadi blok ini dibuang seluruhnya.
 
 // ═══════════════════════════════════════════════════════════
 // #20 — Number Formatting Utility (global)

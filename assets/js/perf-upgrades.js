@@ -161,30 +161,12 @@
     }
 })();
 
-// ─── #48 Lazy-Load Heavy Panels ─────────────────────────────────────────────
-(function() {
-    if (typeof IntersectionObserver === 'undefined') return;
-
-    var heavyPanels = ['panel-risk','panel-screener','panel-volatility','panel-sentiment','panel-journal','panel-alerts'];
-
-    var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                var id = entry.target.id;
-                if (typeof initPanel === 'function') {
-                    initPanel(id);
-                }
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { rootMargin: '200px' });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            heavyPanels.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) observer.observe(el);
-            });
-        }, 1000);
-    });
-})();
+// ─── #48 Lazy-Load Heavy Panels — DIHAPUS ─────────────────────────────
+// Blok ini memasang IntersectionObserver pada enam panel berat. Semua panel memakai
+// kelas `hidden` (display:none) sampai switchPanel membukanya, dan elemen display:none
+// TIDAK PERNAH memicu IntersectionObserver — jadi callback-nya tidak pernah jalan.
+// Seandainya pun jalan, ia memanggil initPanel(id) langsung tanpa memeriksa/menandai
+// _panelInited, sehingga panel bisa diinisialisasi dua kali (timer & chart ganda).
+//
+// Inisialisasi panel sepenuhnya ditangani switchPanel() → initPanel() di dashboard-app.js,
+// yang memang menjaga _panelInited.

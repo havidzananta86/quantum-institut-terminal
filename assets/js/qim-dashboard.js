@@ -12,7 +12,7 @@
     const SYMBOLS = [
         { group: 'metals', symbol: 'XAUUSD', label: 'Gold · U.S. Dollar', icon: 'Au', iconClass: 'gold', tv: 'OANDA:XAUUSD' },
         { group: 'metals', symbol: 'XAGUSD', label: 'Silver · U.S. Dollar', icon: 'Ag', iconClass: 'silver', tv: 'OANDA:XAGUSD' },
-        { group: 'crypto', symbol: 'BTCUSDT', label: 'Bitcoin · TetherUS', icon: '₿', iconClass: 'btc', tv: 'OANDA:BTCUSD' },
+        { group: 'crypto', symbol: 'BTCUSDT', label: 'Bitcoin · TetherUS', icon: '₿', iconClass: 'btc', tv: 'BINANCE:BTCUSDT' },
         { group: 'crypto', symbol: 'ETHUSDT', label: 'Ethereum · Tether', icon: '◆', iconClass: 'eth', tv: 'BINANCE:ETHUSDT' },
         { group: 'crypto', symbol: 'SOLUSDT', label: 'Solana · Tether', icon: '◎', iconClass: 'sol', tv: 'BINANCE:SOLUSDT' },
         { group: 'crypto', symbol: 'BNBUSDT', label: 'BNB · Tether', icon: '◈', iconClass: 'bnb', tv: 'BINANCE:BNBUSDT' },

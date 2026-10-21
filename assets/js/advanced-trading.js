@@ -102,6 +102,39 @@ function renderAlertHistory() {
     el.innerHTML = html;
 }
 
+/**
+ * Catat satu alert yang KENA ke riwayat.
+ *
+ * Diekspor supaya jalur server (assets/js/qim-alerts.js → d.baru_kena) bisa memakainya
+ * juga. Sejak alert dipindah ke server, alert yang kena saat dashboard TERTUTUP — justru
+ * kasus utamanya — dikembalikan lewat `baru_kena` dan dulu hanya ditampilkan sebagai toast;
+ * tidak ada yang menyentuh _alertHistory, sehingga kotak "Riwayat Alert Terpicu" selamanya
+ * kosong kecuali alert kebetulan kena saat tab sedang terbuka.
+ */
+function catatAlertKena(entri) {
+    if (!entri || !entri.symbol) return;
+    var waktu = entri.triggeredAt || new Date().toISOString();
+    // Jangan menulis dua kali untuk alert yang sama (server mengirim ulang `baru_kena`
+    // sampai klien mengambilnya, dan jalur lokal bisa mendahului).
+    var kembar = _alertHistory.some(function (h) {
+        return h.symbol === entri.symbol && String(h.price) === String(entri.price)
+            && h.direction === entri.direction
+            && Math.abs(new Date(h.triggeredAt).getTime() - new Date(waktu).getTime()) < 120000;
+    });
+    if (kembar) return;
+    _alertHistory.unshift({
+        symbol: entri.symbol,
+        price: entri.price,
+        direction: entri.direction,
+        currentPrice: entri.currentPrice,
+        triggeredAt: waktu,
+        sumber: entri.sumber || 'lokal',
+    });
+    saveAlertHistory();
+    renderAlertHistory();
+}
+window.catatAlertKena = catatAlertKena;
+
 var _origCheckAlerts = window.checkPriceAlerts;
 window.checkPriceAlerts = function(prices) {
     if (!window._priceAlerts || !window._priceAlerts.length) return;
@@ -115,14 +148,12 @@ window.checkPriceAlerts = function(prices) {
         if (triggered) {
             a.active = false;
             if (typeof saveAlerts === 'function') saveAlerts();
-            _alertHistory.unshift({ symbol: a.symbol, price: a.price, direction: a.direction, currentPrice: cur, triggeredAt: new Date().toISOString() });
-            saveAlertHistory();
+            catatAlertKena({ symbol: a.symbol, price: a.price, direction: a.direction, currentPrice: cur, sumber: 'lokal' });
             var msg = a.symbol + ' mencapai ' + a.price + ' (sekarang: ' + cur + ')';
             if (window.showQuantumToast) showQuantumToast(msg, 'success', 6000);
             if (typeof sendBrowserNotification === 'function') sendBrowserNotification('Price Alert: ' + a.symbol, msg);
             if (window.QuantumAudio) window.QuantumAudio.playChime('alert');
             if (typeof renderAlerts === 'function') renderAlerts();
-            renderAlertHistory();
         }
     });
 };

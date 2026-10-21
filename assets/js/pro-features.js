@@ -327,6 +327,22 @@ function _sesiAktifSekarang() {
     if (jamUtc >= 21 || jamUtc < 6) aktif.push('Sydney');
     return aktif.length ? aktif.join('-') : '—';
 }
+/** Isi kartu "Rata-rata Volatilitas Pasar" dari ATR% yang benar-benar terbaca. */
+function qiSetVolRata(daftarPct) {
+    var nilaiEl = document.getElementById('volRataNilai');
+    var ketEl = document.getElementById('volRataKet');
+    if (!nilaiEl) return;
+    if (!daftarPct || !daftarPct.length) {
+        nilaiEl.textContent = '\u2014';
+        if (ketEl) ketEl.textContent = 'ATR belum terbaca dari sumber';
+        return;
+    }
+    var jml = 0;
+    for (var i = 0; i < daftarPct.length; i++) jml += daftarPct[i];
+    nilaiEl.textContent = (jml / daftarPct.length).toFixed(2) + '%';
+    if (ketEl) ketEl.textContent = 'ATR / harga, rata-rata ' + daftarPct.length + ' instrumen (TradingView)';
+}
+
 function renderVolatilityDash() {
     var el = document.getElementById('volBody');
     if (!el) return;
@@ -354,13 +370,18 @@ function renderVolatilityDash() {
             var data = (j && j.data) ? j.data : null;
             if (!data) throw new Error('kosong');
             var kunci = Object.keys(data).slice(0, 12);
+            var kumpulPct = [];
             el.innerHTML = kunci.map(function (sym) {
                 var d = data[sym] || {};
                 var ind = d.indicators || {};
                 var atr = (typeof ind.atr === 'number' && ind.atr > 0) ? ind.atr : null;
                 var atrPct = (atr !== null && typeof d.price === 'number' && d.price > 0) ? (atr / d.price * 100) : null;
+                if (atrPct !== null) kumpulPct.push(atrPct);
                 return baris(sym, atr, atrPct);
             }).join('');
+            // Kartu "Rata-rata Volatilitas Pasar" DIHITUNG dari baris yang baru saja dirender,
+            // bukan angka "2.4%" yang dulu ditulis tangan di dashboard.html dan tidak pernah berubah.
+            qiSetVolRata(kumpulPct);
             // Spread NYATA hanya untuk kripto (order book Binance). FX/logam dibiarkan "—".
             kunci.forEach(function (sym, idx) {
                 if (['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'].indexOf(sym) === -1) return;
@@ -382,6 +403,7 @@ function renderVolatilityDash() {
             el.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-center text-[10px] text-slate-500 leading-relaxed">'
                 + 'Data volatilitas tidak tersedia (sumber tidak merespons).<br>'
                 + '<span class="text-slate-600">Kami tidak menampilkan angka ATR contoh sebagai gantinya.</span></td></tr>';
+            qiSetVolRata([]);
         });
 }
 
@@ -690,6 +712,30 @@ function renderSwapRates() {
 /* ═══════════════════════════════════════════════════════════
    #20  SESSION CLOCK WIDGET
    ═══════════════════════════════════════════════════════════ */
+/**
+ * Jam + status OPEN/CLOSED tiap sesi untuk panel "Sessions & P&L Calendar".
+ *
+ * PERBAIKAN ZONA WAKTU: sebelumnya memakai `new Date(new Date().toLocaleString('en-US',
+ * { timeZone }))` — membentuk teks lalu MEM-PARSE-nya kembali. Hasil parse teks tanggal
+ * non-ISO bergantung implementasi dan bisa meleset satu jam. Sekarang memakai
+ * Intl.DateTimeFormat().formatToParts(), cara yang sama dengan jam header (updateClocks).
+ */
+function qiBagianWaktu(tz) {
+    var bagian = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hour12: false, weekday: 'short',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).formatToParts(new Date());
+    var out = {};
+    bagian.forEach(function (b) { out[b.type] = b.value; });
+    var jam = parseInt(out.hour, 10);
+    return {
+        jam: jam === 24 ? 0 : jam,            // sebagian runtime memakai "24" untuk tengah malam
+        menit: parseInt(out.minute, 10),
+        detik: parseInt(out.second, 10),
+        akhirPekan: out.weekday === 'Sat' || out.weekday === 'Sun',
+    };
+}
+
 function updateSessionClocks() {
     var sessions = [
         { id: 'scTokyo', tz: 'Asia/Tokyo', name: 'Tokyo', open: 9, close: 18, emoji: '🇯🇵' },
@@ -700,12 +746,10 @@ function updateSessionClocks() {
     sessions.forEach(function(s) {
         var el = document.getElementById(s.id);
         if (!el) return;
-        var now = new Date(new Date().toLocaleString('en-US', { timeZone: s.tz }));
-        var h = now.getHours();
-        var m = now.getMinutes();
-        var sec = now.getSeconds();
+        var w = qiBagianWaktu(s.tz);
+        var h = w.jam, m = w.menit, sec = w.detik;
         var timeStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
-        var isOpen = h >= s.open && h < s.close && now.getDay() !== 0 && now.getDay() !== 6;
+        var isOpen = h >= s.open && h < s.close && !w.akhirPekan;
         var minutesLeft = isOpen ? (s.close - h - 1) * 60 + (60 - m) : 0;
         var countdown = isOpen ? Math.floor(minutesLeft / 60) + 'h ' + (minutesLeft % 60) + 'm left' : 'Closed';
         el.innerHTML = '<div class="flex items-center justify-between">' +
@@ -1164,7 +1208,15 @@ function applyStickyHeaders() {
 (function() {
     loadAlerts();
     loadFontSize();
-    setInterval(function() { updateSessionClocks(); }, 1000);
+    // Kartu jam sesi hanya ada di panel-sentiment. Dulu interval ini berjalan tiap detik
+    // sepanjang halaman hidup — termasuk saat panelnya tersembunyi — dan tiap tik menulis
+    // ulang innerHTML empat kartu. Sekarang hanya berdetak bila kartunya benar-benar terlihat.
+    setInterval(function () {
+        if (document.hidden) return;
+        var kartu = document.getElementById('scTokyo');
+        if (!kartu || !kartu.offsetParent) return;   // offsetParent null = induknya display:none
+        updateSessionClocks();
+    }, 1000);
     setInterval(function() { checkNewSignals(); }, 60000);
     setInterval(function() { updateStatusBar(); }, 10000);
     updateSessionClocks();
