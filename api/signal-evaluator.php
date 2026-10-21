@@ -7,6 +7,15 @@
  * win rate / profit factor / expectancy di halaman rekor sinyal tidak akan pernah
  * terisi (di produksi: 7 sinyal semuanya berstatus AKTIF dengan P/L 0).
  *
+ * ── VERSI ATURAN PENILAIAN ──────────────────────────────────────────────────
+ *  1 = tanpa spread · 2 = spread + harga keluar saat gap (2026-10-19)
+ *  3 = + slippage entry/SL + resolusi M1 untuk candle ambigu
+ *
+ *  Versi hanya dinaikkan bila PUTUSANNYA berubah (menang/kalah atau harga keluar).
+ *  Penambahan MAE/MFE pada 2026-10-21 TIDAK menaikkan versi: keduanya catatan
+ *  tambahan tentang perjalanan posisi, bukan perubahan cara menilai — menaikkannya
+ *  akan membuat statistik seolah-olah berasal dari aturan yang berbeda.
+ *
  * ── ATURAN PENILAIAN (sengaja KONSERVATIF) ──────────────────────────────────
  *  1. Hanya sinyal berstatus "AKTIF" yang disentuh. Sinyal yang sudah selesai
  *     TIDAK PERNAH ditulis ulang — riwayat bersifat tetap.
@@ -55,6 +64,10 @@
  *   --warm : panggil api/get-chart-data.php lebih dulu untuk mengisi cache candle
  *            pada simbol/timeframe yang dibutuhkan (dipakai dari cron).
  */
+
+// Versi aturan penilaian yang berlaku (lihat kepala berkas). Dipakai juga oleh
+// api/_signal_stats.php untuk memisahkan statistik per versi.
+if (!defined('QI_VERSI_PENILAIAN')) define('QI_VERSI_PENILAIAN', 3);
 
 require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
@@ -192,9 +205,31 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     $entryEfektif = $entry + (($side === 'BUY') ? $off['ask_off'] + $slip : $off['bid_off'] - $slip);
     $resolusi = null;
 
+    // MAE / MFE — seberapa jauh harga bergerak MELAWAN dan MENDUKUNG posisi sebelum selesai,
+    // dalam satuan R (1R = jarak entry ke SL yang direncanakan).
+    //
+    // MENGAPA PENTING: win rate dan expectancy hanya memberi tahu HASILNYA, bukan SEBABNYA.
+    // MAE/MFE menjawab pertanyaan yang menentukan arah perbaikan:
+    //   · MAE kecil pada transaksi yang kalah  → arahnya memang salah, bukan SL kesempitan;
+    //   · MAE besar lalu akhirnya menang       → SL hampir tersentuh, entry-nya terlalu dini;
+    //   · MFE mendekati TP lalu berbalik kalah → TP terlalu jauh, bukan sinyalnya jelek.
+    // Dicatat untuk SEMUA transaksi tertutup, termasuk yang kalah.
+    $risiko = abs($entry - $sl);
+    $maeR = 0.0; $mfeR = 0.0;
+    $catatMaeMfe = static function (float $high, float $low) use ($side, $entry, $risiko, &$maeR, &$mfeR): void {
+        if ($risiko <= 0) return;
+        $mendukung = ($side === 'BUY') ? $high - $entry : $entry - $low;   // sejauh mana untung
+        $melawan   = ($side === 'BUY') ? $entry - $low  : $high - $entry;  // sejauh mana rugi
+        if ($mendukung > 0) $mfeR = max($mfeR, $mendukung / $risiko);
+        if ($melawan   > 0) $maeR = max($maeR, $melawan   / $risiko);
+    };
+
     foreach ($filtered as $c) {
         $tpKena = false; $slKena = false; $harga = 0.0;
         $o = $c['open'] + $offTutup; $h = $c['high'] + $offTutup; $l = $c['low'] + $offTutup;
+        // Candle ini ikut dihitung SEBELUM diperiksa apakah TP/SL tersentuh: candle penutup
+        // tetap bagian dari perjalanan posisi.
+        $catatMaeMfe($h, $l);
         $slStop = ($side === 'BUY') ? $sl - $slip : $sl + $slip;   // harga isi SL tanpa gap
         if ($side === 'BUY') {
             if ($o >= $tp) { $tpKena = true; $harga = $o; }      // gap naik melewati TP
@@ -272,6 +307,9 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
                 'exit_price'  => round($keluar, 6),
                 'closed_at'   => qi_sig_waktu_utc($c['time']),
                 'pnl'         => round($selisih, 6),
+                // Perjalanan posisi sebelum selesai (lihat $catatMaeMfe di atas).
+                'mae_r'       => round($maeR, 3),
+                'mfe_r'       => round($mfeR, 3),
                 // Harga keluar WAJIB dikirim: untuk pair berbasis USD (USDJPY/USDCHF/USDCAD)
                 // qi_paper_pip_mult() mengonversi ke USD dengan 100.000/harga, dan hanya jatuh
                 // ke konvensi lama 1000 bila harga tidak diberikan — selisihnya ~50% pada USDJPY.
@@ -426,10 +464,10 @@ function qi_sig_nilai_rekor(array $s): array {
             if (isset($sBiaya[$f])) $ubah[$f] = $sBiaya[$f];
         }
     }
-    // Versi aturan PENILAIAN: 2 = spread + harga keluar saat gap (2026-10-19);
-    // 3 = + slippage entry/SL + resolusi M1 untuk candle ambigu. Rekor yang ditutup
-    // sebelumnya tidak ditulis ulang; statistik memisahkannya (per_versi_penilaian).
-    $ubah['versi_penilaian'] = 3;
+    // Versi aturan PENILAIAN (QI_VERSI_PENILAIAN, lihat kepala berkas). Rekor yang ditutup
+    // dengan versi lama TIDAK ditulis ulang; statistik memisahkannya (per_versi_penilaian)
+    // supaya angka dari aturan berbeda tidak tercampur diam-diam.
+    $ubah['versi_penilaian'] = QI_VERSI_PENILAIAN;
     $ubah['evaluated_at']   = qi_sig_waktu_utc();
     $ubah['evaluated_from'] = $pakai['interval'] === 'tanpa_data' ? 'tanpa_data' : 'cache/' . $pakai['interval'];
     return ['hasil' => $hasil, 'pakai' => $pakai, 'ada_data' => $adaData, 'ubah' => $ubah];

@@ -208,7 +208,10 @@ batas, dan pembersihan rate-limit di `_middleware.php` hanya berjalan pada
 
 ```
 api/            39 endpoint; _middleware.php = CORS, rate limit, auth
-engine/         Mesin sinyal (SNR, SMC, Ichimoku, Fibonacci, dll)
+                9 Mesin Kuantum ada di assets/js/engine-nine.js (sisi peramban) dan
+                api/_engine_server.php (sisi server). Folder engine/ DIHAPUS 2026-10-21:
+                isinya 10 berkas yang tidak pernah dipanggil siapa pun — mengeditnya
+                untuk "memperbaiki sinyal" tidak mengubah apa pun.
 assets/css/     tokens.css = design token + tambalan utilitas Tailwind
 assets/js/      auth.js = sesi/token; sisanya fitur per halaman
 cache/          Cache & rate limit berbasis file (gitignored)

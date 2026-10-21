@@ -26,7 +26,8 @@ cek('AI signal: blackout untuk simbol yang dianalisa', /qi_berita_blackout\(30, 
 const rec = baca('api/_signal_record.php');
 cek('pencatat: gerbang spread + korelasi + versi aturan', /qi_gr_cek_spread\(/.test(rec) && /qi_gr_cek_korelasi\(/.test(rec) && /versi_aturan/.test(rec));
 cek('pencatat: korelasi diperiksa DI BAWAH kunci (sesudah cek pagar)', rec.indexOf('qi_gr_cek_korelasi(') > rec.indexOf('$periksa = qi_signal_cek_pagar('));
-cek('evaluator menandai versi_penilaian', /'versi_penilaian'] = [2-9]/.test(baca('api/signal-evaluator.php')));
+// Nilainya kini dari konstanta bernama QI_VERSI_PENILAIAN (sebelumnya angka di tengah kode).
+cek('evaluator menandai versi_penilaian', /'versi_penilaian'] = QI_VERSI_PENILAIAN/.test(baca('api/signal-evaluator.php')) && /define\('QI_VERSI_PENILAIAN', [2-9]\)/.test(baca('api/signal-evaluator.php')));
 const sh = baca('api/signal-history.php');
 cek('API rekor: statistik_dimensi + monte_carlo', /'statistik_dimensi'/.test(sh) && /'monte_carlo'/.test(sh));
 const hl = baca('api/health.php');
