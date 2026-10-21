@@ -441,17 +441,15 @@ setInterval(updateClocks, 1000);
 
 // ─── Calendar Heatmap ─────────────────────────────────────────────────────
 let _calEvents  = [];
-// Penggeser minggu panel Kalender. Dideklarasikan DI SINI, bukan di dekat
-// calNavWeek(), karena fetchCalendarHeatmap() di bawah dipanggil saat halaman dimuat
-// — jauh sebelum baris itu dieksekusi. `const`/`let` yang belum diinisialisasi berada
-// di temporal dead zone, dan menyentuhnya (bahkan lewat `typeof`) melempar ReferenceError.
+// Minggu yang ditampilkan panel Kalender.
 //
-// ForexFactory hanya menerbitkan TIGA umpan (minggu lalu, berjalan, depan), jadi
-// penggesernya dibatasi −1..+1 — bukan tak terbatas seperti dulu, yang membuat label
-// berubah jadi "+3 week" padahal isi tabelnya tidak pernah ikut berganti.
+// KENYATAANNYA: nfs.faireconomy.media hanya menerbitkan ff_calendar_thisweek.json — umpan
+// lastweek/nextweek membalas HTTP 404. Karena itu tombol ‹ › sudah dibuang dari panel:
+// dulu keduanya hanya mengubah label ("+1 week") tanpa pernah mengubah satu baris pun di
+// tabel. Dukungan ?week= di api/calendar.php sengaja dipertahankan supaya navigasi bisa
+// dihidupkan lagi tanpa mengubah apa pun di sini bila umpannya tersedia kembali.
 let _calWeekOff = 0;
 const CAL_MINGGU = { '-1': 'last', '0': 'this', '1': 'next' };
-const CAL_MINGGU_LABEL = { '-1': 'Minggu lalu', '0': 'Minggu ini', '1': 'Minggu depan' };
 let _calSelected = null;
 
 async function fetchCalendarHeatmap() {
@@ -3033,23 +3031,19 @@ function toggleCalFilter(type) {
     renderCalTable();
 }
 
-function calNavWeek(dir) {
-    const baru = Math.max(-1, Math.min(1, _calWeekOff + dir));
-    if (baru === _calWeekOff) return;
-    _calWeekOff = baru;
-    const label = document.getElementById('calWeekLabel');
-    if (label) label.textContent = CAL_MINGGU_LABEL[String(_calWeekOff)];
-    // Datanya harus DIAMBIL ULANG: setiap minggu adalah umpan yang berbeda di server.
-    fetchCalendarHeatmap().then(() => {
-        renderCalTable();
-        try { renderCalGrid2(_calEvents); } catch (e) {}
-        try { renderCalFullList(_calEvents); } catch (e) {}
-    });
-}
 
 function renderCalTable() {
     const body = document.getElementById('calTableBody');
-    if (!body || !_calEvents.length) return;
+    if (!body) return;
+    // Dulu fungsi ini DIAM saja bila _calEvents kosong, sehingga baris minggu sebelumnya
+    // tetap terpampang walau pengambilan terakhir gagal — data basi terlihat seperti baru.
+    if (!_calEvents.length) {
+        body.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-600">'
+            + 'Kalender ekonomi belum bisa diambil dari sumbernya.</td></tr>';
+        const cntKosong = document.getElementById('calEventCount');
+        if (cntKosong) cntKosong.textContent = '0 events';
+        return;
+    }
     const cur = document.getElementById('calFilterCur')?.value || 'ALL';
 
     const filtered = _calEvents.filter(e => {

@@ -17,9 +17,13 @@ if (!is_dir($cacheDir)) {
 }
 
 // ── MINGGU YANG DIMINTA ─────────────────────────────────────────────────────
-// ForexFactory menerbitkan TIGA umpan terpisah. Sebelumnya hanya "thisweek" yang
-// pernah diambil, sehingga tombol ‹ › di panel Kalender mengubah labelnya tetapi
-// isi tabelnya persis sama — pengguna mengira tombolnya rusak.
+// CATATAN (diperiksa 2026-10-21): dari ketiga umpan di bawah, hanya ff_calendar_thisweek.json
+// yang benar-benar ada — lastweek dan nextweek membalas HTTP 404. Karena itu tombol ‹ › sudah
+// DIBUANG dari panel Kalender: dulu keduanya hanya mengubah label ("+1 week") tanpa pernah
+// mengubah satu baris pun di tabel, persis keluhan audit. Parameter ?week= dipertahankan
+// supaya navigasinya bisa dihidupkan lagi tanpa mengubah kode bila umpan itu tersedia
+// kembali. Minggu yang umpannya 404 dijawab status 'gagal' dengan daftar KOSONG — tidak
+// mengarang event, dan tidak menimpa cache minggu berjalan.
 //
 // PENTING: hanya minggu berjalan yang boleh menulis cache/calendar.json, karena berkas
 // itu dipakai pipeline sinyal (blackout berita, signal-news, _fundamental, brief harian)

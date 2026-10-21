@@ -191,7 +191,12 @@ console.log('\nFungsi yang rusak (galat 2/3/4/5/15/17/18/20/41/47/48/51/62/69/70
   cek('saldo awal tidak lagi ditulis mati $10.000', /function qiSaldoAwalPaper\(\)/.test(adv) && !/var cum = 10000;/.test(adv));
   cek('QIExport.paperTrades aman untuk data lama',
     /Array\.isArray\(v\) \? v : \[\]/.test(adv) && !tanpaKomentar(adv).includes('saved.positions.length'));
-  cek('tombol minggu kalender mengambil data baru', /CAL_MINGGU\[String\(_calWeekOff\)\]/.test(app) && /api\/calendar\.php\?week=/.test(app));
+  // Umpan lastweek/nextweek ForexFactory membalas 404 (diperiksa 2026-10-21), jadi tombol
+  // navigasi minggu DIBUANG — dulu ia hanya mengubah label tanpa mengubah satu baris pun.
+  cek('tombol navigasi minggu kalender sudah tidak ada', !/calNavWeek/.test(html) && !/function calNavWeek/.test(app));
+  cek('dukungan ?week= di server tetap ada untuk dihidupkan lagi', /CAL_MINGGU\[String\(_calWeekOff\)\]/.test(app) && /api\/calendar\.php\?week=/.test(app));
+  cek('tabel kalender kosong dikatakan apa adanya, bukan dibiarkan basi',
+    /Kalender ekonomi belum bisa diambil dari sumbernya/.test(app));
   cek('server kalender mendukung last/this/next', /'last' => 'ff_calendar_lastweek\.json'/.test(baca('api/calendar.php')));
   cek('hanya minggu berjalan yang menulis cache/calendar.json (dipakai pipeline sinyal)',
     /\$week === 'this' \? '\/calendar\.json'/.test(baca('api/calendar.php')));
