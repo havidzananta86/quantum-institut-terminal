@@ -171,8 +171,8 @@ async function bukaBrowser(lebar, tinggi, token) {
 async function cekHalaman() {
   console.log('Halaman (desktop)');
   const publik = ['', 'index.html', 'login.html', 'register.html', 'pricing.html', 'privacy.html', 'terms.html', 'status.html', 'economic-calendar.html', 'pwa.html', 'transparansi.html', '404.html',
-    'metodologi.html', 'risiko.html', 'changelog.html', 'bantuan.html'];
-  const login = ['profile.html', 'admin.html'];
+    'metodologi.html', 'risiko.html', 'changelog.html', 'bantuan.html', 'kompetisi.html'];
+  const login = ['profile.html', 'admin.html', 'kompetisi.html'];
   for (const [daftar, token] of [[publik, ''], [login, tokenAdmin]]) {
     const b = await bukaBrowser(1440, 900, token);
     try {
