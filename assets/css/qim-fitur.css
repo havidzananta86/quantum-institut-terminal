@@ -135,7 +135,12 @@ body.qbt-terbuka { overflow: hidden; }
     .qim-header > * { min-width: 0; }
     .qim-header .qim-brand { flex: 0 4 auto; min-width: 140px; overflow: hidden; }
     .qim-header .qim-brand-caption { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    .qim-header .qim-top-nav { flex: 0 0.01 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    /* flex-shrink 1, BUKAN 0.01: bila jumlah faktor shrink < 1, flexbox hanya menyerap sebagian
+       kekurangan ruang — terukur 0.5 menyisakan 0,9 px dan 0.01 menyisakan 1,8 px penuh, jadi
+       "menu bisa digeser" di atas tidak pernah benar-benar terjadi dan tombol kanan yang terbuang.
+       Brand tetap mengalah lebih dulu (shrink 4 sampai min-width 140 px); nav baru menyusut setelah
+       itu, dan hanya sebesar kekurangannya — pada nama pengguna pendek lebarnya tetap 654 px. */
+    .qim-header .qim-top-nav { flex: 0 1 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
     .qim-header .qim-top-nav::-webkit-scrollbar { display: none; }
     .qim-header .qim-top-link { flex: 0 0 auto; white-space: nowrap; }
     /* Ticker hanya bila muat utuh (≥ 2000 px); di bawah itu tinggal potongan sempit — countdown berita tetap ada
