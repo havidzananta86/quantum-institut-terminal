@@ -62,7 +62,10 @@ body:has(#sidebar.sidebar-collapsed) { --qim-sb:0px; }
 .qim-brand-divider { height:28px; width:1px; margin:0 5px 0 8px; background:var(--qim-border); }
 .qim-brand-caption { overflow:hidden; white-space:nowrap; font-size:12px; font-weight:600; }
 .qim-top-nav { display:flex; align-items:stretch; gap:4px; min-width:0; }
-.qim-top-link { position:relative; border:0; padding:0 13px; color:#9aa2b2; background:transparent; white-space:nowrap; font-size:12px; cursor:pointer; }
+/* display:flex + align-items:center WAJIB: .qim-top-nav memakai align-items:stretch, dan <button>
+   memusatkan labelnya sendiri sementara <a> tidak — teks tautan jatuh ke garis atas kotak yang
+   sudah diregangkan. Tanpa ini "Arena" (satu-satunya <a> di nav) melayang di atas item lain. */
+.qim-top-link { position:relative; display:flex; align-items:center; border:0; padding:0 13px; color:#9aa2b2; background:transparent; white-space:nowrap; font-size:12px; text-decoration:none; cursor:pointer; }
 .qim-top-link:hover, .qim-top-link.active { color:var(--qim-cyan); }
 .qim-top-link.active::after { position:absolute; bottom:0; left:10px; right:10px; height:3px; border-radius:3px 3px 0 0; background:#087df5; content:""; }
 .qim-header-actions { display:flex; align-items:center; gap:10px; margin-left:auto; padding:0 14px; }
