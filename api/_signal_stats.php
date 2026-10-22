@@ -680,6 +680,9 @@ function qi_signal_statistik_dimensi(array $records): array
         // angkanya lebih bagus dari kenyataan. Dipisah supaya tidak tercampur diam-diam.
         'per_versi_penilaian' => qi_signal_statistik_per($records, fn($r) => [
             1 => 'v1 (tanpa spread)', 2 => 'v2 (spread + gap)', 3 => 'v3 (spread + gap + slippage + M1)',
+            // v4 (2026-10-22): entry yang jauh dari pasar baru dihitung terisi bila harga MENYENTUHNYA;
+            // tidak tersentuh sampai kedaluwarsa = EXPIRED 'entry_tak_terisi', bukan menang instan.
+            4 => 'v4 (+ entry harus terisi)',
         ][(int)($r['versi_penilaian'] ?? 1)] ?? ('v' . (int)$r['versi_penilaian'])),
         'per_versi_aturan' => qi_signal_statistik_per($records, fn($r) => (string)($r['versi_aturan'] ?? 'v1')),
     ];

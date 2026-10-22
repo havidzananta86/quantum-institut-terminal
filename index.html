@@ -138,7 +138,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=8641382455">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=4d4e1ced9f">
 
     <link rel="stylesheet" href="assets/css/style.css?v=9f82b23c06">
     <link rel="stylesheet" href="assets/css/responsive.css?v=ba959512cd">
@@ -307,7 +307,7 @@
                 <button type="button" data-qi-theme-toggle class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-700 hover:border-cyan-500/30 text-slate-400 hover:text-white transition-colors" title="Toggle theme" aria-label="Toggle light/dark theme">
                     <span data-theme-icon><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
                 </button>
-                <a href="login.html" class="min-h-[44px] px-3.5 py-2 flex items-center text-xs lg:text-sm font-medium text-slate-300 hover:text-white border border-transparent hover:border-cyan-500/30 rounded-lg transition-all">
+                <a href="login.html" data-qi-nav-masuk class="min-h-[44px] px-3.5 py-2 flex items-center text-xs lg:text-sm font-medium text-slate-300 hover:text-white border border-transparent hover:border-cyan-500/30 rounded-lg transition-all">
                     Masuk
                 </a>
                 <div class="relative" id="navCtaWrap">
@@ -327,7 +327,7 @@
                             </div>
                         </a>
                         <div style="border-top:1px solid #1a1a1a"></div>
-                        <a href="dashboard.html" class="flex items-center gap-3 px-3.5 py-3 rounded-b-xl transition-colors hover:bg-white/5">
+                        <a href="dashboard.html?panel=panel-charts" class="flex items-center gap-3 px-3.5 py-3 rounded-b-xl transition-colors hover:bg-white/5">
                             <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.25)">
                                 <svg class="w-4 h-4" style="color:#00E5FF" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             </span>
@@ -366,13 +366,13 @@
                 Download Aplikasi
             </a>
             <div class="pt-4 border-t border-slate-800 flex flex-col gap-3">
-                <a href="login.html" class="w-full min-h-[44px] py-3 text-center text-sm font-medium text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center">Masuk</a>
+                <a href="login.html" data-qi-nav-masuk class="w-full min-h-[44px] py-3 text-center text-sm font-medium text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center">Masuk</a>
                 <div class="grid grid-cols-2 gap-2">
                     <a href="dashboard.html" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-white rounded-lg flex items-center justify-center gap-1.5" style="background:rgba(124,77,255,0.2);border:1px solid rgba(124,77,255,0.4)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
                         Command Center
                     </a>
-                    <a href="dashboard.html" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center gap-1.5">
+                    <a href="dashboard.html?panel=panel-charts" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         Terminal
                     </a>
@@ -560,7 +560,7 @@
                 </div>
                 <div class="qi-card p-5">
                     <div class="font-heading font-bold text-white text-sm mb-2">Cara menilai ditulis jelas</div>
-                    <p class="text-[12px] text-slate-400 leading-relaxed">Bila satu candle menyentuh SL dan TP sekaligus, SL dihitung lebih dulu. Spread dan komisi dijelaskan sebagai batasan.</p>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Bila satu candle menyentuh SL dan TP sekaligus, urutannya diurai dari candle 1 menit; bila tetap ambigu, SL dihitung lebih dulu. Spread dan perkiraan slippage dikurangkan; komisi broker belum.</p>
                 </div>
             </div>
             <div class="text-center mt-8 reveal">
@@ -1263,7 +1263,7 @@
     <script src="assets/js/main.js?v=1.4.2"></script>
     <script src="assets/js/ticker.js?v=1.4.0"></script>
 
-    <script src="assets/js/halaman-index.js?v=9c79e87370"></script>
+    <script src="assets/js/halaman-index.js?v=cec91ac0a2"></script>
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

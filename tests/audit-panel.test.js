@@ -107,14 +107,19 @@ console.log('\nAngka yang tidak bisa dipertanggungjawabkan (galat 25/27/29/34/35
 
 console.log('\nMatematika radar (galat 55)');
 {
-  cek('RSI dihitung dari close-ke-close (Wilder), bukan badan lilin', /function rsiWilder|const rsiWilder/.test(app));
+  // Sejak telaah ulang G3b radar memakai RSI BERSAMA (calcRSI → qiRsiWilderSeri, close-ke-close
+  // Wilder, bar ber-rentang nol dibuang) — bukan lagi salinan rsiWilder sendiri. Angka radar vs
+  // panel RSI dibuktikan dengan menjalankan runRadarScan di tests/rsi-satu-rumus.test.js.
+  const radar = app.slice(app.indexOf('async function runRadarScan('), app.indexOf('// ─── Paper Trading'));
+  cek('RSI radar = calcRSI bersama (close-ke-close Wilder), bukan badan lilin / salinan sendiri',
+    /const rsiNilai = calcRSI\(candles, 14\)/.test(radar) && !/const rsiWilder =/.test(radar) && !/c\.close\s*-\s*c\.open/.test(radar));
   cek('EMA memakai seed SMA, bukan harga pertama', /const emaAkhir = \(nilai, periode\)/.test(app));
   cek('instrumen dengan candle kurang dinyatakan belum cukup', /Candle belum cukup \(butuh 22/.test(app));
   // Buktikan angkanya, bukan sekadar ada teksnya.
-  const ctx = { console };
+  const ctx = { console, Math, Number, Array, isFinite };
   vm.createContext(ctx);
-  const potong = app.slice(app.indexOf('const rsiWilder ='), app.indexOf('const rsiNilai ='));
-  vm.runInContext(potong + '\nglobalThis.R = rsiWilder;', ctx);
+  const potong = app.slice(app.indexOf('function qiBarDatar('), app.indexOf('function calcMACDHist('));
+  vm.runInContext(potong + '\nglobalThis.R = calcRSI;', ctx);
   const naik = Array.from({ length: 40 }, (_, i) => 100 + i);
   const turun = Array.from({ length: 40 }, (_, i) => 140 - i);
   const datar = new Array(40).fill(50);

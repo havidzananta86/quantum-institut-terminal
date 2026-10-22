@@ -25,10 +25,21 @@ declare(strict_types=1);
  * AMBANG (dinyatakan terbuka supaya bisa diperdebatkan):
  *   · Putusan dari skor TradingView: ≥ 0,1 BUY · ≤ −0,1 SELL · selain itu NETRAL.
  *   · Golden cross: EMA50 di atas EMA200 (dan sebaliknya).
- *   · Pullback EMA200: harga dalam 1× ATR dari EMA200.
+ *   · Pullback EMA200: harga dalam 1× ATR HARIAN dari EMA200 (harian).
  *   · Fibonacci golden zone: posisi 0,382–0,618 pada rentang Low.1M–High.1M.
- *   · SNR: level dalam 0,5× ATR dianggap dekat.
+ *   · SNR: level dalam 0,5× ATR HARIAN dianggap dekat.
  *   · Konfluensi: minimal 3 mesin searah (sesuai spesifikasi Bagian 2).
+ *
+ * SATUAN ATR = TIMEFRAME NILAINYA (audit sinyal 2026-10-22): kolom scanner TANPA akhiran
+ * (EMA200, MACD.macd, VWAP, High.1M, …) adalah HARIAN, tetapi dulu semuanya dibagi 'ATR|60'
+ * (H1, kira-kira 1/4–1/5 ATR harian). Akibatnya pullback EMA200 hampir selalu NETRAL, skor
+ * MACD selalu jenuh 100, SNR nyaris tak pernah aktif, dan teks "× ATR" di jejak mesin
+ * menyesatkan. Sekarang nilai harian dibagi kolom 'ATR' (harian) — bila ATR harian tidak ada,
+ * mesin itu dinyatakan tidak tersedia, TIDAK diam-diam memakai ATR timeframe lain.
+ *
+ * JAM SESI: sesi New York dihitung dalam WIB secara EKSPLISIT (Asia/Jakarta). Dulu date('G')
+ * mengikuti zona php.ini (Europe/Berlin lokal, UTC di hosting) sehingga "sesi New York AKTIF"
+ * tertulis pada jam yang salah di quantum_engine_outputs.
  */
 
 if (!function_exists('qi_eng_putusan')) {
@@ -127,6 +138,22 @@ if (!function_exists('qi_eng_putusan')) {
         return round(max(0.0, min(100.0, $nilai)), 1);
     }
 
+    /**
+     * ATR HARIAN (kolom 'ATR' tanpa akhiran) — satuan yang sama dengan kolom harian lain.
+     * null bila tidak ada; TIDAK jatuh ke 'ATR|60' (H1) karena itu satuan yang berbeda.
+     */
+    function qi_eng_atr_harian(array $c): ?float
+    {
+        $atr = qi_eng_angka($c, 'ATR');
+        return ($atr !== null && $atr > 0) ? $atr : null;
+    }
+
+    /** Jam (0–23) WIB, eksplisit Asia/Jakarta — tidak bergantung zona php.ini. */
+    function qi_eng_jam_wib(?int $epoch = null): int
+    {
+        return (int)(new DateTimeImmutable('@' . ($epoch ?? time())))->setTimezone(new DateTimeZone('Asia/Jakarta'))->format('G');
+    }
+
     /** Kerangka hasil satu mesin. */
     function qi_eng_hasil(string $kode, string $nama, bool $tersedia, string $arah, float $skor, string $dasar): array
     {
@@ -155,10 +182,10 @@ if (!function_exists('qi_eng_putusan')) {
     {
         $harga = qi_eng_angka($c, 'close'); $ema200 = qi_eng_angka($c, 'EMA200');
         $ema20 = qi_eng_angka($c, 'EMA20'); $ema50 = qi_eng_angka($c, 'EMA50');
-        $atr = qi_eng_angka($c, 'ATR|60') ?? qi_eng_angka($c, 'ATR');
+        $atr = qi_eng_atr_harian($c);   // EMA200 harian → ATR harian (dulu ATR|60)
         $adx = qi_eng_angka($c, 'ADX');
-        if ($harga === null || $ema200 === null || $atr === null || $atr <= 0) {
-            return qi_eng_hasil('EMA200', 'Quantum EMA200 Pullback', false, 'NETRAL', 0, 'Harga/EMA200/ATR tidak lengkap.');
+        if ($harga === null || $ema200 === null || $atr === null) {
+            return qi_eng_hasil('EMA200', 'Quantum EMA200 Pullback', false, 'NETRAL', 0, 'Harga/EMA200/ATR harian tidak lengkap.');
         }
         $tren = ($harga > $ema200) ? 'BUY' : (($harga < $ema200) ? 'SELL' : 'NETRAL');
         $jarakAtr = abs($harga - $ema200) / $atr;
@@ -169,7 +196,7 @@ if (!function_exists('qi_eng_putusan')) {
         $kekuatan = ($adx !== null) ? min(100.0, $adx * 2.0) : 40.0;   // ADX 50 → 100
         $selaras = (($ema20 !== null && $ema50 !== null) && (($tren === 'BUY' && $ema20 > $ema50) || ($tren === 'SELL' && $ema20 < $ema50)));
         $skor = qi_eng_batas($pullback ? ($kekuatan * ($selaras ? 1.0 : 0.7)) : ($kekuatan * 0.4));
-        $dasar = 'Harga ' . round($harga, 5) . ' vs EMA200 ' . round($ema200, 5) . ' (jarak ' . round($jarakAtr, 2) . '× ATR)'
+        $dasar = 'Harga ' . round($harga, 5) . ' vs EMA200 harian ' . round($ema200, 5) . ' (jarak ' . round($jarakAtr, 2) . '× ATR harian)'
                . ($pullback ? ' · sedang pullback ke EMA200' : ' · belum pullback (menunggu)')
                . ($adx !== null ? (' · ADX ' . round($adx, 1)) : '');
         return qi_eng_hasil('EMA200', 'Quantum EMA200 Pullback', true, $arah, $skor, $dasar);
@@ -179,7 +206,7 @@ if (!function_exists('qi_eng_putusan')) {
     function qi_eng_macd(array $c): array
     {
         $macd = qi_eng_angka($c, 'MACD.macd'); $sinyal = qi_eng_angka($c, 'MACD.signal');
-        $atr = qi_eng_angka($c, 'ATR|60') ?? qi_eng_angka($c, 'ATR');
+        $atr = qi_eng_atr_harian($c);   // MACD harian → ATR harian (dulu ATR|60: skor selalu jenuh 100)
         if ($macd === null || $sinyal === null) {
             return qi_eng_hasil('MACD_MOM', 'Quantum MACD Momentum', false, 'NETRAL', 0, 'MACD tidak tersedia.');
         }
@@ -188,8 +215,8 @@ if (!function_exists('qi_eng_putusan')) {
         // Kekuatan dinormalkan terhadap ATR supaya sebanding antar simbol.
         $rasio = ($atr !== null && $atr > 0) ? (abs($hist) / $atr) : null;
         $skor = qi_eng_batas($rasio === null ? 50.0 : ($rasio * 250.0));   // 0,4× ATR → 100
-        $dasar = 'MACD ' . round($macd, 5) . ' vs signal ' . round($sinyal, 5) . ' · histogram ' . round($hist, 5)
-               . ($rasio !== null ? (' (' . round($rasio, 3) . '× ATR)') : '');
+        $dasar = 'MACD harian ' . round($macd, 5) . ' vs signal ' . round($sinyal, 5) . ' · histogram ' . round($hist, 5)
+               . ($rasio !== null ? (' (' . round($rasio, 3) . '× ATR harian)') : ' (ATR harian tidak tersedia — skor netral 50)');
         return qi_eng_hasil('MACD_MOM', 'Quantum MACD Momentum', true, $arah, $skor, $dasar);
     }
 
@@ -228,7 +255,7 @@ if (!function_exists('qi_eng_putusan')) {
                       || ($arah === 'SELL' && (($mom !== null && $mom > 0) || ($ao !== null && $ao > 0))));
         if ($bertentangan) $arah = 'NETRAL';
         $skor = qi_eng_batas(abs($rec) * 100.0);
-        $jam = $jam ?? (int)date('G');
+        $jam = $jam ?? qi_eng_jam_wib();      // WIB eksplisit (dulu date('G') = zona php.ini)
         $sesiNy = ($jam >= 20 || $jam < 2);   // 20:00–01:59 WIB (pembukaan New York)
         $dasar = 'H1: ' . $putusan . ' (skor ' . round($rec, 3) . ')' . ($mom !== null ? (' · Mom ' . round($mom, 5)) : '')
                . ($ao !== null ? (' · AO ' . round($ao, 5)) : '') . ($bertentangan ? ' · momentum bertentangan → NETRAL' : '')
@@ -259,9 +286,9 @@ if (!function_exists('qi_eng_putusan')) {
     function qi_eng_snr(array $c): array
     {
         $harga = qi_eng_angka($c, 'close');
-        $atr = qi_eng_angka($c, 'ATR|60') ?? qi_eng_angka($c, 'ATR');
-        if ($harga === null || $atr === null || $atr <= 0) {
-            return qi_eng_hasil('SNR', 'Quantum SNR', false, 'NETRAL', 0, 'Harga atau ATR tidak tersedia.');
+        $atr = qi_eng_atr_harian($c);   // level bulanan/52 minggu/VWAP harian → ATR harian (dulu ATR|60)
+        if ($harga === null || $atr === null) {
+            return qi_eng_hasil('SNR', 'Quantum SNR', false, 'NETRAL', 0, 'Harga atau ATR harian tidak tersedia.');
         }
         $level = [
             'High 1 bulan' => qi_eng_angka($c, 'High.1M'), 'Low 1 bulan' => qi_eng_angka($c, 'Low.1M'),
@@ -282,7 +309,7 @@ if (!function_exists('qi_eng_putusan')) {
         // Harga di ATAS level terdekat → level itu menjadi penopang (bias BUY), dan sebaliknya.
         $arah = $dekat ? (($harga >= $terdekat) ? 'BUY' : 'SELL') : 'NETRAL';
         $skor = qi_eng_batas($dekat ? (100.0 - ($jarakTerdekat / 0.5) * 40.0) : 25.0);
-        $dasar = 'Level terdekat: ' . $namaTerdekat . ' ' . round($terdekat, 5) . ' (jarak ' . round($jarakTerdekat, 2) . '× ATR)'
+        $dasar = 'Level terdekat: ' . $namaTerdekat . ' ' . round($terdekat, 5) . ' (jarak ' . round($jarakTerdekat, 2) . '× ATR harian)'
                . ($dekat ? ' → harga menempel level nyata' : ' → harga jauh dari level (menunggu)')
                . ' · CATATAN: ini skor kedekatan level, bukan algoritma kekuatan retest mesin klien.';
         return qi_eng_hasil('SNR', 'Quantum SNR', true, $arah, $skor, $dasar);

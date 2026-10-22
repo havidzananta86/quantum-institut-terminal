@@ -33,6 +33,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_news_signal.php';
 require_once __DIR__ . '/_signal_record.php';
+require_once __DIR__ . '/_sinyal_pasar.php';   // penjaga pasar tutup + arah konsensus (mtf_aligned)
 
 $keysFile = __DIR__ . '/../config/api_keys.php';
 if (file_exists($keysFile)) require_once $keysFile;
@@ -105,27 +106,52 @@ if (!is_array($history)) $history = [];
 
 $batalDini = [];
 if (!empty($kalender['data']) && is_array($history)) {
+    // Keputusan pembatalan dibuat dari salinan baca, lalu DITERAPKAN ke isi berkas TERBARU di
+    // bawah kunci bersama (qi_json_ubah). Dulu seluruh salinan ditulis ulang tanpa kunci —
+    // cacat yang sama dengan pembangkit (audit sinyal 2026-10-22): penutupan TP/SL dari penilai
+    // dan sinyal yang tercatat di tengah jalan bisa tertimpa.
+    $batalPerId = [];
     foreach ($kalender['data'] as $eKal) {
         if (!is_array($eKal) || empty($eKal['actual']) || $eKal['actual'] === '-') continue;
         $devKal = qi_news_analisa_deviasi($eKal);
         if (!$devKal['tersedia'] || $devKal['kekuatan'] === 'BELUM_RILIS') continue;
 
-        foreach ($history as &$sig) {
-            if (!is_array($sig) || ($sig['status'] ?? '') !== 'AKTIF' || ($sig['engine'] ?? '') !== 'NEWS') continue;
+        foreach ($history as $sig) {
+            if (!is_array($sig) || ($sig['status'] ?? '') !== 'AKTIF' || ($sig['engine'] ?? '') !== 'NEWS' || empty($sig['id'])) continue;
             if ((string)($sig['news_event_id'] ?? '') === (string)($eKal['id'] ?? '')) {
                 $cek = qi_news_cek_invalidation($sig, $devKal);
                 if ($cek['perlu_batal']) {
-                    $sig['status'] = 'BATAL_NEWS';
-                    $sig['invalidation'] = $cek['alasan'];
-                    $sig['closed_at'] = function_exists('qi_sig_waktu_utc') ? qi_sig_waktu_utc() : gmdate('Y-m-d\TH:i:s\Z');
+                    $batalPerId[(string)$sig['id']] = [
+                        'status' => 'BATAL_NEWS', 'invalidation' => $cek['alasan'],
+                        'closed_at' => function_exists('qi_sig_waktu_utc') ? qi_sig_waktu_utc() : gmdate('Y-m-d\TH:i:s\Z'),
+                    ];
                     $batalDini[] = ['id' => $sig['id'], 'simbol' => $sig['symbol'], 'side' => $sig['side'] ?? '', 'alasan' => $cek['alasan']];
                 }
             }
         }
-        unset($sig);
+    }
+    if ($batalPerId) {
+        $diubah = [];
+        $tulisBatal = qi_json_ubah($historyFile, function (array $kini) use ($batalPerId, &$diubah): ?array {
+            foreach ($kini as $j => $r) {
+                $id = is_array($r) ? (string)($r['id'] ?? '') : '';
+                // Hanya yang MASIH AKTIF: rekor yang sudah dinilai penilai tidak ditimpa.
+                if ($id !== '' && isset($batalPerId[$id]) && ($r['status'] ?? '') === 'AKTIF') { $kini[$j] = array_merge($r, $batalPerId[$id]); $diubah[$id] = true; }
+            }
+            return $diubah ? $kini : null;
+        }, ['tunggu' => 5.0, 'flags' => JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE]);
+        // Yang diumumkan hanya pembatalan yang BENAR-BENAR tersimpan (sekali per id).
+        $sudah = [];
+        $batalDini = array_values(array_filter($batalDini, function ($b) use ($diubah, $tulisBatal, &$sudah) {
+            $id = (string)$b['id'];
+            if (empty($tulisBatal['ok']) || empty($diubah[$id]) || isset($sudah[$id])) return false;
+            return $sudah[$id] = true;
+        }));
+        if (!empty($tulisBatal['data'])) $history = $tulisBatal['data'];
+    } else {
+        $batalDini = [];
     }
     if ($batalDini) {
-        @file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
         if (is_file(__DIR__ . '/_telegram.php')) {
             require_once __DIR__ . '/_telegram.php';
             if (function_exists('qi_telegram_notifikasi_batal')) {
@@ -233,10 +259,21 @@ foreach ($simbolTer as $simbol) {
         continue;
     }
 
+    // Penjaga pasar tutup / data basi (qi_sp_cek_pasar, candle M15): rilis yang jatuh saat
+    // pasar forex/emas tutup tidak boleh menghasilkan entry dari harga beku.
+    $m15News = function_exists('ai_load_candles') ? ai_load_candles($simbol, '15') : [];
+    $pasarNews = qi_sp_cek_pasar($simbol, !empty($m15News['simulated']) ? [] : ($m15News['candles'] ?? []), 900);
+    if (!$pasarNews['boleh']) {
+        $rincian[] = ['simbol' => $simbol, 'hasil' => (string)$pasarNews['alasan'], 'catatan' => $pasarNews['catatan']];
+        continue;
+    }
+
     $tfs = [];
     foreach (['15' => 'M15', '60' => 'H1', '240' => 'H4', 'D' => 'D1'] as $iv => $label) {
         $tfs[$label] = function_exists('ai_analyze') ? ai_analyze($simbol, (string)$iv) : null;
     }
+    // Timeframe dari cache basi (stale) tidak ikut konsensus maupun verdict AI (ai_tf_dipakai).
+    if (function_exists('ai_tf_dipakai')) $tfs = ai_tf_dipakai($tfs);
     $adaData = array_filter($tfs);
     if (!$adaData) { $rincian[] = ['simbol' => $simbol, 'hasil' => 'tanpa_data_nyata']; continue; }
 
@@ -265,10 +302,12 @@ foreach ($simbolTer as $simbol) {
         continue;
     }
 
-    // Candle H1 nyata (tolak simulasi) → harga & ATR.
+    // Candle H1 nyata DAN segar → harga & ATR (qi_sp_muat_layak). Dulu hanya simulasi yang
+    // ditolak, sehingga cache basi (stale) dicatat sebagai harga_acuan "saat ini".
     $muat = function_exists('ai_load_candles') ? ai_load_candles($simbol, '60') : [];
-    if (empty($muat['candles']) || !empty($muat['simulated'])) {
-        $rincian[] = ['simbol' => $simbol, 'hasil' => 'data_simulasi_ditolak'];
+    $layak = qi_sp_muat_layak($simbol, $muat, 3600);
+    if (!$layak['boleh']) {
+        $rincian[] = ['simbol' => $simbol, 'hasil' => (string)$layak['alasan'], 'catatan' => $layak['catatan']];
         continue;
     }
     $atr = qi_news_atr($muat['candles'], 14);
@@ -295,13 +334,20 @@ foreach ($simbolTer as $simbol) {
         'tp'               => $level['tp'],
         'rr'               => '1 : ' . number_format($level['rr'], 2),
         'atr'              => round($atr, 5),
+        // Entry = close H1 nyata saat ini (jaraknya ke harga pasar 0) — kolom yang sama dengan
+        // sinyal AI/TV yang entry-nya diperiksa qi_sp_jangkar_entry().
+        'harga_acuan'      => round($harga, 5),
+        'jarak_entry_atr'  => 0.0,
         'invalidation'     => $isPasca
             ? 'Level SL tersentuh atau candle penutupan menembus SL'
             : 'Level TP/SL tersentuh, atau reaksi pasar berlawanan setelah rilis',
         'status'           => 'AKTIF',
         'pnl'              => 0,
         'pnl_usd'          => 0,
-        'mtf_aligned'      => ($overall !== 'NEUTRAL'),
+        // Selaras = konsensus teknikal SEARAH sinyal. Dulu ($overall !== 'NEUTRAL'): BULLISH +
+        // verdict AI SELL tercatat "selaras", grade naik B, dan _sl_learn tidak pernah melihat
+        // kalahnya sebagai konflik timeframe (audit sinyal 2026-10-22).
+        'mtf_aligned'      => qi_sp_mtf_selaras($overall, $arah),
         'confluence_score' => $verdict ? $verdict['confidence'] : (int)round(min(100, max($bull, $bear) * 20 + 10)),
         'confidence'       => $verdict ? $verdict['confidence'] : (int)round(min(100, max($bull, $bear) * 20 + 10)),
         'sumber'           => $isPasca ? 'post_news_momentum' : 'news_watcher',

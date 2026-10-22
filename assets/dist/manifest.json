@@ -10,40 +10,40 @@
       }
     },
     "kepala": {
-      "file": "assets/dist/kepala.8f6bd896c5.js",
+      "file": "assets/dist/kepala.669545eb97.js",
       "muat": "sinkron",
       "sumber": {
         "theme-toggle.js": "4bd9a59febf7c781",
         "error-tracker.js": "d49e51d6f122fa46",
-        "auth.js": "ee1f12bf76ac560b",
+        "auth.js": "fa2f0ad6f4bbc31e",
         "qim-auth-fetch.js": "e519286be7c95509"
       }
     },
     "pemuat": {
-      "file": "assets/dist/pemuat.7d11cff66d.js",
+      "file": "assets/dist/pemuat.e1bcbad631.js",
       "muat": "sinkron",
       "sumber": {
-        "halaman-dashboard-pemuat.js": "e05bab0cc7d94787"
+        "halaman-dashboard-pemuat.js": "275891503690c12e"
       }
     },
     "awal": {
-      "file": "assets/dist/awal.532802c85b.js",
+      "file": "assets/dist/awal.2649669b5c.js",
       "muat": "sinkron",
       "sumber": {
-        "halaman-dashboard-awal.js": "c42e6e8c3b744152"
+        "halaman-dashboard-awal.js": "d20a0fa88e82c9c4"
       }
     },
     "inti": {
-      "file": "assets/dist/inti.c43612e946.js",
+      "file": "assets/dist/inti.34d2108480.js",
       "muat": "sinkron",
       "sumber": {
         "qim-price-store.js": "352ac0b781a22a7c",
         "qim-chart-store.js": "b19a3cf8bac1c78f",
         "qim-paper-math.js": "aee88cf55d36654c",
-        "dashboard-app.js": "a106db6ff3adecf4",
-        "qim-dashboard.js": "7fb9c4c53681cb71",
+        "dashboard-app.js": "b188b2fa49af247e",
+        "qim-dashboard.js": "44bcb09dd719a980",
         "qim-indicators.js": "865b12d971fb3be1",
-        "qim-trading-tools.js": "effc8efc7a189e34",
+        "qim-trading-tools.js": "a61c5336edc67d48",
         "qim-mt5-socket.js": "56b7070dfcd743c8",
         "qim-notifications.js": "78fa5e780d4db523",
         "qim-pages.js": "421bcdad660193e8",
@@ -52,16 +52,16 @@
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.8fdcd478c2.js",
+      "file": "assets/dist/fitur.bb31eb93ba.js",
       "muat": "sinkron",
       "sumber": {
         "pro-features.js": "668f6b3e81cc8de7",
-        "pro-trading-tools.js": "41f59da4da5220eb",
+        "pro-trading-tools.js": "21a8a244c4cd9789",
         "chart-style.js": "36b18e58ca10d64c",
         "chart-zones.js": "2ee750876a9aa508",
-        "engine-nine.js": "abb68a9626c4c29b",
+        "engine-nine.js": "4137141637f07608",
         "qim-setups.js": "e9105e10741cbb03",
-        "qim-setup-panel.js": "4636d98c6c411f59",
+        "qim-setup-panel.js": "6b5a120f41814a9d",
         "qim-berita-chart.js": "7eca2b320ec419dd",
         "qim-muat-fitur.js": "3391f13e2c700710",
         "qim-ai-jelaskan.js": "34e6f6d6883be951",
@@ -70,13 +70,13 @@
         "qim-batas-rugi.js": "5bf1c70825ac61a6",
         "qim-brief-harian.js": "35d06ba5cf71ab56",
         "qim-mobile.js": "bd80a6a3bacf9526",
-        "dashboard-pro.js": "38ac17290c7a5f41",
+        "dashboard-pro.js": "010648f49221fe34",
         "advanced-trading.js": "0eb845c9ef29dc69",
         "perf-upgrades.js": "7c09df0e5d70d2d9",
         "ui-improvements.js": "1263b37ebfe2d850",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "1755101f1c5e1e42",
-        "halaman-dashboard.js": "9a5668b3f312b8cd"
+        "halaman-dashboard.js": "f96bba458735c1e9"
       }
     },
     "tunda": {
@@ -103,12 +103,12 @@
       }
     },
     "pine": {
-      "file": "assets/dist/lazy-pine.722672caff.js",
+      "file": "assets/dist/lazy-pine.5531e3803f.js",
       "sumber": {
         "qim-pine-smcsnd.js": "ce73ca2290db836b",
-        "qim-indikator-kustom.js": "72f0ea211b1a64db"
+        "qim-indikator-kustom.js": "32ceaf8869b0618e"
       }
     }
   },
-  "versi": "f1e058ea85"
+  "versi": "7f4759b370"
 }

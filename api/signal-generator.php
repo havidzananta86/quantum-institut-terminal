@@ -20,6 +20,11 @@
  *      per simbol, maksimal 3 simbol per jalan (yang sinyalnya paling lama kosong).
  *   7. TIDAK MEMAKAI DATA SIMULASI: bila candle dari sumber ditandai 'simulated',
  *      sinyal TIDAK dibuat (candle acak tidak boleh jadi keputusan).
+ *   8. PASAR TUTUP / DATA BASI: forex & emas dilewati di luar Minggu 22:00 – Jumat 21:00 UTC
+ *      atau bila candle M15 terakhir > 30 menit; kripto dilewati bila datanya basi
+ *      (qi_sp_cek_pasar, api/_sinyal_pasar.php).
+ *   9. SATU JALUR TULIS: rekor dicatat lewat qi_signal_catat() (kunci + semua gerbang),
+ *      tidak pernah lagi menimpa berkas riwayat dari salinan lama.
  *
  *  Label pada rekor dibuat jujur: engine AUTO_SIGNAL + kolom 'basis' menjelaskan
  *  bahwa levelnya dari ATR dan arahnya dari EMA/RSI/MACD — bukan klaim AI.
@@ -33,11 +38,20 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
-// Penjaga bersama SEBELUM sinyal terbit (jeda, gerbang mesin, konteks berita) dan
-// pekerjaan setelah terbit (jurnal database + jejak mesin). Tanpa ini, generator
-// menulis rekor langsung sehingga MELEWATI semua penjaga — cacat yang ditemukan
-// 2026-10-13 (dua sinyal terbit tanpa dinilai gerbang dan tanpa jejak).
+// PENULIS REKOR BERSAMA: setiap sinyal dicatat lewat qi_signal_catat() — jalur tulis yang
+// SAMA dengan AI, NEWS, dan TradingView. Di bawah kunci berkas ia menjalankan jeda darurat,
+// gerbang spread, gerbang mesin (+ jejak per mesin), pagar duplikat AKTIF & cooldown,
+// eksposur korelasi, grade, versi aturan, jurnal database, dan notifikasi.
+//
+// MENGAPA (audit sinyal 2026-10-22): dulu berkas ini membaca signal_history.json TANPA
+// kunci, menghabiskan puluhan detik untuk jaringan (4× analisa, Groq, scanner TradingView),
+// lalu MENIMPA seluruh berkas dengan salinan lamanya. Dashboard memicu penilai di +12 dtk
+// dan pembangkit di +20 dtk, jadi tumpang-tindih itu terjadi di setiap muat halaman:
+// penutupan TP/SL dari penilai kembali menjadi AKTIF, dan sinyal AI/NEWS/TV yang tercatat
+// di tengah jalan hilang permanen. Gerbang spread/korelasi/duplikat, grade, jurnal, dan
+// notifikasi juga terlewati sama sekali.
 require_once __DIR__ . '/_signal_record.php';
+require_once __DIR__ . '/_json_kunci.php';
 
 $keysFile = __DIR__ . '/../config/api_keys.php';
 if (file_exists($keysFile)) require_once $keysFile;
@@ -116,27 +130,19 @@ if (!function_exists('ai_analyze') || !function_exists('ai_load_candles')) {
     gen_jawab(200, ['status' => 'error', 'message' => 'Engine analisa tidak tersedia.']);
 }
 
-/** ATR-14 sederhana dari candle (True Range rata-rata). */
+/** ATR-14 sederhana dari candle (True Range rata-rata) — rumus bersama qi_sp_atr(). */
 function gen_atr(array $candles, int $periode = 14): float {
-    $n = count($candles);
-    if ($n < $periode + 2) return 0.0;
-    $tr = [];
-    for ($i = $n - $periode; $i < $n; $i++) {
-        $h = (float)($candles[$i]['high'] ?? 0);
-        $l = (float)($candles[$i]['low'] ?? 0);
-        $pc = (float)($candles[$i - 1]['close'] ?? 0);
-        $tr[] = max($h - $l, abs($h - $pc), abs($l - $pc));
-    }
-    return $tr ? array_sum($tr) / count($tr) : 0.0;
+    return qi_sp_atr($candles, $periode);
 }
 
 $DIDUKUNG = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 $COOLDOWN_JAM = 4;
 $MAKS_PER_JALAN = 3;
 
-// Riwayat yang ada (untuk cooldown & rotasi).
-$history = is_file($historyFile) ? json_decode((string)@file_get_contents($historyFile), true) : [];
-if (!is_array($history)) $history = [];
+// Riwayat yang ada — HANYA DIBACA untuk rotasi & perkiraan cooldown. Keputusan cooldown,
+// duplikat, dan korelasi yang mengikat dibuat ulang oleh qi_signal_catat() di bawah kunci,
+// atas isi berkas TERBARU. Berkas ini tidak pernah lagi ditulis dari salinan ini.
+$history = qi_json_baca($historyFile);
 
 // Waktu sinyal terakhir per simbol (hanya dari pembangkit ini, agar adil).
 $terakhir = [];
@@ -155,8 +161,7 @@ usort($kandidat, function ($a, $b) use ($terakhir) {
 
 $hasil = [];
 $dibuat = 0;
-    $ditolak = 0;                 // ditolak penjaga (jeda / gerbang mesin) — dilaporkan apa adanya
-    $gerbangTercatat = [];        // id sinyal → hasil penilaian gerbang (untuk jejak mesin)
+$ditolak = 0;                 // ditolak pagar/gerbang qi_signal_catat — dilaporkan apa adanya
 $diperiksa = 0;
 $kini = time();
 
@@ -167,12 +172,25 @@ foreach ($kandidat as $simbol) {
         $hasil[] = ['simbol' => $simbol, 'hasil' => 'cooldown', 'sisa_menit' => (int)round(($COOLDOWN_JAM * 3600 - ($kini - $terakhir[$simbol])) / 60)];
         continue;
     }
+
+    // ── PENJAGA PASAR TUTUP (sebelum analisa apa pun) ─────────────────────
+    // Dashboard memicu pembangkit setiap kali dibuka, termasuk Sabtu/Minggu. Tanpa penjaga
+    // ini XAUUSD/forex terbit AKTIF dengan entry = close Jumat, menghabiskan cooldown, dan
+    // membuka posisi auto-paper di harga beku. Candle M15 dipakai karena paling peka umur.
+    $m15 = ai_load_candles($simbol, '15');
+    $pasar = qi_sp_cek_pasar($simbol, !empty($m15['simulated']) ? [] : ($m15['candles'] ?? []), 900, $kini);
+    if (!$pasar['boleh']) {
+        $hasil[] = ['simbol' => $simbol, 'hasil' => (string)$pasar['alasan'], 'catatan' => $pasar['catatan']];
+        continue;
+    }
     $diperiksa++;
 
     $tfs = [];
     foreach (['15' => 'M15', '60' => 'H1', '240' => 'H4', 'D' => 'D1'] as $iv => $label) {
         $tfs[$label] = ai_analyze($simbol, (string)$iv);
     }
+    // Timeframe dari cache basi (stale) tidak ikut memilih arah 3-dari-4 (ai_tf_dipakai).
+    $tfs = ai_tf_dipakai($tfs);
     $adaData = array_filter($tfs);
     if (!$adaData) { $hasil[] = ['simbol' => $simbol, 'hasil' => 'tanpa_data']; continue; }
 
@@ -198,10 +216,14 @@ foreach ($kandidat as $simbol) {
         }
     }
 
-    // Harga & ATR dari candle H1 NYATA (tolak data simulasi).
+    // Harga & ATR dari candle H1 NYATA dan SEGAR (qi_sp_muat_layak). Dulu hanya data simulasi
+    // yang ditolak: H1 basi 3 hari (cache stale dari get-chart-data) lolos selama M15 segar, dan
+    // entry = close lama itu dicatat dengan harga_acuan = entry, jarak_entry_atr = 0 — klaim palsu
+    // "harga pasar saat ini" — lalu auto-paper ikut membuka posisi di harga itu.
     $muat = ai_load_candles($simbol, '60');
-    if (empty($muat['candles']) || !empty($muat['simulated'])) {
-        $hasil[] = ['simbol' => $simbol, 'hasil' => 'data_simulasi_ditolak'];
+    $layak = qi_sp_muat_layak($simbol, $muat, 3600, $kini);
+    if (!$layak['boleh']) {
+        $hasil[] = ['simbol' => $simbol, 'hasil' => (string)$layak['alasan'], 'catatan' => $layak['catatan']];
         continue;
     }
     $candles = $muat['candles'];
@@ -291,32 +313,34 @@ foreach ($kandidat as $simbol) {
             . 'Verdict AI: ' . (is_array($verdictAi) ? $verdictAi['action'] . ' (keyakinan ' . $aiYakin . ')' : 'tidak ada penilaian'),
         'setuju_bull'   => $bull,
         'setuju_bear'   => $bear,
+        // Entry = close H1 nyata saat ini, jadi jaraknya ke harga pasar 0 (kolom yang sama
+        // dengan sinyal AI/TV yang entry-nya diperiksa qi_sp_jangkar_entry).
         'harga_acuan'   => $entry,
+        'jarak_entry_atr' => 0.0,
     ];
-    // ── PENJAGA SEBELUM TERBIT ────────────────────────────────────────────
-    // Satu tempat untuk jeda darurat, gerbang konfluensi mesin, dan konteks berita.
-    $jaga = qi_signal_praterbit($rek);
-    if (empty($jaga['boleh'])) {
+    // ── CATAT LEWAT PENULIS BERSAMA (di bawah kunci) ──────────────────────
+    // Jeda global per mesin = 0: pembangkit memang boleh menerbitkan sampai MAKS_PER_JALAN
+    // simbol berbeda dalam satu jalan; cooldown per simbol tetap $COOLDOWN_JAM.
+    $catat = qi_signal_catat($rek, $COOLDOWN_JAM, 0);
+    if (empty($catat['dicatat'])) {
         $ditolak++;
-        $hasil[] = ['simbol' => $simbol, 'hasil' => 'ditolak_' . $jaga['alasan'], 'catatan' => mb_substr((string)$jaga['catatan'], 0, 200)];
+        $alasanTolak = (string)($catat['alasan'] ?? 'tidak_diketahui');
+        $catatanTolak = (string)($catat['detail']['catatan'] ?? ($catat['detail']['sebab'] ?? ''));
+        $hasil[] = ['simbol' => $simbol, 'hasil' => 'ditolak_' . $alasanTolak, 'catatan' => mb_substr($catatanTolak, 0, 200)];
         continue;
     }
-    $rek = $jaga['rek'];
-    $gerbangTercatat[$rek['id']] = $jaga['gerbang'];
-    array_unshift($history, $rek);
     $dibuat++;
     $terakhir[$simbol] = $kini;
     $hasil[] = ['simbol' => $simbol, 'hasil' => 'sinyal_dibuat', 'id' => $rek['id'], 'arah' => $arah, 'entry' => $entry, 'tp' => $tp, 'sl' => $sl, 'skor' => $skor];
 }
 
+// Isi berkas TERBARU (bukan salinan awal jalan ini) — dipakai auto-paper & laporan.
+$historyKini = qi_json_baca($historyFile);
 if ($dibuat > 0) {
-    if (count($history) > 500) $history = array_slice($history, 0, 500);
-    @copy($historyFile, __DIR__ . '/../cache/signal_history.backup.json');
-    @file_put_contents($historyFile, json_encode($history, JSON_PRETTY_PRINT), LOCK_EX);
     // Pengguna yang mengaktifkan "Ikuti Auto Analisa" langsung mendapat posisi simulasi untuk sinyal baru.
     try {
         require_once __DIR__ . '/_auto_paper.php';
-        qi_ap_sinkron(qi_db(), $history);
+        qi_ap_sinkron(qi_db(), $historyKini);
     } catch (Throwable $e) {
         @error_log('[auto-paper] hook pembangkit gagal: ' . $e->getMessage());
     }
@@ -327,9 +351,9 @@ $ringkas = [
     'status'      => 'ok',
     'dijalankan'  => true,
     'dibuat'      => $dibuat,
-    'ditolak'     => $ditolak,   // ditolak jeda/gerbang mesin — angka ini penting untuk audit
+    'ditolak'     => $ditolak,   // ditolak pagar/gerbang penulis bersama — angka ini penting untuk audit
     'diperiksa'   => $diperiksa,
-    'total_rekor' => count($history),
+    'total_rekor' => count($historyKini),
     'rincian'     => $hasil,
     'basis'       => 'EMA20/50 + RSI14 + MACD multi-timeframe; level SL/TP dari ATR14',
     'catatan'     => $dibuat > 0

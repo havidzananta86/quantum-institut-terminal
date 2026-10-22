@@ -90,10 +90,68 @@ cek('R:R sinyal tercermin: TP = 2,5 × kerugian SL', $dekat(abs($tp[0]['pnl'] / 
 cek('waktu tutup mengikuti waktu sinyal dinilai', $tp[0]['closed_ts'] === $kini - 60);
 $none = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600)), null, $kini, $k);
 cek('sinyal masih AKTIF → posisi tetap terbuka', $none === []);
-$ex = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600, ['status' => 'EXPIRED'])), fn($s) => 4070.0, $kini, $k);
-cek('EXPIRED: ditutup di harga terakhir (P/L sesuai selisih nyata)', $ex[0]['status'] === 'closed' && $ex[0]['exit'] === 4070.0 && $dekat($ex[0]['pnl'], (4084.76 - 4070.0) * 0.04 * 100) && $ex[0]['alasan'] === 'EXPIRED', $ex);
-$ex2 = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600, ['status' => 'EXPIRED'])), null, $kini, $k);
-cek('EXPIRED tanpa harga terakhir: dibatalkan tanpa P/L (tidak mengarang angka)', $ex2[0]['status'] === 'cancelled' && $ex2[0]['pnl'] === 0.0, $ex2);
+// Harga keluar = exit_price yang DICATAT penilai (audit sinyal 2026-10-22). Dulu selalu tepat di
+// level SL, jadi SL yang di-gap tercatat lebih ringan di akun simulasi daripada di rekor sinyal.
+$gapSl = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'HIT SL 🛑', 'exit_price' => 4115.0, 'gap' => true, 'closed_at' => $iso($kini - 60)])), null, $kini, $k);
+cek('HIT SL karena gap: ditutup di exit_price penilai 4115 (bukan SL 4106,29), rugi lebih dari 1R', $gapSl[0]['exit'] === 4115.0 && $dekat($gapSl[0]['pnl'], -(4115.0 - 4084.76) * 0.04 * 100) && $gapSl[0]['pnl'] < $sl[0]['pnl'], $gapSl);
+$tpBid = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'HIT TP 🎯', 'exit_price' => 4030.93, 'closed_at' => $iso($kini - 60)])), null, $kini, $k);
+cek('HIT TP dengan exit_price: dipakai apa adanya', $tpBid[0]['exit'] === 4030.93 && $dekat($tpBid[0]['pnl'], 215.32), $tpBid);
+$rusak = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'HIT SL 🛑', 'exit_price' => null, 'closed_at' => $iso($kini - 60)])), null, $kini, $k);
+cek('rekor lama tanpa exit_price: jatuh ke level SL', $rusak[0]['exit'] === 4106.29, $rusak);
+
+// EXPIRED: hanya basis 'candle' yang punya harga, dan harganya PADA saat kedaluwarsa.
+$tExp = $kini - 1800;
+$diminta = [];
+$hargaPada = function (string $s, int $pada) use (&$diminta, $tExp): ?float { $diminta[] = $pada; return $pada === $tExp ? 4070.0 : null; };
+$ex = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'EXPIRED', 'expiry_basis' => 'candle', 'closed_at' => $iso($tExp)])), $hargaPada, $kini, $k);
+cek('EXPIRED (candle): harga DIMINTA pada waktu kedaluwarsa, bukan harga terakhir', $diminta === [$tExp], $diminta);
+cek('EXPIRED (candle): ditutup di harga saat kedaluwarsa, waktu tutup = expiry (P/L sesuai selisih nyata)', $ex[0]['status'] === 'closed' && $ex[0]['exit'] === 4070.0 && $ex[0]['closed_ts'] === $tExp && $dekat($ex[0]['pnl'], (4084.76 - 4070.0) * 0.04 * 100) && $ex[0]['alasan'] === 'EXPIRED', $ex);
+$ex2 = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'EXPIRED', 'expiry_basis' => 'candle', 'closed_at' => $iso($tExp)])), fn($s, $p) => null, $kini, $k);
+cek('EXPIRED (candle) tanpa harga saat itu: dibatalkan tanpa P/L (tidak mengarang angka)', $ex2[0]['status'] === 'cancelled' && $ex2[0]['pnl'] === 0.0 && $ex2[0]['alasan'] === 'EXPIRED_tanpa_harga', $ex2);
+foreach (['tanpa_data', 'zona_ambigu', 'entry_tak_terisi'] as $basis) {
+    $exB = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+        ['status' => 'EXPIRED', 'expiry_basis' => $basis, 'closed_at' => $iso($tExp)])), fn($s, $p) => 4000.0, $kini, $k);
+    cek("EXPIRED '$basis': dibatalkan walau harga tersedia (hasil tidak terverifikasi)", $exB[0]['status'] === 'cancelled' && $exB[0]['pnl'] === 0.0 && $exB[0]['alasan'] === 'EXPIRED_' . $basis, $exB);
+}
+$exN = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600,
+    ['status' => 'EXPIRED', 'expiry_basis' => 'candle', 'closed_at' => $iso($tExp)])), null, $kini, $k);
+cek('EXPIRED (candle) tanpa sumber harga (api/auto-paper.php): posisi dibiarkan untuk penilai, tidak dibatalkan', $exN === [], $exN);
+$exT = qi_ap_pilih_tutup($tertaut, $perId($sig('S-XAU', 'XAUUSD', 'SELL', 4084.76, 4106.29, 4030.93, $kini - 3600, ['status' => 'EXPIRED'])), fn($s, $p) => 4000.0, $kini, $k);
+cek('EXPIRED tanpa expiry_basis (rekor lama/manual): dibatalkan, tidak ditandai ke harga apa pun', $exT[0]['status'] === 'cancelled' && $exT[0]['alasan'] === 'EXPIRED_tidak_terverifikasi', $exT);
+
+echo "Harga pada saat kedaluwarsa (qi_ap_harga_pada)\n";
+$c5 = fn(int $t, float $cl) => ['time' => $t, 'open' => $cl, 'high' => $cl + 1, 'low' => $cl - 1, 'close' => $cl];
+$pada = 1792500000;   // kelipatan 300 detik
+$deret = [$c5($pada - 900, 10.0), $c5($pada - 600, 11.0), $c5($pada - 300, 12.0), $c5($pada, 13.0), $c5($pada + 300, 14.0)];
+cek('close candle terakhir yang SUDAH TUTUP sebelum expiry (12, bukan 13/14 sesudahnya)', qi_ap_harga_pada($deret, 300, $pada) === 12.0, qi_ap_harga_pada($deret, 300, $pada));
+cek('urutan candle tidak berpengaruh', qi_ap_harga_pada(array_reverse($deret), 300, $pada) === 12.0);
+cek('candle terdekat > 2 batang sebelum expiry → null (basi, tidak ditebak)', qi_ap_harga_pada([$c5($pada - 3600, 9.0)], 300, $pada) === null);
+cek('tepat 2 batang sebelum expiry masih diterima', qi_ap_harga_pada([$c5($pada - 900, 9.0)], 300, $pada) === 9.0);
+cek('tanpa candle sebelum expiry → null', qi_ap_harga_pada([$c5($pada + 300, 14.0)], 300, $pada) === null);
+
+// Audit ulang 2026-10-22: sinyal XAUUSD 12 jam yang terbit Jumat 14:00 UTC kedaluwarsa Sabtu 02:00.
+// Candle terakhir Jumat 20:55 (pasar tutup 21:00) dulu dianggap "> 2 batang lebih tua" → harga null →
+// posisi auto-paper DIBATALKAN dan P/L nyatanya terhapus setiap pekan. Jam pasar tutup bukan umur data.
+$jumat = (new DateTimeImmutable('2026-10-23 14:00:00', new DateTimeZone('UTC')))->getTimestamp();
+$expSabtu = $jumat + 12 * 3600;
+foreach ([300, 900, 3600] as $d) {
+    $deretJumat = [];
+    for ($t = $jumat - 50 * $d; $t + $d <= $jumat + 7 * 3600; $t += $d) $deretJumat[] = ['time' => $t, 'open' => 4100.0, 'high' => 4101.0, 'low' => 4089.0, 'close' => 4090.0];
+    cek("XAUUSD expiry Sabtu, candle {$d} detik: harga = close Jumat 4090 (dulu null)", qi_ap_harga_pada($deretJumat, $d, $expSabtu, 'XAUUSD') === 4090.0);
+    $feedMati = array_values(array_filter($deretJumat, fn($c) => $c['time'] + $d <= $jumat + 4 * 3600));
+    cek("feed berhenti 3 jam SEBELUM pasar tutup (candle {$d} detik) → tetap null (basi saat pasar buka)", qi_ap_harga_pada($feedMati, $d, $expSabtu, 'XAUUSD') === null);
+}
+cek('kripto (24/7): candle Jumat untuk expiry Sabtu tetap basi → null', qi_ap_harga_pada($deretJumat, 3600, $expSabtu, 'BTCUSDT') === null);
+$sigJumat = $sig('S-JUM', 'XAUUSD', 'BUY', 4130.0, 4112.0, 4175.0, $jumat, ['status' => 'EXPIRED', 'expiry_basis' => 'candle', 'closed_at' => $iso($expSabtu)]);
+$tautJumat = [['signal_id' => 'S-JUM', 'position_id' => 7, 'symbol' => 'XAUUSD', 'side' => 'BUY', 'entry' => 4130.0, 'lots' => 0.1, 'dibuat_ts' => $jumat]];
+$tutupJumat = qi_ap_pilih_tutup($tautJumat, $perId($sigJumat), fn(string $s, int $p) => qi_ap_harga_pada($deretJumat, 3600, $p, $s), $expSabtu + 86400, $k);
+cek('posisi ditutup di close Jumat dengan P/L nyata (dulu "EXPIRED_tanpa_harga", P/L 0)', ($tutupJumat[0]['status'] ?? '') === 'closed' && ($tutupJumat[0]['exit'] ?? null) === 4090.0
+    && abs((float)$tutupJumat[0]['pnl'] - qi_paper_pnl('XAUUSD', 'BUY', 4130.0, 4090.0, 0.1)) < 1e-9 && (float)$tutupJumat[0]['pnl'] < 0, $tutupJumat);
 $hilangBaru = qi_ap_pilih_tutup($tertaut, [], null, $kini, $k);
 cek('sinyal hilang dari riwayat tetapi baru 1 jam → ditunggu', $hilangBaru === []);
 $lamaTertaut = [['dibuat_ts' => $kini - 80 * 3600] + $tertaut[0]];

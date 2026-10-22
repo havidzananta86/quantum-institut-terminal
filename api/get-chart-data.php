@@ -315,16 +315,23 @@ if (!function_exists('qi_merge_candle_history')) :
  *    acak tidak pernah bercampur ke chart;
  *  - cache lama yang lebih tua dari 7 hari diabaikan agar tidak menyisakan lubang
  *    waktu panjang di grafik;
- *  - duplikat dibuang berdasarkan waktu (bar baru menang), lalu jumlahnya dibatasi.
+ *  - duplikat dibuang berdasarkan waktu (bar baru menang), lalu jumlahnya dibatasi;
+ *  - riwayat hanya digabung dari SUMBER YANG SAMA. Tanpa syarat ini, bar proksi PAXG
+ *    (diperdagangkan 24/7) dari cache lama ikut masuk ke chart biquote/Twelve Data:
+ *    XAUUSD mendapat candle hari Sabtu dan deret candle datar puluhan jam, padahal
+ *    badge sumbernya menyebut biquote.
  *
  * Aman dideklarasikan berkali-kali karena signals.php meng-include file ini per timeframe.
  */
-function qi_merge_candle_history(string $cacheFile, array $fresh, int $maxBars = 1000): array {
+function qi_merge_candle_history(string $cacheFile, array $fresh, int $maxBars = 1000, ?string $source = null): array {
     if (!is_file($cacheFile) || (time() - (int)@filemtime($cacheFile)) > 7 * 86400) {
         return $fresh;
     }
     $prev = json_decode((string)@file_get_contents($cacheFile), true);
     if (!is_array($prev) || !empty($prev['simulated']) || empty($prev['candles']) || !is_array($prev['candles'])) {
+        return $fresh;
+    }
+    if ($source !== null && (string)($prev['source'] ?? '') !== $source) {
         return $fresh;
     }
     // Hanya gabungkan bila granularitasnya sepadan. Cache lama bisa berisi timeframe
@@ -518,34 +525,56 @@ if (empty($candles) && in_array($symbol, $forexMajors, true)) {
     }
 }
 
+// 2. SEMUA SUMBER GAGAL → cache NYATA terakhir (ditandai basi + umurnya), bukan candle acak.
+// MENGAPA (audit sinyal 2026-10-22): dulu permintaan yang memegang kunci langsung membuat 201
+// candle rand() dari harga dasar tetap (BTC 68450, XAU 2654,2, EURUSD 1,0895) — walau cache
+// candle NYATA dari semenit lalu ada, karena cache hanya disajikan selama masih < TTL. Candle
+// acak itu lalu sampai ke Setup Analisa, Mesin 9, dan indikator Pine pada level harga yang salah.
+// Cache basi ≤ 7 hari disajikan apa adanya dengan stale=true dan umur_detik supaya setiap
+// pemakai bisa memutuskan sendiri (penerbit sinyal menolaknya lewat qi_sp_cek_pasar).
+// Berkas cache TIDAK ditulis ulang di sini (umur aslinya tetap terbaca dari mtime).
+if (empty($candles) && is_file($cacheFile)) {
+    $qiUmurCache = time() - (int)@filemtime($cacheFile);
+    $qiCacheLama = $qiUmurCache < 7 * 86400 ? json_decode((string)@file_get_contents($cacheFile), true) : null;
+    if (is_array($qiCacheLama) && empty($qiCacheLama['simulated']) && !empty($qiCacheLama['candles']) && is_array($qiCacheLama['candles'])) {
+        $qiCacheLama['stale'] = true;
+        $qiCacheLama['umur_detik'] = $qiUmurCache;
+        $qiCacheLama['catatan'] = 'Semua sumber harga gagal; ini data nyata terakhir yang tersimpan (' . (int)round($qiUmurCache / 60) . ' menit lalu).';
+        if (!empty($qiChartLock)) { flock($qiChartLock, LOCK_UN); fclose($qiChartLock); $qiChartLock = null; }
+        if (!defined('QI_INCLUDED_BY_SIGNALS')) {
+            header('X-QI-Cache: STALE-ERROR');
+            header('Cache-Control: no-store');
+        }
+        echo json_encode($qiCacheLama);
+        if (defined('QI_INCLUDED_BY_SIGNALS')) return;
+        exit();
+    }
+}
+
 // Indeks & komoditas hanya punya OANDA (bridge). Bila bridge gagal, katakan terus terang —
 // jangan menggambar candle acak dengan label simulasi untuk instrumen yang baru ditambahkan.
 // HTTP 200 + status error (bukan 503): chart menampilkan pesan "tidak tersedia" tanpa galat merah di konsol.
 if (empty($candles) && qi_simbol_indeks($symbol)) {
     echo json_encode(['status' => 'error', 'tidak_tersedia' => true, 'symbol' => $symbol, 'interval' => $interval, 'candles' => [],
         'message' => 'Data ' . $symbol . ' sementara tidak tersedia (feed OANDA tidak terjangkau).']);
+    if (!empty($qiChartLock)) { flock($qiChartLock, LOCK_UN); fclose($qiChartLock); $qiChartLock = null; }
+    // Saat di-include (signals.php / ai-signal.php / live-price.php) WAJIB return: exit() di sini
+    // dulu mematikan seluruh request pemanggil — jawaban signals.php berubah menjadi JSON galat
+    // chart ini dan timeframe lainnya hilang (audit sinyal 2026-10-22).
+    if (defined('QI_INCLUDED_BY_SIGNALS')) return;
     exit();
 }
 
-// 2. Fail-safe: candle acak (ditandai simulated agar UI tampil badge)
-$simulated = empty($candles);
-if ($simulated) {
-    $source = 'simulasi';
-    $basePrices = ['BTCUSDT'=>68450.20,'XAUUSD'=>2654.20,'ETHUSDT'=>3520.10,'EURUSD'=>1.0895,'SOLUSDT'=>184.50,'BNBUSDT'=>590.00];
-    $basePrice = $basePrices[$symbol] ?? 100.00;
-    $now = time();
-    $stepMap = ['5'=>300,'15'=>900,'30'=>1800,'240'=>14400,'D'=>86400];
-    $step = $stepMap[$interval] ?? 3600;
-    $current = $basePrice;
-    for ($i = 200; $i >= 0; $i--) {
-        $t = $now - ($i * $step);
-        $change = ($current * (rand(-15, 16) / 1000));
-        $open = $current; $close = $open + $change;
-        $high = max($open, $close) + abs($change * (rand(10, 50) / 100));
-        $low  = min($open, $close) - abs($change * (rand(10, 50) / 100));
-        $candles[] = ['time'=>$t,'open'=>round($open,4),'high'=>round($high,4),'low'=>round($low,4),'close'=>round($close,4),'volume'=>rand(100,5000)];
-        $current = $close;
-    }
+// 3. Tidak ada data nyata sama sekali (tidak ada cache ≤ 7 hari) → katakan terus terang.
+// Candle simulasi (rand()) DIHAPUS untuk semua simbol: harga karangan tidak boleh tampil
+// sebagai chart, apa pun labelnya. Bentuk jawabannya sama dengan indeks di atas.
+$simulated = false;
+if (empty($candles)) {
+    echo json_encode(['status' => 'error', 'tidak_tersedia' => true, 'simulated' => false, 'symbol' => $symbol, 'interval' => $interval, 'candles' => [],
+        'message' => 'Data ' . $symbol . ' sementara tidak tersedia: semua sumber harga gagal dan belum ada data tersimpan. Coba lagi sebentar lagi.']);
+    if (!empty($qiChartLock)) { flock($qiChartLock, LOCK_UN); fclose($qiChartLock); $qiChartLock = null; }
+    if (defined('QI_INCLUDED_BY_SIGNALS')) return;
+    exit();
 }
 
 // AGREGASI W/MN: bila penyedia tidak punya timeframe mingguan/bulanan (biquote hanya
@@ -564,7 +593,7 @@ if (!$simulated && ($interval === 'W' || $interval === 'MN')) {
 // OANDA sudah memberi 1.000 bar penuh; jangan campur dengan riwayat cache dari sumber
 // lain (level harga Binance/Twelve Data/PAXG berbeda dari OANDA).
 if (!$simulated && !in_array($source, ['oanda_tv', 'mt5'], true)) {
-    $candles = qi_merge_candle_history($cacheFile, $candles);
+    $candles = qi_merge_candle_history($cacheFile, $candles, 1000, $source);
 }
 
 $payload = json_encode([
@@ -588,6 +617,9 @@ if (!empty($qiChartLock)) {
     $qiChartLock = null;
 }
 
-header('X-QI-Cache: MISS');
-if (!$simulated) header('Cache-Control: ' . $cacheScope . ', max-age=' . $cacheTtl);
+// Header hanya untuk permintaan langsung; saat di-include, header milik pemanggil.
+if (!defined('QI_INCLUDED_BY_SIGNALS')) {
+    header('X-QI-Cache: MISS');
+    if (!$simulated) header('Cache-Control: ' . $cacheScope . ', max-age=' . $cacheTtl);
+}
 echo $payload;

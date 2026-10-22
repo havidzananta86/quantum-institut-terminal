@@ -1,0 +1,187 @@
+/* =====================================================================
+   QIM MASUK — satu bahasa visual dari tombol "Masuk" (login.html) sampai
+   layar pembuka dashboard (#qiLoadScreen di dashboard.html).
+
+   Dimuat: login.html (setelah publik.css) dan dashboard.html (tepat setelah
+   tokens.css). Semua kelas berawalan .qm- sehingga tidak menyentuh gaya lain.
+
+   ATURAN KEJUJURAN: tahap (li[data-keadaan]) dan bilah kemajuan
+   (--qm-kemajuan = tahap selesai / jumlah tahap) hanya diubah oleh skrip saat
+   kejadiannya benar-benar terjadi (assets/js/qim-masuk-animasi.js,
+   assets/js/halaman-dashboard-pemuat.js). Tidak ada animasi yang "mengisi"
+   bilah dengan sendirinya. Animasi di berkas ini hanya hiasan transisi.
+
+   Gerak-minimal (prefers-reduced-motion: reduce): semua animasi & transisi
+   mati, termasuk View Transition antarhalaman.
+   ===================================================================== */
+
+:root {
+    /* Nilai tetap, BUKAN var(--qi-bg): qim-dashboard.css menimpa --qi-bg (#0a0e17) di dashboard
+       sementara login.html memakai tema tokens.css (#000) — potongan login → layar pembuka
+       dashboard lalu melompat dari hitam ke biru tua. */
+    --qm-bg: #000;
+    --qm-aksen: #22D3EE;
+    --qm-aksen-2: #7C4DFF;
+    --qm-teks: #E8ECF2;
+    --qm-teks-2: #8C9CB4;
+    --qm-ok: #34D399;
+    --qm-waspada: #FBBF24;
+    --qm-bahaya: #F87171;
+    --qm-garis: rgba(255, 255, 255, 0.09);
+    --qm-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --qm-font-judul: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+
+/* ── Layar penuh (login: #qmLayar · dashboard: #qiLoadScreen) ─────────── */
+.qm-layar {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: radial-gradient(60% 40% at 50% 38%, rgba(34, 211, 238, 0.07), transparent), var(--qm-bg);
+    color: var(--qm-teks);
+    font-family: var(--qm-font);
+    -webkit-font-smoothing: antialiased;
+}
+.qm-layar[hidden], .qm-layar [hidden], .qm-sesi-aktif[hidden], .qm-dialog [hidden] { display: none !important; }
+.qm-isi { width: min(360px, 100%); text-align: center; }
+.qm-logo { display: block; width: 56px; height: 56px; margin: 0 auto 16px; view-transition-name: qm-logo; }
+.qm-judul { margin: 0; font-family: var(--qm-font-judul); font-size: 22px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; color: #fff; view-transition-name: qm-judul; }
+.qm-judul:focus { outline: none; }
+.qm-judul:focus-visible { outline: 2px solid var(--qm-aksen); outline-offset: 4px; border-radius: 4px; }
+
+/* "Masuk sebagai <b>Nama</b> · PRO" */
+.qm-siapa { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: var(--qm-teks-2); overflow-wrap: anywhere; }
+.qm-siapa b { color: var(--qm-teks); font-weight: 600; }
+.qm-peran {
+    display: inline-block;
+    padding: 0 8px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+    color: #94A3B8;
+    vertical-align: 1px;
+}
+.qm-peran[data-peran="pro"] { color: var(--qm-aksen); border-color: rgba(34, 211, 238, 0.4); background: rgba(34, 211, 238, 0.08); }
+.qm-peran[data-peran="vip"] { color: #C4B5FD; border-color: rgba(196, 181, 253, 0.4); background: rgba(167, 139, 250, 0.08); }
+.qm-peran[data-peran="admin"] { color: var(--qm-waspada); border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.08); }
+
+/* ── Tahapan: li[data-keadaan=tunggu|jalan|selesai|lewat|gagal] ───────── */
+.qm-langkah { display: grid; gap: 10px; width: fit-content; max-width: 100%; margin: 24px auto 0; padding: 0; list-style: none; text-align: left; }
+.qm-langkah > li { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.45; color: var(--qm-teks-2); transition: color 0.2s ease; }
+.qm-titik { width: 16px; height: 16px; flex-shrink: 0; overflow: visible; }
+.qm-titik circle { fill: transparent; stroke: rgba(140, 156, 180, 0.45); stroke-width: 1.5; transition: fill 0.2s ease, stroke 0.2s ease; }
+.qm-titik path { fill: none; stroke: #03141A; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.2s ease-out 0.05s; }
+.qm-langkah > li[data-keadaan="jalan"] { color: var(--qm-teks); }
+.qm-langkah > li[data-keadaan="jalan"] .qm-titik circle { stroke: var(--qm-aksen); animation: qm-denyut 1.2s ease-in-out infinite; }
+.qm-langkah > li[data-keadaan="selesai"] { color: var(--qm-teks); }
+.qm-langkah > li[data-keadaan="selesai"] .qm-titik circle { fill: var(--qm-aksen); stroke: var(--qm-aksen); }
+.qm-langkah > li[data-keadaan="selesai"] .qm-titik path { stroke-dashoffset: 0; }
+.qm-langkah > li[data-keadaan="lewat"] .qm-titik circle { stroke: var(--qm-waspada); }
+.qm-langkah > li[data-keadaan="gagal"] { color: #FCA5A5; }
+.qm-langkah > li[data-keadaan="gagal"] .qm-titik circle { fill: var(--qm-bahaya); stroke: var(--qm-bahaya); }
+@keyframes qm-denyut { 50% { opacity: 0.35; } }
+
+/* ── Bilah kemajuan: SELALU tahap selesai / jumlah tahap (diisi skrip) ─── */
+.qm-kemajuan { width: 100%; max-width: 240px; height: 2px; margin: 20px auto 0; overflow: hidden; border-radius: 2px; background: rgba(255, 255, 255, 0.08); }
+.qm-kemajuan > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--qm-aksen), var(--qm-aksen-2)); transform: scaleX(var(--qm-kemajuan, 0)); transform-origin: left center; transition: transform 240ms ease-out; }
+
+.qm-status { min-height: 1.45em; margin: 12px 0 0; font-size: 13px; line-height: 1.45; color: var(--qm-teks-2); }
+.qm-layar[data-keadaan="gagal"] .qm-status { color: #FCA5A5; font-size: 14px; }
+.qm-layar[data-keadaan="gagal"] .qm-siapa, .qm-layar[data-keadaan="gagal"] .qm-kemajuan { display: none; }
+/* Login: selama berjalan, baris status sama dengan tahap "jalan" — tetap dibacakan pembaca layar,
+   tetapi tidak ditampilkan dua kali. Saat galat, pesannya tampil. */
+#qmLayar:not([data-keadaan="gagal"]) .qm-status {
+    position: absolute; width: 1px; height: 1px; min-height: 0; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.qm-aksi { margin-top: 20px; }
+
+/* Muncul dari titik tombol yang ditekan (--qm-x/--qm-y diisi lewat style.setProperty). */
+.qm-layar[data-buka] { animation: qm-buka 260ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms both; }
+.qm-layar[data-buka] .qm-isi { animation: qm-naik 300ms ease-out 200ms both; }
+@keyframes qm-buka {
+    from { clip-path: circle(0 at var(--qm-x, 50%) var(--qm-y, 50%)); }
+    to { clip-path: circle(150% at var(--qm-x, 50%) var(--qm-y, 50%)); }
+}
+@keyframes qm-naik { from { opacity: 0; transform: translateY(6px); } }
+
+/* ── Tombol masuk: sibuk → sukses (tidak diredupkan seperti [aria-disabled]) ── */
+.pb-tombol[data-keadaan] { opacity: 1; cursor: progress; }
+.pb-tombol[data-keadaan="sukses"] { background: var(--qm-ok); border-color: transparent; color: #03140D; transition: background-color 0.18s ease, color 0.18s ease; }
+.qm-centang-tombol path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: qm-gores 240ms ease-out forwards; }
+@keyframes qm-gores { to { stroke-dashoffset: 0; } }
+
+/* ── Formulir masuk: galat sebaris, pemberitahuan, status Google ───────── */
+.qm-formulir { display: grid; gap: 16px; }
+.qm-galat, .qm-pemberitahuan {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(248, 113, 113, 0.32);
+    border-radius: 8px;
+    background: rgba(248, 113, 113, 0.06);
+    color: #FCA5A5;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.qm-pemberitahuan { border-color: rgba(34, 211, 238, 0.28); background: rgba(34, 211, 238, 0.05); color: var(--qm-teks); }
+.qm-google-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--qm-teks-2); text-align: center; }
+.qm-google-status[data-jenis="galat"] { color: #FCA5A5; }
+
+/* ── Kartu "Anda masih masuk" ─────────────────────────────────────────── */
+.qm-sesi-aktif { display: grid; gap: 12px; }
+.qm-sesi-aktif .qm-siapa { margin: 0; text-align: left; color: var(--qm-teks); }
+.qm-sesi-status { margin: 0; font-size: 13px; color: var(--qm-teks-2); }
+
+/* Skrip kepala (assets/js/halaman-login-kepala.js) menandai <html> SEBELUM halaman tergambar,
+   sehingga formulir tidak berkedip bagi yang masih masuk, dan tab email langsung terbuka
+   bagi yang datang dari halaman daftar. */
+html[data-qm-sesi="ada"] #qmFormulir { display: none !important; }
+html[data-qm-sesi="ada"] #qmSesiAktif { display: grid !important; }
+html[data-qm-tab="email"] #formLicense { display: none !important; }
+html[data-qm-tab="email"] #formEmail { display: block !important; }
+html[data-qm-tab="email"] #tab-license { background: transparent; box-shadow: none; color: var(--pb-teks-3, #8C9CB4); }
+html[data-qm-tab="email"] #tab-email { background: var(--pb-naik-2, rgba(255, 255, 255, 0.06)); color: var(--pb-teks, #E8ECF2); box-shadow: inset 0 0 0 1px var(--pb-garis-kuat, rgba(255, 255, 255, 0.16)); }
+
+/* ── Dialog verifikasi dua langkah (assets/js/qim-2fa-login.js) ────────── */
+.qm-dialog { position: fixed; inset: 0; z-index: 10050; display: grid; place-items: center; padding: 16px; box-sizing: border-box; background: rgba(2, 6, 15, 0.78); font-family: var(--qm-font); }
+.qm-dialog-kartu { width: min(380px, 100%); box-sizing: border-box; padding: 22px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 14px; background: #0A0E15; color: var(--qm-teks); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8); }
+.qm-dialog-kartu h2 { margin: 0 0 6px; font-family: var(--qm-font-judul); font-size: 18px; font-weight: 600; color: #fff; }
+.qm-dialog-ket { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--qm-teks-2); }
+.qm-dialog-ket b { color: #fff; }
+.qm-dialog-kode { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 9px; background: #05080D; color: #fff; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 18px; letter-spacing: 0.2em; text-align: center; }
+.qm-dialog-kode:focus { outline: none; border-color: var(--qm-aksen); box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18); }
+.qm-dialog-pesan { min-height: 20px; margin: 8px 0; font-size: 13px; line-height: 1.45; color: var(--qm-teks-2); }
+.qm-dialog-pesan[data-jenis="galat"] { color: var(--qm-bahaya); }
+.qm-dialog-pesan[data-jenis="ok"] { color: var(--qm-ok); }
+.qm-dialog-baris { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.qm-dialog-tautan { min-height: 44px; padding: 0; border: 0; background: none; color: var(--qm-aksen); font-family: var(--qm-font); font-size: 14px; font-weight: 500; cursor: pointer; }
+.qm-dialog-tautan--redup { margin-left: auto; color: var(--qm-teks-2); }
+.qm-dialog-tautan:hover { text-decoration: underline; }
+
+/* ── Layar pembuka dashboard (#qiLoadScreen) ──────────────────────────── */
+#qiLoadScreen.done { animation: qm-pudar 0.25s ease forwards; }
+@keyframes qm-pudar { to { opacity: 0; visibility: hidden; } }
+
+/* ── Gerak-minimal ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .qm-layar, .qm-layar *, .qm-layar[data-buka], .qm-layar[data-buka] .qm-isi,
+    .qm-centang-tombol path, .pb-tombol[data-keadaan] { animation: none !important; transition: none !important; }
+    .qm-centang-tombol path { stroke-dashoffset: 0; }
+    #qiLoadScreen.done { animation: none !important; opacity: 0; visibility: hidden; }
+}
+
+/* View Transition antarhalaman (Chrome 126+, Safari 18.2+): logo & judul login.html berpindah
+   mulus ke layar pembuka dashboard. Hanya login.html dan dashboard.html yang memuat berkas ini,
+   jadi hanya keduanya yang ikut. Browser lain: tata letaknya identik, jadi potongannya tak terlihat. */
+@media (prefers-reduced-motion: no-preference) {
+    @view-transition { navigation: auto; }
+}

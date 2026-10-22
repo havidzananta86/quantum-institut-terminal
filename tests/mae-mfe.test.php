@@ -71,7 +71,9 @@ cek('SELL: MFE 2R dihitung dari LOW', $h && abs($h['mfe_r'] - 2.0) < 0.01, $h['m
 
 echo "\nVersi penilaian\n";
 cek('QI_VERSI_PENILAIAN terdefinisi', defined('QI_VERSI_PENILAIAN'));
-cek('nilainya 3 — MAE/MFE TIDAK menaikkan versi (putusan tidak berubah)', QI_VERSI_PENILAIAN === 3, defined('QI_VERSI_PENILAIAN') ? QI_VERSI_PENILAIAN : null);
+// v4 (2026-10-22) = entry wajib bisa terisi — putusan BERUBAH, jadi versi naik. MAE/MFE sendiri
+// tetap tidak menaikkan versi (v3 → v4 bukan karena MAE/MFE).
+cek('nilainya 4 — naik karena aturan isi entry, bukan karena MAE/MFE', QI_VERSI_PENILAIAN === 4, defined('QI_VERSI_PENILAIAN') ? QI_VERSI_PENILAIAN : null);
 
 echo $gagal ? "\n$gagal uji GAGAL\n" : "\nSemua lulus\n";
 exit($gagal ? 1 : 0);

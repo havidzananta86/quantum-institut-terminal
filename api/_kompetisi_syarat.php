@@ -149,11 +149,27 @@ function qi_komp_aturan(array $t, array $setelan, bool $hadiahContoh): array
     $pasar = ['crypto' => 'pasangan crypto (…USDT)', 'gold' => 'emas (XAUUSD)', 'forex' => 'pasangan forex'][$t['pasar']] ?? 'semua pasar';
     return [
         ['judul' => 'Cara ikut', 'butir' => [
-            'Daftar lewat tombol "Daftar Sekarang" kapan saja selama periode berjalan. Gratis.',
+            ($t['skor'] ?? 'realisasi') === 'ekuitas'
+                ? 'Anggota PRO/VIP otomatis terdaftar saat membuka order manual pertama periode ini, atau lewat tombol "Daftar Sekarang". Gratis.'
+                : 'Daftar lewat tombol "Daftar Sekarang" kapan saja selama periode berjalan. Gratis.',
             'Gunakan Paper Trading di aplikasi ini — dana simulasi $10,000, tanpa setoran uang sungguhan.',
             'Dengan mendaftar, Anda menyetujui aturan di halaman ini.',
         ]],
-        ['judul' => 'Penilaian', 'butir' => [
+        ['judul' => 'Penilaian', 'butir' => ($t['skor'] ?? 'realisasi') === 'ekuitas' ? [
+            // Weekly Championship (audit kompetisi 2026-10-22): peringkat = EKUITAS LANGSUNG, bukan hanya
+            // trade tertutup — posisi rugi yang dibiarkan terbuka ikut menurunkan peringkat.
+            'Periode: ' . $periode . '. Setiap order manual Anda masuk periode tempat order itu DIBUKA (jam server).',
+            'Peringkat = ekuitas: $10,000 + P/L tertutup + P/L mengambang posisi terbuka periode itu, dinilai di harga penutup (BUY di bid, SELL di ask). Return % = (ekuitas − $10,000) ÷ $10,000.',
+            'Ekuitas sama = peringkat sama (1, 1, 3). Peserta terdaftar yang belum trading tampil di bawah para trader.',
+            'Harga entry dan exit ditentukan server dari satu feed harga yang sama untuk semua peserta; harga di layar hanya batas requote.',
+            // Audit G1: janji ini harus sama dengan yang ditegakkan api/_kompetisi_settle.php — bar M1 hanya
+            // bila feed-nya menyediakan bar; feed tanpa bar (mis. Twelve Data) dinilai di kutipan live.
+            'Stop loss & take profit ditegakkan server, juga saat Anda offline: di bar M1 dari feed yang sama bila feed itu menyediakan bar (MT5, OANDA, Binance, PAXG), selain itu di kutipan live setiap pemeriksaan. Leverage 1:' . (defined('QI_KOMP_LEVERAGE') ? QI_KOMP_LEVERAGE : 100) . '; order ditolak bila margin bebas tidak cukup, dan level margin di bawah 50% menutup posisi paling rugi (stop-out) — kaki yang sedang tanpa harga dihitung di harga nyata terakhirnya.',
+            'XAUUSD saat bridge emas tidak tersedia memakai PROKSI PAXG (Binance) + selisih tetap ke emas; proksi dianggap tutup di luar jam pasar emas. Setiap posisi dinilai dan ditutup HANYA di seri harga tempat ia dibuka (emas nyata atau proksi) — bila seri itu sedang tidak tersedia, penutupan ditunda, tidak dipindah ke seri lain.',
+            'Posisi yang masih terbuka di akhir periode ditutup server pada harga nyata terakhir sebelum batas periode (bar M1 terakhir, atau kutipan feed terakhir yang tercatat sebelum batas) dan tidak bisa lagi ditutup atau diubah pemiliknya. Bila server tidak pernah mencatat harga apa pun sebelum batas, posisi dibatalkan tanpa P/L 72 jam kemudian — tidak pernah ditutup di harga tebakan. Klasemen akhir dibekukan setelah semua posisi periode itu selesai.',
+            'Hanya order manual. AI Auto-Trade, Ikuti Auto Analisa, dan salinan sekali-klik sinyal AI tidak masuk papan.',
+            'Papan peringkat menampilkan semua trader; posisi juara dihitung hanya dari peserta yang memenuhi syarat.',
+        ] : [
             'Periode: ' . $periode . '. Yang dihitung hanya trade (' . $pasar . ') yang DITUTUP dalam periode itu.',
             'Profit % = total P&L ÷ saldo simulasi awal $10,000. Bila sama, jumlah trade lebih banyak di atas.',
             'Harga entry dan exit diverifikasi server terhadap harga pasar; trade dengan harga tidak wajar ditolak dan tidak pernah masuk papan.',

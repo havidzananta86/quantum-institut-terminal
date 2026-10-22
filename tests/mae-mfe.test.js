@@ -26,15 +26,19 @@ const ev = baca('api/signal-evaluator.php');
 cek('MAE/MFE dihitung dalam satuan R', /\$maeR = max\(\$maeR, \$melawan\s+\/ \$risiko\)/.test(ev) && /\$mfeR = max\(\$mfeR, \$mendukung \/ \$risiko\)/.test(ev));
 cek('keduanya disimpan pada rekor', /'mae_r'\s*=>\s*round\(\$maeR, 3\)/.test(ev) && /'mfe_r'\s*=>\s*round\(\$mfeR, 3\)/.test(ev));
 cek('candle penutup ikut dihitung (bagian dari perjalanan)', /\$catatMaeMfe\(\$h, \$l\);/.test(ev));
-cek('arah dibedakan BUY vs SELL', /\$side === 'BUY'\) \? \$high - \$entry : \$entry - \$low/.test(ev));
+// Diukur dari harga isi yang sebenarnya ($hargaMasuk = entry, atau pembukaan candle yang melompati entry).
+cek('arah dibedakan BUY vs SELL', /\$side === 'BUY'\) \? \$high - \$hargaMasuk : \$hargaMasuk - \$low/.test(ev));
+cek('candle pengisian: MFE tidak dihitung (puncak bisa terjadi sebelum terisi)', /\$catatMaeMfe\(\$h, \$l, true\);/.test(ev) && /if \(\$mendukung > 0 && !\$hanyaMelawan\)/.test(ev));
 cek('aman saat risiko nol (tidak membagi nol)', /if \(\$risiko <= 0\) return;/.test(ev));
 
 console.log('\nVersi aturan penilaian');
-cek('QI_VERSI_PENILAIAN jadi konstanta bernama', /define\('QI_VERSI_PENILAIAN', 3\)/.test(ev));
+// v4 sejak 2026-10-22 (entry wajib bisa terisi — putusan berubah, bukan karena MAE/MFE).
+cek('QI_VERSI_PENILAIAN jadi konstanta bernama', /define\('QI_VERSI_PENILAIAN', 4\)/.test(ev));
 cek('tidak lagi angka ajaib di tengah kode', !/\$ubah\['versi_penilaian'\] = 3;/.test(ev));
 cek('alasan tidak menaikkan versi dijelaskan', /TIDAK menaikkan versi/.test(ev));
 cek('statistik tetap memisahkan per versi', /per_versi_penilaian/.test(baca('api/_signal_stats.php')));
-cek('versi ATURAN sinyal sudah ada sejak sebelumnya', /define\('QI_VERSI_ATURAN_SINYAL', 'v2'\)/.test(baca('api/_signal_record.php')));
+// v3 (2026-10-22): penjaga pasar tutup/data basi + entry AI/TV vs harga pasar mengubah aturan PENERBITAN.
+cek('versi ATURAN sinyal dinaikkan ke v3 (aturan penerbitan berubah)', /define\('QI_VERSI_ATURAN_SINYAL', 'v3'\)/.test(baca('api/_signal_record.php')));
 
 console.log('\nFolder engine/ yang mati sudah dibersihkan');
 const mati = ['ai_engine', 'ema200', 'fibonacci', 'golden_cross', 'ichimoku', 'macd', 'momentum_ny', 'smc', 'snr', 'trenm5'];

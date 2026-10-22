@@ -39,11 +39,14 @@ cek('baris transaksi TP: "+$249.84 (+2.50R)"', c.nominal === '+$249.84 (+2.50R)'
 // ── 3. Kontrak statis ────────────────────────────────────────────────────────
 console.log('Kontrak');
 const pt = read('api/paper-trading.php');
-cek('simpan snapshot klien tidak menyentuh posisi source auto/ai (dilindungi, tidak digandakan)', /source IN \('ai', 'auto'\)/.test(pt) && /source NOT IN \('ai', 'auto'\)/.test(pt) && /isset\(\$dilindungi\[/.test(pt));
+// Jalur snapshot klien dipensiunkan (410); posisi auto/ai tidak bisa ditutup/diubah lewat {aksi}.
+cek('posisi source auto/ai tidak bisa ditutup/diubah klien; snapshot lama ditolak 410', (pt.match(/in_array\(\$baris\['source'\], \['ai', 'auto'\], true\)/g) || []).length >= 2 && /http_response_code\(410\)/.test(pt));
 cek('GET paper-trading menyertakan sumber posisi (src)', /'src'\s*=>\s*\$r\['source'\]/.test(pt));
-cek('Competition tidak menghitung posisi auto', /pp\.source <> 'auto'/.test(read('api/competition.php')));
-const lb = read('api/leaderboard.php');
-cek('Leaderboard (peringkat, statistik saya, peringkat saya) tidak menghitung posisi auto', (lb.match(/source <> 'auto'/g) || []).length >= 3, (lb.match(/source <> 'auto'/g) || []).length);
+cek('Competition hanya menghitung posisi manual (bukan auto, bukan ai)', /pp\.source = 'manual'/.test(read('api/competition.php')) && !/pp\.source <> 'auto'/.test(read('api/competition.php')));
+// api/leaderboard.php kini alias papan mingguan (api/_kompetisi_papan.php) — filternya ada di pembangun papan.
+const lb = read('api/leaderboard.php'), papanKomp = read('api/_kompetisi_papan.php');
+cek('Leaderboard = papan mingguan yang hanya menghitung posisi manual (bukan auto, bukan ai)', /_kompetisi_papan\.php/.test(lb) && !/FROM paper_positions/.test(lb)
+  && (papanKomp.match(/source = 'manual'/g) || []).length >= 3 && !/source <> 'auto'/.test(papanKomp), (papanKomp.match(/source = 'manual'/g) || []).length);
 cek('penilai sinyal & pembangkit menutup/membuka posisi simulasi (hook terpasang)', /qi_ap_sinkron\(/.test(read('api/signal-evaluator.php')) && /qi_ap_sinkron\(/.test(read('api/signal-generator.php')));
 const html = read('dashboard.html');
 cek('kartu Ikuti Auto Analisa, tombol, risiko, dan banner ada di dashboard', ['autoPaperCard', 'apToggle', 'apRisiko', 'apBanner', 'apSaldo', 'apTambah', 'apKurang', 'apRiwayat'].every(id => html.includes('id="' + id + '"')));

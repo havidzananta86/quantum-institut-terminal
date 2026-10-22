@@ -192,10 +192,39 @@ console.log('\nSatu mesin gagal tidak menjatuhkan yang lain');
   cek('setiap mesin punya arah yang sah', !!h && h.mesin.every((m) => ['BUY', 'SELL', 'NETRAL'].includes(m.arah)));
 }
 
+console.log('\nCandle simulasi ditolak oleh mesinnya sendiri (audit sinyal 2026-10-22)');
+{
+  // Dulu penolakan hanya ada di pemanggil (dashboard-pro ambilCandle); tandaiSinyalMesin
+  // meneruskan _lwLastCandles ke markerSinyal tanpa pemeriksaan apa pun.
+  const acak = Object.assign(naik(260), { simulated: true });
+  const h = E.evaluasi(acak);
+  cek('evaluasi: cukupData false + simulasi true', h.cukupData === false && h.simulasi === true, { cukupData: h.cukupData, simulasi: h.simulasi });
+  cek('evaluasi: tidak ada mesin dan tidak ada konfluensi yang dikarang', h.mesin.length === 0 && h.konfluensi === null);
+  cek('evaluasi: alasannya menyebut SIMULASI', /SIMULASI/.test(h.alasan), h.alasan);
+  cek('markerSinyal: tidak ada panah dari candle simulasi', E.markerSinyal(acak, { minSkor: 0, jumlah: 60 }).length === 0);
+  cek('kontrol: deret yang sama tanpa penanda tetap dinilai', E.evaluasi(naik(260)).cukupData === true);
+}
+
+console.log('\nPanah hanya untuk putusan BUY/SELL');
+{
+  // Contoh audit: BUY 85 + BUY 78 + SELL 60 → 'BELUM CUKUP BUKTI' skor 34. Dulu digambar sebagai
+  // panah SELL merah karena hanya 'NETRAL' dan 'TIDAK ADA SETUP' yang dilewati.
+  const k = E.hitungKonfluensi([{ arah: 'BUY', skor: 85, valid: true }, { arah: 'BUY', skor: 78, valid: true }, { arah: 'SELL', skor: 60, valid: true }]);
+  cek('konfluensi contoh audit = BELUM CUKUP BUKTI 34', k.putusan === 'BELUM CUKUP BUKTI' && k.skor === 34, k);
+  cek('penandaMarker menolak putusan selain BUY/SELL', E.penandaMarker(k, 30) === null);
+  for (const data of [naik(260), turun(260), silangNaik(260), silangTurun(260)]) {
+    for (const m of E.markerSinyal(data, { minSkor: 0, jumlah: 60, jarak: 1 })) {
+      if (!/^(BUY|SELL) \d+$/.test(m.text)) cek('teks panah hanya BUY/SELL', false, m.text);
+    }
+  }
+  cek('4 bentuk pasar × 60 bar: semua panah berteks BUY/SELL', true);
+}
+
 console.log('\nFungsi murni yang diekspor untuk audit');
 {
   cek('pivot diekspor', typeof E.pivot === 'function');
   cek('levelStruktur diekspor', typeof E.levelStruktur === 'function');
+  cek('rsiWilder, hitungKonfluensi, penandaMarker diekspor', typeof E.rsiWilder === 'function' && typeof E.hitungKonfluensi === 'function' && typeof E.penandaMarker === 'function');
   cek('AMBANG_SETUP berupa angka', typeof E.AMBANG_SETUP === 'number', E.AMBANG_SETUP);
   cek('MIN_BAR berupa angka', typeof E.MIN_BAR === 'number' && E.MIN_BAR > 0, E.MIN_BAR);
 }

@@ -491,7 +491,10 @@
         if (window.quantumTerminalManager?.currentSymbol === sym && window.quantumTerminalManager?.lastClosePrice > 0) {
             _livePrices[sym] = window.quantumTerminalManager.lastClosePrice;
         }
-        const price = _livePrices[sym] || 0;
+        // SL/TP diukur dari harga SISI order yang segar (ask untuk BUY, bid untuk SELL — dashboard-app.js),
+        // karena di harga itulah server mengeksekusinya; harga penutupan candle hanya cadangan.
+        const hargaSisi = typeof window.ptHargaNilai === 'function' ? window.ptHargaNilai(sym, side === 'BUY') : null;
+        const price = hargaSisi || _livePrices[sym] || 0;
         if (!(price > 0)) {
             if (window.showQuantumToast) window.showQuantumToast(`Harga live ${sym} belum tersedia — posisi tidak dibuka.`, 'warning');
             return;
@@ -511,7 +514,10 @@
             if (window.showQuantumToast) window.showQuantumToast('Panel Paper Trading belum siap.', 'warning');
             return;
         }
-        window.ptOpenDirectPosition(sym, side, price, sl, tp, lots);
+        // Order PASAR: entry = null → batas requote = harga sisi saat order dikirim. Harga di sini bisa
+        // berasal dari candle (lastClosePrice) yang tidak pernah tampil sebagai harga order; dulu dikirim
+        // sebagai "harga layar" dan memicu requote dengan angka yang tidak pernah dilihat pengguna.
+        window.ptOpenDirectPosition(sym, side, null, sl, tp, lots, 'sinyal');
     }
 
 

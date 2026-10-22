@@ -163,8 +163,9 @@ body.charts-active #panelTitleBar { display:none !important; }
 
 #qimRightPanel { grid-area:2 / 3 / 3 / 4; display:flex; flex-direction:column; gap:8px; min-width:0; max-height:100%; padding:8px; overflow-y:auto; border-left:1px solid var(--qim-border); background:var(--qim-bg); }
 /* QUICK TRADE — kartu order di rail kanan. Tujuan order (Simulasi / Real MT5) berada di
-   baris paling atas dan ikut mewarnai tombol kirim: tanpa tanda visual, satu-satunya
-   pembeda antara simulasi dan uang sungguhan adalah teks kecil yang mudah terlewat. */
+   baris paling atas; mode Real mewarnai SELURUH kartu dan memberi lencana REAL pada BUY/SELL:
+   tanpa tanda visual, satu-satunya pembeda antara simulasi dan uang sungguhan adalah teks
+   kecil yang mudah terlewat. */
 .qim-qt-card { flex:none; }
 .qim-qt-sym { color:var(--qim-text); font-size:11px; font-weight:650; letter-spacing:.02em; }
 .qim-qt-akun { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:8px 10px 0; }
@@ -177,8 +178,23 @@ body.charts-active #panelTitleBar { display:none !important; }
 .qim-qt-side b { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
 .qim-qt-buy { background:#13795f; }
 .qim-qt-sell { background:#a63a3a; }
-.qim-qt-side:not(.is-active) { opacity:.52; }
-.qim-qt-side.is-active { border-color:#ffffff55; box-shadow:0 0 0 1px #ffffff22 inset; opacity:1; }
+/* BUY dan SELL sama-sama tombol order, bukan pemilih arah: tidak ada yang diredupkan sebagai "tidak
+   aktif" (dulu :not(.is-active) membuat SELL tampil 52% sejak halaman dibuka — dikira tidak bisa
+   ditekan). Redup HANYA bila benar-benar nonaktif: order sedang dikirim, atau paket FREE. */
+.qim-qt-side:hover:not(:disabled) { filter:brightness(1.12); }
+.qim-qt-side:active:not(:disabled) { transform:translateY(1px); }
+.qim-qt-side:disabled { opacity:.5; cursor:not-allowed; }
+.qim-qt-side[aria-busy="true"] { cursor:wait; }
+.qim-qt-real-badge { display:none; align-self:center; padding:1px 6px; border-radius:3px; background:#fff; color:#c62828; font-size:8px; font-style:normal; font-weight:800; letter-spacing:.08em; }
+/* Mode Real MT5: seluruh kartu ditandai merah dan BUY/SELL memakai lencana REAL. */
+.qim-qt-card.is-real { border-color:#ef5350aa; box-shadow:0 0 0 1px #ef535055 inset; }
+.qim-qt-card.is-real .qim-qt-side { border-color:#ff8a80; box-shadow:0 0 0 2px #ef5350 inset; }
+.qim-qt-card.is-real .qim-qt-real-badge { display:inline-block; }
+.qim-qt-card [hidden] { display:none !important; }
+.qim-qt-realinfo { margin:8px 10px 0; padding:7px 8px; border:1px solid #ef535066; border-radius:6px; background:#ef535012; color:#ffb4b0; font-size:9.5px; line-height:1.5; }
+.qim-qt-realinfo button { padding:0; border:0; background:none; color:var(--qim-cyan); font:inherit; font-weight:650; cursor:pointer; text-decoration:underline; }
+.qim-qt-upgrade { display:block; margin:6px 10px 0; color:var(--qim-cyan); font-size:9.5px; font-weight:650; text-decoration:none; }
+.qim-qt-upgrade:hover { text-decoration:underline; }
 .qim-qt-baris { display:grid; grid-template-columns:30px minmax(0,1fr); align-items:center; gap:8px; padding:7px 10px 0; }
 .qim-qt-baris label { color:var(--qim-muted); font-size:10px; font-weight:650; }
 .qim-qt-step { display:grid; grid-template-columns:26px minmax(0,1fr) 26px; align-items:center; border:1px solid var(--qim-border); border-radius:6px; background:#0f1420; }
@@ -188,10 +204,7 @@ body.charts-active #panelTitleBar { display:none !important; }
 .qim-qt-step input::-webkit-outer-spin-button, .qim-qt-step input::-webkit-inner-spin-button { margin:0; -webkit-appearance:none; appearance:none; }
 .qim-qt-step input[type=number] { -moz-appearance:textfield; appearance:textfield; }
 .qim-qt-info { padding:8px 10px 0; color:var(--qim-muted); font-size:9.5px; line-height:1.5; }
-.qim-qt-kirim { display:block; width:calc(100% - 20px); margin:8px 10px 0; padding:9px 0; border:0; border-radius:7px; background:#1773e6; color:#fff; font-size:12px; font-weight:700; cursor:pointer; }
-.qim-qt-kirim:hover { background:#2a86f5; }
-.qim-qt-kirim.is-real { background:#c62828; }
-.qim-qt-kirim.is-real:hover { background:#d93b3b; }
+.qim-qt-info.is-tolak { color:var(--qim-red); }
 .qim-qt-saldo { display:flex; justify-content:space-between; gap:8px; padding:8px 10px 0; color:var(--qim-muted); font-size:9.5px; }
 .qim-qt-saldo b { color:var(--qim-text); font-variant-numeric:tabular-nums; }
 .qim-qt-saldo b.naik { color:var(--qim-green); }
@@ -208,7 +221,9 @@ body.charts-active #panelTitleBar { display:none !important; }
 .qim-qt-pos-pnl.naik { color:var(--qim-green); }
 .qim-qt-pos-pnl.turun { color:var(--qim-red); }
 .qim-qt-tutup { padding:3px 8px; border:1px solid #ef535066; border-radius:5px; background:none; color:var(--qim-red); font-size:9px; font-weight:650; cursor:pointer; }
-.qim-qt-tutup:hover { background:#ef53501f; }
+.qim-qt-tutup:hover:not(:disabled) { background:#ef53501f; }
+.qim-qt-tutup:disabled { opacity:.6; cursor:wait; }
+.qim-qt-auto { padding:2px 6px; border:1px solid #00d4ff44; border-radius:5px; color:var(--qim-cyan); font-size:8.5px; font-weight:700; letter-spacing:.04em; }
 .qim-qt-kosong { padding:8px 0 2px; color:var(--qim-muted); font-size:9.5px; }
 .qim-qt-nota { margin:6px 10px 10px; color:var(--qim-muted); font-size:9px; line-height:1.5; }
 .qim-qt-nota.is-real { color:var(--qim-red); font-weight:650; }

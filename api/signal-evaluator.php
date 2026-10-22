@@ -10,11 +10,15 @@
  * ── VERSI ATURAN PENILAIAN ──────────────────────────────────────────────────
  *  1 = tanpa spread · 2 = spread + harga keluar saat gap (2026-10-19)
  *  3 = + slippage entry/SL + resolusi M1 untuk candle ambigu
+ *  4 = + ENTRY WAJIB BISA TERISI (aturan 12, 2026-10-22): rekor yang entry-nya tidak ada
+ *      di pasar saat terbit tidak lagi dianggap terisi di 'entry' — ia menunggu harga
+ *      menyentuh entry, dan tidak terisi sampai expiry → EXPIRED "entry_tak_terisi".
  *
  *  Versi hanya dinaikkan bila PUTUSANNYA berubah (menang/kalah atau harga keluar).
  *  Penambahan MAE/MFE pada 2026-10-21 TIDAK menaikkan versi: keduanya catatan
  *  tambahan tentang perjalanan posisi, bukan perubahan cara menilai — menaikkannya
- *  akan membuat statistik seolah-olah berasal dari aturan yang berbeda.
+ *  akan membuat statistik seolah-olah berasal dari aturan yang berbeda. Aturan 12
+ *  MENAIKKAN versi karena memang mengubah putusan (TP "instan" di harga gap hilang).
  *
  * ── ATURAN PENILAIAN (sengaja KONSERVATIF) ──────────────────────────────────
  *  1. Hanya sinyal berstatus "AKTIF" yang disentuh. Sinyal yang sudah selesai
@@ -47,6 +51,25 @@
  *     membayar sisi pembuka. Spread tipikal per simbol dicatat di rekor (spread_biaya,
  *     spread_basis, harga_basis), pnl = BERSIH setelah spread, pnl_kotor = tanpa spread,
  *     entry_efektif = entry setelah spread (dipakai perhitungan R).
+ * 12. ENTRY WAJIB BISA TERISI (v4). Dulu setiap rekor dianggap order pasar yang terisi di
+ *     'entry' — termasuk entry AI 2650 saat pasar 2700, yang lalu dicatat "HIT TP" di harga
+ *     gap pembukaan (+2,5R) untuk transaksi yang mustahil terisi. Sekarang (qi_sig_mode_isi):
+ *       · 'pasar'       — entry berada dalam rentang candle tempat sinyal terbit (± spread +
+ *                         0,25×ATR, maks. 0,25R): dinilai seperti dulu, posisi terisi saat terbit.
+ *                         Candle saat terbit hilang (feed bolong) tetapi harga_acuan ≈ entry dan
+ *                         pasar buka → juga 'pasar';
+ *       · 'sentuh'      — entry TIDAK ada di pasar saat terbit (atau pasar tutup saat itu):
+ *                         posisi baru terisi bila harga sesudahnya mencapai entry — di entry, atau
+ *                         di PEMBUKAAN candle yang melompati entry (limit: lebih baik, stop: lebih
+ *                         buruk; harga_isi dicatat). Di candle pengisian hanya SL yang dihitung
+ *                         (konservatif), TP mulai candle berikutnya, dan MFE candle itu tidak
+ *                         dihitung. Tidak tersentuh sampai expiry → EXPIRED expiry_basis
+ *                         "entry_tak_terisi" (bukan menang/kalah);
+ *       · 'diasumsikan' — data tidak menjangkau waktu terbit dan rekor tanpa harga_acuan:
+ *                         tidak dapat diverifikasi, dinilai seperti dulu dan DITANDAI.
+ *     Mode & waktu isi diputuskan SEKALI dari data PALING HALUS yang menjangkau waktu terbit;
+ *     interval yang lebih kasar (M15/H1) hanya melanjutkan penilaian, tidak memutuskan ulang.
+ *     Mode tercatat di rekor (isi_entry, filled_at, harga_isi) supaya dapat diaudit.
  *
  * CATATAN ZONA WAKTU: semua waktu sinyal BARU ditulis ISO 8601 UTC ("...Z") dan
  * semua pembacaan lewat qi_sig_epoch()/qi_sig_jendela() di api/_signal_time.php —
@@ -67,13 +90,14 @@
 
 // Versi aturan penilaian yang berlaku (lihat kepala berkas). Dipakai juga oleh
 // api/_signal_stats.php untuk memisahkan statistik per versi.
-if (!defined('QI_VERSI_PENILAIAN')) define('QI_VERSI_PENILAIAN', 3);
+if (!defined('QI_VERSI_PENILAIAN')) define('QI_VERSI_PENILAIAN', 4);
 
 require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_biaya_spread.php';
 require_once __DIR__ . '/_json_kunci.php';
 require_once __DIR__ . '/_urai_m1.php';
+require_once __DIR__ . '/_sinyal_pasar.php';   // toleransi entry & jam pasar (sama dengan penerbit sinyal)
 
 if (!function_exists('qi_sig_interval_kandidat')) :
 /**
@@ -164,14 +188,136 @@ function qi_sig_hangatkan_mt5(string $symbol, string $iv): bool {
 }
 endif;
 
+if (!function_exists('qi_sig_isi_awal')) :
+/**
+ * Aturan 12 (v4): bagaimana entry sebuah rekor bisa terisi, dan di sisi mana pasar berada.
+ *   'pasar'       — entry ada di rentang candle tempat sinyal terbit (± $tol): terisi saat terbit;
+ *   'sentuh'      — entry tidak ada di pasar saat terbit, atau ada data SEBELUM terbit tetapi
+ *                   tidak ada candle PADA waktu terbit: harus disentuh dulu;
+ *   'diasumsikan' — data tidak menjangkau waktu terbit dan rekor tanpa harga_acuan.
+ * Rekor baru membawa harga_acuan (harga pasar saat dicatat) sebagai cadangan bila candle
+ * saat terbit tidak ada di cache.
+ *
+ * 'sisi' (mode sentuh): +1 = pasar di ATAS entry, −1 = di BAWAH, 0 = tidak diketahui. Sisi
+ * menentukan jenis order yang sebenarnya — BUY di bawah pasar = limit, di atas = stop (SELL
+ * kebalikannya) — dan karena itu di harga berapa ia terisi saat harga melompat (qi_sig_cek_isi_candle).
+ *
+ * Candle PADA waktu terbit tidak ada tetapi ada data sebelumnya (feed bolong): dulu langsung
+ * 'sentuh' tanpa melihat harga_acuan, sehingga rekor kripto dengan harga_acuan = entry hanya bisa
+ * tercatat bila RUGI — reli dibuang sebagai "entry_tak_terisi", penurunan tercatat HIT SL (audit
+ * ulang 2026-10-22). Sekarang harga_acuan ≈ entry DAN pasar memang buka saat terbit → 'pasar'.
+ * Pasar tutup saat terbit (akhir pekan, jeda harian emas) tetap 'sentuh': harga_acuan saat itu
+ * hanyalah harga beku.
+ */
+function qi_sig_isi_awal(array $sig, array $candles, int $t0, int $durasi, float $tol, float $offBuka = 0.0): array {
+    $entry = (float)($sig['entry'] ?? 0);
+    $acuan = (isset($sig['harga_acuan']) && is_numeric($sig['harga_acuan']) && (float)$sig['harga_acuan'] > 0) ? (float)$sig['harga_acuan'] : null;
+    $sisiDari = static function (float $harga) use ($entry, $offBuka): int {
+        $h = $harga + $offBuka;   // sisi pembuka (BUY dibeli di ASK, SELL dijual di BID)
+        return $h > $entry ? 1 : ($h < $entry ? -1 : 0);
+    };
+    if ($durasi > 0) {
+        $sebelum = null; $tSebelum = 0;
+        foreach ($candles as $c) {
+            $t = (int)($c['time'] ?? 0);
+            if ($t <= 0) continue;
+            if ($t <= $t0 && $t0 < $t + $durasi) {
+                $dalam = ((float)$c['low'] - $tol) <= $entry && $entry <= ((float)$c['high'] + $tol);
+                return $dalam ? ['mode' => 'pasar', 'sisi' => 0] : ['mode' => 'sentuh', 'sisi' => $sisiDari((float)$c['close'])];
+            }
+            if ($t + $durasi <= $t0 && $t > $tSebelum) { $tSebelum = $t; $sebelum = $c; }
+        }
+        if ($sebelum !== null) {
+            if ($acuan !== null && abs($entry - $acuan) <= $tol && qi_sp_pasar_buka((string)($sig['symbol'] ?? ''), $t0)) {
+                return ['mode' => 'pasar', 'sisi' => 0];
+            }
+            return ['mode' => 'sentuh', 'sisi' => $sisiDari($acuan ?? (float)$sebelum['close'])];
+        }
+    }
+    if ($acuan !== null) {
+        return abs($entry - $acuan) <= $tol ? ['mode' => 'pasar', 'sisi' => 0] : ['mode' => 'sentuh', 'sisi' => $sisiDari($acuan)];
+    }
+    return ['mode' => 'diasumsikan', 'sisi' => 0];
+}
+
+/** Mode pengisian saja (lihat qi_sig_isi_awal). */
+function qi_sig_mode_isi(array $sig, array $candles, int $t0, int $durasi, float $tol): string {
+    return qi_sig_isi_awal($sig, $candles, $t0, $durasi, $tol)['mode'];
+}
+
+/** Apakah data candle menjangkau waktu terbit (ada candle yang dimulai pada/ sebelum $t0)? */
+function qi_sig_menjangkau_terbit(array $candles, int $t0): bool {
+    foreach ($candles as $c) {
+        $t = (int)($c['time'] ?? 0);
+        if ($t > 0 && $t <= $t0) return true;
+    }
+    return false;
+}
+
+/**
+ * Apakah order entry terisi di candle ini, dan di harga berapa (harga data, sebelum spread)?
+ * Order hanya bisa terisi pada harga yang BENAR-BENAR tersedia di sisi pembuka (BUY di ASK):
+ *   · sisi +1 (pasar di atas entry) — terisi saat harga TURUN ke entry. Candle dibuka di/di bawah
+ *     entry → terisi di PEMBUKAAN (BUY limit: lebih baik; SELL stop: lebih buruk);
+ *   · sisi −1 (pasar di bawah entry) — terisi saat harga NAIK ke entry; dibuka di/di atas entry →
+ *     terisi di pembukaan (BUY stop: lebih buruk; SELL limit: lebih baik);
+ *   · sisi 0 — hanya bila rentang candle memuat entry.
+ * Dulu candle yang MELOMPATI entry tidak mengisinya sama sekali: BUY limit 2650 yang dilompati
+ * harga ke 2642 lalu jatuh ke SL tercatat "entry_tak_terisi" (rugi nyata tersembunyi), dan
+ * BUY stop yang dilompati ke atas tercatat terisi tepat di entry (lebih baik dari kenyataan).
+ * @return array{harga: float, gap: bool}|null
+ */
+function qi_sig_cek_isi_candle(array $c, float $entry, float $offBuka, int $sisi): ?array {
+    $o = (float)$c['open']; $oB = $o + $offBuka; $lB = (float)$c['low'] + $offBuka; $hB = (float)$c['high'] + $offBuka;
+    if ($sisi > 0) {
+        if ($oB <= $entry) return ['harga' => $o, 'gap' => true];
+        return $lB <= $entry ? ['harga' => $entry, 'gap' => false] : null;
+    }
+    if ($sisi < 0) {
+        if ($oB >= $entry) return ['harga' => $o, 'gap' => true];
+        return $hB >= $entry ? ['harga' => $entry, 'gap' => false] : null;
+    }
+    return ($lB <= $entry && $entry <= $hB) ? ['harga' => $entry, 'gap' => false] : null;
+}
+
+/**
+ * Cari pengisian entry (mode sentuh) di candle sesudah terbit sampai expiry.
+ * @return array{t: ?int, harga: ?float, gap: bool, akhir: int} akhir = ujung data (detik)
+ */
+function qi_sig_cari_isi(array $candles, int $durasi, int $t0, int $tExp, float $entry, float $offBuka, int $sisi): array {
+    $urut = [];
+    $akhir = 0;
+    foreach ($candles as $c) {
+        $t = (int)($c['time'] ?? 0);
+        if ($t <= 0) continue;
+        $akhir = max($akhir, $t + max(1, $durasi));
+        if ($t <= $t0 || $t > $tExp) continue;
+        $urut[$t] = $c;
+    }
+    ksort($urut);
+    foreach ($urut as $t => $c) {
+        $isi = qi_sig_cek_isi_candle($c, $entry, $offBuka, $sisi);
+        if ($isi !== null) return ['t' => $t, 'harga' => $isi['harga'], 'gap' => $isi['gap'], 'akhir' => $akhir];
+    }
+    return ['t' => null, 'harga' => null, 'gap' => false, 'akhir' => $akhir];
+}
+endif;
+
 if (!function_exists('qi_sig_nilai_satu')) :
 /**
  * Tentukan hasil satu sinyal berdasarkan candle.
  * Mengembalikan array hasil, atau null bila belum bisa diputuskan (biarkan AKTIF).
  * @param int      $durasi durasi satu candle (detik) — untuk memeriksa cakupan data
  * @param int|null $kini   waktu sekarang (epoch); null = time()
+ * @param array|null $isiDari sumber data untuk MEMUTUSKAN pengisian entry (aturan 12), urut dari
+ *                   yang paling halus: list ['candles' => [...], 'durasi' => detik]. Yang dipakai
+ *                   adalah yang paling halus dan menjangkau waktu terbit; null = $candles sendiri.
+ *                   MENGAPA: penilai mencoba M5 → M15 → H1. Dulu tiap interval memutuskan sendiri;
+ *                   M5 berkata "belum terisi" (null), lalu candle H1 yang lebar memuat entry dan
+ *                   memutuskan 'pasar' — TP +2,5R tercatat untuk order yang menurut M5 tidak pernah
+ *                   bisa terisi (audit ulang 2026-10-22). Keputusan isi kini dibuat SEKALI.
  */
-function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?string $zonaLama = null, ?callable $urai = null): ?array {
+function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?string $zonaLama = null, ?callable $urai = null, ?array $isiDari = null): ?array {
     $side  = strtoupper((string)($sig['side'] ?? ''));
     $entry = (float)($sig['entry'] ?? 0);
     $tp    = (float)($sig['tp'] ?? 0);
@@ -195,15 +341,75 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     }
     usort($filtered, fn($a, $b) => $a['time'] - $b['time']);
 
+    // Data yang dimulai SESUDAH sinyal terbit (cache yang sudah bergulir) tidak boleh memutuskan
+    // apa pun: TP/SL bisa saja tersentuh di bagian yang hilang. Dulu syarat awal ini hanya dipakai
+    // untuk EXPIRED, sehingga cache M5 yang baru dimulai 10 jam sesudah terbit tetap bisa
+    // membukukan TP — padahal SL mungkin kena lebih dulu. Interval yang lebih kasar dicoba berikutnya.
+    $dE = $durasi > 0 ? $durasi : 60;
+    $awalData = PHP_INT_MAX; $akhirData = 0;
+    foreach ($candles as $c) {
+        $t = (int)($c['time'] ?? 0);
+        if ($t <= 0) continue;
+        if ($t < $awalData) $awalData = $t;
+        if ($t > $akhirData) $akhirData = $t;
+    }
+    if ($awalData > $t0 + $dE) return null;
+
     // Aturan 9 (spread): BUY ditutup di BID, SELL di ASK; entry pasar membayar sisi
     // pembuka. Offset 0 bila rekor tidak dipasangi biaya (perilaku lama, dipakai uji).
     $off = qi_spread_offset_rekor($sig);
     $offTutup = ($side === 'BUY') ? $off['bid_off'] : $off['ask_off'];
+    $offBuka  = ($side === 'BUY') ? $off['ask_off'] : $off['bid_off'];
     // Aturan 10 (slippage): entry pasar dan SL (order stop) terisi sedikit lebih buruk;
     // TP (order limit) terisi tepat di level. 0 bila rekor tidak dipasangi biaya.
     $slip = max(0.0, (float)($sig['slippage_biaya'] ?? 0));
+    // Harga isi yang sebenarnya: 'entry', kecuali candle melompati entry (lihat qi_sig_cek_isi_candle)
+    // sehingga order terisi di harga pembukaan. P/L, MAE/MFE, dan entry_efektif dihitung dari harga ini.
+    $hargaMasuk = $entry;
     $entryEfektif = $entry + (($side === 'BUY') ? $off['ask_off'] + $slip : $off['bid_off'] - $slip);
+    $setelIsi = static function (float $harga) use (&$hargaMasuk, &$entryEfektif, $side, $off, $slip): void {
+        $hargaMasuk = $harga;
+        $entryEfektif = $harga + (($side === 'BUY') ? $off['ask_off'] + $slip : $off['bid_off'] - $slip);
+    };
     $resolusi = null;
+
+    // Aturan 12 (v4): apakah entry BISA terisi? Toleransi = spread + qi_sp_toleransi_entry (0,25×ATR,
+    // maks. 0,25R; tanpa ATR 0,2R) — batas yang SAMA dengan pemeriksaan saat pencatatan.
+    $risiko = abs($entry - $sl);
+    $atrSig = (isset($sig['atr']) && is_numeric($sig['atr'])) ? (float)$sig['atr'] : 0.0;
+    $tolIsi = max(0.0, $off['ask_off'] - $off['bid_off']) + qi_sp_toleransi_entry($atrSig, $risiko);
+    // Keputusan isi dari data PALING HALUS yang menjangkau waktu terbit (lihat $isiDari di atas).
+    $refC = $candles; $refD = $durasi; $refSendiri = true;
+    foreach ($isiDari ?? [] as $src) {
+        if (!is_array($src['candles'] ?? null) || !qi_sig_menjangkau_terbit($src['candles'], $t0)) continue;
+        $refSendiri = ((int)($src['durasi'] ?? 0) === $durasi);
+        if (!$refSendiri) { $refC = $src['candles']; $refD = (int)$src['durasi']; }
+        break;
+    }
+    $awalIsi = qi_sig_isi_awal($sig, $refC, $t0, $refD, $tolIsi, $offBuka);
+    $modeIsi = $awalIsi['mode'];
+    $sisi = $awalIsi['sisi'];
+    $terisi = ($modeIsi !== 'sentuh');
+    $tIsi = null; $isiGap = false;
+    $cariMulai = null;   // mode sentuh, data acuan berhenti sebelum jendela selesai: cari isi di candle ini mulai titik ini
+    if (!$terisi) {
+        $cari = qi_sig_cari_isi($refC, $refD, $t0, $tExp, $entry, $offBuka, $sisi);
+        if ($cari['t'] !== null && !$refSendiri && $durasi > 0 && $refD > $durasi) {
+            // Acuan lebih KASAR dari candle yang dinilai (candle ini tidak menjangkau waktu terbit):
+            // waktu & harga isi dicari ulang di candle ini, mulai candle acuan tempat entry tersentuh.
+            $cariMulai = $cari['t'];
+        } elseif ($cari['t'] !== null) {
+            $tIsi = $cari['t']; $isiGap = $cari['gap']; $setelIsi((float)$cari['harga']);
+        } elseif ($cari['akhir'] < min($tExp, $kini ?? time())) {
+            $cariMulai = $cari['akhir'];   // data acuan berhenti lebih dulu: lanjutkan di candle ini
+        }
+    }
+    $catatIsi = static function (array $h) use ($modeIsi, &$tIsi, &$hargaMasuk, $entry): array {
+        $h['isi_entry'] = $modeIsi;
+        if ($tIsi !== null) $h['filled_at'] = qi_sig_waktu_utc($tIsi);
+        if ($hargaMasuk != $entry) $h['harga_isi'] = round($hargaMasuk, 6);   // terisi di pembukaan candle yang melompati entry
+        return $h;
+    };
 
     // MAE / MFE — seberapa jauh harga bergerak MELAWAN dan MENDUKUNG posisi sebelum selesai,
     // dalam satuan R (1R = jarak entry ke SL yang direncanakan).
@@ -213,27 +419,128 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     //   · MAE kecil pada transaksi yang kalah  → arahnya memang salah, bukan SL kesempitan;
     //   · MAE besar lalu akhirnya menang       → SL hampir tersentuh, entry-nya terlalu dini;
     //   · MFE mendekati TP lalu berbalik kalah → TP terlalu jauh, bukan sinyalnya jelek.
-    // Dicatat untuk SEMUA transaksi tertutup, termasuk yang kalah.
-    $risiko = abs($entry - $sl);
+    // Dicatat untuk SEMUA transaksi tertutup, termasuk yang kalah. Diukur dari harga isi yang
+    // sebenarnya ($hargaMasuk); 1R tetap risiko RENCANA supaya satuannya sama di semua rekor.
+    // $hanyaMelawan: candle pengisian — lihat penjelasan di loop di bawah.
     $maeR = 0.0; $mfeR = 0.0;
-    $catatMaeMfe = static function (float $high, float $low) use ($side, $entry, $risiko, &$maeR, &$mfeR): void {
+    $catatMaeMfe = static function (float $high, float $low, bool $hanyaMelawan = false) use ($side, &$hargaMasuk, $risiko, &$maeR, &$mfeR): void {
         if ($risiko <= 0) return;
-        $mendukung = ($side === 'BUY') ? $high - $entry : $entry - $low;   // sejauh mana untung
-        $melawan   = ($side === 'BUY') ? $entry - $low  : $high - $entry;  // sejauh mana rugi
-        if ($mendukung > 0) $mfeR = max($mfeR, $mendukung / $risiko);
+        $mendukung = ($side === 'BUY') ? $high - $hargaMasuk : $hargaMasuk - $low;   // sejauh mana untung
+        $melawan   = ($side === 'BUY') ? $hargaMasuk - $low  : $high - $hargaMasuk;  // sejauh mana rugi
+        if ($mendukung > 0 && !$hanyaMelawan) $mfeR = max($mfeR, $mendukung / $risiko);
         if ($melawan   > 0) $maeR = max($maeR, $melawan   / $risiko);
     };
 
+    // Susun hasil HIT TP / HIT SL dari candle pemicu (satu tempat untuk semua jalur keluar).
+    // $gap = keluar di harga PEMBUKAAN karena candle dibuka melewati level.
+    $putus = function (bool $menang, float $harga, array $c, bool $gap) use ($side, $sl, $entry, &$hargaMasuk, &$entryEfektif, $off, $slip, $atrSig, &$resolusi, &$maeR, &$mfeR, $sig, $catatIsi): array {
+        // Aturan 5: keluar di harga yang BENAR-BENAR bisa didapat. Saat gap melewati SL,
+        // itu harga pembukaan (lebih buruk dari −1R) — dulu dicatat tepat di SL sehingga
+        // kerugian gap tampak lebih kecil dari kenyataannya.
+        $keluar = $harga;
+
+        // ── UKUR KEDALAMAN WICK (Tahap 2 lanjutan) ───────────────────────────
+        // MENGAPA: saat SL kena tanpa gap, harga keluar diset TEPAT di SL sehingga
+        // kedalaman tembusnya hilang (terbukti: sweep_overshoot selalu 0 → deteksi
+        // sapuan likuiditas tidak pernah bisa bekerja). Padahal candle pemicunya ada
+        // di sini, lengkap dengan high/low/close. Jadi diukur dari candle NYATA:
+        //   · wick_depth     = seberapa jauh harga melewati SL (harga)
+        //   · wick_depth_atr = kedalaman itu dibagi ATR (satuan volatilitas)
+        //   · closed_back    = apakah candle Ditutup kembali di sisi semula SL
+        // Sapuan likuiditas yang JUJUR = menusuk cukup dalam (≥0,25×ATR) DAN ditutup
+        // kembali; bila harga terus berlanjut, itu tren — bukan sapuan.
+        $luar = [];
+        if (!$menang) {
+            $ekstrem = ($side === 'BUY') ? (float)$c['low'] : (float)$c['high'];
+            $kedalaman = ($side === 'BUY') ? max(0.0, $sl - $ekstrem) : max(0.0, $ekstrem - $sl);
+            $luar = [
+                'wick_extreme'   => round($ekstrem, 6),
+                'wick_depth'     => round($kedalaman, 6),
+                'wick_depth_atr' => ($atrSig > 0) ? round($kedalaman / $atrSig, 4) : null,
+                'candle_high'    => round((float)$c['high'], 6),
+                'candle_low'     => round((float)$c['low'], 6),
+                'candle_close'   => round((float)$c['close'], 6),
+                'closed_back'    => ($side === 'BUY') ? ((float)$c['close'] > $sl) : ((float)$c['close'] < $sl),
+            ];
+        }
+        // Gap ditandai terpisah: harga MELOMPATI level (pasar tutup/berita), bukan menusuk
+        // lalu kembali — api/_sl_learn.php tidak boleh menyebutnya sapuan likuiditas.
+        if ($gap) $luar['gap'] = true;
+
+        $selisih = ($side === 'BUY') ? $keluar - $entryEfektif : $entryEfektif - $keluar;
+        $biaya = $resolusi !== null ? ['resolusi_ambigu' => $resolusi] : [];
+        // entry_efektif juga WAJIB dicatat bila terisi di harga lain dari 'entry' (lompatan harga):
+        // statistik R (_signal_stats.php, track-record.php) menghitung dari entry_efektif.
+        if ($off['ask_off'] - $off['bid_off'] > 0 || $slip > 0 || $hargaMasuk != $entry) {
+            $biaya += [
+                'entry_efektif' => round($entryEfektif, 6),
+                'pnl_kotor'     => round(($side === 'BUY' ? $keluar - $hargaMasuk : $hargaMasuk - $keluar), 6),
+            ];
+        }
+        return $catatIsi(array_merge([
+            'status'      => $menang ? 'HIT TP 🎯' : 'HIT SL 🛑',
+            'hit_price'   => round($harga, 6),
+            'exit_price'  => round($keluar, 6),
+            'closed_at'   => qi_sig_waktu_utc($c['time']),
+            'pnl'         => round($selisih, 6),
+            // Perjalanan posisi sebelum selesai (lihat $catatMaeMfe di atas).
+            'mae_r'       => round($maeR, 3),
+            'mfe_r'       => round($mfeR, 3),
+            // Harga keluar WAJIB dikirim: untuk pair berbasis USD (USDJPY/USDCHF/USDCAD)
+            // qi_paper_pip_mult() mengonversi ke USD dengan 100.000/harga, dan hanya jatuh
+            // ke konvensi lama 1000 bila harga tidak diberikan — selisihnya ~50% pada USDJPY.
+            // Semua pemanggil lain (_auto_paper.php, ai-jelaskan.php) sudah mengirim harga.
+            'pnl_usd'     => round($selisih * qi_paper_pip_mult((string)$sig['symbol'], $keluar), 4),
+        ], $biaya, $luar));
+    };
+
     foreach ($filtered as $c) {
-        $tpKena = false; $slKena = false; $harga = 0.0;
+        $tpKena = false; $slKena = false; $harga = 0.0; $gap = false;
         $o = $c['open'] + $offTutup; $h = $c['high'] + $offTutup; $l = $c['low'] + $offTutup;
+        $slStop = ($side === 'BUY') ? $sl - $slip : $sl + $slip;   // harga isi SL tanpa gap
+
+        // Aturan 12: entry belum terisi → posisi BELUM ADA. Waktu & harga isi sudah dicari di data
+        // acuan ($tIsi, qi_sig_cari_isi); bila data acuan berhenti lebih dulu, dicari di candle ini
+        // mulai $cariMulai. Candle yang berakhir sebelum pengisian tidak ikut dinilai.
+        if (!$terisi) {
+            $lilin = true;   // candle pengisian: urutan harga di dalamnya tidak diketahui
+            if ($tIsi !== null) {
+                if ($c['time'] + $dE <= $tIsi) continue;
+                // Terisi di PEMBUKAAN candle ini sendiri (lompatan, data yang sama dengan acuan):
+                // seluruh candle terjadi sesudah pengisian → dinilai seperti candle biasa.
+                $lilin = !($isiGap && $refSendiri && $c['time'] === $tIsi);
+            } elseif ($cariMulai !== null && $c['time'] + $dE > $cariMulai) {
+                $isi = qi_sig_cek_isi_candle($c, $entry, $offBuka, $sisi);
+                if ($isi === null) continue;
+                $tIsi = $c['time']; $isiGap = $isi['gap']; $setelIsi((float)$isi['harga']);
+                $lilin = !$isiGap;
+            } else {
+                continue;
+            }
+            $terisi = true;
+            if ($lilin) {
+                // Di candle pengisian urutan tidak diketahui: SL yang tersentuh di candle yang sama
+                // dihitung kalah (konservatif); TP baru dihitung mulai candle berikutnya.
+                // MAE/MFE (audit ulang 2026-10-22): dulu seluruh candle dihitung, termasuk puncak
+                // SEBELUM terisi — BUY 2650 yang turun dari 2701 tercatat MFE 2,55R padahal TP-nya
+                // 1,5R. Sekarang MFE candle ini TIDAK dihitung; MAE dihitung bila ekstrem melawan
+                // pasti terjadi sesudah isi (order limit: harga datang dari sisi untung, jadi ekstrem
+                // di balik entry hanya bisa sesudah isi; sisi tak diketahui: konservatif) ATAU SL
+                // kena di candle ini (agar kekalahan konservatif selalu bertanda MAE ≥ 1R).
+                $limit = ($sisi === 0) || (($side === 'BUY') ? $sisi > 0 : $sisi < 0);
+                $kenaSlIsi = ($side === 'BUY') ? $l <= $sl : $h >= $sl;
+                if ($limit || $kenaSlIsi) $catatMaeMfe($h, $l, true);
+                if ($kenaSlIsi) return $putus(false, $slStop, $c, false);
+                continue;
+            }
+        }
+
         // Candle ini ikut dihitung SEBELUM diperiksa apakah TP/SL tersentuh: candle penutup
         // tetap bagian dari perjalanan posisi.
         $catatMaeMfe($h, $l);
-        $slStop = ($side === 'BUY') ? $sl - $slip : $sl + $slip;   // harga isi SL tanpa gap
         if ($side === 'BUY') {
-            if ($o >= $tp) { $tpKena = true; $harga = $o; }      // gap naik melewati TP
-            elseif ($o <= $sl) { $slKena = true; $harga = $o; }  // gap turun melewati SL
+            if ($o >= $tp) { $tpKena = true; $harga = $o; $gap = true; }      // gap naik melewati TP
+            elseif ($o <= $sl) { $slKena = true; $harga = $o; $gap = true; }  // gap turun melewati SL
             else {
                 $kenaSl = $l <= $sl; $kenaTp = $h >= $tp;
                 if ($kenaSl && $kenaTp) {
@@ -247,8 +554,8 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
                 elseif ($kenaTp) { $tpKena = true; $harga = $tp; }
             }
         } else {
-            if ($o <= $tp) { $tpKena = true; $harga = $o; }
-            elseif ($o >= $sl) { $slKena = true; $harga = $o; }
+            if ($o <= $tp) { $tpKena = true; $harga = $o; $gap = true; }
+            elseif ($o >= $sl) { $slKena = true; $harga = $o; $gap = true; }
             else {
                 $kenaSl = $h >= $sl; $kenaTp = $l <= $tp;
                 if ($kenaSl && $kenaTp) {
@@ -260,63 +567,7 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
                 elseif ($kenaTp) { $tpKena = true; $harga = $tp; }
             }
         }
-        if ($tpKena || $slKena) {
-            $menang = $tpKena;
-            // Aturan 5: keluar di harga yang BENAR-BENAR bisa didapat. Saat gap melewati SL,
-            // itu harga pembukaan (lebih buruk dari −1R) — dulu dicatat tepat di SL sehingga
-            // kerugian gap tampak lebih kecil dari kenyataannya.
-            $keluar = $harga;
-
-            // ── UKUR KEDALAMAN WICK (Tahap 2 lanjutan) ───────────────────────────
-            // MENGAPA: saat SL kena tanpa gap, harga keluar diset TEPAT di SL sehingga
-            // kedalaman tembusnya hilang (terbukti: sweep_overshoot selalu 0 → deteksi
-            // sapuan likuiditas tidak pernah bisa bekerja). Padahal candle pemicunya ada
-            // di sini, lengkap dengan high/low/close. Jadi diukur dari candle NYATA:
-            //   · wick_depth     = seberapa jauh harga melewati SL (harga)
-            //   · wick_depth_atr = kedalaman itu dibagi ATR (satuan volatilitas)
-            //   · closed_back    = apakah candle Ditutup kembali di sisi semula SL
-            // Sapuan likuiditas yang JUJUR = menusuk cukup dalam (≥0,25×ATR) DAN ditutup
-            // kembali; bila harga terus berlanjut, itu tren — bukan sapuan.
-            $atrSig = (isset($sig['atr']) && is_numeric($sig['atr'])) ? (float)$sig['atr'] : 0.0;
-            $luar = [];
-            if (!$menang) {
-                $ekstrem = ($side === 'BUY') ? (float)$c['low'] : (float)$c['high'];
-                $kedalaman = ($side === 'BUY') ? max(0.0, $sl - $ekstrem) : max(0.0, $ekstrem - $sl);
-                $luar = [
-                    'wick_extreme'   => round($ekstrem, 6),
-                    'wick_depth'     => round($kedalaman, 6),
-                    'wick_depth_atr' => ($atrSig > 0) ? round($kedalaman / $atrSig, 4) : null,
-                    'candle_high'    => round((float)$c['high'], 6),
-                    'candle_low'     => round((float)$c['low'], 6),
-                    'candle_close'   => round((float)$c['close'], 6),
-                    'closed_back'    => ($side === 'BUY') ? ((float)$c['close'] > $sl) : ((float)$c['close'] < $sl),
-                ];
-            }
-
-            $selisih = ($side === 'BUY') ? $keluar - $entryEfektif : $entryEfektif - $keluar;
-            $biaya = $resolusi !== null ? ['resolusi_ambigu' => $resolusi] : [];
-            if ($off['ask_off'] - $off['bid_off'] > 0 || $slip > 0) {
-                $biaya += [
-                    'entry_efektif' => round($entryEfektif, 6),
-                    'pnl_kotor'     => round(($side === 'BUY' ? $keluar - $entry : $entry - $keluar), 6),
-                ];
-            }
-            return array_merge([
-                'status'      => $menang ? 'HIT TP 🎯' : 'HIT SL 🛑',
-                'hit_price'   => round($harga, 6),
-                'exit_price'  => round($keluar, 6),
-                'closed_at'   => qi_sig_waktu_utc($c['time']),
-                'pnl'         => round($selisih, 6),
-                // Perjalanan posisi sebelum selesai (lihat $catatMaeMfe di atas).
-                'mae_r'       => round($maeR, 3),
-                'mfe_r'       => round($mfeR, 3),
-                // Harga keluar WAJIB dikirim: untuk pair berbasis USD (USDJPY/USDCHF/USDCAD)
-                // qi_paper_pip_mult() mengonversi ke USD dengan 100.000/harga, dan hanya jatuh
-                // ke konvensi lama 1000 bila harga tidak diberikan — selisihnya ~50% pada USDJPY.
-                // Semua pemanggil lain (_auto_paper.php, ai-jelaskan.php) sudah mengirim harga.
-                'pnl_usd'     => round($selisih * qi_paper_pip_mult((string)$sig['symbol'], $keluar), 4),
-            ], $biaya, $luar);
-        }
+        if ($tpKena || $slKena) return $putus($tpKena, $harga, $c, $gap);
     }
 
     // Belum tersentuh. EXPIRED hanya bila data benar-benar mencakup seluruh jendela
@@ -327,28 +578,24 @@ function qi_sig_nilai_satu(array $sig, array $candles, int $durasi = 0, ?int $ki
     // Dulu syarat akhirnya "candle terakhir >= expiry − 1 detik". Expiry hampir tidak
     // pernah jatuh tepat di batas candle (23:40:43 vs candle 5 menit 23:40:00), jadi
     // sinyal yang sudah lewat masa berlaku tetap AKTIF selamanya.
+    // Awal data sudah diperiksa di atas ($awalData ≤ terbit + 1 candle).
     if (($kini ?? time()) <= $tExp) return null;
-    $durasi = $durasi > 0 ? $durasi : 60;
-    $awalData = PHP_INT_MAX; $akhirData = 0;
-    foreach ($candles as $c) {
-        $t = (int)($c['time'] ?? 0);
-        if ($t <= 0) continue;
-        if ($t < $awalData) $awalData = $t;
-        if ($t > $akhirData) $akhirData = $t;
-    }
-    $awalTercakup  = ($awalData <= $t0 + $durasi);
+    // Mode sentuh tanpa isi: data acuan sudah diperiksa sampai ujungnya, dan bila ujung itu sebelum
+    // expiry pencarian dilanjutkan di candle ini ($cariMulai) — jadi cakupan candle ini menentukan.
     $akhirTercakup = ($akhirData > $tExp)
-        || ($filtered && $filtered[count($filtered) - 1]['time'] >= $tExp - $durasi);
-    if ($awalTercakup && $akhirTercakup) {
-        return [
+        || ($filtered && $filtered[count($filtered) - 1]['time'] >= $tExp - $dE);
+    if ($akhirTercakup) {
+        return $catatIsi([
             'status'       => 'EXPIRED',
             'hit_price'    => null,
             'exit_price'   => null,
             'closed_at'    => qi_sig_waktu_utc($tExp),
             'pnl'          => 0.0,
             'pnl_usd'      => 0.0,
-            'expiry_basis' => 'candle',
-        ];
+            // Entry tidak pernah tersentuh: tidak ada posisi sama sekali — dibedakan dari
+            // "kedaluwarsa tanpa menyentuh TP/SL" supaya tidak tercampur di laporan.
+            'expiry_basis' => ($terisi || $tIsi !== null) ? 'candle' : 'entry_tak_terisi',
+        ]);
     }
     return null;
 }
@@ -361,10 +608,10 @@ if (!function_exists('qi_sig_nilai_lintas_zona')) :
  * sudah membawa zona). null bila salah satu zona belum bisa memutuskan. Bila zona-zona
  * tidak sepakat, hasilnya EXPIRED "zona_ambigu" — tidak pernah menebak menang/kalah.
  */
-function qi_sig_nilai_lintas_zona(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?callable $urai = null): ?array {
+function qi_sig_nilai_lintas_zona(array $sig, array $candles, int $durasi = 0, ?int $kini = null, ?callable $urai = null, ?array $isiDari = null): ?array {
     $perZona = [];
     foreach (qi_sig_zona_kandidat($sig) as $zona) {
-        $h = qi_sig_nilai_satu($sig, $candles, $durasi, $kini, $zona, $urai);
+        $h = qi_sig_nilai_satu($sig, $candles, $durasi, $kini, $zona, $urai, $isiDari);
         if ($h === null) return null;
         $perZona[$zona ?? 'zona_tertulis'] = $h;
     }
@@ -428,22 +675,30 @@ if (!function_exists('qi_sig_nilai_rekor')) :
  * ditolak gerbang (api/_sinyal_ditolak.php), supaya keduanya dinilai identik.
  * @return array{hasil: ?array, pakai: ?array, ada_data: bool, ubah: array}
  */
-function qi_sig_nilai_rekor(array $s): array {
+function qi_sig_nilai_rekor(array $s, ?int $kini = null): array {
     // Coba tiap interval kandidat (halus → kasar) sampai ada yang bisa memutuskan:
     // cache 5 menit bisa basi atau sudah tidak mencakup awal sinyal, sementara
     // cache 15/60 menit masih mencakup seluruh jendela.
+    // Keputusan PENGISIAN entry (aturan 12) tidak ikut dicoba ulang per interval: semua data
+    // dimuat lebih dulu dan diteruskan sebagai $isiDari, sehingga pengisian selalu diputuskan dari
+    // data paling halus yang menjangkau waktu terbit. Dulu M5 "belum terisi" (null) jatuh ke H1,
+    // dan candle H1 yang lebar memutuskan 'pasar' → HIT TP untuk order yang tidak pernah terisi.
     $hasil = null; $pakai = null; $adaData = false; $sBiaya = null;
     $urai = qi_sig_pengurai_m1((string)($s['symbol'] ?? ''));
+    $semua = [];
     foreach (qi_sig_interval_kandidat((string)($s['timeframe'] ?? 'MTF')) as $iv) {
         $data = qi_sig_ambil_candle((string)$s['symbol'], [$iv]);
-        if ($data === null) continue;
+        if ($data !== null) $semua[] = $data;
+    }
+    $isiDari = array_map(fn($d) => ['candles' => $d['candles'], 'durasi' => qi_sig_durasi_interval($d['interval'])], $semua);
+    foreach ($semua as $data) {
         $adaData = true;
         $sBiaya = qi_spread_pasang($s, (string)($data['source'] ?? ''));
-        $hasil = qi_sig_nilai_lintas_zona($sBiaya, $data['candles'], qi_sig_durasi_interval($data['interval']), null, $urai);
+        $hasil = qi_sig_nilai_lintas_zona($sBiaya, $data['candles'], qi_sig_durasi_interval($data['interval']), $kini, $urai, $isiDari);
         if ($hasil !== null) { $pakai = $data; break; }
     }
     if ($hasil === null) {
-        $hasil = qi_sig_kedaluwarsa_tanpa_data($s);
+        $hasil = qi_sig_kedaluwarsa_tanpa_data($s, $kini);
         if ($hasil !== null) $pakai = ['interval' => 'tanpa_data'];
     }
     if ($hasil === null) return ['hasil' => null, 'pakai' => null, 'ada_data' => $adaData, 'ubah' => []];
@@ -456,8 +711,16 @@ function qi_sig_nilai_rekor(array $s): array {
         'exit_price' => $hasil['exit_price'],
         'closed_at'  => $hasil['closed_at'],
     ];
-    foreach (['expiry_basis', 'zona_hasil', 'entry_efektif', 'pnl_kotor', 'resolusi_ambigu'] as $f) {
-        if (isset($hasil[$f])) $ubah[$f] = $hasil[$f];
+    // Semua yang DIUKUR penilai ikut disimpan. Dulu daftar ini hanya 5 kolom, sehingga
+    // MAE/MFE, hit_price, dan ukuran wick (wick_depth_atr, closed_back) hilang sebelum
+    // ditulis: api/_sl_learn.php tidak pernah melihat closed_back dan menyebut gap
+    // "sapuan_likuiditas" (audit sinyal 2026-10-22). isset() sengaja tidak dipakai —
+    // wick_depth_atr bernilai null bila ATR rekor tidak ada, dan null itu informasi.
+    foreach (['expiry_basis', 'zona_hasil', 'entry_efektif', 'pnl_kotor', 'resolusi_ambigu',
+              'mae_r', 'mfe_r', 'hit_price', 'wick_extreme', 'wick_depth', 'wick_depth_atr',
+              'candle_high', 'candle_low', 'candle_close', 'closed_back', 'gap',
+              'isi_entry', 'filled_at', 'harga_isi'] as $f) {
+        if (array_key_exists($f, $hasil)) $ubah[$f] = $hasil[$f];
     }
     if ($pakai['interval'] !== 'tanpa_data' && $sBiaya !== null) {
         foreach (['spread_biaya', 'spread_basis', 'harga_basis', 'slippage_biaya'] as $f) {
@@ -697,13 +960,21 @@ function qi_signal_evaluator_run(bool $dry = false, bool $warm = false, int $max
     if (!$dry && function_exists('qi_db')) {
         try {
             require_once __DIR__ . '/_auto_paper.php';
-            $hargaTerakhir = function (string $simbol): ?float {
-                $d = qi_sig_ambil_candle($simbol, ['5', '15', '60']);
-                if (!$d || empty($d['candles'])) return null;
-                $c = end($d['candles']);
-                return isset($c['close']) ? (float)$c['close'] : null;
+            // Harga PADA saat sinyal kedaluwarsa (bukan harga terakhir di cache): close candle
+            // terakhir yang sudah tutup sebelum expiry, ditolak bila > 2 batang lebih tua.
+            // Dulu end() cache 5/15/60 mana pun tanpa cek umur — tanpa cron/pengunjung, cache
+            // itu bisa berumur berhari-hari, jadi P/L EXPIRED diambil dari harga sembarang.
+            // Simbol diteruskan supaya jam pasar TUTUP (akhir pekan) tidak dihitung sebagai umur.
+            $hargaPada = function (string $simbol, int $pada): ?float {
+                foreach (['5', '15', '60'] as $iv) {
+                    $d = qi_sig_ambil_candle($simbol, [$iv]);
+                    if (!$d || empty($d['candles'])) continue;
+                    $px = qi_ap_harga_pada($d['candles'], qi_sig_durasi_interval($iv), $pada, $simbol);
+                    if ($px !== null) return $px;
+                }
+                return null;
             };
-            $ap = qi_ap_sinkron(qi_db(), $history, null, $hargaTerakhir);
+            $ap = qi_ap_sinkron(qi_db(), $history, null, $hargaPada);
             $laporan['auto_paper'] = ['dibuka' => $ap['dibuka'], 'ditutup' => $ap['ditutup'], 'dibatalkan' => $ap['dibatalkan']];
         } catch (Throwable $e) {
             @error_log('[auto-paper] hook penilai gagal: ' . $e->getMessage());

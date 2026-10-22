@@ -19,7 +19,8 @@ console.log('Sambungan (statis)');
 const ev = baca('api/signal-evaluator.php');
 cek('evaluator: satu penilai bersama untuk resmi & kandidat ditolak', /function qi_sig_nilai_rekor\(/.test(ev) && /qi_sig_nilai_ditolak\(\$dry\)/.test(ev));
 // Sejak 2026-10-21 nilainya datang dari konstanta bernama, bukan angka di tengah kode.
-cek('evaluator: versi_penilaian 3 (slippage + M1)', /'versi_penilaian'\] = QI_VERSI_PENILAIAN/.test(ev) && /define\('QI_VERSI_PENILAIAN', 3\)/.test(ev));
+// v3 = slippage + M1; v4 (2026-10-22) = + entry wajib bisa terisi (aturan 12).
+cek('evaluator: versi_penilaian 4 (slippage + M1 + isi entry)', /'versi_penilaian'\] = QI_VERSI_PENILAIAN/.test(ev) && /define\('QI_VERSI_PENILAIAN', 4\)/.test(ev));
 const rec = baca('api/_signal_record.php');
 cek('pencatat: penolakan spread/mesin/korelasi dicatat sebagai kandidat', (rec.match(/qi_ditolak_catat\(/g) || []).length === 3);
 cek('pembangkit & AI: blackout berita dicatat sebagai kandidat', /qi_ditolak_catat\(/.test(baca('api/signal-generator.php')) && /qi_ditolak_catat\(/.test(baca('api/ai-signal.php')));

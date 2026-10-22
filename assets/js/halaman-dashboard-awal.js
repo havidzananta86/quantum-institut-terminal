@@ -1,11 +1,6 @@
 // Skrip awal dashboard yang harus jalan SEBELUM halaman tampil (dulu 4 blok <script> inline; dipindah agar
-// lolos CSP tanpa 'unsafe-inline'). Dimuat sinkron tepat setelah #qiAccessGate, urutan isi = urutan lama.
-
-// ── Stempel waktu di gerbang akses ──
-(function(){
-    var el = document.getElementById('gateTimestamp');
-    if (el) el.textContent = new Date().toISOString().replace('T',' ').substring(0,19) + ' UTC';
-})();
+// lolos CSP tanpa 'unsafe-inline'). Dimuat sinkron tepat setelah layar pembuka (#qiLoadScreen), urutan isi = urutan lama.
+// Gerbang akses lama (#qiAccessGate, stempel waktu, "SECURE CONNECTION") sudah dihapus dari dashboard.html.
 
 // Pembungkus fetch: sertakan token otomatis untuk semua permintaan ke api/ kita.
 // ⚠️ Sebab diperlukannya: sebagian pemanggil (pro-trading-tools.js, advanced-trading.js,
@@ -69,33 +64,70 @@
     }
     window.QI_PERAN = qiNormalisasiPeran(userData && userData.role);
 
-    if (!token) {
-        // Belum masuk → ke login, lalu kembali ke dashboard.
-        try { sessionStorage.setItem('qi_redirect_after_login', 'dashboard.html'); } catch(e) {}
+    // Halaman ini lengkap dengan ?panel=… / #… — supaya tautan dalam tidak hilang lewat halaman masuk.
+    function halamanIni() {
+        return (location.pathname.split('/').pop() || 'dashboard.html') + location.search + location.hash;
+    }
+    function keLogin(alasan) {
+        window.__qiKeLogin = true;   // sambutan pertama kali tidak dibuka untuk halaman yang sedang ditinggalkan
+        try {
+            sessionStorage.setItem('qi_redirect_after_login', halamanIni());
+            sessionStorage.setItem('qi_alasan_masuk', alasan);
+        } catch(e) {}
         window.location.replace('login.html');
+    }
+    // Hasil verifikasi untuk layar pembuka (halaman-dashboard-pemuat.js, tahap "Memverifikasi sesi").
+    function kabarSesi(detail) {
+        try { window.dispatchEvent(new CustomEvent('qi-sesi', { detail: detail })); } catch(e) {}
+    }
+
+    if (!token) {
+        // Belum masuk → ke login, lalu kembali ke halaman ini (termasuk ?panel=).
+        keLogin('perlu_masuk');
         return;
     }
 
     // Token ada → SEMUA paket (termasuk free) boleh masuk dashboard sekarang juga.
-    document.getElementById('qiAccessGate').style.display = 'none';
     document.addEventListener('DOMContentLoaded', function() {
-        if (typeof showQiOnboarding === 'function') showQiOnboarding();
         if (typeof window.QI_TERAPKAN_AKSES === 'function') window.QI_TERAPKAN_AKSES();
+        // Sambutan pertama kali menunggu layar pembuka selesai (dulu tampil di BAWAH layar itu),
+        // dan tidak pernah dibuka bila sesi ditolak dan halaman sedang dialihkan ke login.html.
+        function sambut() {
+            if (!window.__qiKeLogin && typeof showQiOnboarding === 'function') showQiOnboarding();
+        }
+        if (!document.getElementById('qiLoadScreen') || window.__qiLayarPembukaSelesai) {
+            sambut();
+        } else {
+            window.addEventListener('qi-layar-pembuka-selesai', sambut, { once: true });
+        }
     });
 
-    // Verifikasi peran ke server (diam-diam). Bila token dipalsukan → ke login;
-    // bila paket diturunkan → cukup kunci area berbayar (bukan mengunci dashboard).
+    // Verifikasi peran ke server (diam-diam). HANYA penolakan nyata — HTTP 401 dengan kode
+    // AUTH_REQUIRED atau 2FA_REQUIRED (sama dengan QuantumAuth.sesiDitolak) — berarti sesi tidak
+    // berlaku → hapus sesi (kedua penyimpanan — salinan basi di localStorage dulu membuat putaran
+    // login tanpa akhir), beri alasan, lalu ke login. Gangguan server (5xx), 401 lain, atau jaringan
+    // → pertahankan akses optimistis. Bila paket diturunkan → cukup kunci area berbayar.
     fetch('api/auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ type: 'verify_token' })
-    }).then(function(r){ return r.json(); }).then(function(d){
-        const sah = d && d.status === 'success' && d.data && d.data.role;
-        if (!sah) {
-            try { sessionStorage.setItem('qi_redirect_after_login', 'dashboard.html'); } catch(e) {}
-            window.location.replace('login.html');
+    }).then(function(r){
+        return r.json().catch(function(){ return null; }).then(function(d){ return { http: r.status, d: d }; });
+    }).then(function(h){
+        var d = h.d;
+        var sah = h.http >= 200 && h.http < 300 && d && d.status === 'success' && d.data && d.data.role;
+        var kode = (d && d.code) || null;
+        var ditolak = h.http === 401 && (kode === 'AUTH_REQUIRED' || kode === '2FA_REQUIRED');
+        kabarSesi({ sah: !!sah, http: h.http, ditolak: ditolak, kode: kode });
+        if (ditolak) {
+            try {
+                if (typeof QuantumAuth !== 'undefined' && QuantumAuth.hapusSesi) QuantumAuth.hapusSesi();
+                else ['qi_token', 'qi_user', 'qi_user_name'].forEach(function(k){ localStorage.removeItem(k); sessionStorage.removeItem(k); });
+            } catch(e) {}
+            keLogin(kode === '2FA_REQUIRED' ? 'dua_langkah' : 'sesi_berakhir');
             return;
         }
+        if (!sah) return;
         const peranServer = qiNormalisasiPeran(d.data.role);
         if (peranServer !== window.QI_PERAN) {
             window.QI_PERAN = peranServer;
@@ -104,6 +136,7 @@
     }).catch(function(){
         // Gangguan jaringan → pertahankan akses optimistis (jangan kunci pengguna
         // yang sah hanya karena jaringan bermasalah).
+        kabarSesi({ sah: false, http: 0, ditolak: false, kode: null });
     });
 })();
 

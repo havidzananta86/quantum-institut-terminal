@@ -18,7 +18,9 @@ declare(strict_types=1);
  *
  * AMBANG YANG DIPAKAI (dinyatakan terbuka supaya bisa diperdebatkan, bukan disembunyikan):
  *   · SL dianggap terlalu ketat bila jarak SL < 1,0 × ATR (SL berada di dalam derau/ATR).
- *   · Dianggap terindikasi sapuan likuiditas bila harga melewati SL ≥ 0,25 × ATR.
+ *   · Dianggap sapuan likuiditas bila harga melewati SL ≥ 0,25 × ATR DAN candle pemicu ditutup
+ *     kembali di sisi semula SL. Candle yang DIBUKA di balik SL (penanda 'gap' dari penilai)
+ *     dicatat 'gap_melewati_sl'; penutupan candle tidak diketahui → 'perlu_data_harga'.
  *   · Rezim volatilitas dari ATR / harga: < 0,30% rendah · 0,30–0,80% sedang · > 0,80% tinggi.
  *   · Usulan metode hanya dibuat bila jumlah SL yang dianalisa ≥ 10.
  */
@@ -114,6 +116,15 @@ if (!function_exists('qi_sl_sesi')) {
             return ['cause' => 'perlu_data_harga',
                     'detail' => 'ATR atau level SL tidak tersimpan pada rekor ini, sehingga jarak SL tidak bisa dinilai terhadap volatilitas. Tidak disimpulkan sebab apa pun.'];
         }
+        // GAP (penanda 'gap' dari penilai sejak 2026-10-22): candle DIBUKA sudah di balik SL —
+        // harga melompati level (pasar tutup / rilis berita), tidak menusuk lalu kembali. Itu
+        // bukan sapuan likuiditas dan bukan soal SL kesempitan; memperlebar SL tidak menolong.
+        if (!empty($r['gap'])) {
+            return ['cause' => 'gap_melewati_sl',
+                    'detail' => 'Candle dibuka sudah melewati SL (gap) sehingga keluar di harga pembukaan '
+                        . (isset($r['exit_price']) && is_numeric($r['exit_price']) ? round((float)$r['exit_price'], 6) : '?')
+                        . '. Ini lompatan harga (pasar tutup/berita), bukan sapuan likuiditas.'];
+        }
         if ($jarakAtr < 1.0) {
             return ['cause' => 'sl_terlalu_ketat',
                     'detail' => 'Jarak SL hanya ' . $jarakAtr . '× ATR (di bawah 1× ATR) — SL berada di dalam derau pergerakan biasa, sehingga wajar tersentuh lebih dulu.'];
@@ -130,8 +141,14 @@ if (!function_exists('qi_sl_sesi')) {
                 return ['cause' => 'tren_berlanjut',
                         'detail' => 'Harga menembus SL sejauh ' . $overshoot . '× ATR dan TIDAK ditutup kembali (candle berakhir di sisi SL). Ini pergerakan tren yang berlanjut, BUKAN sapuan likuiditas — jadi memperlebar SL bukan jawabannya untuk kasus ini.'];
             }
-            return ['cause' => 'sapuan_likuiditas',
-                    'detail' => 'Harga menembus SL sejauh ' . $overshoot . '× ATR. Kedalaman tembus nyata, tetapi data penutupan candle tidak tersimpan pada rekor ini sehingga sapuan belum dapat dipastikan. Tidak disimpulkan lebih jauh.'];
+            // Penutupan candle TIDAK diketahui (rekor lama: penilai dulu membuang closed_back).
+            // Tanpa ukuran wick, overshoot ini dihitung dari exit_price — dan exit_price hanya
+            // jauh dari SL bila candle DIBUKA melewati SL (gap), karena SL biasa keluar tepat di
+            // SL ± slippage. Jadi ini paling mungkin gap, bukan sapuan. Dulu cabang ini menyebutnya
+            // "sapuan_likuiditas" dan ikut mendorong usulan memperlebar SL (audit 2026-10-22).
+            return ['cause' => 'perlu_data_harga',
+                    'detail' => 'Harga keluar ' . $overshoot . '× ATR di balik SL, tetapi penutupan candle pemicu tidak tersimpan pada rekor ini. '
+                        . 'Kemungkinan besar gap (candle dibuka melewati SL) — sapuan likuiditas TIDAK dapat dipastikan, jadi tidak disimpulkan.'];
         }
         if ($aligned === false || $aligned === 0) {
             return ['cause' => 'tf_konflik',

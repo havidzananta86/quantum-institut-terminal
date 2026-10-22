@@ -109,7 +109,9 @@ if (!function_exists('qi_gerbang_berkas')) {
                     'catatan' => 'DATA TIDAK TERSEDIA: gerbang tidak menilai (fail-open) supaya gangguan sumber data tidak menghentikan sinyal'];
         }
 
-        $matriks = qi_eng_matriks($c, (int)date('G'));
+        // Jam sesi dalam WIB EKSPLISIT. Dulu (int)date('G') = zona php.ini (Europe/Berlin lokal,
+        // UTC di hosting), padahal MomentumNY menafsirkannya sebagai WIB (audit 2026-10-22).
+        $matriks = qi_eng_matriks($c, qi_eng_jam_wib());
         $k = qi_eng_konfluensi($matriks, $minimum);
         $putusan = qi_gerbang_putuskan($k, $arah, $minimum, $minimumTersedia);
         // Rincian per mesin disertakan supaya jejaknya dapat disimpan ke

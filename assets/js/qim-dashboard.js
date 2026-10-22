@@ -498,82 +498,68 @@
         }
     }
 
-    let simulationInFlight = false;
-    async function refreshSimulation() {
-        if (simulationInFlight || !document.getElementById('qimSimEquity')) return;
+    // Kartu ini memakai state paper yang SAMA dengan Quick Trade dan panel Paper Trading
+    // (window.qiPaperRingkasan di dashboard-app.js; dimuat saat halaman dibuka dan tiap 20 detik).
+    // Dulu kartu ini melakukan GET api/paper-trading.php sendiri tiap 30 detik, mengambil harga
+    // sendiri, menilai posisi di harga TENGAH, dan memanggil ptPnlMult TANPA harga — USDJPY ±1,5×
+    // terlalu besar, USDCHF ±125× dan USDCAD ±72× terlalu kecil — sehingga dua saldo berbeda tampil
+    // berdampingan di rail yang sama. Kini P/L dinilai di harga penutupan (bid untuk BUY, ask untuk
+    // SELL) dengan pengali yang benar, dan posisi tanpa harga live tidak dihitung (dikatakan apa adanya).
+    function refreshSimulation() {
+        if (!document.getElementById('qimSimEquity')) return;
         const level = typeof window.qiTingkatSaatIni === 'function' ? window.qiTingkatSaatIni() : 0;
         if (level < 1) {
             // Endpoint ini khusus PRO: tidak dipanggil untuk paket lain (hanya menghasilkan 403).
             setSimulation({ equity: '—', pct: '—', initial: '—', realized: '—', open: '—', note: 'Paper Trading tersedia untuk paket PRO ke atas.' });
             return;
         }
-        simulationInFlight = true;
-        try {
-            const response = await fetch('api/paper-trading.php', { headers: authHeaders(), cache: 'no-store' });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const result = await response.json();
-            if (!result || result.status !== 'success' || !result.data) throw new Error(result && result.message || 'Format data paper trading tidak valid');
-            const positions = Array.isArray(result.data.positions) ? result.data.positions : [];
-            const history = Array.isArray(result.data.history) ? result.data.history : [];
-            const balance = Number(result.data.balance) || 0;
-            const realizedList = history.map(item => Number(item.realizedPnL) || 0);
-            const realized = realizedList.reduce((sum, value) => sum + value, 0);
-            const initial = balance - realized;
-
-            let floating = 0;
-            let priced = 0;
-            const symbols = [...new Set(positions.map(item => String(item.symbol || '').toUpperCase()).filter(Boolean))];
-            if (symbols.length) {
-                let quotes = {};
-                try {
-                    const priceResponse = await fetch(`api/live-price.php?symbols=${encodeURIComponent(symbols.join(','))}`, { cache: 'no-store' });
-                    const priceResult = priceResponse.ok ? await priceResponse.json() : null;
-                    if (priceResult && priceResult.status === 'success' && priceResult.prices) quotes = priceResult.prices;
-                } catch (error) { console.info('[QIM] Harga posisi paper belum tersedia:', error.message); }
-                positions.forEach(item => {
-                    const quote = quotes[String(item.symbol || '').toUpperCase()];
-                    const price = quote && Number(quote.price);
-                    const entry = Number(item.entryPrice);
-                    if (!Number.isFinite(price) || !Number.isFinite(entry) || typeof window.ptPnlMult !== 'function') return;
-                    const diff = item.side === 'SELL' ? entry - price : price - entry;
-                    floating += diff * (Number(item.lots) || 0) * window.ptPnlMult(String(item.symbol).toUpperCase());
-                    priced++;
-                });
-            }
-
-            const equity = balance + floating;
-            const change = initial ? (equity - initial) / initial * 100 : 0;
-            // Kurva dibangun dari penutupan terlama (closedAt dari server); tanpa closedAt
-            // dipakai urutan API (terbaru lebih dulu) yang dibalik.
-            const closedAt = item => new Date(item.closedAt || 0).getTime() || 0;
-            const ordered = history.every(item => closedAt(item))
-                ? history.slice().sort((x, y) => closedAt(x) - closedAt(y))
-                : history.slice().reverse();
-            const curve = [initial];
-            ordered.forEach(item => curve.push(curve[curve.length - 1] + (Number(item.realizedPnL) || 0)));
-            if (positions.length && priced) curve.push(equity);
-            const tone = value => value > 0 ? 'is-bullish' : value < 0 ? 'is-bearish' : '';
-            const trades = history.length;
-            setSimulation({
-                equity: `$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                pct: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
-                initial: `$${initial.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                realized: signedUsd(realized), realizedClass: tone(realized),
-                open: positions.length ? (priced ? signedUsd(floating) : 'Harga belum tersedia') : '—',
-                openClass: priced ? tone(floating) : '',
-                down: equity < initial,
-                curve,
-                note: trades || positions.length
-                    ? `Akun simulasi · ${trades} trade tertutup · ${positions.length} posisi terbuka`
-                    : 'Akun simulasi · belum ada transaksi paper trading'
-            });
-        } catch (error) {
-            setSimulation({ equity: '—', pct: '—', initial: '—', realized: '—', open: '—', note: 'Data paper trading belum tersedia.' });
-            console.warn('[QIM] Simulation Balance tidak dapat dimuat:', error.message);
-        } finally {
-            simulationInFlight = false;
+        const st = typeof window.qiPaperRingkasan === 'function' ? window.qiPaperRingkasan() : null;
+        if (!st || !st.dimuat) {
+            setSimulation({ equity: '—', pct: '—', initial: '—', realized: '—', open: '—',
+                note: st && st.gagal ? 'Data paper trading belum tersedia.' : 'Memuat akun paper trading…' });
+            return;
         }
+        const positions = Array.isArray(st.posisi) ? st.posisi : [];
+        const history = Array.isArray(st.riwayat) ? st.riwayat : [];
+        const balance = Number(st.saldo) || 0;
+        const realized = history.reduce((sum, item) => sum + (Number(item.realizedPnL) || 0), 0);
+        const initial = balance - realized;
+        const priced = Number(st.dihargai) || 0;
+        const floating = priced ? Number(st.mengambang) || 0 : 0;
+        const tanpaHarga = positions.length - priced;
+
+        const equity = balance + floating;
+        const change = initial ? (equity - initial) / initial * 100 : 0;
+        // Kurva dibangun dari penutupan terlama (closedAt dari server); tanpa closedAt
+        // dipakai urutan API (terbaru lebih dulu) yang dibalik.
+        const closedAt = item => new Date(item.closedAt || 0).getTime() || 0;
+        const ordered = history.every(item => closedAt(item))
+            ? history.slice().sort((x, y) => closedAt(x) - closedAt(y))
+            : history.slice().reverse();
+        const curve = [initial];
+        ordered.forEach(item => curve.push(curve[curve.length - 1] + (Number(item.realizedPnL) || 0)));
+        if (positions.length && priced) curve.push(equity);
+        const tone = value => value > 0 ? 'is-bullish' : value < 0 ? 'is-bearish' : '';
+        const trades = history.length;
+        let note = trades || positions.length
+            ? `Akun simulasi · ${trades} trade tertutup · ${positions.length} posisi terbuka`
+            : 'Akun simulasi · belum ada transaksi paper trading';
+        if (positions.length && tanpaHarga > 0) note += ` · ${tanpaHarga} posisi tanpa harga live tidak dihitung`;
+        if (st.gagal) note += ' · gagal memuat ulang, angka mungkin tidak terbaru';
+        setSimulation({
+            equity: `$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            pct: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+            initial: `$${initial.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            realized: signedUsd(realized), realizedClass: tone(realized),
+            open: positions.length ? (priced ? signedUsd(floating) + (tanpaHarga > 0 ? ' (sebagian)' : '') : 'Harga belum tersedia') : '—',
+            openClass: priced ? tone(floating) : '',
+            down: equity < initial,
+            curve,
+            note
+        });
     }
+    // dashboard-app.js menyiarkan peristiwa ini setiap state paper dimuat/berubah dan setiap harga diperbarui.
+    window.addEventListener('qi-paper-state', () => { try { refreshSimulation(); } catch (error) { console.warn('[QIM] Simulation Balance:', error.message); } });
 
     function brokerStatus(element, online, label) {
         element.classList.toggle('is-offline', !online);
@@ -737,6 +723,8 @@
         window.setInterval(refreshBrokerStatus, 60000);
         window.setInterval(() => refreshAnalysis(), 120000);
         window.setInterval(refreshSignalFeed, 120000);
+        // Hanya menggambar ulang dari state bersama (tanpa permintaan jaringan); muat ulang datanya
+        // dilakukan dashboard-app.js (ptMuatBerkala) lalu disiarkan lewat 'qi-paper-state'.
         window.setInterval(refreshSimulation, 30000);
         window.setInterval(refreshEvents, 300000);
         window.setInterval(renderEvents, 30000);
@@ -754,7 +742,7 @@
     });
     document.addEventListener('qim:panel-change', event => {
         const panel = event.detail && event.detail.panel;
-        // Paper Trading menyimpan posisi saat panelnya dipakai; segarkan saldo setelah keluar/masuk.
+        // Gambar ulang kartu Simulation dari state paper bersama (tanpa GET kedua).
         if (panel === 'panel-paper' || panel === 'panel-charts') refreshSimulation();
         document.querySelectorAll('.qim-top-link').forEach(button => {
             button.classList.toggle('active', button.dataset.qimPanel === panel);

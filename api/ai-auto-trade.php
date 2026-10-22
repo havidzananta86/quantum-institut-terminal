@@ -7,10 +7,21 @@
  * POST {action:'disable'}               → matikan AI auto-trade
  * POST {action:'execute', symbol:'...', signal:{...}} → eksekusi trade dari signal AI
  * POST {action:'close',   position_id:123}            → tutup posisi AI secara manual
+ *
+ * HARGA SELALU DARI SERVER (audit kompetisi 2026-10-22, temuan kritis):
+ *   · 'close' dulu menutup posisi APA PUN milik pemanggil — termasuk posisi MANUAL arena — di
+ *     `close_price` kiriman klien. Satu panggilan dari DevTools (1 lot XAUUSD, close_price = entry+500)
+ *     menulis +$50.000 ke baris source='manual' dan langsung juara papan. Kini hanya baris
+ *     source='ai' yang bisa ditutup di sini, di harga eksekusi server (feed kanonik); close_price
+ *     kiriman klien DIABAIKAN.
+ *   · 'execute' dulu memakai signal.entry_price kiriman klien. Kini harga masuk = harga eksekusi
+ *     server (BUY di ask, SELL di bid); SL/TP yang di sisi salah dibuang dengan alasan.
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_paper_math.php';
+require_once __DIR__ . '/_paper_order.php';
+require_once __DIR__ . '/_kompetisi_harga.php';   // qi_komp_acuan(): feed harga kanonik yang sama dengan order manual
 qi_rate_limit(30, 60);
 
 $user = qi_require_level('vip');  // AI Auto-Trade — VIP (eksekusi)
@@ -131,7 +142,9 @@ if ($action === 'execute') {
     $sig = is_array($body['signal'] ?? null) ? $body['signal'] : [];
     $aiAction  = $sig['action'] ?? 'SKIP';
     $confidence= max(0, min(100, (int)($sig['confidence'] ?? 0)));
-    $ep        = (float)($sig['entry_price'] ?? 0);
+    // signal.entry_price kiriman klien TIDAK dipakai sebagai harga masuk (lihat kepala berkas);
+    // hanya dicatat di log sebagai "harga saran AI".
+    $epSaran   = (float)($sig['entry_price'] ?? 0);
     $tp        = (float)($sig['tp'] ?? 0);
     $sl        = (float)($sig['sl'] ?? 0);
     $rr        = (float)($sig['risk_reward'] ?? 0);
@@ -186,6 +199,20 @@ if ($action === 'execute') {
 
     $direction = $aiAction === 'ENTRY_BUY' ? 'BUY' : 'SELL';
 
+    // Harga masuk = harga eksekusi server dari feed kanonik. Kolom close_reason dkk. (migrasi 027)
+    // dipasang sebelum transaksi (ALTER = commit implisit).
+    qi_komp_skema_siapkan($pdo);
+    $eks = qi_paper_harga_eksekusi($symbol, $direction === 'BUY' ? 'beli' : 'jual', null, qi_komp_acuan($symbol));
+    if (isset($eks['tolak'])) {
+        http_response_code(409);
+        echo json_encode(['status' => 'ditolak', 'message' => $eks['tolak'], 'kode' => $eks['kode'] ?? null]);
+        exit;
+    }
+    $ep = $eks['harga'];
+    $catatanSlTp = null;
+    if ($sl > 0 && qi_paper_cek_sltp($direction, $ep, $sl, null)) { $catatanSlTp = 'SL saran AI di sisi yang salah dari harga eksekusi — tidak dipasang.'; $sl = 0; }
+    if ($tp > 0 && qi_paper_cek_sltp($direction, $ep, null, $tp)) { $catatanSlTp = trim(($catatanSlTp ?? '') . ' TP saran AI di sisi yang salah dari harga eksekusi — tidak dipasang.'); $tp = 0; }
+
     $pdo->beginTransaction();
     try {
         $ins = $pdo->prepare(
@@ -198,7 +225,7 @@ if ($action === 'execute') {
             ':sym'  => $symbol,
             ':dir'  => $direction,
             ':lots' => $lots,
-            ':ep'   => $ep > 0 ? $ep : null,
+            ':ep'   => $ep,
             ':sl'   => $sl > 0 ? $sl : null,
             ':tp'   => $tp > 0 ? $tp : null,
         ]);
@@ -215,7 +242,7 @@ if ($action === 'execute') {
             ':sym'    => $symbol,
             ':act'    => $aiAction,
             ':conf'   => $confidence,
-            ':ep'     => $ep > 0 ? $ep : null,
+            ':ep'     => $epSaran > 0 ? $epSaran : null,
             ':tp'     => $tp > 0 ? $tp : null,
             ':sl'     => $sl > 0 ? $sl : null,
             ':rr'     => $rr,
@@ -231,6 +258,8 @@ if ($action === 'execute') {
             'symbol'      => $symbol,
             'direction'   => $direction,
             'lots'        => $lots,
+            'entry_price' => $ep,
+            'catatan'     => $catatanSlTp,
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -243,8 +272,8 @@ if ($action === 'execute') {
 
 // ── close: tutup posisi AI ───────────────────────────────────────────────
 if ($action === 'close') {
-    $posId      = (int)($body['position_id'] ?? 0);
-    $closePrice = (float)($body['close_price'] ?? 0);
+    $posId = (int)($body['position_id'] ?? 0);
+    // Harga penutupan kiriman klien SENGAJA tidak dibaca: harga = harga eksekusi server.
 
     if ($posId <= 0) {
         http_response_code(400);
@@ -252,32 +281,46 @@ if ($action === 'close') {
         exit;
     }
 
+    // HANYA posisi AI (source='ai'). Posisi manual ditutup lewat api/paper-trading.php {aksi:'tutup'}.
     $posStmt = $pdo->prepare(
-        "SELECT * FROM paper_positions WHERE id = :id AND user_id = :uid AND status = 'open'"
+        "SELECT * FROM paper_positions WHERE id = :id AND user_id = :uid AND status = 'open' AND source = 'ai'"
     );
     $posStmt->execute([':id' => $posId, ':uid' => $uid]);
     $pos = $posStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$pos) {
         http_response_code(404);
-        echo json_encode(['status' => 'error', 'message' => 'Posisi tidak ditemukan atau sudah ditutup']);
+        echo json_encode(['status' => 'error', 'message' => 'Posisi AI tidak ditemukan atau sudah ditutup']);
         exit;
     }
 
-    $ep  = (float)$pos['entry_price'];
-    $cp  = $closePrice > 0 ? $closePrice : $ep;
+    qi_komp_skema_siapkan($pdo);
+    $dir = (string)$pos['direction'];
+    // Menutup BUY = menjual di bid; menutup SELL = membeli di ask.
+    $eks = qi_paper_harga_eksekusi((string)$pos['symbol'], $dir === 'BUY' ? 'jual' : 'beli', null, qi_komp_acuan((string)$pos['symbol']));
+    if (isset($eks['tolak'])) {
+        http_response_code(409);
+        echo json_encode(['status' => 'ditolak', 'message' => $eks['tolak'], 'kode' => $eks['kode'] ?? null]);
+        exit;
+    }
+    $cp = $eks['harga'];
 
     // Hitung P/L memakai model yang sama dengan sisi klien (_pipMult), supaya angka
     // yang dilihat pengguna saat floating sama dengan yang tersimpan saat ditutup.
     $lots   = (float)$pos['lots'];
-    $pnl    = qi_paper_pnl((string)$pos['symbol'], (string)$pos['direction'], $ep, (float)$cp, $lots);
+    $pnl    = qi_paper_pnl((string)$pos['symbol'], $dir, (float)$pos['entry_price'], (float)$cp, $lots);
 
     $closeStmt = $pdo->prepare(
         "UPDATE paper_positions
-         SET status='closed', close_price=:cp, pnl_usd=:pnl, closed_at=NOW()
-         WHERE id=:id AND user_id=:uid"
+         SET status='closed', close_price=:cp, pnl_usd=:pnl, closed_at=NOW(), close_reason='manual'
+         WHERE id=:id AND user_id=:uid AND status='open' AND source='ai'"
     );
     $closeStmt->execute([':cp' => $cp, ':pnl' => $pnl, ':id' => $posId, ':uid' => $uid]);
+    if ($closeStmt->rowCount() !== 1) {
+        http_response_code(409);
+        echo json_encode(['status' => 'error', 'message' => 'Posisi sudah ditutup']);
+        exit;
+    }
 
     echo json_encode([
         'status'      => 'success',

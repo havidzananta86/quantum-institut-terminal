@@ -1,4 +1,22 @@
 // Skrip halaman daftar (register.html) — tanpa kode inline (CSP tanpa 'unsafe-inline').
+
+// Sinyal batas waktu fetch. AbortSignal.timeout tidak ada di Safari/iOS < 16 (melempar TypeError →
+// tampil sebagai "server tidak dapat dihubungi"). Sama dengan QuantumAuth.batasWaktu di auth.js,
+// yang tidak dimuat register.html.
+function batasWaktu(ms) {
+    if (window.QuantumAuth && typeof QuantumAuth.batasWaktu === 'function') return QuantumAuth.batasWaktu(ms);
+    try {
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
+    } catch (e) {}
+    try {
+        const c = new AbortController();
+        setTimeout(() => { try { c.abort(); } catch (e) {} }, ms);
+        return c.signal;
+    } catch (e) {
+        return undefined;
+    }
+}
+
 function toggleRegPassword() {
     const el = document.getElementById('regPassword');
     const tombol = document.getElementById('btnToggleRegPassword');
@@ -55,7 +73,7 @@ async function handleRegister(e) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ full_name: name, email: email, password: password }),
-            signal: AbortSignal.timeout(10000)
+            signal: batasWaktu(10000)
         });
         data = await res.json();
     } catch (err) {

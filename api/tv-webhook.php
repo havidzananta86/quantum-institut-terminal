@@ -227,6 +227,8 @@ foreach (['15' => 'M15', '60' => 'H1', '240' => 'H4', 'D' => 'D1'] as $iv => $la
     // tanpa cast, PHP melempar TypeError (HTTP 500). 'D' tetap string sehingga aman.
     $tfs[$label] = function_exists('ai_analyze') ? ai_analyze($simbol, (string)$iv) : null;
 }
+// Timeframe dari cache basi (stale) tidak ikut konsensus, harga, maupun prompt AI (ai_tf_dipakai).
+$tfs = ai_tf_dipakai($tfs);
 $adaData = (bool)array_filter($tfs);
 if (!$adaData) {
     tv_jawab(200, [
@@ -235,6 +237,39 @@ if (!$adaData) {
         'catatan' => 'Coba kirim ulang beberapa saat lagi.',
     ], 'REJECTED');
 }
+
+// ── PENJAGA PASAR TUTUP / DATA BASI (qi_sp_cek_pasar, candle M15) ─────────────
+// Diperiksa SEBELUM AI dipanggil: alert forex/emas di akhir pekan tidak boleh menjadi sinyal
+// AKTIF dengan entry dari harga beku (audit sinyal 2026-10-22).
+$m15Tv = ai_load_candles($simbol, '15');
+$pasarTv = qi_sp_cek_pasar($simbol, !empty($m15Tv['simulated']) ? [] : ($m15Tv['candles'] ?? []), 900);
+if (!$pasarTv['boleh']) {
+    tv_jawab(200, [
+        'status'  => 'ditahan',
+        'alasan'  => $pasarTv['catatan'],
+        'kode'    => (string)$pasarTv['alasan'],
+        'catatan' => 'Alert diterima, tetapi sinyal TIDAK dicatat dan AI tidak dipanggil.',
+    ], 'REJECTED');
+}
+
+// Harga pasar ACUAN = close H1 NYATA terakhir dari server (feed yang sama dengan penilai),
+// bukan harga alert TradingView: entry dinilai terhadap candle server, jadi harus diperiksa
+// terhadap harga yang sama. Harga alert tetap dikirim ke AI dan disimpan di rekor.
+$muatAcuanTv = ai_load_candles($simbol, '60');
+// Candle acuan WAJIB segar (qi_sp_muat_layak): dulu cache basi (stale, s.d. 7 hari) diterima
+// sebagai harga pasar karena hanya data simulasi yang ditolak. Ditahan SEBELUM AI dipanggil.
+$layakAcuanTv = qi_sp_muat_layak($simbol, $muatAcuanTv, 3600);
+if (!$layakAcuanTv['boleh']) {
+    tv_jawab(200, [
+        'status'  => 'ditahan',
+        'alasan'  => $layakAcuanTv['catatan'],
+        'kode'    => (string)$layakAcuanTv['alasan'],
+        'catatan' => 'Alert diterima, tetapi sinyal TIDAK dicatat dan AI tidak dipanggil.',
+    ], 'REJECTED');
+}
+$cndAcuanTv  = $muatAcuanTv['candles'];
+$hargaAcuanTv = $cndAcuanTv ? (float)(end($cndAcuanTv)['close'] ?? 0) : 0.0;
+$atrAcuanTv   = $cndAcuanTv ? qi_sp_atr($cndAcuanTv, 14) : 0.0;
 
 $bullTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BULLISH'));
 $bearTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BEARISH'));
@@ -335,6 +370,25 @@ if (!in_array($action, ['BUY', 'SELL'], true) || !$levelSah) {
     ], 'PROCESSED');
 }
 
+// ── ENTRY AI DIPERIKSA TERHADAP HARGA PASAR (qi_sp_jangkar_entry) ─────────────
+// Dulu entry/tp/sl AI dicatat apa adanya dan harga alert diabaikan; penilai lalu menganggap
+// rekor terisi di entry itu dan membukukan TP "instan" di harga gap (audit 2026-10-22).
+// ≤ 0,25×ATR: diterima · lebih jauh: digeser ke harga pasar (jarak SL/TP tetap) · harga sudah
+// melewati TP/SL rencana atau harga pasar tidak tersedia: TIDAK dicatat.
+$entryAi = $entry;
+$cekEntryTv = qi_sp_jangkar_entry($action, $entry, $tp, $sl, $hargaAcuanTv, $atrAcuanTv);
+if (!$cekEntryTv['ok']) {
+    tv_jawab(200, [
+        'status'     => 'dilewati',
+        'keputusan'  => ['action' => $action, 'confidence' => $yakin, 'reason' => $alasan],
+        'alasan'     => 'Entry tidak dicatat: ' . $cekEntryTv['catatan'],
+        'kode'       => (string)$cekEntryTv['alasan'],
+        'harga_acuan'=> $hargaAcuanTv > 0 ? round($hargaAcuanTv, 5) : null,
+        'bias_mtf'   => $overall,
+    ], 'PROCESSED');
+}
+$entry = $cekEntryTv['entry']; $tp = $cekEntryTv['tp']; $sl = $cekEntryTv['sl'];
+
 // ── Catat sebagai sinyal AKTIF di rekor publik (schema sama seperti yang lain).
 // Penulisan memakai helper pagar bersama (api/_signal_record.php) supaya SEMUA
 // mesin memakai aturan yang sama: tolak duplikat sinyal aktif sejenis, cooldown
@@ -356,7 +410,13 @@ $record = [
     'sl'              => round($sl, 5),
     'tp'              => round($tp, 5),
     'rr'              => '1 : ' . number_format($rr, 2),
-    'atr'             => 0,
+    // ATR14 H1 nyata (dulu 0) + jejak pemeriksaan entry terhadap harga pasar server.
+    'atr'             => round($atrAcuanTv, 5),
+    'harga_acuan'     => round($hargaAcuanTv, 5),
+    'jarak_entry_atr' => $cekEntryTv['jarak_entry_atr'],
+    'entry_ai'        => $cekEntryTv['disesuaikan'] ? round($entryAi, 5) : null,
+    // Selisih harga alert TradingView terhadap harga server (× ATR) — beda feed/broker terlihat.
+    'selisih_harga_tv_atr' => ($hargaTv > 0 && $atrAcuanTv > 0) ? round(abs($hargaTv - $hargaAcuanTv) / $atrAcuanTv, 3) : null,
     'invalidation'    => $alasan !== '' ? $alasan : 'Level TP/SL tersentuh',
     'status'          => 'AKTIF',
     'pnl'             => 0,
@@ -371,7 +431,9 @@ $record = [
     // arah & level berasal dari verdict AI atas alert TradingView, dan skor konfluensi
     // memakai keyakinan AI tersebut. Sebelumnya rekor TradingView TIDAK mengisi kolom
     // ini sehingga buktinya kosong di rekor.
-    'basis'           => 'Alert TradingView + verdict AI (keyakinan ' . (int)$yakin . '); level SL/TP dari AI; bias MTF ' . ($overall !== '' ? $overall : 'tidak tersedia'),
+    'basis'           => 'Alert TradingView + verdict AI (keyakinan ' . (int)$yakin . '); level SL/TP dari AI'
+        . ($cekEntryTv['disesuaikan'] ? ' (entry digeser ke harga pasar ' . round($hargaAcuanTv, 5) . ', jarak SL/TP AI dipertahankan)' : '')
+        . '; bias MTF ' . ($overall !== '' ? $overall : 'tidak tersedia'),
     'tv_alert'        => ['timeframe' => $tfKiriman, 'price' => $hargaTv > 0 ? $hargaTv : null, 'pesan' => mb_substr($pesanUser, 0, 300)],
     'bias_mtf'        => $overall,
 ];

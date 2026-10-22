@@ -53,7 +53,8 @@
         try {
             const r = await fetch('api/get-history.php?symbol=' + encodeURIComponent(sim) + '&interval=' + encodeURIComponent(iv) + '&bars=5000');
             const j = await r.json();
-            if (!j || j.status !== 'success' || !Array.isArray(j.candles) || j.candles.length < 50) return null;
+            // Riwayat bertanda simulasi tidak pernah dicampur ke candle chart.
+            if (!j || j.status !== 'success' || j.simulated === true || !Array.isArray(j.candles) || j.candles.length < 50) return null;
             const baru = { t: Date.now(), candles: j.candles, sumber: j.source || '' };
             cacheRiwayat.set(kunci, baru);
             return baru;
@@ -225,12 +226,14 @@
         if (!k.symbol || !k.candles || !k.candles.length) return;
         if (!pasang()) return;
         const ct = k.candles, akhir = ct[ct.length - 1];
-        const sig = [k.symbol, k.interval, ct.length, akhir.time, akhir.high, akhir.low, akhir.close, waktuReplay, JSON.stringify(opsi)].join('|');
+        const sig = [k.symbol, k.interval, ct.length, akhir.time, akhir.high, akhir.low, akhir.close, waktuReplay, JSON.stringify(opsi), ct.simulated === true ? 'simulasi' : ''].join('|');
         if (!paksa && sig === sigTerakhir) return;
         sigTerakhir = sig;
         const token = ++tokenMuat;
         const cache = cacheRiwayat.get(k.symbol + '|' + k.interval);
-        const butuhMuat = !cache || Date.now() - cache.t >= TTL_RIWAYAT;
+        // Chart simulasi: tidak ada yang dihitung, jadi riwayat tidak perlu dimuat — dan catatan
+        // "memakai N bar chart" di cabang gagal-muat tidak boleh menimpa pesan penolakannya.
+        const butuhMuat = ct.simulated !== true && (!cache || Date.now() - cache.t >= TTL_RIWAYAT);
         hitungDanGambar(k, cache);
         if (butuhMuat) {
             const baru = await ambilRiwayat(k.symbol, k.interval);
@@ -241,6 +244,16 @@
     }
     function hitungDanGambar(k, riwayat) {
         if (!terpasang || !window.QIMPineSmcSnd) return;
+        // Candle chart SIMULASI (angka acak saat sumber nyata gagal) tidak dihitung: dulu zona,
+        // BOS dan tabel ENTRY/TP/SL ikut digambar dari data karangan (audit sinyal 2026-10-22).
+        if (k.candles && k.candles.simulated === true) {
+            hasil = null;
+            catatan = 'Data chart SIMULASI (sumber harga nyata gagal) — indikator tidak dihitung dari candle karangan.';
+            EMA.forEach(([id]) => { try { terpasang.garis[id].setData([]); } catch (e) {} });
+            terpasang.primitive.segarkan();
+            isiTabel(k.symbol);
+            return;
+        }
         const g = gabung(k.candles, riwayat, k.source);
         let c = g.candles;
         if (waktuReplay !== null) c = c.filter(x => x.time <= waktuReplay);

@@ -31,8 +31,13 @@ require_once __DIR__ . '/_sinyal_ditolak.php'; // kandidat yang ditolak gerbang 
  * Versi ATURAN PENERBITAN. Naikkan setiap kali gerbang/filter penerbitan berubah, supaya
  * statistik sebelum dan sesudah perubahan bisa dipisah (statistik per_versi_aturan).
  *   v1 = sebelum 2026-10-19 · v2 = + gerbang spread hidup, korelasi, berita per mata uang
+ *   v3 = + penjaga pasar tutup / jeda harian emas / data basi (pembangkit, AI, berita, TradingView),
+ *        entry AI/TV diperiksa & digeser ke harga pasar (qi_sp_jangkar_entry), timeframe basi tidak
+ *        ikut konsensus, pembangkit lewat penulis bersama sehingga gerbang spread/korelasi/duplikat
+ *        kini juga berlaku untuk AUTO_SIGNAL (2026-10-22). Dulu semua rekor ini tetap dicap 'v2' dan
+ *        statistik per_versi_aturan mencampurnya dengan rekor v2 yang terbit dengan aturan lain.
  */
-if (!defined('QI_VERSI_ATURAN_SINYAL')) define('QI_VERSI_ATURAN_SINYAL', 'v2');
+if (!defined('QI_VERSI_ATURAN_SINYAL')) define('QI_VERSI_ATURAN_SINYAL', 'v3');
 
 if (!function_exists('qi_signal_cek_pagar')) :
 
@@ -128,109 +133,12 @@ function qi_signal_level_sah(string $arah, float $entry, float $tp, float $sl): 
     return false;
 }
 
-/**
- * PRATERBIT — penjaga yang WAJIB dilewati setiap sinyal sebelum ditulis, apa pun mesinnya.
- *
- * MENGAPA ADA: ditemukan 2026-10-13 bahwa api/signal-generator.php (sumber sinyal UTAMA)
- * menulis cache/signal_history.json SECARA LANGSUNG, sehingga melewati saklar jeda,
- * gerbang konfluensi mesin, jurnal database, jejak mesin, dan konteks berita. Akibatnya
- * dua sinyal baru terbit tanpa dinilai gerbang dan tanpa jejak apa pun.
- * Fungsi ini mengumpulkan penjaga tersebut di SATU tempat agar semua penulis rekor
- * memakai aturan yang sama — dan tidak ada lagi jalur yang bisa melewatinya diam-diam.
- *
- * @return array{boleh:bool,alasan:string,rek:array,gerbang:array,catatan:string}
- */
-function qi_signal_praterbit(array $rek): array
-{
-    $out = ['boleh' => true, 'alasan' => '', 'rek' => $rek, 'gerbang' => [], 'catatan' => ''];
-
-    // 1) Saklar jeda darurat
-    if (!function_exists('qi_jeda_aktif')) {
-        $fj = __DIR__ . '/_jeda.php';
-        if (is_file($fj)) require_once $fj;
-    }
-    if (function_exists('qi_jeda_aktif') && qi_jeda_aktif()) {
-        $sj = function_exists('qi_jeda_status') ? qi_jeda_status() : ['sebab' => ''];
-        $out['boleh'] = false;
-        $out['alasan'] = 'sinyal_dijeda';
-        $out['catatan'] = 'Sinyal baru dijeda: ' . (string)($sj['sebab'] ?? '');
-        return $out;
-    }
-
-    // 2) Gerbang konfluensi mesin (kecuali diminta dilewati oleh uji)
-    if (empty($GLOBALS['qi_gerbang_lewati'])) {
-        if (!function_exists('qi_gerbang_cek')) {
-            $fg = __DIR__ . '/_gerbang.php';
-            if (is_file($fg)) require_once $fg;
-        }
-        if (function_exists('qi_gerbang_cek')) {
-            $simbol = strtoupper(trim((string)($rek['symbol'] ?? '')));
-            $arah   = strtoupper(trim((string)($rek['side'] ?? '')));
-            try {
-                $g = qi_gerbang_cek($simbol, $arah);
-                $out['gerbang'] = $g;
-                if (empty($g['lolos'])) {
-                    $out['boleh'] = false;
-                    $out['alasan'] = 'gerbang_mesin';
-                    $out['catatan'] = (string)($g['catatan'] ?? '');
-                    return $out;
-                }
-                $out['catatan'] = (string)($g['catatan'] ?? '');
-            } catch (Throwable $e) {
-                @error_log('[gerbang] praterbit gagal menilai: ' . $e->getMessage());
-            }
-        }
-    }
-
-    // 3) Konteks berita (Bagian 4) — diisi bila belum ada
-    if (empty($out['rek']['news_context'])) {
-        if (!function_exists('qi_fun_konteks')) {
-            $ff = __DIR__ . '/_fundamental.php';
-            if (is_file($ff)) require_once $ff;
-        }
-        if (function_exists('qi_fun_konteks')) {
-            try { $out['rek']['news_context'] = qi_fun_konteks(30); } catch (Throwable $e) { /* dilewati */ }
-        }
-    }
-
-    // 4) Catat hasil gerbang ke kolom bukti (basis) supaya dapat diaudit
-    if (!empty($out['gerbang']['catatan'])) {
-        $bekas = (string)($out['rek']['basis'] ?? '');
-        $tambah = 'gerbang mesin: ' . (string)$out['gerbang']['catatan'];
-        $out['rek']['basis'] = (mb_strlen($bekas) > 0) ? mb_substr($bekas . ' · ' . $tambah, 0, 255) : mb_substr($tambah, 0, 255);
-        $out['rek']['gerbang_mesin'] = $out['gerbang']['ringkas'] ?? null;
-    }
-    return $out;
-}
-
-/**
- * PASCATERBIT — pekerjaan setelah sinyal benar-benar tertulis ke berkas rekor:
- * jurnal database (dual-write) + jejak output mesin. Semua fail-safe.
- */
-function qi_signal_pascaterbit(array $rek, array $gerbang = []): array
-{
-    $hasil = ['jurnal' => false, 'mesin' => 0];
-    try {
-        if (!function_exists('qi_journal_simpan')) {
-            $fj = __DIR__ . '/_journal.php';
-            if (is_file($fj)) require_once $fj;
-        }
-        if (function_exists('qi_journal_simpan')) $hasil['jurnal'] = qi_journal_simpan($rek);
-    } catch (Throwable $e) {
-        @error_log('[jurnal] pascaterbit gagal: ' . $e->getMessage());
-    }
-    if (!empty($gerbang['per_mesin']) && !empty($rek['id'])) {
-        try {
-            if (!function_exists('qi_eng_simpan_output')) require_once __DIR__ . '/_engine_server.php';
-            if (function_exists('qi_eng_simpan_output')) {
-                $hasil['mesin'] = qi_eng_simpan_output((string)$rek['id'], (array)$gerbang['per_mesin']);
-            }
-        } catch (Throwable $e) {
-            @error_log('[engine] pascaterbit jejak mesin gagal: ' . $e->getMessage());
-        }
-    }
-    return $hasil;
-}
+// CATATAN (audit sinyal 2026-10-22): qi_signal_praterbit() dan qi_signal_pascaterbit() DIHAPUS.
+// Keduanya hanya dipakai api/signal-generator.php, yang memakai praterbit lalu MENIMPA berkas
+// riwayat sendiri tanpa kunci (pascaterbit bahkan tidak pernah dipanggil). Kini semua penerbit
+// — termasuk pembangkit — mencatat lewat qi_signal_catat() di bawah, yang sudah menjalankan
+// jeda, spread, gerbang mesin + jejak per mesin, pagar, korelasi, grade, jurnal, dan
+// notifikasi. Satu jalur tulis = tidak ada lagi jalan pintas yang bisa melewati penjaga.
 
 /**
  * Tulis catatan sinyal ke rekor dengan pagar lengkap + klaim atomik.

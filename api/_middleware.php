@@ -268,10 +268,14 @@ function qi_validate_token() {
     $token = qi_token_mentah();
     if (!$token) return null;
 
-    // Validasi token ke database (non-fatal: kalau DB belum siap, anggap token invalid)
+    // Validasi token ke database. Bila DB tidak terjangkau, token TIDAK bisa dinilai — itu berbeda
+    // dari token yang ditolak. $GLOBALS['qi_db_gagal'] menandainya supaya pemanggil menjawab 503,
+    // bukan 401: klien menghapus sesi tersimpan HANYA pada 401, jadi gangguan MySQL sesaat dulu
+    // membuat semua pengguna yang sedang membuka dashboard ter-logout.
+    $GLOBALS['qi_db_gagal'] = false;
     try {
         $pdo = qi_db(false);
-        if (!$pdo) return null;
+        if (!$pdo) { $GLOBALS['qi_db_gagal'] = true; return null; }
 
         // AKUN YANG DINONAKTIFKAN HARUS LANGSUNG KEHILANGAN AKSES.
         // Sebelumnya query ini hanya memeriksa token + masa berlaku, sementara
@@ -303,12 +307,20 @@ function qi_validate_token() {
             ];
         }
     } catch (Exception $e) {
-        // Database belum tersedia, fallback ke mode tanpa auth
-        // (untuk development / migrasi bertahap)
+        $GLOBALS['qi_db_gagal'] = true;
         error_log('[QI Middleware] Token validation error: ' . $e->getMessage());
     }
 
     return null;
+}
+
+/** Jawab 503 bila validasi token gagal karena database, bukan karena tokennya ditolak. */
+function qi_tolak_bila_db_gagal(): void {
+    if (empty($GLOBALS['qi_db_gagal'])) return;
+    http_response_code(503);
+    header('Retry-After: 30');
+    echo json_encode(['status' => 'error', 'message' => 'Server sedang tidak dapat memeriksa sesi. Coba lagi sebentar — Anda tidak dikeluarkan.', 'code' => 'DB_UNAVAILABLE']);
+    exit();
 }
 
 /**
@@ -316,6 +328,7 @@ function qi_validate_token() {
  */
 function qi_require_auth() {
     $user = qi_validate_token();
+    if (!$user) qi_tolak_bila_db_gagal();
     if (!$user && !empty($GLOBALS['qi_2fa_tertunda'])) {
         http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Masukkan kode verifikasi dua langkah untuk menyelesaikan login.', 'code' => '2FA_REQUIRED']);

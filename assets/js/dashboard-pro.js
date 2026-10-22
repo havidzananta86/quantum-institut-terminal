@@ -64,6 +64,13 @@
         try {
             if (!_lwSeries || !window.QuantumEngineNine) return;
             const candles = (Array.isArray(_lwLastCandles) && _lwLastCandles.length) ? _lwLastCandles : [];
+            // Candle SIMULASI (acak, saat sumber nyata gagal) tidak boleh diberi panah sinyal.
+            // Dulu fungsi ini meneruskan _lwLastCandles ke markerSinyal tanpa pemeriksaan apa pun
+            // (audit sinyal 2026-10-22); kini markerSinyal juga menolaknya sendiri.
+            if (candles.simulated === true) {
+                if (window.showQuantumToast) window.showQuantumToast('⛔ Data chart saat ini SIMULASI (sumber harga nyata gagal) — panah sinyal tidak dipasang dari candle karangan.', 'warning', 4500);
+                return;
+            }
             if (candles.length < window.QuantumEngineNine.MIN_BAR + 2) {
                 if (window.showQuantumToast) window.showQuantumToast('⚠ Data belum cukup untuk menandai sinyal.', 'warning', 3000);
                 return;
@@ -565,7 +572,10 @@
                             + '<span class="text-qi-gold">' + esc(x.rr) + '</span>'
                             + '</div>'
                             + '<div class="flex items-center gap-2">'
-                            + '<button type="button" class="px-2 py-0.5 rounded bg-qi-blue/20 hover:bg-qi-blue/40 text-qi-blue border border-qi-blue/40 font-sans text-[9px] font-semibold transition cursor-pointer" data-qi-aksi="ptOpenDirectPosition" data-qi-arg="' + QIAksi.arg(String(x.simbol), String(x.arah), Number(x.entry), Number(x.sl), Number(x.tp), 0.05) + '">⚡ Trade Paper</button>'
+                            // Order PASAR di harga sisi saat ini (entry = null), SL/TP dari setup. Dulu entry setup
+                            // dikirim sebagai harga "layar Anda": bila pasar sudah > 0,5% darinya, order ditolak
+                            // dengan pesan requote yang menyebut level setup sebagai harga di layar.
+                            + '<button type="button" class="px-2 py-0.5 rounded bg-qi-blue/20 hover:bg-qi-blue/40 text-qi-blue border border-qi-blue/40 font-sans text-[9px] font-semibold transition cursor-pointer" title="Buka posisi simulasi di harga pasar sekarang dengan SL/TP setup ini" data-qi-aksi="ptOpenDirectPosition" data-qi-arg="' + QIAksi.arg(String(x.simbol), String(x.arah), null, Number(x.sl), Number(x.tp), 0.05, 'sinyal') + '">⚡ Trade Paper</button>'
                             + '</div>'
                             + '</div>').join('');
                 } else {

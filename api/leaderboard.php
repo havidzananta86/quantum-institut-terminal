@@ -1,22 +1,31 @@
 <?php
 /**
- * Trading Leaderboard API
+ * Trading Leaderboard API — ALIAS TIPIS papan Weekly Championship.
  *
- * GET → top 10 trader menurut P&L terealisasi dari paper_positions.
+ * GET → peringkat minggu berjalan dari pembangun papan yang SAMA dengan api/competition.php?papan=weekly
+ *       (api/_kompetisi_papan.php): ekuitas langsung, posisi manual periode ini, cache 5 detik.
  *
- * BUTUH PAKET PRO. Baris qi_require_level('pro') di bawah menolak permintaan tanpa token
- * yang sah — endpoint ini TIDAK publik. (Blok dokumentasi sebelumnya menyatakan "public,
- * tidak butuh auth"; komentar yang salah itulah yang kemungkinan membuat sisi klien tidak
- * pernah diuji dengan token yang benar, sehingga panel Leaderboard selalu berakhir di
- * pesan "Gagal memuat data.")
+ * MENGAPA ALIAS (audit kompetisi 2026-10-22): endpoint ini dulu punya papan sendiri — sepanjang waktu,
+ * minimal 3 trade, hadiah "Free 1 Bulan Quantum+ PRO" — sementara arena dan halaman Competition memakai
+ * papan mingguan dengan hadiah lain. Anggota melihat peringkat dan hadiah BERBEDA untuk kompetisi yang
+ * sama. Sekarang hanya ada satu papan.
  *
- * Bila token dikirim, respons juga memuat `my_stats` — statistik & peringkat pemanggil.
+ * Bentuk jawaban dipertahankan untuk panel Leaderboard dashboard (assets/js/advanced-trading.js):
+ *   leaderboard[{rank, name, win_rate, total_pnl, total_trades, badge, prize}], my_stats, total_users
+ * dengan arti yang kini mengikuti papan mingguan: total_pnl = ekuitas − $10.000 (terealisasi +
+ * mengambang periode ini), prize = null (hadiah resmi ada di halaman Competition), dan kolom tambahan
+ * equity, return_pct, periode.
+ *
+ * BUTUH PAKET PRO (qi_require_level('pro') di bawah), sama seperti panel dashboard yang memakainya.
+ * Pengunjung tanpa login memantau papan yang SAMA lewat api/competition.php?papan=weekly (publik,
+ * nama disamarkan). my_stats = baris pemanggil di papan mingguan.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
-qi_require_level('pro');   // Leaderboard — PRO
-qi_rate_limit(30, 60);
+require_once __DIR__ . '/_kompetisi_papan.php';
+$me = qi_require_level('pro');   // Leaderboard (panel dashboard) — PRO
+qi_rate_limit(60, 60);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -25,114 +34,58 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $pdo = qi_db();
-
-// Tampilkan nama secara parsial untuk privasi: "Ahmad Wahyu" → "Ahmad W."
-function qi_mask_name(string $name): string {
-    $parts = preg_split('/\s+/', trim($name));
-    if (count($parts) === 1) {
-        return mb_substr($parts[0], 0, 3) . '***';
-    }
-    $last = mb_strtoupper(mb_substr(end($parts), 0, 1));
-    return $parts[0] . ' ' . $last . '.';
+try {
+    $papan = qi_komp_papan($pdo);
+} catch (Throwable $e) {
+    qi_log('error', 'leaderboard (alias papan mingguan) gagal', ['pesan' => $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Papan peringkat tidak dapat dimuat.']);
+    exit();
 }
 
-// ── Top 10 leaderboard ────────────────────────────────────────────────────
-$sql = "
-    SELECT
-        pp.user_id,
-        u.full_name,
-        COUNT(pp.id)                                                                      AS total_trades,
-        SUM(CASE WHEN pp.pnl_usd > 0 THEN 1 ELSE 0 END)                                 AS wins,
-        ROUND(SUM(CASE WHEN pp.pnl_usd > 0 THEN 1 ELSE 0 END) / COUNT(pp.id) * 100, 1) AS win_rate,
-        ROUND(SUM(pp.pnl_usd), 2)                                                        AS total_pnl
-    FROM paper_positions pp
-    JOIN users u ON u.id = pp.user_id
-    WHERE pp.status = 'closed' AND pp.source <> 'auto'   -- 'auto' (Ikuti Auto Analisa) tidak ikut peringkat
-    GROUP BY pp.user_id
-    HAVING COUNT(pp.id) >= 3
-    ORDER BY total_pnl DESC
-    LIMIT 10
-";
+$uid = (int)$me['user_id'];
+$lencana = ['diamond' => '🥇 Juara 1', 'platinum' => '🥈 Juara 2', 'gold' => '🥉 Juara 3', 'silver' => '🏅 10 Besar'];
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute();
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$keBaris = static fn(array $b) => [
+    'rank'         => $b['rank'],
+    'name'         => $b['nama'],                       // nama tampilan atau nama asli DISAMARKAN
+    'win_rate'     => (float)$b['win_rate'],
+    'total_pnl'    => round($b['equity'] - QI_KOMP_SALDO_AWAL, 2),
+    'total_trades' => (int)$b['trades'],
+    'equity'       => $b['equity'],
+    'return_pct'   => $b['return_pct'],
+    'open_count'   => $b['open_count'],
+    'harga_basi'   => $b['harga_basi'],
+    'badge'        => $lencana[$b['lencana'] ?? ''] ?? null,
+    'prize'        => null,
+    'isMe'         => $uid > 0 && (int)$b['uid'] === $uid,
+];
 
-$leaderboard = [];
-foreach ($rows as $i => $r) {
-    $reward = null;
-    $badge = null;
-    if ($i === 0) {
-        $reward = 'Free 1 Bulan Quantum+ PRO + Champion Trophy';
-        $badge = '🥇 Grand Master';
-    } elseif ($i === 1) {
-        $reward = 'Free 14 Hari PRO Pass';
-        $badge = '🥈 Master Trader';
-    } elseif ($i === 2) {
-        $reward = 'Free 7 Hari PRO Pass';
-        $badge = '🥉 Pro Trader';
-    } elseif ($r['win_rate'] >= 70) {
-        $badge = '🎯 Sniper Winrate';
-    }
+$leaderboard = array_map($keBaris, array_slice(array_values(array_filter($papan['baris'], static fn($b) => $b['aktif'])), 0, 10));
 
-    $leaderboard[] = [
-        'rank'         => $i + 1,
-        'name'         => qi_mask_name($r['full_name']),
-        'win_rate'     => (float) $r['win_rate'],
-        'total_pnl'    => (float) $r['total_pnl'],
-        'total_trades' => (int)   $r['total_trades'],
-        'badge'        => $badge,
-        'prize'        => $reward,
-    ];
-}
-
-// ── Stats user yang sedang login (opsional) ───────────────────────────────
 $my_stats = null;
-$me = qi_validate_token();
-if ($me) {
-    $uid = (int)$me['user_id'];
-
-    $meStmt = $pdo->prepare("
-        SELECT
-            COUNT(id)                                                                         AS total_trades,
-            SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END)                                    AS wins,
-            ROUND(SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) / COUNT(id) * 100, 1)        AS win_rate,
-            ROUND(SUM(pnl_usd), 2)                                                            AS total_pnl
-        FROM paper_positions
-        WHERE user_id = :uid AND status = 'closed' AND source <> 'auto'
-    ");
-    $meStmt->execute([':uid' => $uid]);
-    $meRow = $meStmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($meRow && (int)$meRow['total_trades'] > 0) {
-        // Hitung rank di antara semua user (min 3 trades)
-        $rankStmt = $pdo->prepare("
-            SELECT COUNT(*) + 1 AS my_rank
-            FROM (
-                SELECT SUM(pnl_usd) AS pnl
-                FROM paper_positions
-                WHERE status = 'closed' AND source <> 'auto'
-                GROUP BY user_id
-                HAVING COUNT(id) >= 3
-            ) sub
-            WHERE sub.pnl > :my_pnl
-        ");
-        $rankStmt->execute([':my_pnl' => (float)$meRow['total_pnl']]);
-        $rankRow = $rankStmt->fetch(PDO::FETCH_ASSOC);
-
+foreach ($papan['baris'] as $b) {
+    if ($uid > 0 && (int)$b['uid'] === $uid) {
         $my_stats = [
-            'rank'         => (int)($rankRow['my_rank'] ?? 99),
-            'win_rate'     => (float) $meRow['win_rate'],
-            'total_pnl'    => (float) $meRow['total_pnl'],
-            'total_trades' => (int)   $meRow['total_trades'],
-            'eligible'     => (int)$meRow['total_trades'] >= 3,
+            'rank'         => $b['rank'],
+            'win_rate'     => (float)$b['win_rate'],
+            'total_pnl'    => round($b['equity'] - QI_KOMP_SALDO_AWAL, 2),
+            'total_trades' => (int)$b['trades'],
+            'equity'       => $b['equity'],
+            'return_pct'   => $b['return_pct'],
+            // Papan mingguan tidak punya syarat minimal trade untuk tampil; syarat HADIAH ada di
+            // halaman Competition (api/_kompetisi_syarat.php).
+            'eligible'     => (bool)$b['aktif'],
         ];
+        break;
     }
 }
 
 echo json_encode([
     'status'      => 'success',
+    'periode'     => $papan['periode'],
+    'sumber'      => 'competition.php?papan=weekly',
     'leaderboard' => $leaderboard,
     'my_stats'    => $my_stats,
-    'total_users' => count($leaderboard),
-]);
+    'total_users' => $papan['trader'],
+], JSON_UNESCAPED_UNICODE);

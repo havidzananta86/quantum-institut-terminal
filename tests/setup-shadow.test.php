@@ -98,7 +98,10 @@ cek('terisi > 48 jam tanpa TP/SL → EXPIRED', $r['status'] === 'EXPIRED', $r['s
 echo "Satu putaran (orkestrasi)\n";
 $W = 0.2;
 $buat = function (array $langkah, float $mulai = 100.0) use ($W, $T): array {
-    $c = []; $prev = $mulai; $t = $T - 700 * 3600;
+    // Candle terakhir berakhir satu jam sebelum waktu uji, seperti data pasar nyata. Dulu deretnya
+    // berakhir ±600 jam sebelumnya — kini ditolak sebagai data basi (qi_sp_muat_layak), sama seperti
+    // penerbit sinyal lain.
+    $c = []; $prev = $mulai; $t = $T - count($langkah) * 3600;
     foreach ($langkah as $x) {
         if (is_array($x)) { [$o, $h, $l, $cl] = $x; } else { $o = $prev; $cl = (float)$x; $h = max($o, $cl) + $W; $l = min($o, $cl) - $W; }
         $c[] = ['time' => $t, 'open' => (float)$o, 'high' => (float)$h, 'low' => (float)$l, 'close' => (float)$cl]; $prev = $cl; $t += 3600;
@@ -116,6 +119,14 @@ $rekor = json_decode((string)file_get_contents($dir . '/signal_shadow.json'), tr
 $state = json_decode((string)file_get_contents($dir . '/signal_shadow_state.json'), true);
 $sim = array_column($rekor, 'symbol'); sort($sim);
 cek('2 setup diterbitkan: satu USD (XAUUSD) dan satu kripto (BTCUSDT)', $r['dibuat'] === 2 && $sim === ['BTCUSDT', 'XAUUSD'], [$r['dibuat'], $sim, $r['rincian']]);
+$dirBasi = sys_get_temp_dir() . '/qim-shadow-basi-' . getmypid(); @mkdir($dirBasi);
+$muatBasi = fn(string $sim, string $iv): array => ['candles' => $iv === '60' ? $h1 : [], 'simulated' => false, 'stale' => true, 'umur_detik' => 2 * 86400];
+$rb = qi_ss_jalankan(['muat' => $muatBasi, 'kini' => $T, 'dir' => $dirBasi, 'konfig' => $longgar]);
+cek('cache H1 basi (semua sumber gagal) → tidak ada setup, alasan data_basi', $rb['dibuat'] === 0 && in_array('data_basi', array_column($rb['rincian'], 'hasil'), true), $rb['rincian']);
+$muatTua = fn(string $sim, string $iv): array => ['candles' => $iv === '60' ? array_map(fn($c) => ['time' => $c['time'] - 30 * 86400] + $c, $h1) : [], 'simulated' => false];
+$rt = qi_ss_jalankan(['muat' => $muatTua, 'kini' => $T, 'dir' => $dirBasi, 'konfig' => $longgar]);
+cek('candle terakhir 30 hari lalu → ditolak, bukan dipakai sebagai harga sekarang', $rt['dibuat'] === 0, $rt['rincian']);
+@unlink($dirBasi . '/signal_shadow.json'); @unlink($dirBasi . '/signal_shadow_state.json'); @rmdir($dirBasi);
 cek('EURUSD (USD searah dengan XAUUSD) ditolak korelasi, ETHUSDT (searah BTC) juga', ($state['penolakan']['korelasi'] ?? 0) === 2, $state['penolakan']);
 $a = $rekor[0];
 cek('rekor berstatus MENUNGGU, bertanda bayangan, entry limit di struktur', $a['status'] === 'MENUNGGU' && $a['shadow'] === true && $a['sumber'] === 'setup_shadow' && $a['side'] === 'BUY' && abs($a['entry'] - 96.7) < 1e-6, $a);

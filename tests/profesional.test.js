@@ -59,7 +59,16 @@ if (!phpAda) {
 }
 const pt = read('api/paper-trading.php'), ap = read('api/_auto_paper.php'), br = read('api/_batas_rugi.php');
 cek('server menolak posisi manual baru saat batas tercapai', /qi_batas_rugi_status\(\$pdo, \$uid\)/.test(pt) && /\$batasRugi\['tercapai'\]/.test(pt) && /batas_rugi_harian/.test(pt));
-cek('gerbang dipasang SEBELUM posisi dimasukkan (penutupan tetap boleh)', pt.indexOf("$batasRugi['tercapai']") < pt.indexOf('$buka->execute(') && pt.indexOf('// 1) Penutupan baru') < pt.indexOf('qi_batas_rugi_status('));
+{
+  // Satu-satunya jalur buka: aksi 'buka' (snapshot lama dipensiunkan → 410, tidak bisa membuka posisi).
+  // Gerbang berdiri sebelum INSERT, dan penutupan tidak melewati gerbang ('tutup' tidak memanggilnya).
+  const aksiBuka = pt.slice(pt.indexOf("if ($aksi === 'buka')"), pt.indexOf("if ($aksi === 'tutup')"));
+  const aksiTutup = pt.slice(pt.indexOf("if ($aksi === 'tutup')"), pt.indexOf("if ($aksi === 'ubah')"));
+  cek('gerbang dipasang SEBELUM posisi dimasukkan (penutupan tetap boleh)',
+    aksiBuka.indexOf("$batasRugi['tercapai']") > 0 && aksiBuka.indexOf("$batasRugi['tercapai']") < aksiBuka.indexOf('INSERT INTO paper_positions')
+    && !/qi_batas_rugi_status/.test(aksiTutup)
+    && /http_response_code\(410\)/.test(pt) && (pt.match(/INSERT INTO paper_positions/g) || []).length === 1);
+}
 cek('Ikuti Auto Analisa tidak membuka posisi saat batas tercapai', /qi_batas_rugi_status\(\$pdo, \$uid, \$kini\)\['tercapai'\]/.test(ap) && ap.indexOf("['tercapai']") < ap.indexOf('$rencana = qi_ap_pilih_buka('));
 cek('hari dihitung WIB dan memakai UNIX_TIMESTAMP (bukan strtotime)', /Asia\/Jakarta/.test(br) && /UNIX_TIMESTAMP\(closed_at\)/.test(br) && !/strtotime/.test(br));
 cek('endpoint status butuh login', /qi_require_auth/.test(read('api/batas-rugi.php')));

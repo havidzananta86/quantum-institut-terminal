@@ -19,6 +19,7 @@ qi_rate_limit(60, 60);
 require_once __DIR__ . '/_signal_stats.php';
 if (is_file(__DIR__ . '/_signal_time.php')) require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_setup_shadow.php';
+require_once __DIR__ . '/_transparansi.php';   // status pemindai Pine (umur + cron), dilaporkan apa adanya
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -107,11 +108,20 @@ $pineTerakhir = array_map(static fn($r) => [
     'status' => preg_replace('/[^\x20-\x7E]/u', '', (string)($r['status'] ?? '')),
     'r' => qi_signal_r_satu($r)['r'],
 ], array_slice(array_values(array_filter($pine, 'is_array')), 0, 10));
+// STATUS PEMINDAI Pine (audit sinyal 2026-10-22): pemindai ini HANYA berjalan dari cron
+// pemeliharaan (api/maintenance-cron.php) — tidak ada pemicu dari dashboard. Dulu halaman ini
+// menulis "Dicatat otomatis" tanpa umur pemindai, padahal di produksi cron belum pernah jalan
+// sehingga daftar Pine tidak pernah bertambah. Sekarang umur pemindaian terakhir dan status cron
+// dilaporkan apa adanya, dan kalimat catatannya mengikuti status itu.
+$pemindaiPine = qi_transparansi_pemindai(__DIR__ . '/../cache/pine_scan_auto.txt', time());
 $sinyalPine = [
     'rekor' => count($pine),
     'statistik' => $ambil($statPine),
     'terakhir' => $pineTerakhir,
-    'catatan' => 'Sinyal dari indikator Pine "XAU SMC+SnD BUY SELL COMBO" (XAUUSD, H4). Dicatat otomatis saat status berubah menjadi VALID; dinilai sampai TP3 atau SL (SL didahulukan bila bersamaan). Catatan terpisah dari sinyal resmi dan masih masa uji.',
+    'pemindai' => $pemindaiPine,
+    'catatan' => 'Sinyal dari indikator Pine "XAU SMC+SnD BUY SELL COMBO" (XAUUSD, H4). Dicatat oleh pemindai terjadwal (cron pemeliharaan) saat status berubah menjadi VALID; '
+        . 'dinilai sampai TP3 atau SL (bila keduanya tersentuh di candle yang sama: urutan dari candle M1, bila tidak tersedia SL didahulukan). '
+        . 'Catatan terpisah dari sinyal resmi dan masih masa uji. ' . $pemindaiPine['kalimat'],
 ];
 
 echo json_encode([
@@ -129,11 +139,17 @@ echo json_encode([
     ],
     'sinyal_bayangan' => $bay,
     'sinyal_pine' => $sinyalPine,
+    // Metodologi ditulis SESUAI aturan penilai yang berlaku (api/signal-evaluator.php, versi
+    // penilaian 1–4). Dulu masih berbunyi "spread belum dikurangkan" dan "SL selalu lebih dulu",
+    // padahal sejak v2/v3 spread + slippage dikurangkan dan candle ambigu diurai dari M1.
     'metodologi' => [
         'Setiap sinyal dicatat otomatis saat diterbitkan (waktu, arah, entry, SL, TP). Tidak ada sinyal yang dihapus atau diubah supaya terlihat lebih baik.',
-        'Hasil dinilai otomatis dari candle sesudah sinyal terbit: TP lebih dulu = menang, SL lebih dulu = kalah. Bila satu candle menyentuh SL dan TP sekaligus, SL dihitung lebih dulu (konservatif).',
+        'Entry diperiksa terhadap harga pasar saat sinyal dicatat: entry yang jauh dari harga digeser ke harga pasar (jarak SL/TP tetap), dan rencana yang TP atau SL-nya sudah dilewati harga ditolak. Forex/emas tidak diterbitkan saat pasar tutup (termasuk jeda harian emas), dan tidak ada sinyal yang diterbitkan dari data harga yang basi.',
+        'Hasil dinilai otomatis dari candle sesudah sinyal terbit: TP lebih dulu = menang, SL lebih dulu = kalah. Bila satu candle menyentuh SL dan TP sekaligus, urutannya dicari dari candle 1 menit (M1); bila M1 tidak tersedia atau tetap ambigu, SL dihitung lebih dulu (konservatif).',
+        'Candle yang dibuka sudah melewati TP/SL (gap) ditutup di harga pembukaannya, bukan tepat di level — kerugian gap bisa lebih dari 1R.',
+        'Sejak aturan penilaian versi 4, sinyal yang entry-nya tidak tersedia di pasar saat terbit baru dihitung terisi bila harga mencapai entry (di entry, atau di harga pembukaan bila harga melompatinya); keputusan ini diambil dari candle paling halus yang tersedia. Bila entry tidak tercapai sampai kedaluwarsa, sinyal itu tidak dihitung menang maupun kalah.',
         'Sinyal yang kedaluwarsa tanpa menyentuh TP/SL dilaporkan terpisah dan tidak masuk win rate.',
-        'Hasil dihitung dalam R (kelipatan risiko; 1R = jarak entry ke stop loss) agar pair berbeda bisa dibandingkan. Spread dan komisi broker belum dikurangkan.',
+        'Hasil dihitung dalam R (kelipatan risiko; 1R = jarak entry ke stop loss) agar pair berbeda bisa dibandingkan. Sejak aturan penilaian versi 2 spread dikurangkan (spread tipikal per simbol, atau spread broker saat terbit bila lebih lebar; kripto: spread + komisi dalam persen harga), dan sejak versi 3 juga slippage perkiraan pada entry dan SL. Komisi akun forex/emas belum dikurangkan. Rekor dari versi lama tidak dinilai ulang; statistiknya dipisah per versi.',
         'Win rate selalu disertai interval keyakinan Wilson 95%. Sampel di bawah 30 sinyal selesai ditandai kecil: angkanya belum bisa dijadikan pegangan.',
         'Sinyal bayangan (berbasis struktur SMC/ICT/Fibonacci/S&D) dikumpulkan dulu minimal 100 sinyal tertutup sebelum dipromosikan menjadi sinyal resmi.',
     ],

@@ -9,7 +9,14 @@ function cek(nama, kondisi) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama
 
 console.log('Server');
 const lb = read('api/leaderboard.php');
-cek('leaderboard: $rows diisi fetchAll sebelum dipakai (dulu selalu kosong + PHP Warning)', /\$rows = \$stmt->fetchAll\(PDO::FETCH_ASSOC\);\s*\n\s*\n?\$leaderboard = \[\];\s*\nforeach \(\$rows/.test(lb));
+// Sejak audit kompetisi 2026-10-22 leaderboard.php = alias papan mingguan (api/_kompetisi_papan.php):
+// tidak ada lagi query/$rows sendiri. Bug lama (data dipakai sebelum diisi) tetap dikunci: baris papan
+// diambil dari qi_komp_papan() SEBELUM $leaderboard dibangun, dan $rows tidak dipakai sama sekali.
+cek('leaderboard: data papan diisi sebelum dipakai (dulu $rows selalu kosong + PHP Warning)',
+    /\$papan = qi_komp_papan\(\$pdo\);/.test(lb)
+    && lb.indexOf('$papan = qi_komp_papan($pdo);') < lb.indexOf('$leaderboard = ')
+    && /\$leaderboard = array_map\(\$keBaris, [^;]*\$papan\['baris'\]/.test(lb)
+    && !/\$rows\b/.test(lb));
 const cs = read('api/currency-strength.php');
 cek('currency-strength: cache yang sedang ditulis tidak memunculkan Notice (baca dicek dulu)', /\$cached = @file_get_contents\(\$cacheFile\);/.test(cs) && !/echo file_get_contents\(\$cacheFile\)/.test(cs));
 const hl = read('api/health.php');

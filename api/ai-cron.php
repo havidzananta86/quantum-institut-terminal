@@ -40,6 +40,8 @@ if (!$isCli) {
 
 // Model P/L yang sama dengan sisi klien (lihat api/_paper_math.php).
 require_once __DIR__ . '/_paper_math.php';
+// RSI Wilder bersama + penjaga pasar tutup (api/_sinyal_pasar.php).
+require_once __DIR__ . '/_sinyal_pasar.php';
 
 $pdo = qi_db();
 
@@ -92,13 +94,9 @@ function cron_ema(array $c, int $p): ?float {
     for ($i=$p;$i<count($c);$i++) $e=$c[$i]*$k+$e*(1-$k);
     return $e;
 }
+/** RSI Wilder atas SELURUH riwayat — implementasi bersama qi_sp_rsi() (dulu salinan sendiri: 100 pada data datar). */
 function cron_rsi(array $c, int $p=14): float {
-    $n=count($c); if($n<$p+1) return 50;
-    $g=0;$l=0;
-    for($i=1;$i<=$p;$i++){$d=$c[$i]-$c[$i-1];if($d>0)$g+=$d;else$l-=$d;}
-    $g/=$p;$l/=$p;
-    for($i=$p+1;$i<$n;$i++){$d=$c[$i]-$c[$i-1];$g=($g*($p-1)+max(0,$d))/$p;$l=($l*($p-1)+max(0,-$d))/$p;}
-    return $l==0?100:100-100/(1+$g/$l);
+    return qi_sp_rsi($c, $p);
 }
 function cron_macd(array $c): float {
     if(count($c)<35) return 0;
@@ -124,12 +122,13 @@ function cron_analyze(string $sym, string $iv): ?array {
     foreach (cron_chart_files($sym, $iv) as $c) { if (file_exists($c)) { $f = $c; break; } }
     if ($f === null) return null;
     $d = json_decode(file_get_contents($f),true);
-    $candles = $d['candles'] ?? [];
+    if (!empty($d['simulated'])) return null;               // candle acak tidak pernah dianalisa
+    $candles = qi_sp_buang_datar($d['candles'] ?? []);      // bar O=H=L=C (harga beku) dibuang
     if (count($candles)<55) return null;
     $cl=array_column($candles,'close');
     $last=end($cl);
     $e20=cron_ema($cl,20);$e50=cron_ema($cl,50);
-    $rsi=cron_rsi(array_slice($cl,-30),14);
+    $rsi=cron_rsi($cl,14);                                  // seluruh riwayat (dulu 30 close terakhir)
     $macd=cron_macd(array_slice($cl,-60));
     $bull=0;$bear=0;
     if($e20&&$e50){if($e20>$e50)$bull++;else$bear++;if($last>$e20)$bull++;else$bear++;}
@@ -151,28 +150,46 @@ function get_ai_signal_cached(string $sym): ?array {
 // ── Harga terkini ──────────────────────────────────────────────────────────
 // Utama: Bid/Ask live dari feed broker MT5 (bridge VPS), sama dengan chart LIVE · MT5.
 // Cadangan: close candle terakhir dari cache (MT5 lalu umum); saat itu Bid = Ask.
+//
+// 'hidup' (audit sinyal 2026-10-22): true HANYA bila harga itu benar-benar harga pasar saat ini —
+// tick MT5 dengan pasar buka, atau berkas cache yang ditulis ≤ 5 menit lalu DAN lolos
+// qi_sp_cek_pasar (pasar buka, candle terakhir ≤ 2 batang). Tanpa ini cron membuka/menutup
+// posisi dari close Jumat di akhir pekan atau dari cache yang berumur berjam-jam.
 function get_current_quote(string $sym): array {
     static $memo = [];
     if (isset($memo[$sym])) return $memo[$sym];
+    // Interval paling halus dulu (paling segar); yang pertama "hidup" dipakai. Bila tidak ada
+    // yang hidup, harga pertama (MT5 atau cache) tetap dikembalikan untuk log, dengan hidup = false.
+    $cadangan = null;
     if (qi_tv_bridge_symbol($sym) !== null && qi_mt5_configured()) {
         $q = qi_mt5_quotes([$sym])[strtoupper($sym)] ?? null;
         if ($q && (float)$q['bid'] > 0 && (float)$q['ask'] >= (float)$q['bid']) {
-            return $memo[$sym] = ['bid' => (float)$q['bid'], 'ask' => (float)$q['ask'], 'source' => 'mt5'];
+            // Status 'market' broker (tick > 180 detik = closed) sudah mendeteksi jeda harian emas,
+            // jadi di sini cukup jendela pekan — jam 22–23 UTC musim panas emas memang buka.
+            $hidup = ($q['market'] ?? 'open') !== 'closed' && (qi_sp_kripto($sym) || qi_sp_jendela_pekan(time()));
+            $qMt5 = ['bid' => (float)$q['bid'], 'ask' => (float)$q['ask'], 'source' => 'mt5', 'hidup' => $hidup];
+            if ($hidup) return $memo[$sym] = $qMt5;
+            // Kutipan MT5 TUTUP (tick > 180 detik, mis. broker menutup kripto di akhir pekan): dulu
+            // langsung dikembalikan sehingga BTCUSDT dengan cache Binance yang segar dianggap mati —
+            // posisi AI tidak dibuka dan TP/SL-nya tidak dikelola sampai broker buka (audit ulang
+            // 2026-10-22). Sekarang cache segar di bawah ini tetap dicoba.
+            $cadangan = $qMt5;
         }
     }
-    // Coba H1 dulu, fallback ke D1
-    foreach (['60','D','240'] as $iv) {
+    foreach (['5','15','60','240','D'] as $iv) {
         foreach (cron_chart_files($sym, $iv) as $f) {
             if (!file_exists($f)) continue;
             $d = json_decode(file_get_contents($f), true);
             $candles = $d['candles'] ?? [];
-            if (!empty($candles)) {
-                $p = (float)end($candles)['close'];
-                return $memo[$sym] = ['bid' => $p, 'ask' => $p, 'source' => (string)($d['source'] ?? 'cache')];
-            }
+            if (empty($candles) || !empty($d['simulated'])) continue;
+            $p = (float)end($candles)['close'];
+            $segar = (time() - (int)@filemtime($f)) <= 300 && qi_sp_cek_pasar($sym, $candles, qi_sp_durasi($iv))['boleh'];
+            $q = ['bid' => $p, 'ask' => $p, 'source' => (string)($d['source'] ?? 'cache'), 'hidup' => $segar];
+            if ($segar) return $memo[$sym] = $q;
+            if ($cadangan === null) $cadangan = $q;
         }
     }
-    return $memo[$sym] = ['bid' => 0.0, 'ask' => 0.0, 'source' => ''];
+    return $memo[$sym] = $cadangan ?? ['bid' => 0.0, 'ask' => 0.0, 'source' => '', 'hidup' => false];
 }
 function get_current_price(string $sym): float {
     return get_current_quote($sym)['bid'];
@@ -236,9 +253,26 @@ foreach ($aiUsers as $u) {
         }
 
         $direction = $aiAction === 'ENTRY_BUY' ? 'BUY' : 'SELL';
-        // Tanpa harga entry dari sinyal: BUY dibuka di Ask, SELL di Bid (seperti MT5).
+        // SELALU dibuka di harga pasar HIDUP: BUY di Ask, SELL di Bid (seperti MT5). Dulu memakai
+        // entry_price AI bila ada — harga yang bisa jauh dari pasar, sehingga posisi simulasi
+        // "terisi" di harga yang tidak pernah tersedia (audit sinyal 2026-10-22).
         $kini = get_current_quote($sym);
-        $ep = $ep > 0 ? $ep : ($direction === 'BUY' ? $kini['ask'] : $kini['bid']);
+        if (empty($kini['hidup'])) {
+            cron_log("  [{$uid}] {$sym}: pasar tutup / harga live tidak tersedia ({$kini['source']}), skip");
+            $skippedCount++;
+            continue;
+        }
+        $epAi = $ep;
+        $ep = $direction === 'BUY' ? (float)$kini['ask'] : (float)$kini['bid'];
+        // SL/TP AI harus tetap di sisi yang benar dari harga pasar; bila harga sudah melewatinya,
+        // rencana AI usang — tidak dibuka (bukan dibuka lalu langsung "kena").
+        $levelSah = $ep > 0 && $sl > 0 && $tp > 0
+            && ($direction === 'BUY' ? ($sl < $ep && $ep < $tp) : ($tp < $ep && $ep < $sl));
+        if (!$levelSah) {
+            cron_log("  [{$uid}] {$sym}: harga pasar {$ep} sudah di luar SL {$sl} / TP {$tp} rencana AI (entry AI {$epAi}), skip");
+            $skippedCount++;
+            continue;
+        }
 
         $pdo->beginTransaction();
         try {
@@ -296,6 +330,8 @@ foreach ($openPositions as $pos) {
     $cp     = $dir === 'BUY' ? $kini['bid'] : $kini['ask'];
 
     if ($cp <= 0 || $tp <= 0 || $sl <= 0) continue; // data tidak cukup
+    // Pasar tutup / harga basi: TP/SL tidak diputuskan dari harga yang bukan harga saat ini.
+    if (empty($kini['hidup'])) continue;
 
     $hitTP = $hitSL = false;
     if ($dir === 'BUY') {

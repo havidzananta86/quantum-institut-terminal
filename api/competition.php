@@ -2,29 +2,37 @@
 /**
  * COMPETITION — turnamen paper trading + papan peringkat.
  *
- * GET  ?papan=global|indonesia|friends|weekly|monthly
- *      → turnamen utama (periode, hitung mundur, hadiah), jumlah peserta, papan peringkat,
- *        statistik saya, turnamen lain.
- * POST {aksi:'daftar', turnamen}            → daftar ke turnamen periode berjalan
+ * GET  ?papan=weekly[&batas=10..100][&ringkas=1][&periode=YYYY-Www]
+ *      → PAPAN LANGSUNG Weekly Championship (api/_kompetisi_papan.php): ekuitas = 10.000 + terealisasi
+ *        + mengambang, posisi terbuka, aktivitas 30 kejadian terakhir. TERBUKA untuk pengunjung tanpa
+ *        login (nama disamarkan, tanpa baris "saya"). ringkas=1 = tanpa aturan/kelayakan/statistik
+ *        sepanjang waktu (untuk polling arena tiap 5 detik). periode lampau = klasemen beku.
+ * GET  ?papan=global|indonesia|friends|monthly → papan P/L tertutup (butuh login, seperti dulu)
+ * GET  ?trader=<kode>                        → laci trader: posisi terbuka + 20 penutupan terakhir (publik)
+ * GET  ?harga=XAUUSD,BTCUSDT                 → kutipan KANONIK (api/_kompetisi_harga.php) — harga yang
+ *                                             benar-benar mengisi order (PRO ke atas)
+ * POST {aksi:'daftar', turnamen}             → daftar ke turnamen periode berjalan (PRO ke atas)
  * POST {aksi:'profil', nama_tampilan, negara} → nama tampilan & negara untuk papan peringkat
- * GET  ?kandidat=1[&turnamen=…&periode=…]  → (ADMIN) kandidat pemenang + syarat + tanda multi-akun
+ * GET  ?kandidat=1[&turnamen=…&periode=…]    → (ADMIN) kandidat pemenang + syarat + tanda multi-akun
  *
  * Syarat hadiah & aturan: api/_kompetisi_syarat.php (setelan di cache/competition.json → "syarat").
  *
  * Kejujuran yang dipegang:
- *   · Peringkat HANYA dari paper trading yang sudah ditutup (paper_positions). Tidak ada
- *     trader, profit, atau win rate yang dikarang. Bila belum ada data, papan kosong apa adanya.
+ *   · Peringkat dari paper trading nyata (paper_positions). Tidak ada trader, profit, atau win rate
+ *     yang dikarang. Harga penanda yang basi ditandai (harga_basi), tidak ditebak.
  *   · Hadiah dibaca dari cache/competition.json (diatur admin). Selama hadiah ATAU aturan resmi
  *     (syarat.ditetapkan) belum diatur, nilai ditampilkan DENGAN `hadiah_contoh: true` ("contoh").
- *   · Nama tanpa nama tampilan disamarkan. Negara tidak pernah ditebak.
+ *   · Nama tanpa nama tampilan disamarkan. Negara tidak pernah ditebak. Id pengguna tidak dikirim.
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_kompetisi_syarat.php';
+require_once __DIR__ . '/_kompetisi_papan.php';
 
-qi_rate_limit(40, 60);
-$pengguna = qi_require_auth();
-$uid = (int)$pengguna['user_id'];
+$metode = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+// Papan dibaca dari cache 5 detik, jadi GET boleh dipoll arena tiap 5–10 detik (dulu 40/menit
+// per IP — pengguna seluler di balik CGNAT berbagi IP dan cepat terkena 429).
+qi_rate_limit($metode === 'POST' ? 30 : 120, 60);
 $pdo = qi_db();
 
 const QI_COMP_SALDO_AWAL = 10000.0;   // sama dengan $STARTING_BALANCE di api/paper-trading.php
@@ -37,31 +45,27 @@ function qi_comp_jawab(array $d, int $kode = 200): void
     exit;
 }
 
-/** Rentang periode berjalan: [mulai, selesai, kunci]. */
-function qi_comp_periode(string $jenis, DateTimeZone $zona): array
-{
-    $kini = new DateTimeImmutable('now', $zona);
-    if ($jenis === 'daily') {
-        $m = $kini->setTime(0, 0);
-        return [$m, $m->modify('+1 day'), $m->format('Y-m-d')];
-    }
-    if ($jenis === 'monthly') {
-        $m = $kini->modify('first day of this month')->setTime(0, 0);
-        return [$m, $m->modify('first day of next month'), $m->format('Y-m')];
-    }
-    $m = $kini->modify('monday this week')->setTime(0, 0);
-    return [$m, $m->modify('+7 days'), $m->format('o-\WW')];
-}
-
-/** Daftar turnamen; hadiah dapat ditimpa admin lewat cache/competition.json. */
+/**
+ * Daftar turnamen; hadiah dapat ditimpa admin lewat cache/competition.json.
+ *
+ * Audit G1: hanya Weekly Championship yang dulu dinilai dari EKUITAS. Turnamen lain dinilai dari P/L
+ * tertutup menurut closed_at (qi_comp_agregat) — tutup yang untung, biarkan yang rugi terbuka; posisi
+ * lama yang ditutup di dalam periode dihitung penuh; salinan sinyal AI sekali-klik ikut. Sekarang:
+ *   · Gold Rush Weekly: periode mingguan yang sama dengan komp_periode → papan ekuitas yang sama,
+ *     disaring ke XAUUSD ('simbol'). Posisi terbuka dinilai mengambang dan ditutup server di batas.
+ *   · Crypto Sprint (harian) & Forex Battle (bulanan): periodenya tidak sejalan dengan komp_periode
+ *     mingguan dan server tidak menutup posisi di batas harian/bulanan, jadi belum bisa dinilai jujur
+ *     → DITANGGUHKAN: tidak ditawarkan, pendaftaran & evaluasi hadiah ditolak dengan alasan.
+ */
 function qi_comp_turnamen(): array
 {
     $bawaan = [
-        'weekly-championship' => ['nama' => 'QIM Weekly Trading Championship', 'jenis' => 'weekly', 'pasar' => 'semua',
+        'weekly-championship' => ['nama' => 'QIM Weekly Trading Championship', 'jenis' => 'weekly', 'pasar' => 'semua', 'skor' => 'ekuitas',
             'hadiah' => [['label' => 'Juara 1', 'nilai' => 20000], ['label' => 'Juara 2', 'nilai' => 12000], ['label' => 'Juara 3', 'nilai' => 8000], ['label' => 'Juara 4-10', 'nilai' => 10000, 'total' => true]]],
-        'crypto-sprint-daily' => ['nama' => 'Crypto Sprint Daily', 'jenis' => 'daily', 'pasar' => 'crypto', 'hadiah' => [['label' => 'Total', 'nilai' => 5000, 'total' => true]]],
-        'forex-battle-monthly' => ['nama' => 'Forex Battle Monthly', 'jenis' => 'monthly', 'pasar' => 'forex', 'hadiah' => [['label' => 'Total', 'nilai' => 25000, 'total' => true]]],
-        'gold-rush-weekly' => ['nama' => 'Gold Rush Weekly', 'jenis' => 'weekly', 'pasar' => 'gold', 'hadiah' => [['label' => 'Total', 'nilai' => 10000, 'total' => true]]],
+        'crypto-sprint-daily' => ['nama' => 'Crypto Sprint Daily', 'jenis' => 'daily', 'pasar' => 'crypto', 'ditangguhkan' => true, 'hadiah' => [['label' => 'Total', 'nilai' => 5000, 'total' => true]]],
+        'forex-battle-monthly' => ['nama' => 'Forex Battle Monthly', 'jenis' => 'monthly', 'pasar' => 'forex', 'ditangguhkan' => true, 'hadiah' => [['label' => 'Total', 'nilai' => 25000, 'total' => true]]],
+        'gold-rush-weekly' => ['nama' => 'Gold Rush Weekly', 'jenis' => 'weekly', 'pasar' => 'gold', 'skor' => 'ekuitas', 'simbol' => ['XAUUSD'],
+            'hadiah' => [['label' => 'Total', 'nilai' => 10000, 'total' => true]]],
     ];
     $berkas = __DIR__ . '/../cache/competition.json';
     $atur = is_file($berkas) ? json_decode((string)@file_get_contents($berkas), true) : null;
@@ -88,13 +92,6 @@ function qi_comp_filter_pasar(string $pasar): string
     };
 }
 
-function qi_comp_samarkan(string $nama): string
-{
-    $bagian = preg_split('/\s+/', trim($nama)) ?: [''];
-    if (count($bagian) === 1) return mb_substr($bagian[0], 0, 3) . '***';
-    return $bagian[0] . ' ' . mb_strtoupper(mb_substr(end($bagian), 0, 1)) . '.';
-}
-
 /** Id teman = yang saya undang + yang mengundang saya (cache/referrals.json). */
 function qi_comp_teman(int $uid): array
 {
@@ -112,12 +109,16 @@ function qi_comp_teman(int $uid): array
 
 /**
  * Agregat per pengguna dari trade yang ditutup dalam rentang (null = sepanjang waktu).
+ * Dipakai papan global/indonesia/friends/monthly dan turnamen selain Weekly Championship.
  * @return array<int,array> diurutkan dari profit tertinggi
  */
 function qi_comp_agregat(PDO $pdo, ?DateTimeImmutable $mulai, ?DateTimeImmutable $selesai, string $pasar = 'semua', ?array $hanyaUser = null, ?string $negara = null): array
 {
-    // Posisi 'auto' (Ikuti Auto Analisa) tidak ikut peringkat: hadiahnya untuk keterampilan trader manual.
-    $syarat = "pp.status = 'closed' AND pp.source <> 'auto'" . qi_comp_filter_pasar($pasar);
+    // HANYA posisi manual yang ikut peringkat: hadiahnya untuk keterampilan trader. Dulu syaratnya
+    // `source <> 'auto'`, sehingga posisi AI Auto-Trade (source 'ai', ditulis ai-auto-trade.php &
+    // ai-cron.php) ikut dihitung — padahal arena menjanjikan bot tidak pernah masuk papan peringkat.
+    // Akun nonaktif/diblokir tidak tampil (sama dengan papan mingguan).
+    $syarat = "pp.status = 'closed' AND pp.source = 'manual' AND " . qi_komp_sql_aktif('u') . qi_comp_filter_pasar($pasar);
     $param = [];
     if ($mulai && $selesai) {
         // closed_at ditulis dalam zona sesi MySQL (NOW()/FROM_UNIXTIME); batas periode (WIB)
@@ -165,8 +166,25 @@ function qi_comp_baris(array $r, int $rank, int $uid, array $terdaftar): array
         'trades'     => $trades,
         'win_rate'   => $trades > 0 ? round((int)$r['menang'] / $trades * 100) : 0,
         'equity'     => round(QI_COMP_SALDO_AWAL + $pnl, 2),
-        'lencana'    => $rank === 1 ? 'diamond' : ($rank === 2 ? 'platinum' : ($rank <= 3 ? 'gold' : ($rank <= 10 ? 'silver' : null))),
+        'lencana'    => qi_komp_lencana($rank),
         'terdaftar'  => in_array((int)$r['user_id'], $terdaftar, true),
+        'saya'       => $saya,
+    ];
+}
+
+/**
+ * Baris papan LANGSUNG → bentuk yang dibaca dashboard (qim-pages.js: rank, nama, negara, profit_pct,
+ * trades, win_rate, equity, lencana, terdaftar, saya) + kolom arena (kode, return_pct, realized,
+ * floating, open_count, aktivitas_ts, harga_basi, …). Tanpa user_id.
+ */
+function qi_comp_baris_langsung(array $b, int $uid, ?string $namaSaya): array
+{
+    $saya = $uid > 0 && (int)$b['uid'] === $uid;
+    $pub = qi_komp_baris_publik($b);
+    if ($saya && $namaSaya !== null) $pub['nama'] = $namaSaya;
+    return $pub + [
+        'profit_pct' => $b['return_pct'],
+        'pnl'        => round($b['realized'] + $b['floating'], 2),
         'saya'       => $saya,
     ];
 }
@@ -199,12 +217,43 @@ function qi_comp_ip_akun(PDO $pdo, array $uids): array
 }
 
 /**
+ * Irama order manual per peserta dalam rentang (untuk admin, desain audit §B1: ≥ 2 dtk antar order,
+ * ≤ 200/hari, dan tampilan irama order). @return array<int,array{order:int,per_jam_maks:int,jeda_median_dtk:?int,jeda_min_dtk:?int}>
+ */
+function qi_comp_irama(PDO $pdo, array $uids, int $mulai, int $selesai): array
+{
+    if (!$uids) return [];
+    $in = implode(',', array_fill(0, count($uids), '?'));
+    $st = $pdo->prepare("SELECT user_id, UNIX_TIMESTAMP(opened_at) AS t FROM paper_positions
+                         WHERE source = 'manual' AND user_id IN ($in) AND opened_at >= FROM_UNIXTIME(?) AND opened_at < FROM_UNIXTIME(?)
+                         ORDER BY user_id, opened_at");
+    $st->execute(array_merge(array_values($uids), [$mulai, $selesai]));
+    $waktu = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $waktu[(int)$r['user_id']][] = (int)$r['t'];
+    $hasil = [];
+    foreach ($waktu as $u => $ts) {
+        $jeda = [];
+        for ($i = 1; $i < count($ts); $i++) $jeda[] = $ts[$i] - $ts[$i - 1];
+        sort($jeda);
+        $perJam = array_count_values(array_map(static fn($t) => intdiv($t, 3600), $ts));
+        $hasil[$u] = ['order' => count($ts), 'per_jam_maks' => $perJam ? max($perJam) : 0,
+                      'jeda_median_dtk' => $jeda ? $jeda[intdiv(count($jeda), 2)] : null, 'jeda_min_dtk' => $jeda ? $jeda[0] : null];
+    }
+    return $hasil;
+}
+
+/**
  * Semua peserta terdaftar satu periode + syarat hadiah masing-masing, urut seperti papan.
- * @return array{setelan:array,baris:array<int,array>}
+ * Turnamen ekuitas (Weekly Championship, Gold Rush): urutan & angka dari papan ekuitas, jumlah trade =
+ * posisi tertutup ber-komp_periode itu. Periode LAMPAU hanya dinilai bila sudah FINAL (audit G1: dulu
+ * periode yang masih punya posisi terbuka dibangun ulang dengan harga HARI INI — posisi minggu lalu
+ * ditandai di harga sekarang). Belum final → 'belum_final' => true dan tanpa baris.
+ * @return array{setelan:array,baris:array<int,array>,belum_final?:bool}
  */
 function qi_comp_evaluasi(PDO $pdo, string $kunci, array $t, DateTimeImmutable $mulai, DateTimeImmutable $selesai, string $periode): array
 {
     $setelan = qi_komp_syarat_setelan();
+    if (!empty($t['ditangguhkan'])) return ['setelan' => $setelan, 'baris' => [], 'ditangguhkan' => true];
     $st = $pdo->prepare('SELECT ce.user_id, u.email, u.phone_number, u.full_name, u.is_active, u.status, cp.display_name,
                                 UNIX_TIMESTAMP(u.created_at) AS dibuat, UNIX_TIMESTAMP(ce.joined_at) AS daftar_ts
                          FROM competition_entries ce
@@ -218,7 +267,31 @@ function qi_comp_evaluasi(PDO $pdo, string $kunci, array $t, DateTimeImmutable $
 
     $uids = array_keys($peserta);
     $agregat = [];
-    foreach (qi_comp_agregat($pdo, $mulai, $selesai, $t['pasar'], $uids) as $r) $agregat[(int)$r['user_id']] = $r;
+    $urutan = [];
+    if (($t['skor'] ?? '') === 'ekuitas') {
+        [, , $kini] = qi_komp_periode_kini();
+        $simbol = (array)($t['simbol'] ?? []);
+        if ($periode === $kini) {
+            $papan = $simbol ? qi_komp_papan_bangun($pdo, $periode, ['simbol' => $simbol, 'turnamen' => $kunci]) : qi_komp_papan($pdo);
+        } elseif (!$simbol) {
+            $papan = qi_komp_papan_final($pdo, $periode);
+            if (!$papan) return ['setelan' => $setelan, 'baris' => [], 'belum_final' => true];
+        } else {
+            // Papan per pasar periode lampau: final bila tidak ada lagi posisi terbuka di pasar itu — angkanya
+            // lalu murni dari database (tanpa kutipan hari ini).
+            $in = implode(',', array_map(static fn($s) => $pdo->quote(strtoupper((string)$s)), $simbol));
+            $st = $pdo->prepare("SELECT 1 FROM paper_positions WHERE komp_periode = ? AND source = 'manual' AND status = 'open' AND symbol IN ($in) LIMIT 1");
+            $st->execute([$periode]);
+            if ($st->fetchColumn()) return ['setelan' => $setelan, 'baris' => [], 'belum_final' => true];
+            $papan = qi_komp_papan_bangun($pdo, $periode, ['simbol' => $simbol, 'turnamen' => $kunci, 'kutipan' => static fn() => []]);
+        }
+        foreach ($papan['baris'] as $i => $b) {
+            $agregat[$b['uid']] = ['pnl' => $b['equity'] - QI_COMP_SALDO_AWAL, 'trades' => $b['trades'], 'menang' => $b['menang']];
+            $urutan[$b['uid']] = $i;
+        }
+    } else {
+        foreach (qi_comp_agregat($pdo, $mulai, $selesai, $t['pasar'], $uids) as $r) $agregat[(int)$r['user_id']] = $r;
+    }
     $ip = qi_comp_ip_akun($pdo, $uids);
     $akun = [];
     foreach ($peserta as $u => $r) $akun[$u] = ['email' => (string)$r['email'], 'telp' => $r['phone_number'], 'ip' => $ip[$u] ?? []];
@@ -230,20 +303,44 @@ function qi_comp_evaluasi(PDO $pdo, string $kunci, array $t, DateTimeImmutable $
         $aktif = (int)$r['is_active'] === 1 && !in_array(strtolower((string)$r['status']), ['banned', 'suspended', 'inactive', 'disabled'], true);
         $baris[] = [
             'user_id' => $u, 'pnl' => (float)($a['pnl'] ?? 0), 'trades' => (int)($a['trades'] ?? 0), 'menang' => (int)($a['menang'] ?? 0),
-            'data' => $r, 'tanda' => $tanda[$u] ?? null,
+            'urut' => $urutan[$u] ?? PHP_INT_MAX, 'data' => $r, 'tanda' => $tanda[$u] ?? null,
         ] + qi_komp_kelayakan(['terdaftar' => true, 'trades' => (int)($a['trades'] ?? 0), 'dibuat' => $r['dibuat'] !== null ? (int)$r['dibuat'] : null,
                                'aktif' => $aktif, 'ditandai' => $tanda[$u] ?? null], $setelan, $selesai->getTimestamp(), $t['pasar']);
     }
-    usort($baris, static fn($x, $y) => [$y['pnl'], $y['trades'], $x['user_id']] <=> [$x['pnl'], $x['trades'], $y['user_id']]);
+    if ($urutan) usort($baris, static fn($x, $y) => [$x['urut'], $x['user_id']] <=> [$y['urut'], $y['user_id']]);
+    else usort($baris, static fn($x, $y) => [$y['pnl'], $y['trades'], $x['user_id']] <=> [$x['pnl'], $x['trades'], $y['user_id']]);
     return ['setelan' => $setelan, 'baris' => $baris];
 }
 
 try {
-    $metode = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     $turnamen = qi_comp_turnamen();
+
+    // ── GET ?harga=… : kutipan kanonik untuk tiket arena (PRO ke atas) ──────────
+    if ($metode === 'GET' && isset($_GET['harga'])) {
+        qi_require_level('pro');
+        // Semua simbol paper trading (QI_PAPER_SIMBOL), bukan hanya 10 simbol arena: posisi turnamen BNBUSDT/
+        // AUDUSD/USOIL… dari Quick Trade dulu tidak bisa ditandai atau ditutup di arena (audit G1).
+        $syms = array_values(array_intersect(array_map('trim', explode(',', strtoupper((string)$_GET['harga']))),
+                                             array_values(array_unique(array_merge(QI_KOMP_SIMBOL, QI_PAPER_SIMBOL)))));
+        if (!$syms) qi_comp_jawab(['status' => 'error', 'message' => 'Simbol tidak dikenal.'], 400);
+        $kutipan = qi_komp_kutipan(array_slice($syms, 0, 12));
+        qi_comp_jawab(['status' => 'success', 'tingkat' => qi_komp_tingkat(), 'sekarang' => time(), 'kutipan' => $kutipan,
+                       'umur_maks_isi' => QI_PAPER_UMUR_ACUAN_MAKS]);
+    }
+
+    // ── GET ?trader=<kode> : laci trader (publik, nama disamarkan) ────────────
+    if ($metode === 'GET' && isset($_GET['trader'])) {
+        $kode = (string)$_GET['trader'];
+        if (!preg_match('/^[0-9a-f]{12}$/', $kode)) qi_comp_jawab(['status' => 'error', 'message' => 'Kode trader tidak sah.'], 400);
+        $detail = qi_komp_trader($pdo, qi_komp_papan($pdo), $kode);
+        if (!$detail) qi_comp_jawab(['status' => 'error', 'message' => 'Trader tidak ada di papan periode ini.'], 404);
+        qi_comp_jawab(['status' => 'success', 'sekarang' => time()] + $detail);
+    }
 
     // ── POST ─────────────────────────────────────────────────────────────────
     if ($metode === 'POST') {
+        $pengguna = qi_require_auth();
+        $uid = (int)$pengguna['user_id'];
         $in = qi_get_json_body();
         if (!is_array($in)) $in = [];
         $aksi = (string)($in['aksi'] ?? '');
@@ -251,6 +348,15 @@ try {
         if ($aksi === 'daftar') {
             $kunci = (string)($in['turnamen'] ?? '');
             if (!isset($turnamen[$kunci])) qi_comp_jawab(['status' => 'error', 'message' => 'Turnamen tidak dikenal.'], 400);
+            if (!empty($turnamen[$kunci]['ditangguhkan'])) {
+                qi_comp_jawab(['status' => 'error', 'code' => 'TURNAMEN_DITANGGUHKAN', 'message' => $turnamen[$kunci]['nama']
+                    . ' ditangguhkan sampai penilaiannya memakai ekuitas per periode (posisi terbuka ikut dihitung). Ikuti Weekly Championship atau Gold Rush Weekly.'], 409);
+            }
+            // FREE dulu bisa mendaftar tetapi tidak bisa trading (paper trading butuh PRO) — pendaftaran
+            // yang tidak bisa dipakai. Sekarang ditolak dengan alasan yang jelas.
+            if (qi_tingkat_peran($pengguna['role'] ?? null) < 1) {
+                qi_comp_jawab(['status' => 'error', 'code' => 'PRO_REQUIRED', 'message' => 'Turnamen untuk anggota Quantum+ PRO / VIP — trading di arena memakai paper trading PRO.'], 403);
+            }
             [, , $periode] = qi_comp_periode($turnamen[$kunci]['jenis'], $zona);
             $ins = $pdo->prepare('INSERT IGNORE INTO competition_entries (tournament_key, period_key, user_id) VALUES (?, ?, ?)');
             $ins->execute([$kunci, $periode, $uid]);
@@ -288,6 +394,7 @@ try {
 
     // ── GET ?kandidat=1 (ADMIN): kandidat pemenang untuk ditinjau ─────────────────
     if (!empty($_GET['kandidat'])) {
+        $pengguna = qi_require_auth();
         if (($pengguna['role'] ?? '') !== 'admin') qi_comp_jawab(['status' => 'error', 'message' => 'Hanya admin.'], 403);
         $kunci = (string)($_GET['turnamen'] ?? 'weekly-championship');
         if (!isset($turnamen[$kunci])) qi_comp_jawab(['status' => 'error', 'message' => 'Turnamen tidak dikenal.'], 400);
@@ -300,6 +407,14 @@ try {
             $periode = (string)$_GET['periode'];
         }
         $ev = qi_comp_evaluasi($pdo, $kunci, $t, $mulai, $selesai, $periode);
+        if (!empty($ev['ditangguhkan'])) {
+            qi_comp_jawab(['status' => 'error', 'code' => 'TURNAMEN_DITANGGUHKAN', 'message' => $t['nama'] . ' ditangguhkan — belum dinilai dari ekuitas per periode, jadi tidak ada kandidat pemenang.'], 409);
+        }
+        if (!empty($ev['belum_final'])) {
+            qi_comp_jawab(['status' => 'error', 'code' => 'BELUM_FINAL', 'message' => 'Klasemen periode ' . $periode
+                . ' belum final: masih ada posisi yang menunggu harga penutupan server. Kandidat pemenang tidak dihitung dari harga hari ini.'], 409);
+        }
+        $irama = qi_comp_irama($pdo, array_map(static fn($b) => (int)$b['user_id'], array_slice($ev['baris'], 0, 50)), $mulai->getTimestamp(), $selesai->getTimestamp());
         $posisi = 0;
         $kandidat = [];
         foreach (array_slice($ev['baris'], 0, 50) as $i => $b) {
@@ -319,6 +434,8 @@ try {
                 'ditinjau'     => $b['ditinjau'],
                 'gagal'        => array_values(array_map(static fn($s) => $s['label'] . ' — ' . $s['detail'], array_filter($b['syarat'], static fn($s) => !$s['ok']))),
                 'kelompok'     => $b['tanda'] ? ['id' => $b['tanda']['kelompok'], 'ukuran' => $b['tanda']['ukuran'], 'alasan' => $b['tanda']['alasan']] : null,
+                // Irama order manual dalam periode (semua simbol): jumlah, puncak per jam, jeda median & minimum.
+                'irama'        => $irama[$b['user_id']] ?? ['order' => 0, 'per_jam_maks' => 0, 'jeda_median_dtk' => null, 'jeda_min_dtk' => null],
             ];
         }
         qi_comp_jawab([
@@ -329,99 +446,147 @@ try {
         ]);
     }
 
-    // ── GET ──────────────────────────────────────────────────────────────────
+    // ── GET papan ────────────────────────────────────────────────────────────
     $papan = strtolower((string)($_GET['papan'] ?? 'global'));
     if (!in_array($papan, ['global', 'indonesia', 'friends', 'weekly', 'monthly'], true)) $papan = 'global';
+    // Papan mingguan TERBUKA untuk dipantau siapa saja (permintaan pemilik: orang lain bisa memantau
+    // para trader). Papan lain dan semua data pribadi tetap butuh login.
+    $pengguna = $papan === 'weekly' ? qi_validate_token() : qi_require_auth();
+    if (!$pengguna && !empty($GLOBALS['qi_2fa_tertunda'])) $pengguna = null;
+    $uid = $pengguna ? (int)$pengguna['user_id'] : 0;
+    $ringkas = !empty($_GET['ringkas']) || $uid === 0;
+    $batas = max(10, min(100, (int)($_GET['batas'] ?? 10)));
 
     $utama = $turnamen['weekly-championship'];
     [$mulaiW, $selesaiW, $periodeW] = qi_comp_periode('weekly', $zona);
+    $langsung = qi_komp_papan($pdo);
     $pesertaUtama = qi_comp_peserta($pdo, 'weekly-championship', $periodeW);
 
-    $mulai = $selesai = null;
-    if ($papan === 'weekly') { $mulai = $mulaiW; $selesai = $selesaiW; }
-    if ($papan === 'monthly') [$mulai, $selesai] = qi_comp_periode('monthly', $zona);
-    $hanya = null;
-    if ($papan === 'friends') $hanya = array_merge([$uid], qi_comp_teman($uid));
-    $agregat = qi_comp_agregat($pdo, $mulai, $selesai, 'semua', $hanya, $papan === 'indonesia' ? 'ID' : null);
+    $namaSaya = null;
+    $profil = ['display_name' => null, 'country_code' => null];
+    if ($uid > 0) {
+        $st = $pdo->prepare('SELECT u.full_name, cp.display_name, cp.country_code FROM users u LEFT JOIN user_competition_profile cp ON cp.user_id = u.id WHERE u.id = ?');
+        $st->execute([$uid]);
+        $p = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+        $profil = ['display_name' => $p['display_name'] ?? null, 'country_code' => $p['country_code'] ?? null];
+        $namaSaya = trim((string)($p['display_name'] ?? '')) !== '' ? (string)$p['display_name'] : (string)($p['full_name'] ?? '');
+    }
 
     $baris = [];
     $barisSaya = null;
-    foreach ($agregat as $i => $r) {
-        $b = qi_comp_baris($r, $i + 1, $uid, $pesertaUtama);
-        if ($i < 10) $baris[] = $b;
-        if ($b['saya']) $barisSaya = $b;
+    $periodePapan = $periodeW;
+    $final = false;
+    $aktivitas = [];
+    $mingguIni = null;
+    if ($papan === 'weekly') {
+        $sumber = $langsung;
+        $minta = (string)($_GET['periode'] ?? '');
+        if ($minta !== '' && $minta !== $periodeW) {
+            if (!qi_komp_batas_periode($minta)) qi_comp_jawab(['status' => 'error', 'message' => 'Format periode tidak dikenal (contoh 2026-W42).'], 400);
+            $sumber = qi_komp_papan_final($pdo, $minta);
+            if (!$sumber) qi_comp_jawab(['status' => 'error', 'code' => 'BELUM_FINAL', 'message' => 'Klasemen periode ' . $minta . ' belum dibekukan (masih ada posisi yang menunggu harga penutupan) atau tidak ada pesertanya.'], 404);
+            $periodePapan = $minta;
+            $final = true;
+        }
+        foreach ($sumber['baris'] as $i => $b) {
+            $pub = qi_comp_baris_langsung($b, $uid, $namaSaya);
+            if ($i < $batas) $baris[] = $pub;
+            if ($pub['saya']) $barisSaya = $pub;
+        }
+        $aktivitas = $sumber['aktivitas'];
+        $total = count($sumber['baris']);
+    } else {
+        $mulai = $selesai = null;
+        if ($papan === 'monthly') [$mulai, $selesai] = qi_comp_periode('monthly', $zona);
+        $hanya = null;
+        if ($papan === 'friends') $hanya = array_merge([$uid], qi_comp_teman($uid));
+        $agregat = qi_comp_agregat($pdo, $mulai, $selesai, 'semua', $hanya, $papan === 'indonesia' ? 'ID' : null);
+        foreach ($agregat as $i => $r) {
+            $b = qi_comp_baris($r, $i + 1, $uid, $pesertaUtama);
+            if ($i < 10) $baris[] = $b;
+            if ($b['saya']) $barisSaya = $b;
+        }
+        $total = count($agregat);
+    }
+    // Baris mingguan pemanggil (kartu "Peringkat minggu ini" di arena) — selalu dari papan langsung.
+    foreach ($langsung['baris'] as $b) {
+        if ($uid > 0 && (int)$b['uid'] === $uid) { $mingguIni = qi_comp_baris_langsung($b, $uid, $namaSaya) + ['dari' => $langsung['trader']]; break; }
     }
 
-    // Statistik saya: selalu sepanjang waktu, dibandingkan dengan semua trader.
-    $semua = ($papan === 'global') ? $agregat : qi_comp_agregat($pdo, null, null);
+    // Statistik saya (dashboard "Your Stats"): sepanjang waktu, dibandingkan dengan semua trader.
     $statSaya = null;
-    foreach ($semua as $i => $r) {
-        if ((int)$r['user_id'] !== $uid) continue;
-        $b = qi_comp_baris($r, $i + 1, $uid, $pesertaUtama);
-        $progres = null;
-        if ($i > 0) {
-            $atas = (float)$semua[$i - 1]['pnl'];
-            $bawah = isset($semua[$i + 1]) ? (float)$semua[$i + 1]['pnl'] : min(0.0, (float)$r['pnl']);
-            $rentang = $atas - $bawah;
-            $progres = $rentang > 0 ? max(0, min(100, round(((float)$r['pnl'] - $bawah) / $rentang * 100, 1))) : 0;
-        }
-        $statSaya = $b + [
-            'dari'           => count($semua),
-            'terbaik'        => round((float)$r['terbaik'], 2),
-            'terburuk'       => round((float)$r['terburuk'], 2),
-            'progres_pct'    => $progres,
-            'rank_berikut'   => $i > 0 ? $i : null,
-        ];
-        break;
-    }
-
-    // Syarat hadiah saya untuk turnamen utama periode ini.
-    $setelanSyarat = qi_komp_syarat_setelan();
     $kelayakanSaya = null;
-    if (in_array($uid, $pesertaUtama, true)) {
-        foreach (qi_comp_evaluasi($pdo, 'weekly-championship', $utama, $mulaiW, $selesaiW, $periodeW)['baris'] as $b) {
-            if ($b['user_id'] === $uid) { $kelayakanSaya = ['layak' => $b['layak'], 'ditinjau' => $b['ditinjau'], 'syarat' => $b['syarat']]; break; }
-        }
-    }
-    if ($kelayakanSaya === null) {
-        $dibuat = $pdo->prepare('SELECT UNIX_TIMESTAMP(created_at) AS dibuat, is_active, status FROM users WHERE id = ?');
-        $dibuat->execute([$uid]);
-        $u = $dibuat->fetch(PDO::FETCH_ASSOC) ?: [];
-        $ag = qi_comp_agregat($pdo, $mulaiW, $selesaiW, $utama['pasar'], [$uid]);
-        $kelayakanSaya = qi_komp_kelayakan(['terdaftar' => false, 'trades' => (int)($ag[0]['trades'] ?? 0), 'dibuat' => isset($u['dibuat']) ? (int)$u['dibuat'] : null,
-            'aktif' => (int)($u['is_active'] ?? 0) === 1, 'ditandai' => null], $setelanSyarat, $selesaiW->getTimestamp(), $utama['pasar']);
-        foreach ($kelayakanSaya['syarat'] as &$s) if ($s['kunci'] === 'satu_akun') $s['detail'] = 'Diperiksa terhadap peserta lain setelah Anda mendaftar.';
-        unset($s);
-    }
-
-    $profil = $pdo->prepare('SELECT display_name, country_code FROM user_competition_profile WHERE user_id = ?');
-    $profil->execute([$uid]);
-    $profil = $profil->fetch(PDO::FETCH_ASSOC) ?: ['display_name' => null, 'country_code' => null];
-
     $lain = [];
-    foreach ($turnamen as $k => $t) {
-        if ($k === 'weekly-championship') continue;
-        [, $sel, $per] = qi_comp_periode($t['jenis'], $zona);
-        $p = qi_comp_peserta($pdo, $k, $per);
-        $lain[] = ['kunci' => $k, 'nama' => $t['nama'], 'pasar' => $t['pasar'], 'jenis' => $t['jenis'],
-            'total_hadiah' => array_sum(array_column($t['hadiah'], 'nilai')), 'hadiah_contoh' => $t['hadiah_contoh'],
-            'peserta' => count($p), 'terdaftar' => in_array($uid, $p, true), 'selesai' => $sel->format(DATE_ATOM)];
+    $setelanSyarat = qi_komp_syarat_setelan();
+    if (!$ringkas) {
+        $semua = qi_comp_agregat($pdo, null, null);
+        foreach ($semua as $i => $r) {
+            if ((int)$r['user_id'] !== $uid) continue;
+            $b = qi_comp_baris($r, $i + 1, $uid, $pesertaUtama);
+            $progres = null;
+            if ($i > 0) {
+                $atas = (float)$semua[$i - 1]['pnl'];
+                $bawah = isset($semua[$i + 1]) ? (float)$semua[$i + 1]['pnl'] : min(0.0, (float)$r['pnl']);
+                $rentang = $atas - $bawah;
+                $progres = $rentang > 0 ? max(0, min(100, round(((float)$r['pnl'] - $bawah) / $rentang * 100, 1))) : 0;
+            }
+            $statSaya = $b + [
+                'dari'           => count($semua),
+                'terbaik'        => round((float)$r['terbaik'], 2),
+                'terburuk'       => round((float)$r['terburuk'], 2),
+                'progres_pct'    => $progres,
+                'rank_berikut'   => $i > 0 ? $i : null,
+            ];
+            break;
+        }
+
+        // Syarat hadiah saya untuk turnamen utama periode ini.
+        if (in_array($uid, $pesertaUtama, true)) {
+            foreach (qi_comp_evaluasi($pdo, 'weekly-championship', $utama, $mulaiW, $selesaiW, $periodeW)['baris'] as $b) {
+                if ($b['user_id'] === $uid) { $kelayakanSaya = ['layak' => $b['layak'], 'ditinjau' => $b['ditinjau'], 'syarat' => $b['syarat']]; break; }
+            }
+        }
+        if ($kelayakanSaya === null) {
+            $dibuat = $pdo->prepare('SELECT UNIX_TIMESTAMP(created_at) AS dibuat, is_active, status FROM users WHERE id = ?');
+            $dibuat->execute([$uid]);
+            $u = $dibuat->fetch(PDO::FETCH_ASSOC) ?: [];
+            $kelayakanSaya = qi_komp_kelayakan(['terdaftar' => false, 'trades' => (int)($mingguIni['trades'] ?? 0), 'dibuat' => isset($u['dibuat']) ? (int)$u['dibuat'] : null,
+                'aktif' => (int)($u['is_active'] ?? 0) === 1, 'ditandai' => null], $setelanSyarat, $selesaiW->getTimestamp(), $utama['pasar']);
+            foreach ($kelayakanSaya['syarat'] as &$s) if ($s['kunci'] === 'satu_akun') $s['detail'] = 'Diperiksa terhadap peserta lain setelah Anda mendaftar.';
+            unset($s);
+        }
+
+        foreach ($turnamen as $k => $t) {
+            if ($k === 'weekly-championship' || !empty($t['ditangguhkan'])) continue;   // ditangguhkan: tidak ditawarkan
+            [, $sel, $per] = qi_comp_periode($t['jenis'], $zona);
+            $p = qi_comp_peserta($pdo, $k, $per);
+            $lain[] = ['kunci' => $k, 'nama' => $t['nama'], 'pasar' => $t['pasar'], 'jenis' => $t['jenis'],
+                'total_hadiah' => array_sum(array_column($t['hadiah'], 'nilai')), 'hadiah_contoh' => $t['hadiah_contoh'],
+                'peserta' => count($p), 'terdaftar' => in_array($uid, $p, true), 'selesai' => $sel->format(DATE_ATOM)];
+        }
     }
 
     qi_comp_jawab([
-        'status'  => 'success',
+        'status'   => 'success',
         'sekarang' => (new DateTimeImmutable('now', $zona))->format(DATE_ATOM),
+        'penonton' => $uid === 0,
         'turnamen' => [
             'kunci' => 'weekly-championship', 'nama' => $utama['nama'],
             'mulai' => $mulaiW->format(DATE_ATOM), 'selesai' => $selesaiW->format(DATE_ATOM), 'periode' => $periodeW,
             'hadiah' => $utama['hadiah'], 'total_hadiah' => array_sum(array_column($utama['hadiah'], 'nilai')),
-            'hadiah_contoh' => $utama['hadiah_contoh'], 'peserta' => count($pesertaUtama), 'terdaftar' => in_array($uid, $pesertaUtama, true),
-            'aturan' => qi_komp_aturan($utama, $setelanSyarat, $utama['hadiah_contoh']),
+            // Peserta = terdaftar ∪ yang sudah trading periode ini (papan langsung).
+            'hadiah_contoh' => $utama['hadiah_contoh'], 'peserta' => $langsung['peserta'], 'trader' => $langsung['trader'],
+            'terdaftar' => in_array($uid, $pesertaUtama, true),
+            'aturan' => $ringkas ? null : qi_komp_aturan($utama, $setelanSyarat, $utama['hadiah_contoh']),
             'aturan_draf' => !$setelanSyarat['ditetapkan'],
             'kelayakan' => $kelayakanSaya,
+            'leverage' => QI_KOMP_LEVERAGE, 'stopout_pct' => QI_KOMP_STOPOUT * 100, 'saldo_awal' => QI_KOMP_SALDO_AWAL,
         ],
         'admin'   => ($pengguna['role'] ?? '') === 'admin',
-        'papan'   => ['jenis' => $papan, 'baris' => $baris, 'saya_di_luar' => ($barisSaya && $barisSaya['rank'] > 10) ? $barisSaya : null, 'total' => count($agregat)],
+        'papan'   => ['jenis' => $papan, 'periode' => $periodePapan, 'final' => $final, 'dibangun' => $papan === 'weekly' ? ($final ? null : $langsung['dibangun']) : null,
+                      'baris' => $baris, 'saya_di_luar' => ($barisSaya && !in_array($barisSaya, $baris, true)) ? $barisSaya : null, 'total' => $total],
+        'aktivitas' => $aktivitas,
+        'saya_minggu' => $mingguIni,
         'saya'    => $statSaya,
         'profil'  => ['nama_tampilan' => $profil['display_name'], 'negara' => $profil['country_code']],
         'lainnya' => $lain,

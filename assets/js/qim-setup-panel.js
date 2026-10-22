@@ -222,6 +222,15 @@
         const k = typeof window.qiChartKonteks === 'function' ? window.qiChartKonteks() : null;
         if (!k || !k.series || !k.candles || !k.candles.length) { tulisStatus('Chart belum siap — tunggu data chart dimuat.'); return; }
         if (!window.QIMSetups) { tulisStatus('Mesin setup gagal dimuat — muat ulang halaman.'); return; }
+        // Candle SIMULASI (acak, saat sumber nyata gagal) → tidak ada setup yang dihitung atau
+        // digambar. QIMSetups.deteksi juga menolaknya; ini memberi SATU pesan yang jelas.
+        if (k.candles.simulated === true) {
+            hapusGambar();
+            hasilTerakhir = [];
+            const list = el('qimSetupList'); if (list) list.innerHTML = '';
+            tulisStatus('⛔ Data chart saat ini <b>SIMULASI</b> (sumber harga nyata gagal) — setup tidak dihitung dari candle karangan. Coba lagi setelah data nyata kembali.');
+            return;
+        }
         const presisi = presisiSimbol(k.symbol, k.candles[k.candles.length - 1].close);
         const daftar = metode === 'SEMUA' ? Object.keys(window.QIMSetups.METODE) : [metode];
         hapusGambar();

@@ -33,6 +33,9 @@
     <link rel="stylesheet" href="assets/css/tailwind.css?v=1.4.7">
     <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=1.0.0">
     <link rel="stylesheet" href="assets/css/publik.css?v=1.0.0">
+    <link rel="stylesheet" href="assets/css/qim-masuk.css?v=1.0.0">
+    <!-- Menandai <html> sebelum tergambar: sesi tersimpan / tab email (lihat qim-masuk.css) -->
+    <script src="assets/js/halaman-login-kepala.js?v=1.0.0"></script>
     <script src="assets/js/theme-toggle.js?v=1.4.3"></script>
     <script src="assets/js/error-tracker.js?v=1.4.6"></script>
     <script src="assets/js/a11y.js?v=1.0.4" defer></script>
@@ -86,13 +89,24 @@
                     </ul>
                 </div>
 
-                <div class="pb-kartu pb-tumpuk">
+                <div class="pb-kartu">
+                    <!-- Sudah masuk: ditampilkan oleh html[data-qm-sesi="ada"] (halaman-login-kepala.js), diisi halaman-login.js -->
+                    <section id="qmSesiAktif" class="qm-sesi-aktif" aria-labelledby="qmSesiJudul" hidden>
+                        <h2 id="qmSesiJudul" class="pb-h3">Anda masih masuk</h2>
+                        <p id="qmSesiSiapa" class="qm-siapa">Membaca sesi tersimpan…</p>
+                        <p id="qmSesiStatus" class="qm-sesi-status" role="status" aria-live="polite"></p>
+                        <button type="button" id="btnLanjutSesi" class="pb-tombol pb-tombol--utama pb-tombol--penuh"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span id="btnLanjutLabel">Lanjut ke terminal</span></button>
+                        <button type="button" id="btnKeluarSesi" class="pb-tombol pb-tombol--garis pb-tombol--penuh"><span>Keluar &amp; ganti akun</span></button>
+                    </section>
+
+                    <div id="qmFormulir" class="qm-formulir">
+                    <div id="qmPemberitahuan" class="qm-pemberitahuan" role="alert" hidden></div>
                     <div class="pb-tab-daftar" role="tablist" aria-label="Cara masuk">
                         <button type="button" class="pb-tab" role="tab" data-auth-tab="license" id="tab-license" aria-selected="true" aria-controls="formLicense"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M17 6l3 3M15 8l2 2"/></svg>Kunci lisensi</button>
                         <button type="button" class="pb-tab" role="tab" data-auth-tab="email" id="tab-email" aria-selected="false" aria-controls="formEmail"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email &amp; sandi</button>
                     </div>
 
-                    <form id="formLicense" class="pb-tumpuk" role="tabpanel" aria-labelledby="tab-license">
+                    <form id="formLicense" class="pb-tumpuk" role="tabpanel" aria-labelledby="tab-license" novalidate>
                         <div class="pb-isian">
                             <label for="licenseKey" class="pb-isian-label">Kunci lisensi <span class="pb-mini">Contoh: QI-PRO-…</span></label>
                             <div class="pb-masukan-wadah">
@@ -105,10 +119,11 @@
                             <label for="rememberMeLicense" class="pb-centang"><input type="checkbox" id="rememberMeLicense" checked>Ingat perangkat ini</label>
                             <a href="bantuan.html#lisensi" class="pb-tautan pb-kecil">Bantuan kunci</a>
                         </div>
+                        <p id="galatLicense" class="qm-galat" role="alert" hidden></p>
                         <button type="submit" id="btnSubmitLicense" class="pb-tombol pb-tombol--utama pb-tombol--penuh"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span>Masuk</span></button>
                     </form>
 
-                    <form id="formEmail" class="pb-tumpuk" role="tabpanel" aria-labelledby="tab-email" hidden>
+                    <form id="formEmail" class="pb-tumpuk" role="tabpanel" aria-labelledby="tab-email" hidden novalidate>
                         <div class="pb-isian">
                             <label for="emailInput" class="pb-isian-label">Email</label>
                             <input type="email" id="emailInput" class="pb-masukan" placeholder="nama@email.com" autocomplete="email" required>
@@ -120,22 +135,48 @@
                                 <button type="button" id="btnTogglePassword" class="pb-masukan-aksi" aria-label="Tampilkan sandi" aria-pressed="false"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                             </div>
                         </div>
+                        <label for="rememberMeEmail" class="pb-centang"><input type="checkbox" id="rememberMeEmail" checked>Ingat perangkat ini</label>
+                        <p id="galatEmail" class="qm-galat" role="alert" hidden></p>
                         <button type="submit" id="btnSubmitEmail" class="pb-tombol pb-tombol--utama pb-tombol--penuh"><svg class="pb-ikon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg><span>Masuk</span></button>
                     </form>
 
-                    <div id="googleAuthSection" class="pb-tumpuk">
+                    <!-- Tersembunyi sampai api/auth-config.php menyatakan Google aktif (tanpa lompatan tata letak) -->
+                    <div id="googleAuthSection" class="pb-tumpuk" hidden>
                         <div id="googleDividerLabel" class="pb-pemisah">atau</div>
                         <div id="googleBtnWrap">
                             <button id="btnGoogleFallback" type="button" class="pb-tombol pb-tombol--garis pb-tombol--penuh"><span id="googleBtnLabel">Masuk dengan Google</span></button>
                             <div id="googleGsiButton" class="pb-baris" hidden></div>
+                            <p id="googleStatus" class="qm-google-status" role="status" aria-live="polite" hidden></p>
                         </div>
                     </div>
 
                     <p class="pb-kecil pb-tengah">Belum punya akun? <a href="register.html" class="pb-tautan">Daftar gratis</a> · <a href="pricing.html" class="pb-tautan">Lihat paket</a></p>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Layar "Berhasil masuk" (assets/js/qim-masuk-animasi.js, gaya assets/css/qim-masuk.css).
+         Tiap tahap ditandai oleh kejadian nyata — tidak ada kemajuan yang digerakkan timer. -->
+    <div id="qmLayar" class="qm-layar" role="dialog" aria-modal="true" aria-labelledby="qmJudul" aria-busy="true" hidden>
+        <div class="qm-isi">
+            <img class="qm-logo" src="assets/img/logo-mark.svg" alt="" width="56" height="56">
+            <h2 id="qmJudul" class="qm-judul" tabindex="-1">Berhasil masuk</h2>
+            <p id="qmSiapa" class="qm-siapa" hidden></p>
+            <ol class="qm-langkah">
+                <li id="qmL1" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Memeriksa data masuk</span></li>
+                <li id="qmL2" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Verifikasi dua langkah</span></li>
+                <li id="qmL3" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Menyimpan sesi</span></li>
+                <li id="qmL4" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Membuka terminal</span></li>
+            </ol>
+            <div class="qm-kemajuan" aria-hidden="true"><span></span></div>
+            <p id="qmStatus" class="qm-status" role="status" aria-live="polite"></p>
+            <div id="qmAksi" class="qm-aksi" hidden>
+                <button type="button" id="qmKembali" class="pb-tombol pb-tombol--garis">Kembali</button>
+            </div>
+        </div>
+    </div>
 
     <footer class="pb-kaki">
         <div class="pb-wadah">
@@ -182,9 +223,10 @@
         </div>
     </footer>
     <script src="assets/js/main.js?v=1.4.2"></script>
-    <script src="assets/js/auth.js?v=1.4.3"></script>
-    <script src="assets/js/qim-2fa-login.js?v=1.0.0"></script>
-    <script src="assets/js/halaman-login.js?v=1.1.0"></script>
+    <script src="assets/js/auth.js?v=1.5.0"></script>
+    <script src="assets/js/qim-2fa-login.js?v=1.1.0"></script>
+    <script src="assets/js/qim-masuk-animasi.js?v=1.0.0"></script>
+    <script src="assets/js/halaman-login.js?v=1.2.0"></script>
     <script src="assets/js/cookie-consent.js?v=1.4.0" defer></script>
 </body>
 </html>

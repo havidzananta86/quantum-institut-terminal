@@ -32,17 +32,19 @@
 
     <!-- Design tokens + theme (must load before Tailwind) -->
     <link rel="stylesheet" href="assets/css/tokens.css?v=2d391c9b99">
+    <!-- Layar pembuka: bahasa visual sama dengan layar "Berhasil masuk" di login.html -->
+    <link rel="stylesheet" href="assets/css/qim-masuk.css?v=97774a8c8c">
     <!-- Fondasi aksesibilitas (fokus keyboard, skip link, gerak-minimal) -->
     <link rel="stylesheet" href="assets/css/a11y.css?v=69921415af">
     <!-- bundel:kepala · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): theme-toggle.js, error-tracker.js, auth.js, qim-auth-fetch.js -->
-<script src="assets/dist/kepala.8f6bd896c5.js"></script>
+<script src="assets/dist/kepala.669545eb97.js"></script>
 <!-- /bundel:kepala -->
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=8641382455">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=4d4e1ced9f">
     <!-- Responsive overrides -->
     <link rel="stylesheet" href="assets/css/responsive.css?v=ba959512cd">
-    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=8707a1819d">
+    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=d3152b1d9a">
     <link rel="stylesheet" href="assets/css/qim-pages.css?v=6aad174d56">
     <link rel="stylesheet" href="assets/css/qim-mockup.css?v=d52c6971c8">
     <link rel="stylesheet" href="assets/css/qim-mobile.css?v=64ca334b02">
@@ -362,196 +364,36 @@
 
 <body class="h-screen flex overflow-hidden font-body">
 
-<!-- ═══ 3D LOADING SCREEN ═══ -->
-<div id="qiLoadScreen" class="fixed inset-0 z-[10000] flex flex-col items-center justify-center" style="background:var(--qi-bg, #030810);">
-    <style>
-        @keyframes qiCubeRotate { 0%{transform:rotateX(-20deg) rotateY(0deg)} 100%{transform:rotateX(-20deg) rotateY(360deg)} }
-        @keyframes qiPulseRing  { 0%{transform:scale(.6);opacity:.8} 50%{transform:scale(1);opacity:.3} 100%{transform:scale(.6);opacity:.8} }
-        @keyframes qiBarLoad    { 0%{width:0} 100%{width:100%} }
-        @keyframes qiFadeOut    { to{opacity:0;visibility:hidden} }
-        .qi-cube-wrap { perspective:400px; width:60px; height:60px; }
-        .qi-cube { width:60px; height:60px; position:relative; transform-style:preserve-3d; animation:qiCubeRotate 2s linear infinite; }
-        .qi-cube-face { position:absolute; width:60px; height:60px; border:1.5px solid rgba(0,229,255,.35); background:rgba(0,229,255,.04); backdrop-filter:blur(2px); }
-        .qi-cube-face:nth-child(1){transform:translateZ(30px)}
-        .qi-cube-face:nth-child(2){transform:rotateY(180deg) translateZ(30px)}
-        .qi-cube-face:nth-child(3){transform:rotateY(90deg) translateZ(30px)}
-        .qi-cube-face:nth-child(4){transform:rotateY(-90deg) translateZ(30px)}
-        .qi-cube-face:nth-child(5){transform:rotateX(90deg) translateZ(30px)}
-        .qi-cube-face:nth-child(6){transform:rotateX(-90deg) translateZ(30px)}
-        .qi-ring { width:90px; height:90px; border:1px solid rgba(124,77,255,.2); border-radius:50%; position:absolute; animation:qiPulseRing 2s ease-in-out infinite; }
-        .qi-ring:nth-child(2){animation-delay:.5s;border-color:rgba(0,229,255,.15);}
-        #qiLoadScreen.done { animation:qiFadeOut .25s forwards; }
-        .qi-boot-langkah { display:flex; flex-direction:column; gap:5px; margin:0 0 14px; padding:0; list-style:none; }
-        .qi-boot-langkah-item { position:relative; padding-left:16px; color:#334155; font-family:ui-monospace,monospace; font-size:9px; letter-spacing:.08em; transition:color .25s ease; }
-        .qi-boot-langkah-item::before { content:''; position:absolute; left:0; top:4px; width:6px; height:6px; border:1px solid #1e293b; border-radius:50%; transition:border-color .25s ease, background-color .25s ease; }
-        .qi-boot-langkah-item.is-jalan { color:#94a3b8; }
-        .qi-boot-langkah-item.is-jalan::before { border-color:#00E5FF; animation:qiPulseRing 1.2s ease-in-out infinite; }
-        .qi-boot-langkah-item.is-selesai { color:#64748b; }
-        .qi-boot-langkah-item.is-selesai::before { border-color:#00E5FF; background:#00E5FF; animation:none; }
-        /* Animasi berputar/berdenyut dimatikan bagi yang memintanya lewat setelan sistem. */
-        @media (prefers-reduced-motion: reduce) {
-            .qi-cube, .qi-ring, .qi-boot-langkah-item.is-jalan::before { animation:none !important; }
-            #qiLoadScreen.done { animation:none; opacity:0; visibility:hidden; }
-        }
-    </style>
-    <div class="relative flex items-center justify-center mb-6">
-        <div class="qi-ring"></div><div class="qi-ring"></div>
-        <div class="qi-cube-wrap"><div class="qi-cube">
-            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
-            <div class="qi-cube-face"></div><div class="qi-cube-face"></div><div class="qi-cube-face"></div>
-        </div></div>
-    </div>
-    <div class="text-[10px] font-mono text-[#00E5FF]/70 uppercase tracking-[0.3em] mb-1">Quantum Institut</div>
-    <div class="text-[8px] font-mono text-slate-600 uppercase tracking-[0.2em] mb-4">Market Terminal</div>
-    <ol class="qi-boot-langkah" aria-hidden="true">
-        <li id="qiBootSesi" class="qi-boot-langkah-item">Memverifikasi sesi</li>
-        <li id="qiBootData" class="qi-boot-langkah-item">Menyambungkan data pasar</li>
-        <li id="qiBootSiap" class="qi-boot-langkah-item">Menyiapkan terminal</li>
-    </ol>
-    <div class="text-[9px] font-mono text-slate-500 mb-4" id="qiLoadStatus" role="status" aria-live="polite">Memverifikasi sesi…</div>
-    <div class="w-48 h-[2px] bg-[#0F1A2E] rounded-full overflow-hidden">
-        <div class="h-full rounded-full bg-gradient-to-r from-qi-cyan to-qi-purple" style="animation:qiBarLoad 2.4s ease-out forwards;"></div>
+<!-- ═══ LAYAR PEMBUKA — lanjutan layar "Berhasil masuk" di login.html (gaya: assets/css/qim-masuk.css) ═══
+     Tahap & bilah kemajuan diisi halaman-dashboard-pemuat.js dari kejadian nyata:
+     sesi diverifikasi server (qi-sesi), data pasar masuk (qi-chart-data), terminal siap (DOMContentLoaded). -->
+<div id="qiLoadScreen" class="qm-layar" aria-busy="true">
+    <div class="qm-isi">
+        <img class="qm-logo" src="assets/img/logo-mark.svg" alt="" width="56" height="56">
+        <div id="qiLoadJudul" class="qm-judul">Quantum Institut</div>
+        <p id="qiLoadSiapa" class="qm-siapa" hidden></p>
+        <ol class="qm-langkah">
+            <li id="qiBootMasuk" data-keadaan="selesai" hidden><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Masuk · pemeriksaan selesai</span></li>
+            <li id="qiBootSesi" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Memverifikasi sesi ke server</span></li>
+            <li id="qiBootData" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Menyambungkan data pasar</span></li>
+            <li id="qiBootSiap" data-keadaan="tunggu"><svg class="qm-titik" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path pathLength="1" d="M4.6 8.3l2.2 2.2 4.6-4.8"/></svg><span class="qm-teks">Menyiapkan terminal</span></li>
+        </ol>
+        <div class="qm-kemajuan" aria-hidden="true"><span></span></div>
+        <p id="qiLoadStatus" class="qm-status" role="status" aria-live="polite">Memverifikasi sesi…</p>
     </div>
 </div>
 <!-- bundel:pemuat · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-pemuat.js -->
-<script src="assets/dist/pemuat.7d11cff66d.js"></script>
+<script src="assets/dist/pemuat.e1bcbad631.js"></script>
 <!-- /bundel:pemuat -->
 
 <!-- Panel load bar -->
 <div id="panelLoadBar"></div>
 
-<!-- ═══ ACCESS GATE (shown while checking / if not PRO) ═══ -->
-<div id="qiAccessGate" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-     style="background:rgba(7,12,26,0.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);">
-
-    <!-- Loading state (default) -->
-    <div id="gateLoading" class="text-center">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-qi-cyan to-qi-purple mx-auto mb-3 flex items-center justify-center font-bold text-white text-lg">Q</div>
-        <div class="text-slate-500 text-sm animate-pulse">Memeriksa akses…</div>
-    </div>
-
-    <!-- Upgrade gate (hidden until role check fails) — Premium Data Center Portal -->
-    <div id="gateUpgrade" class="hidden w-full max-w-2xl">
-
-        <!-- Animated grid bg -->
-        <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-            <div class="absolute inset-0" style="background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,229,255,.03) 39px,rgba(0,229,255,.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,229,255,.03) 39px,rgba(0,229,255,.03) 40px);"></div>
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[2px] bg-gradient-to-r from-transparent via-[#00E5FF]/40 to-transparent animate-pulse"></div>
-            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[2px] bg-gradient-to-r from-transparent via-[#7C4DFF]/40 to-transparent animate-pulse"></div>
-        </div>
-
-        <div class="relative">
-            <!-- Top label -->
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00E5FF]/20 bg-[#00E5FF]/5 mb-4">
-                    <span class="w-1.5 h-1.5 rounded-full bg-qi-cyan animate-pulse inline-block"></span>
-                    <span class="text-[10px] font-mono text-qi-cyan uppercase tracking-[0.25em]">Quantum Institut · Data Center</span>
-                </div>
-                <h1 class="font-heading font-bold text-white text-3xl sm:text-4xl tracking-tight mb-1">Command Center</h1>
-                <p class="text-slate-500 text-[11px] font-mono uppercase tracking-widest">Restricted Access · VIP Members Only</p>
-            </div>
-
-            <!-- Main card -->
-            <div class="bg-[#070D1C]/90 border border-[#0F1A2E] rounded-2xl overflow-hidden shadow-2xl shadow-[#00E5FF]/5">
-
-                <!-- Scan line header -->
-                <div class="h-[2px] bg-gradient-to-r from-qi-cyan via-[#7C4DFF] to-qi-cyan animate-pulse"></div>
-
-                <div class="p-6 sm:p-8">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-                        <!-- Left: Access info -->
-                        <div>
-                            <div class="text-[10px] font-mono text-slate-600 uppercase tracking-widest mb-4">Akses Premium Meliputi</div>
-                            <div class="space-y-2.5">
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-qi-cyan shrink-0">✦</span>
-                                    <span class="text-slate-300">Live Market Tape · 15 Instrumen</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-qi-cyan shrink-0">✦</span>
-                                    <span class="text-slate-300">AI Trading Assistant (Groq)</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center text-[9px] text-qi-cyan shrink-0">✦</span>
-                                    <span class="text-slate-300">Signal Matrix · Real Indicators</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-qi-purple shrink-0">✦</span>
-                                    <span class="text-slate-300">COT Analysis · CFTC Data</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-qi-purple shrink-0">✦</span>
-                                    <span class="text-slate-300">Currency Strength Stack</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#7C4DFF]/10 border border-[#7C4DFF]/20 flex items-center justify-center text-[9px] text-qi-purple shrink-0">✦</span>
-                                    <span class="text-slate-300">Paper Trading + Mini Chart</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center text-[9px] text-qi-green shrink-0">✦</span>
-                                    <span class="text-slate-300">News Impact & Confluence Matrix</span>
-                                </div>
-                                <div class="flex items-center gap-2.5 text-[12px]">
-                                    <span class="w-5 h-5 rounded-md bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center text-[9px] text-qi-green shrink-0">✦</span>
-                                    <span class="text-slate-300">Correlation Matrix 10×10</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Login / Upgrade CTAs -->
-                        <div class="flex flex-col justify-center">
-                            <div class="text-[10px] font-mono text-slate-600 uppercase tracking-widest mb-4">Autentikasi</div>
-
-                            <!-- PRO badge -->
-                            <div class="flex items-center gap-3 p-4 rounded-xl bg-[#050A14] border border-[#0F1A2E] mb-5">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-qi-cyan to-qi-purple flex items-center justify-center font-bold text-slate-950 text-lg shrink-0">Q</div>
-                                <div>
-                                    <div class="text-white text-sm font-semibold">Quantum+ PRO</div>
-                                    <div class="text-slate-500 text-[10px]">Akses penuh · All panels</div>
-                                </div>
-                                <div class="ml-auto">
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-mono bg-[#00E5FF]/10 text-qi-cyan border border-[#00E5FF]/20">VIP</span>
-                                </div>
-                            </div>
-
-                            <!-- Login hint for existing PRO users -->
-                            <div id="gateLoginHint" class="mb-3 p-3 rounded-xl bg-[#0C1220] border border-[#1E293B] text-center">
-                                <div class="text-[11px] text-slate-400 mb-2">Sudah punya lisensi PRO?</div>
-                                <a href="login.html" data-qi-aksi="ingatKembaliKeDashboard"
-                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold text-slate-950 transition-all w-full justify-center"
-                                   style="background:linear-gradient(135deg,#00E5FF,#7C4DFF);">
-                                    🔐 Login ke Data Center
-                                </a>
-                            </div>
-
-                            <!-- Upgrade CTA -->
-                            <a href="pricing.html"
-                               class="block w-full py-3 rounded-xl font-heading font-bold text-[13px] text-center mb-2.5 transition-all border border-[#00E5FF]/30 text-qi-cyan hover:bg-[#00E5FF]/10"
-                               style="">
-                                ⚡ Upgrade ke Quantum+ PRO
-                            </a>
-                            <a href="dashboard.html"
-                               class="block w-full py-2.5 rounded-xl text-[12px] text-slate-500 border border-[#0F1A2E] hover:border-[#1E293B] hover:text-slate-300 transition-all text-center">
-                                Masuk ke Dashboard →
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bottom status bar -->
-                <div class="px-6 py-2.5 border-t border-[#0F1A2E] flex items-center gap-3 bg-[#050A14]/60">
-                    <span class="w-1.5 h-1.5 rounded-full bg-qi-green animate-pulse inline-block"></span>
-                    <span class="text-[10px] font-mono text-slate-600">SYSTEM ONLINE · SECURE CONNECTION ESTABLISHED</span>
-                    <span class="ml-auto text-[10px] font-mono text-slate-700" id="gateTimestamp"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Stempel waktu gerbang, pembungkus fetch (token otomatis ke api/), pemeriksaan gerbang, fungsi sambutan -->
+<!-- Gerbang akses lama (#qiAccessGate/#gateUpgrade) dihapus: layar pembuka di atas sudah menutupi halaman
+     selama pemeriksaan, dan pengguna tanpa sesi dialihkan ke login.html sebelum dashboard tergambar. -->
+<!-- Pembungkus fetch (token otomatis ke api/), pemeriksaan sesi, fungsi sambutan -->
 <!-- bundel:awal · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): halaman-dashboard-awal.js -->
-<script src="assets/dist/awal.532802c85b.js"></script>
+<script src="assets/dist/awal.2649669b5c.js"></script>
 <!-- /bundel:awal -->
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -2350,18 +2192,20 @@
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 block mb-1">Arah</label>
-                    <select id="ptSide" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
+                    <select id="ptSide" data-qi-aksi-change="ptUpdateLivePrice" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
                         <option value="BUY">BUY ▲</option>
                         <option value="SELL">SELL ▼</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 block mb-1">Lots</label>
-                    <input id="ptLots" type="number" value="0.1" min="0.01" step="0.01" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
+                    <input id="ptLots" type="number" value="0.1" min="0.01" max="100" step="0.01" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
                 </div>
                 <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Harga Entry</label>
-                    <input id="ptEntryPrice" type="number" step="any" placeholder="Market (live)" data-qi-aksi-input="tandaiDiubahPengguna" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
+                    <!-- Order pasar: kolom ini BACA SAJA (ask untuk BUY, bid untuk SELL). Dulu bisa diketik dan
+                         terbaca sebagai harga masuk, padahal server mengeksekusi di harga pasarnya sendiri. -->
+                    <label for="ptEntryPrice" class="text-[10px] text-slate-500 block mb-1" title="Order pasar — server mengeksekusi di ask (BUY) / bid (SELL) saat order diterima">Harga eksekusi (pasar)</label>
+                    <input id="ptEntryPrice" type="number" step="any" placeholder="Menunggu harga live" readonly tabindex="-1" aria-readonly="true" title="Order pasar — server mengeksekusi di ask (BUY) / bid (SELL) saat order diterima" class="w-full text-[11px] bg-slate-950 border border-slate-800 text-slate-400 rounded px-2 py-1.5 outline-none cursor-default">
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 block mb-1">Stop Loss</label>
@@ -2376,16 +2220,17 @@
                 <div class="text-[10px] text-slate-500 font-mono">Live: <span id="ptLivePrice" class="text-white font-semibold">—</span></div>
                 <button id="ptOpenBtn" data-qi-aksi="ptOpenPosition" class="ml-auto px-4 py-2 rounded-lg font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">+ Buka Posisi</button>
             </div>
-            <!-- Pengaman posisi: SL/TP otomatis, break-even, trailing stop (qim-trading-tools.js) -->
+            <!-- Pengaman posisi: break-even & trailing stop (qim-trading-tools.js). SL/TP sendiri ditegakkan SERVER
+                 (qi_paper_settle) — pilihan "SL/TP otomatis" lama dibuang karena mematikannya tidak mematikan apa pun. -->
             <div class="px-4 py-3 border-t border-qi-border flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-slate-400">
                 <span class="font-semibold text-slate-300 uppercase tracking-wider">Pengaman Posisi</span>
-                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardExit" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> SL/TP otomatis</label>
+                <span class="flex items-center gap-1.5 text-slate-300" title="SL dan TP posisi manual diperiksa server di feed eksekusinya, juga saat dashboard tertutup">SL/TP: ditegakkan server</span>
                 <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardBE" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> Break-even di
                     <input id="qtGuardBEAt" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
                 <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardTrail" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> Trailing stop
                     <input id="qtGuardTrailBy" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
                 <span id="qtGuardStatus" class="ml-auto font-mono text-slate-500">—</span>
-                <p class="w-full text-slate-500 leading-relaxed">R = jarak SL awal ke entry. Break-even memindah SL ke entry saat profit mencapai nilai itu; trailing mulai di titik yang sama lalu mengikuti harga sejauh nilai R-nya. Dicek setiap 2 detik dari harga live.</p>
+                <p class="w-full text-slate-500 leading-relaxed">SL dan TP posisi manual ditegakkan server di feed eksekusinya — juga saat dashboard tertutup — dan posisinya ditutup di sana dengan sebab SL/TP. R = jarak SL awal ke entry. Break-even memindah SL ke entry saat profit mencapai nilai itu; trailing mulai di titik yang sama lalu mengikuti harga sejauh nilai R-nya. Keduanya dihitung di dashboard setiap 2 detik (bid untuk BUY, ask untuk SELL) selama dashboard terbuka, disimpan ke server paling cepat 15 detik sekali, dan baru berlaku setelah server menerimanya — hanya untuk posisi manual; posisi AUTO/AI dikelola server.</p>
             </div>
         </div>
         <!-- Open positions -->
@@ -4052,9 +3897,9 @@
 
 <aside id="qimRightPanel" class="qim-right-panel" aria-label="Market intelligence">
     <!-- QUICK TRADE — order untuk simbol yang sedang tampil di chart.
-         Akun dipilih di baris paling atas supaya tujuan order selalu terlihat sebelum
-         tombol ditekan; harga BUY/SELL memakai ask/bid broker bila tersedia. -->
-    <section class="qim-card qim-qt-card" aria-label="Quick Trade">
+         Akun dipilih di baris paling atas supaya tujuan order selalu terlihat.
+         BUY/SELL = ask/bid feed eksekusi (qtHarga); harga basi tampil "—". -->
+    <section class="qim-card qim-qt-card" id="qtKartu" aria-label="Quick Trade">
         <div class="qim-card-heading">
             <h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7"></path><path d="M14 8h6v6"></path></svg>Quick Trade</h2>
             <span class="qim-qt-sym" id="qtSym">—</span>
@@ -4063,16 +3908,20 @@
             <button type="button" id="qtAkunSim" class="qim-qt-tab is-active" data-qi-aksi="qtSetAkun" data-qi-arg='["sim"]'>Simulasi</button>
             <button type="button" id="qtAkunReal" class="qim-qt-tab" data-qi-aksi="qtSetAkun" data-qi-arg='["real"]'>Real MT5</button>
         </div>
-        <div class="qim-qt-saldo">
+        <!-- Saldo & posisi SIMULASI disembunyikan di mode Real MT5 (qtSegarkan): angka simulasi
+             tepat di bawah tombol yang mengirim uang sungguhan menyesatkan. -->
+        <div class="qim-qt-saldo" id="qtSaldoBaris">
             <span>Saldo <b id="qtSaldo">—</b></span>
             <span>Mengambang <b id="qtFloat">—</b></span>
         </div>
+        <div class="qim-qt-realinfo" id="qtRealInfo" hidden>Mode <b>UANG SUNGGUHAN</b>. Posisi akun real dikelola terminal MT5 —
+            lihat <button type="button" data-qi-aksi="switchPanel" data-qi-arg='["panel-account"]'>Broker → Eksekusi MT5</button>.</div>
         <div class="qim-qt-sides">
             <button type="button" id="qtBuy" class="qim-qt-side qim-qt-buy" data-qi-aksi="qtOrder" data-qi-arg='["BUY"]'>
-                <span>BUY</span><b id="qtBuyHarga">—</b>
+                <em class="qim-qt-real-badge">REAL</em><span>BUY</span><b id="qtBuyHarga">—</b>
             </button>
             <button type="button" id="qtSell" class="qim-qt-side qim-qt-sell" data-qi-aksi="qtOrder" data-qi-arg='["SELL"]'>
-                <span>SELL</span><b id="qtSellHarga">—</b>
+                <em class="qim-qt-real-badge">REAL</em><span>SELL</span><b id="qtSellHarga">—</b>
             </button>
         </div>
         <div class="qim-qt-baris">
@@ -4099,10 +3948,13 @@
                 <button type="button" data-qi-aksi="qtStep" data-qi-arg='["qtTP",1]' aria-label="Naikkan take profit">+</button>
             </div>
         </div>
-        <div class="qim-qt-info" id="qtInfo">Isi SL dan TP untuk melihat perkiraan untung/rugi.</div>
-        <div class="qim-qt-posisi-judul">Posisi terbuka <span id="qtPosisiJml">0</span></div>
-        <div class="qim-qt-posisi" id="qtPosisi"></div>
+        <div class="qim-qt-info" id="qtInfo" aria-live="polite">Isi SL dan TP untuk melihat perkiraan untung/rugi.</div>
+        <div id="qtPosisiBlok">
+            <div class="qim-qt-posisi-judul">Posisi terbuka <span id="qtPosisiJml">—</span></div>
+            <div class="qim-qt-posisi" id="qtPosisi"></div>
+        </div>
         <p class="qim-qt-nota" id="qtNota">Simulasi — tanpa uang sungguhan.</p>
+        <a class="qim-qt-upgrade" id="qtUpgrade" href="pricing.html" hidden>Lihat paket PRO →</a>
     </section>
     <section class="qim-card qim-setup-card" aria-label="Setup analisa">
         <div class="qim-card-heading"><h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M6 15h12v-4H6z"></path><path d="M6 11V7h12v4"></path></svg>Setup Analisa</h2><button class="qim-link-button" id="qimSetupHapus" type="button" title="Hapus gambar setup dari chart">Hapus</button></div>
@@ -4161,7 +4013,7 @@
      JAVASCRIPT
 ═══════════════════════════════════════════════════════════ -->
 <!-- bundel:inti · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): qim-price-store.js, qim-chart-store.js, qim-paper-math.js, dashboard-app.js, qim-dashboard.js, qim-indicators.js, qim-trading-tools.js, qim-mt5-socket.js, qim-notifications.js, qim-pages.js, qim-risk.js, qim-alerts.js -->
-<script src="assets/dist/inti.c43612e946.js"></script>
+<script src="assets/dist/inti.34d2108480.js"></script>
 <!-- /bundel:inti -->
 
 <!-- Sidebar toggle floating button -->
@@ -4170,7 +4022,7 @@
 </button>
 
 <!-- bundel:fitur · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): pro-features.js, pro-trading-tools.js, chart-style.js, chart-zones.js, engine-nine.js, qim-setups.js, qim-setup-panel.js, qim-berita-chart.js, qim-muat-fitur.js, qim-ai-jelaskan.js, qim-header.js, qim-auto-paper.js, qim-batas-rugi.js, qim-brief-harian.js, qim-mobile.js, dashboard-pro.js, advanced-trading.js, perf-upgrades.js, ui-improvements.js, a11y.js, dashboard-tema.js, halaman-dashboard.js -->
-<script src="assets/dist/fitur.8fdcd478c2.js"></script>
+<script src="assets/dist/fitur.bb31eb93ba.js"></script>
 <!-- /bundel:fitur -->
 <!-- bundel:tunda · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): main.js, realtime.js, cookie-consent.js -->
 <script src="assets/dist/tunda.7a7be7a1eb.js" defer></script>

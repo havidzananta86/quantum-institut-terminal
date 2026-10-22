@@ -59,12 +59,18 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 900) {
 }
 } // ── akhir titik masuk ─────────────────────────────────────────────────────
 
+// RSI Wilder bersama, penjaga pasar tutup, dan pemeriksaan entry vs harga pasar
+// (satu implementasi untuk semua penerbit sinyal — lihat kepala berkas itu).
+require_once __DIR__ . '/_sinyal_pasar.php';
+
 // ── Signal calculation (EMA / RSI / MACD) ─────────────────────────────────
 /**
  * Ambil candle untuk analisa.
- * Mengembalikan ['candles' => array, 'simulated' => bool]. Penanda simulated WAJIB
- * diteruskan ke pemanggil: get-chart-data.php menghasilkan candle ACAK bila sumber
- * harga gagal, dan candle acak tidak boleh dipakai untuk mengambil keputusan.
+ * Mengembalikan ['candles' => array, 'simulated' => bool, 'source', 'stale', 'umur_detik'].
+ * Penanda simulated WAJIB diteruskan ke pemanggil (candle acak tidak boleh dipakai untuk
+ * mengambil keputusan). Sejak 2026-10-22 get-chart-data.php menyajikan cache NYATA yang
+ * basi (stale + umur) saat semua sumber gagal — penanda itu ikut diteruskan supaya
+ * pemanggil dapat menolak data lama lewat qi_sp_cek_pasar().
  */
 function ai_load_candles(string $sym, string $interval): array {
     // Cache yang sama dengan yang akan ditulis get-chart-data.php (MT5 atau umum).
@@ -72,7 +78,8 @@ function ai_load_candles(string $sym, string $interval): array {
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
         $d = json_decode(file_get_contents($cacheFile), true);
         // Cache hanya menyimpan data nyata (candle simulasi tidak pernah di-cache).
-        return ['candles' => $d['candles'] ?? [], 'simulated' => false, 'source' => (string)($d['source'] ?? '')];
+        return ['candles' => $d['candles'] ?? [], 'simulated' => false, 'source' => (string)($d['source'] ?? ''),
+                'stale' => false, 'umur_detik' => time() - (int)filemtime($cacheFile)];
     }
     if (!defined('QI_INCLUDED_BY_SIGNALS')) define('QI_INCLUDED_BY_SIGNALS', true);
     ob_start();
@@ -83,8 +90,9 @@ function ai_load_candles(string $sym, string $interval): array {
     $raw = ob_get_clean();
     $_GET = $origGet;
     $d = json_decode($raw, true);
-    if (!is_array($d)) return ['candles' => [], 'simulated' => false];
-    return ['candles' => $d['candles'] ?? [], 'simulated' => !empty($d['simulated']), 'source' => (string)($d['source'] ?? '')];
+    if (!is_array($d)) return ['candles' => [], 'simulated' => false, 'source' => '', 'stale' => false, 'umur_detik' => null];
+    return ['candles' => $d['candles'] ?? [], 'simulated' => !empty($d['simulated']), 'source' => (string)($d['source'] ?? ''),
+            'stale' => !empty($d['stale']), 'umur_detik' => isset($d['umur_detik']) ? (int)$d['umur_detik'] : null];
 }
 
 function ai_ema(array $closes, int $period): ?float {
@@ -95,21 +103,12 @@ function ai_ema(array $closes, int $period): ?float {
     return $ema;
 }
 
+/**
+ * RSI Wilder atas SELURUH deret close — implementasi bersama qi_sp_rsi() (api/_sinyal_pasar.php).
+ * Dulu salinan sendiri yang dipanggil dengan 30 close terakhir dan bernilai 100 pada data datar.
+ */
 function ai_rsi(array $closes, int $period = 14): float {
-    $n = count($closes);
-    if ($n < $period + 1) return 50.0;
-    $g = 0; $l = 0;
-    for ($i = 1; $i <= $period; $i++) {
-        $d = $closes[$i] - $closes[$i - 1];
-        if ($d > 0) $g += $d; else $l -= $d;
-    }
-    $g /= $period; $l /= $period;
-    for ($i = $period + 1; $i < $n; $i++) {
-        $d = $closes[$i] - $closes[$i - 1];
-        $g = ($g * ($period - 1) + max(0, $d)) / $period;
-        $l = ($l * ($period - 1) + max(0, -$d)) / $period;
-    }
-    return $l == 0 ? 100 : 100 - 100 / (1 + $g / $l);
+    return qi_sp_rsi($closes, $period);
 }
 
 function ai_macd_hist(array $closes): float {
@@ -129,13 +128,17 @@ function ai_analyze(string $sym, string $iv): ?array {
     $loaded = ai_load_candles($sym, $iv);
     // Data simulasi = candle acak: jangan dianalisa sama sekali.
     if (!empty($loaded['simulated'])) return null;
-    $candles = $loaded['candles'];
+    $mentah = $loaded['candles'];
+    // Bar ber-rentang nol (O=H=L=C, harga beku saat pasar tutup) dibuang sebelum indikator
+    // dihitung — deret datar itulah yang dulu membuat RSI M15 = 100 di akhir pekan.
+    $candles = qi_sp_buang_datar($mentah);
     if (count($candles) < 55) return null;
     $closes = array_column($candles, 'close');
     $last   = end($closes);
     $ema20  = ai_ema($closes, 20);
     $ema50  = ai_ema($closes, 50);
-    $rsi    = ai_rsi(array_slice($closes, -30), 14);
+    // RSI atas SELURUH riwayat (dulu array_slice(-30): bobot nilai awal ±33%).
+    $rsi    = ai_rsi($closes, 14);
     $macdH  = ai_macd_hist(array_slice($closes, -60));
 
     $bull = 0; $bear = 0;
@@ -156,8 +159,24 @@ function ai_analyze(string $sym, string $iv): ?array {
         'macd_hist' => round($macdH, 6),
         'bull_pts'  => $bull,
         'bear_pts'  => $bear,
-        'price'     => round((float)$last, 5),
+        'price'     => round((float)(end($mentah)['close'] ?? $last), 5),
+        // Data dari cache basi (semua sumber gagal) dilaporkan apa adanya, bukan disamarkan.
+        'stale'     => !empty($loaded['stale']),
     ];
+}
+
+/**
+ * Timeframe yang BOLEH dipakai untuk konsensus/keputusan: yang basi (stale) menjadi null.
+ * MENGAPA (audit ulang 2026-10-22): ai_analyze() meneruskan penanda stale, tetapi pembangkit,
+ * signal-news, tv-webhook, dan endpoint ini tetap menghitungnya dalam aturan 3-dari-4 — H1
+ * berumur 3 hari ikut "memilih" arah, dan harganya dipakai sebagai Price di prompt AI. Data
+ * basi dilaporkan (lihat 'timeframes' di jawaban endpoint), tetapi tidak ikut memutuskan.
+ */
+function ai_tf_dipakai(array $tfs): array {
+    foreach ($tfs as $label => $d) {
+        if (is_array($d) && !empty($d['stale'])) $tfs[$label] = null;
+    }
+    return $tfs;
 }
 
 // ── Bagian ini hanya berjalan saat dipanggil sebagai endpoint HTTP ────────
@@ -168,20 +187,22 @@ $tfs = [];
 foreach (['15' => 'M15', '60' => 'H1', '240' => 'H4', 'D' => 'D1'] as $iv => $label) {
     $tfs[$label] = ai_analyze($symbol, $iv);
 }
+// Timeframe basi dilaporkan di 'timeframes' tetapi tidak ikut konsensus, harga, atau prompt.
+$tfsPakai = ai_tf_dipakai($tfs);
 
 $price = 0;
 foreach (['H1','H4','D1','M15'] as $pf) {
-    if ($tfs[$pf] && $tfs[$pf]['price'] > 0) { $price = $tfs[$pf]['price']; break; }
+    if ($tfsPakai[$pf] && $tfsPakai[$pf]['price'] > 0) { $price = $tfsPakai[$pf]['price']; break; }
 }
 
-$bullTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BULLISH'));
-$bearTfs = count(array_filter($tfs, fn($t) => $t && $t['signal'] === 'BEARISH'));
+$bullTfs = count(array_filter($tfsPakai, fn($t) => $t && $t['signal'] === 'BULLISH'));
+$bearTfs = count(array_filter($tfsPakai, fn($t) => $t && $t['signal'] === 'BEARISH'));
 $overall = $bullTfs >= 3 ? 'BULLISH' : ($bearTfs >= 3 ? 'BEARISH' : 'NEUTRAL');
 
-// Tidak ada satu pun timeframe dengan data nyata → jangan panggil AI dan jangan
+// Tidak ada satu pun timeframe dengan data nyata (dan segar) → jangan panggil AI dan jangan
 // simpan hasilnya. Tanpa penjaga ini prompt berisi "NO_DATA" dengan harga 0, dan
 // model bisa mengarang keputusan yang tampak valid.
-if (!array_filter($tfs)) {
+if (!array_filter($tfsPakai)) {
     echo json_encode([
         'status'  => 'error',
         'code'    => 'PRICE_UNAVAILABLE',
@@ -192,8 +213,8 @@ if (!array_filter($tfs)) {
 
 // ── Build Groq prompt ─────────────────────────────────────────────────────
 $tfLines = [];
-foreach ($tfs as $label => $d) {
-    if (!$d) { $tfLines[] = "{$label}: NO_DATA"; continue; }
+foreach ($tfsPakai as $label => $d) {
+    if (!$d) { $tfLines[] = !empty($tfs[$label]['stale']) ? "{$label}: STALE_DATA (not used)" : "{$label}: NO_DATA"; continue; }
     $tfLines[] = sprintf('%s: %s | RSI:%.1f | EMA:%s | MACD:%s | bull:%d bear:%d',
         $label, $d['signal'], $d['rsi'],
         $d['ema_cross'] ?? 'N/A',
@@ -287,6 +308,42 @@ if (!$decision || !in_array($decision['action'] ?? '', ['ENTRY_BUY','ENTRY_SELL'
 $action = $decision['action'];
 $ep     = (float)($decision['entry_price'] ?? $price);
 if ($ep <= 0) $ep = $price;
+$tpAi   = (float)($decision['tp'] ?? 0);
+$slAi   = (float)($decision['sl'] ?? 0);
+
+// ── ENTRY AI DIPERIKSA TERHADAP HARGA PASAR (audit sinyal 2026-10-22) ──────
+// Dulu entry_price AI dipakai apa adanya. Penilai menganggap rekor terisi di entry itu,
+// sehingga BUY 2650 saat pasar 2700 tercatat "HIT TP" di harga pembukaan (+2,5R) untuk
+// transaksi yang tidak pernah bisa terisi. Acuan = close H1 NYATA terakhir + ATR14 H1
+// (feed yang sama dengan penilai). Aturan lengkap: qi_sp_jangkar_entry().
+// Candle acuan WAJIB segar (qi_sp_muat_layak): cache basi dari get-chart-data (stale) dulu lolos
+// karena hanya data simulasi yang ditolak — entry AI ≈ close H1 tiga hari lalu lalu "terverifikasi".
+$muatAcuan  = ai_load_candles($symbol, '60');
+$layakAcuan = qi_sp_muat_layak($symbol, $muatAcuan, 3600);
+$cndAcuan   = $layakAcuan['boleh'] ? $muatAcuan['candles'] : [];
+$hargaAcuan = $cndAcuan ? (float)(end($cndAcuan)['close'] ?? 0) : 0.0;
+$atrAcuan   = $cndAcuan ? qi_sp_atr($cndAcuan, 14) : 0.0;
+// Penjaga pasar tutup memakai candle M15 (sudah dimuat ai_analyze) — paling peka umur data.
+$muatM15    = ai_load_candles($symbol, '15');
+$pasarAi    = qi_sp_cek_pasar($symbol, (!empty($muatM15['simulated']) ? [] : ($muatM15['candles'] ?? [])), 900);
+
+$actionAi = $action;
+$cekEntry = null;
+$catatanEntry = '';
+if (in_array($action, ['ENTRY_BUY', 'ENTRY_SELL'], true)) {
+    $arahCek = ($action === 'ENTRY_BUY') ? 'BUY' : 'SELL';
+    $cekEntry = qi_sp_jangkar_entry($arahCek, $ep, $tpAi, $slAi, $hargaAcuan, $atrAcuan);
+    $catatanEntry = $cekEntry['catatan'];
+    // Alasan yang BENAR saat harga acuan tidak dipakai (mis. cache basi) — bukan "harga melewati SL".
+    if (!$layakAcuan['boleh']) $catatanEntry = $layakAcuan['catatan'];
+    if ($cekEntry['ok'] && $cekEntry['disesuaikan']) {
+        $ep = $cekEntry['entry']; $tpAi = $cekEntry['tp']; $slAi = $cekEntry['sl'];
+    } elseif (!$cekEntry['ok'] && $cekEntry['alasan'] === 'entry_jauh_dari_harga') {
+        // Harga sudah melewati TP/SL rencana AI: rencana itu tidak bisa diambil siapa pun.
+        // Ditampilkan sebagai SKIP (keputusan asli AI tetap terlihat di action_ai).
+        $action = 'SKIP';
+    }
+}
 
 $response = [
     'status'      => 'success',
@@ -296,14 +353,26 @@ $response = [
     'action'      => $action,
     'confidence'  => max(0, min(100, (int)($decision['confidence'] ?? 50))),
     'entry_price' => round($ep, 5),
-    'tp'          => round((float)($decision['tp'] ?? 0), 5),
-    'sl'          => round((float)($decision['sl'] ?? 0), 5),
+    'tp'          => round($tpAi, 5),
+    'sl'          => round($slAi, 5),
     'risk_reward' => round((float)($decision['risk_reward'] ?? 0), 2),
     'reason'      => mb_substr(preg_replace('/[^\w\s.,!?:%()\/&-]/u', '', $decision['reason'] ?? ''), 0, 100),
     'timeframes'  => $tfs,
     'consensus'   => ['bullish_tfs' => $bullTfs, 'bearish_tfs' => $bearTfs, 'overall' => $overall],
     'from_cache'  => false,
+    // Jejak pemeriksaan entry — ditulis apa adanya supaya pengguna tahu asal levelnya.
+    'harga_acuan'         => $hargaAcuan > 0 ? round($hargaAcuan, 5) : null,
+    'entry_terverifikasi' => $cekEntry !== null ? (bool)$cekEntry['ok'] : null,
+    'jarak_entry_atr'     => $cekEntry['jarak_entry_atr'] ?? null,
+    'pasar'               => ['boleh' => $pasarAi['boleh'], 'alasan' => $pasarAi['alasan'], 'catatan' => $pasarAi['catatan']],
+    'acuan'               => ['boleh' => $layakAcuan['boleh'], 'alasan' => $layakAcuan['alasan']],
 ];
+if ($actionAi !== $action) $response['action_ai'] = $actionAi;
+if ($cekEntry !== null && $cekEntry['disesuaikan']) {
+    $response['entry_ai'] = round($cekEntry['entry_asal'], 5);
+    $response['entry_disesuaikan'] = true;
+}
+if ($catatanEntry !== '') $response['catatan_entry'] = $catatanEntry;
 
 // Cache 15 min
 require_once __DIR__ . '/_json_kunci.php';
@@ -324,43 +393,38 @@ try {
     $response['dicatat'] = false;
     $response['catatan_rekor'] = 'Tidak ada sinyal untuk dicatat (keputusan AI: ' . $action . ').';
 
-    if (in_array($action, ['ENTRY_BUY', 'ENTRY_SELL'], true)) {
+    if ($actionAi !== $action) {
+        // Rencana AI usang (harga sudah melewati TP/SL-nya) — lihat qi_sp_jangkar_entry().
+        $response['catatan_rekor'] = 'Tidak dicatat: ' . $catatanEntry;
+    } elseif (in_array($action, ['ENTRY_BUY', 'ENTRY_SELL'], true) && !$pasarAi['boleh']) {
+        // Penjaga pasar tutup: forex/emas di akhir pekan (entry = close Jumat) atau data basi.
+        $response['catatan_rekor'] = 'Tidak dicatat: ' . $pasarAi['catatan'];
+    } elseif (in_array($action, ['ENTRY_BUY', 'ENTRY_SELL'], true)) {
         $arahRek = ($action === 'ENTRY_BUY') ? 'BUY' : 'SELL';
         $epRek   = (float)$response['entry_price'];
         $tpRek   = (float)$response['tp'];
         $slRek   = (float)$response['sl'];
-        $basisLevel = 'level dari AI';
+        $basisLevel = !empty($response['entry_disesuaikan'])
+            ? 'level dari AI; entry digeser ke harga pasar (AI ' . $response['entry_ai'] . ', ' . $response['jarak_entry_atr'] . '× ATR), jarak SL/TP AI dipertahankan'
+            : 'level dari AI';
+        $levelAtr = false;
 
         // Bila AI memberi arah tetapi levelnya tidak konsisten, level diturunkan
         // dari ATR14 candle H1 NYATA — bukan dikarang. Arah tetap dari AI, jarak
         // dari volatilitas nyata, dan asal level ditulis apa adanya di 'basis'.
-        if (!qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
-            $muatRek = ai_load_candles($symbol, '60');
-            if (!empty($muatRek['candles']) && empty($muatRek['simulated'])) {
-                $cndRek = $muatRek['candles'];
-                $nRek = count($cndRek);
-                $atrRek = 0.0;
-                $pcRek = (float)($cndRek[$nRek - 1]['close'] ?? 0);
-                if ($nRek >= 16 && $pcRek > 0) {
-                    $trRek = [];
-                    for ($i = $nRek - 14; $i < $nRek; $i++) {
-                        $hh = (float)($cndRek[$i]['high'] ?? 0);
-                        $ll = (float)($cndRek[$i]['low'] ?? 0);
-                        $pp = (float)($cndRek[$i - 1]['close'] ?? 0);
-                        $trRek[] = max($hh - $ll, abs($hh - $pp), abs($ll - $pp));
-                    }
-                    $atrRek = $trRek ? array_sum($trRek) / count($trRek) : 0.0;
-                }
-                if ($atrRek > 0) {
-                    $epRek = round($pcRek, 5);
-                    $slRek = round($arahRek === 'BUY' ? $pcRek - 1.2 * $atrRek : $pcRek + 1.2 * $atrRek, 5);
-                    $tpRek = round($arahRek === 'BUY' ? $pcRek + 3.0 * $atrRek : $pcRek - 3.0 * $atrRek, 5);
-                    $basisLevel = 'level dari ATR14 (AI tidak memberi level yang konsisten)';
-                }
-            }
+        if (!qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek) && $hargaAcuan > 0 && $atrAcuan > 0) {
+            $epRek = round($hargaAcuan, 5);
+            $slRek = round($arahRek === 'BUY' ? $hargaAcuan - 1.2 * $atrAcuan : $hargaAcuan + 1.2 * $atrAcuan, 5);
+            $tpRek = round($arahRek === 'BUY' ? $hargaAcuan + 3.0 * $atrAcuan : $hargaAcuan - 3.0 * $atrAcuan, 5);
+            $basisLevel = 'level dari ATR14 (AI tidak memberi level yang konsisten)';
+            $levelAtr = true;
         }
 
-        if (qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
+        // Entry yang tidak bisa dibandingkan dengan harga pasar tidak boleh masuk rekor publik.
+        $entryTerverifikasi = $levelAtr || ($cekEntry !== null && $cekEntry['ok']);
+        if (!$entryTerverifikasi) {
+            $response['catatan_rekor'] = 'Tidak dicatat: ' . ($catatanEntry !== '' ? $catatanEntry : 'entry tidak dapat diverifikasi terhadap harga pasar.');
+        } elseif (qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
             // Filter berita High impact: tahan pencatatan (bukan menahan analisa).
             $boRek = function_exists('qi_berita_blackout') ? qi_berita_blackout(30, true, $symbol) : ['aktif' => false];   // hanya berita mata uang simbol ini
             if (!empty($boRek['aktif'])) {
@@ -385,7 +449,12 @@ try {
                     'sl'               => round($slRek, 5),
                     'tp'               => round($tpRek, 5),
                     'rr'               => '1 : ' . number_format($rrRek, 2),
-                    'atr'              => 0,
+                    // ATR14 H1 NYATA (dulu 0) — dipakai toleransi pengisian entry di penilai
+                    // dan analisa SL (_sl_learn), yang tanpa ATR selalu "perlu_data_harga".
+                    'atr'              => round($atrAcuan, 5),
+                    'harga_acuan'      => round($hargaAcuan, 5),
+                    'jarak_entry_atr'  => $levelAtr ? 0.0 : ($cekEntry['jarak_entry_atr'] ?? null),
+                    'entry_ai'         => (!$levelAtr && !empty($response['entry_disesuaikan'])) ? $response['entry_ai'] : null,
                     'invalidation'     => $response['reason'] !== '' ? $response['reason'] : 'Level TP/SL tersentuh',
                     'status'           => 'AKTIF',
                     'pnl'              => 0,

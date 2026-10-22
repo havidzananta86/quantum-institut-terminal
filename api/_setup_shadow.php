@@ -35,6 +35,7 @@ require_once __DIR__ . '/_signal_stats.php';
 require_once __DIR__ . '/_biaya_spread.php';
 require_once __DIR__ . '/_json_kunci.php';
 require_once __DIR__ . '/_urai_m1.php';
+require_once __DIR__ . '/_sinyal_pasar.php';   // qi_sp_muat_layak: tolak H1 basi/simulasi seperti penerbit sinyal lain
 
 if (!function_exists('qi_ss_konfig')) :
 
@@ -319,6 +320,12 @@ function qi_ss_jalankan_terkunci(array $o, array $k, callable $muat, int $kini, 
 
         $h1 = $muat($simbol, $k['tf_setup']);
         if (empty($h1['candles']) || !empty($h1['simulated'])) { $tolak('data_tidak_ada_atau_simulasi'); $ringkas['rincian'][] = ['simbol' => $simbol, 'hasil' => 'data_tidak_ada_atau_simulasi']; continue; }
+        // Cache H1 basi (semua sumber gagal → get-chart-data menyajikan cache lama bertanda stale)
+        // atau candle terakhir yang sudah tua = harga pasar sekarang TIDAK diketahui. Dulu jalur ini
+        // hanya menolak candle simulasi, sehingga setup bayangan bisa terbit dengan entry dari harga
+        // berhari-hari lalu. Pemeriksaan yang sama dipakai generator, AI, News dan webhook TradingView.
+        $layak = qi_sp_muat_layak($simbol, $h1, 3600, $kini);
+        if (!$layak['boleh']) { $tolak((string)$layak['alasan']); $ringkas['rincian'][] = ['simbol' => $simbol, 'hasil' => (string)$layak['alasan']]; continue; }
         $c = $h1['candles'];
         $A = QiSetupEngine::atr($c);
         $atr = $A ? (float)$A[count($A) - 1] : 0.0;

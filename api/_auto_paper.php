@@ -4,8 +4,9 @@
  *
  * Pengguna yang mengaktifkan "Ikuti Auto Analisa" otomatis membuka posisi SIMULASI untuk setiap sinyal
  * resmi Auto Analisa (engine AUTO_SIGNAL, riwayat sinyal), dengan level yang SAMA PERSIS (entry, SL, TP).
- * Saat sinyal dinilai HIT TP / HIT SL (api/signal-evaluator.php), posisi ikut ditutup di harga TP/SL:
- *   · kena SL  → saldo simulasi BERKURANG sebesar risiko (≈ risiko% × saldo),
+ * Saat sinyal dinilai HIT TP / HIT SL (api/signal-evaluator.php), posisi ikut ditutup di harga
+ * KELUAR yang dicatat penilai (exit_price — termasuk gap melewati SL), bukan tepat di level:
+ *   · kena SL  → saldo simulasi BERKURANG sebesar risiko (≈ risiko% × saldo; lebih bila gap),
  *   · kena TP  → saldo simulasi BERTAMBAH sebesar risiko × R:R.
  * Uang virtual saja — tidak ada order sungguhan. Saldo = 10.000 + total P/L posisi tertutup
  * (rumus yang sama dengan api/paper-trading.php), jadi tampil di mana pun saldo simulasi dipakai.
@@ -21,6 +22,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_paper_math.php';
 require_once __DIR__ . '/_signal_time.php';
 require_once __DIR__ . '/_batas_rugi.php';
+require_once __DIR__ . '/_sinyal_pasar.php';   // jam pasar (qi_sp_detik_buka) untuk umur harga saat expiry
 
 if (!function_exists('qi_ap_konfig')) :
 
@@ -113,11 +115,47 @@ function qi_ap_pilih_buka(array $p, array $riwayat, array $tertaut, array $terbu
 }
 
 /**
+ * Harga PADA waktu $pada dari candle: close candle terakhir yang sudah TUTUP sebelum $pada.
+ * null bila candle itu lebih tua dari 2 batang sebelum $pada (data bolong/basi) — lebih baik
+ * tidak ada harga daripada harga sembarang. Murni (dipakai penilai sinyal & diuji).
+ *
+ * $simbol (non-kripto): umur dihitung hanya dari waktu pasar BUKA (qi_sp_detik_buka). Pembangkit
+ * menerbitkan sinyal 12 jam sampai Jumat 21:00 UTC, jadi sinyal XAUUSD/forex yang terbit sesudah
+ * ±09:00 Jumat kedaluwarsa hari Sabtu. Dulu candle terakhir (Jumat ±20:55) dianggap "> 2 batang
+ * lebih tua" dari expiry Sabtu → harga null → posisi auto-paper DIBATALKAN dan P/L-nya yang nyata
+ * terhapus setiap pekan (audit ulang 2026-10-22). Harga yang benar untuk saat itu = close Jumat.
+ */
+function qi_ap_harga_pada(array $candles, int $durasi, int $pada, ?string $simbol = null): ?float
+{
+    if ($durasi <= 0 || $pada <= 0) return null;
+    $pilih = null; $tPilih = 0;
+    foreach ($candles as $c) {
+        $t = (int)($c['time'] ?? 0);
+        if ($t <= 0 || $t + $durasi > $pada) continue;   // belum tutup pada $pada
+        if ($t > $tPilih && isset($c['close']) && is_numeric($c['close']) && (float)$c['close'] > 0) { $tPilih = $t; $pilih = (float)$c['close']; }
+    }
+    if ($pilih === null) return null;
+    $celah = $pada - ($tPilih + $durasi);            // waktu tanpa candle sebelum $pada
+    if ($simbol !== null && $simbol !== '') $celah = qi_sp_detik_buka($simbol, $tPilih + $durasi, $pada);   // hanya saat pasar buka
+    if ($celah > 2 * $durasi) return null;           // > 2 batang pasar-buka sebelum $pada: basi
+    return $pilih;
+}
+
+/**
  * Posisi simulasi terbuka mana yang harus ditutup, mengikuti hasil sinyal.
+ *
+ * HARGA KELUAR (audit sinyal 2026-10-22):
+ *   · HIT TP / HIT SL → exit_price yang DICATAT penilai (termasuk gap melewati SL dan harga
+ *     sisi penutup). Dulu selalu tepat di level TP/SL, sehingga SL yang di-gap −1,6R di
+ *     rekor sinyal hanya −1R di akun simulasi — akun tampak lebih baik dari rekornya.
+ *   · EXPIRED berbasis 'candle' → harga pada saat kedaluwarsa ($harga($simbol, $tExpiry)),
+ *     bukan harga terakhir di cache yang bisa berumur berhari-hari.
+ *   · EXPIRED 'tanpa_data' / 'zona_ambigu' / 'entry_tak_terisi' / tanpa basis → DIBATALKAN
+ *     tanpa P/L: hasilnya memang tidak terverifikasi (atau entry tidak pernah terisi).
  *
  * @param array $tertaut        list ['signal_id','position_id','symbol','side','entry','lots','dibuat_ts']
  * @param array $riwayatPerId   id sinyal → baris sinyal
- * @param callable|null $harga  fn(string $simbol): ?float  harga terakhir (untuk sinyal EXPIRED)
+ * @param callable|null $harga  fn(string $simbol, int $pada): ?float  harga pada waktu kedaluwarsa
  * @return array<int,array> [position_id, status 'closed'|'cancelled', exit, closed_ts, alasan, pnl]
  */
 function qi_ap_pilih_tutup(array $tertaut, array $riwayatPerId, ?callable $harga, int $kini, ?array $k = null): array
@@ -133,19 +171,26 @@ function qi_ap_pilih_tutup(array $tertaut, array $riwayatPerId, ?callable $harga
             continue;
         }
         $st = (string)($s['status'] ?? '');
-        $tTutup = qi_sig_epoch($s['closed_at'] ?? null) ?? $kini;
+        $tTutup = qi_sig_epoch($s['closed_at'] ?? null, 'closed_at') ?? $kini;
         if (strpos($st, 'HIT TP') === 0 || strpos($st, 'HIT SL') === 0) {
             $tp = strpos($st, 'HIT TP') === 0;
-            $keluar = (float)($tp ? $s['tp'] : $s['sl']);
+            $keluar = (isset($s['exit_price']) && is_numeric($s['exit_price']) && (float)$s['exit_price'] > 0)
+                ? (float)$s['exit_price']
+                : (float)($tp ? $s['tp'] : $s['sl']);   // rekor lama tanpa exit_price
             $hasil[] = ['position_id' => $t['position_id'], 'status' => 'closed', 'exit' => $keluar, 'closed_ts' => $tTutup, 'alasan' => $tp ? 'TP' : 'SL',
                         'pnl' => qi_paper_pnl((string)$t['symbol'], (string)$t['side'], (float)$t['entry'], $keluar, (float)$t['lots'])];
         } elseif (strpos($st, 'EXPIRED') === 0) {
-            $px = $harga ? $harga((string)$t['symbol']) : null;
+            $basis = (string)($s['expiry_basis'] ?? '');
+            // Pemanggil tanpa sumber harga (mis. api/auto-paper.php) tidak memutuskan EXPIRED berbasis
+            // candle — posisi dibiarkan sampai penilai (yang memberi harga saat expiry) menutupnya.
+            if ($basis === 'candle' && $harga === null) continue;
+            $px = $basis === 'candle' ? $harga((string)$t['symbol'], $tTutup) : null;
             if ($px !== null && $px > 0) {
-                $hasil[] = ['position_id' => $t['position_id'], 'status' => 'closed', 'exit' => $px, 'closed_ts' => $kini, 'alasan' => 'EXPIRED',
+                $hasil[] = ['position_id' => $t['position_id'], 'status' => 'closed', 'exit' => $px, 'closed_ts' => $tTutup, 'alasan' => 'EXPIRED',
                             'pnl' => qi_paper_pnl((string)$t['symbol'], (string)$t['side'], (float)$t['entry'], $px, (float)$t['lots'])];
             } else {
-                $hasil[] = ['position_id' => $t['position_id'], 'status' => 'cancelled', 'exit' => null, 'closed_ts' => $kini, 'alasan' => 'EXPIRED_tanpa_harga', 'pnl' => 0.0];
+                $alasan = $basis === 'candle' ? 'EXPIRED_tanpa_harga' : ('EXPIRED_' . ($basis !== '' ? $basis : 'tidak_terverifikasi'));
+                $hasil[] = ['position_id' => $t['position_id'], 'status' => 'cancelled', 'exit' => null, 'closed_ts' => $tTutup, 'alasan' => $alasan, 'pnl' => 0.0];
             }
         }
     }
@@ -189,7 +234,7 @@ function qi_ap_saldo(PDO $pdo, int $uid): float
  * Sinkronkan: buka posisi untuk sinyal baru, tutup posisi yang sinyalnya sudah selesai.
  * @param array         $riwayat  riwayat sinyal resmi (array dari cache/signal_history.json)
  * @param int|null      $hanyaUser membatasi pembukaan ke satu pengguna (penutupan selalu untuk semua)
- * @param callable|null $harga    fn(string $simbol): ?float untuk sinyal EXPIRED
+ * @param callable|null $harga    fn(string $simbol, int $pada): ?float — harga pada saat sinyal EXPIRED
  */
 function qi_ap_sinkron(PDO $pdo, array $riwayat, ?int $hanyaUser = null, ?callable $harga = null, ?int $kini = null): array
 {

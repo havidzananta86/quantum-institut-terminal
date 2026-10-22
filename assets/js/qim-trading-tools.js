@@ -306,10 +306,13 @@
         reader.readAsText(file);
     }
 
-    // ── Pengaman posisi paper trading: SL/TP, break-even, trailing stop ────
+    // ── Pengaman posisi paper trading: break-even, trailing stop, percepat penyelesaian SL/TP ────
+    // SL/TP posisi manual DITEGAKKAN SERVER (api/paper-trading.php → qi_paper_settle, juga saat dashboard
+    // tertutup). Pilihan "SL/TP otomatis" lama sudah dibuang: mematikannya tidak pernah bisa mematikan
+    // penegakan di server, jadi pilihan itu menyesatkan.
     const GUARD_PREFS_KEY = 'qim_paper_guard';
     const GUARD_RISK_KEY = 'qim_paper_initial_risk';
-    const guardDefaults = { autoExit: true, breakEven: false, beAt: 1, trailing: false, trailBy: 1 };
+    const guardDefaults = { breakEven: false, beAt: 1, trailing: false, trailBy: 1 };
 
     function readJson(key, fallback) {
         try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return v && typeof v === 'object' ? v : fallback; } catch (e) { return fallback; }
@@ -322,7 +325,6 @@
 
     function saveGuardPrefs() {
         const prefs = {
-            autoExit: !!($('qtGuardExit') || {}).checked,
             breakEven: !!($('qtGuardBE') || {}).checked,
             beAt: Math.max(0.1, num('qtGuardBEAt') || guardDefaults.beAt),
             trailing: !!($('qtGuardTrail') || {}).checked,
@@ -334,7 +336,6 @@
 
     function loadGuardUi() {
         const p = guardPrefs();
-        if ($('qtGuardExit')) $('qtGuardExit').checked = p.autoExit;
         if ($('qtGuardBE')) $('qtGuardBE').checked = p.breakEven;
         if ($('qtGuardBEAt')) $('qtGuardBEAt').value = p.beAt;
         if ($('qtGuardTrail')) $('qtGuardTrail').checked = p.trailing;
@@ -355,10 +356,46 @@
     const lastToastAt = {};
     let saveTimer = null;
 
-    // Trailing bisa menggeser SL tiap 2 detik; simpan ke server paling sering 15 detik sekali.
-    function scheduleSave() {
-        if (saveTimer || typeof window.ptSaveToServer !== 'function') return;
-        saveTimer = setTimeout(() => { saveTimer = null; window.ptSaveToServer(); }, 15000);
+    // Dua jeda yang TERPISAH (audit trading 2026-10-22). Dulu satu peta jeda dipakai untuk penyimpanan SL
+    // yang gagal DAN penutupan yang gagal, dan guardTick melewati posisi itu SELURUHNYA selama 60 detik —
+    // trailing yang ditolak server (biasanya karena harga sudah melewati SL baru di feed server, saat keluar
+    // paling penting) ikut mematikan pemeriksaan SL/TP-nya.
+    //   · jedaSimpan: SL break-even/trailing yang ditolak → posisi itu tidak DIGESER lagi selama 60 detik
+    //     (cegah POST tiap 2 detik → 429), tetapi SL/TP-nya tetap diperiksa.
+    //   · tungguSampai: SL/TP tersentuh di feed klien, server sudah diminta menyelesaikan, posisi masih
+    //     terbuka (feed server belum menyentuhnya) → tidak diminta lagi selama 30 detik.
+    const JEDA_SIMPAN_MS = 60000;
+    const jedaSimpan = {};
+    const JEDA_MINTA_MS = 10000;
+    const JEDA_TUNGGU_MS = 30000;
+    const tungguSampai = {};
+    let mintaPada = 0;
+
+    // Trailing bisa menggeser SL tiap 2 detik; simpan ke server paling sering 15 detik sekali,
+    // satu aksi 'ubah' per posisi yang SL-nya bergeser (bukan snapshot seluruh daftar).
+    // Toast "SL digeser" baru muncul SETELAH server menerima SL barunya. Bila server menolaknya, SL di layar
+    // dikembalikan ke nilai server (muat ulang): dulu SL yang ditolak tetap tampil dan dipakai klien seolah sah.
+    const slBerubah = new Map();
+    function scheduleSave(p, kind) {
+        if (p && p.id) slBerubah.set(p.id, { p, kind });
+        if (saveTimer || typeof window.ptUbahSlTp !== 'function') return;
+        saveTimer = setTimeout(() => {
+            saveTimer = null;
+            const daftar = [...slBerubah.values()];
+            slBerubah.clear();
+            let adaGagal = false;
+            const gagal = (id) => { jedaSimpan[id] = Date.now() + JEDA_SIMPAN_MS; adaGagal = true; };
+            Promise.all(daftar.map(({ p: x, kind: k }) =>
+                Promise.resolve(window.ptUbahSlTp(x.id, x.sl, x.tp)).then((hasil) => {
+                    if (hasil) notifySlMove(x, k);
+                    else gagal(x.id);
+                }, () => gagal(x.id))
+            )).then(() => {
+                if (adaGagal && typeof window.ptMintaPenyelesaianServer === 'function') {
+                    try { window.ptMintaPenyelesaianServer(); } catch (e) {}
+                }
+            });
+        }, 15000);
     }
 
     function notifySlMove(p, kind) {
@@ -369,20 +406,41 @@
         toast(`${p.symbol} ${p.side}: SL digeser ke ${p.sl} (${kind})`, 'info');
     }
 
+    /**
+     * Pengaman posisi di klien — KEMUDAHAN untuk posisi MANUAL saja. Posisi AUTO/AI dikelola server
+     * (ai-cron.php / _auto_paper.php); dulu pengaman ini ikut menggeser SL-nya di layar (SL yang tidak
+     * pernah ada di server) dan mencoba menutupnya tiap 2 detik.
+     *
+     * SL/TP tersentuh → server DIMINTA menyelesaikan (window.ptMintaPenyelesaianServer: GET yang menjalankan
+     * qi_paper_settle). Klien tidak lagi mengirim 'tutup' sendiri: penutupan itu tercatat 'manual' di harga
+     * pasar, pada level yang mungkin tidak pernah disentuh feed eksekusi server (harga di sini dari
+     * ptHargaNilai — feed kanonik bila simbolnya dilayani, selain itu feed tampilan).
+     */
     function guardTick() {
         const st = paperState();
-        if (!Array.isArray(st.positions) || !st.positions.length) { updateGuardStatus(0, 0); return; }
+        const semua = Array.isArray(st.positions) ? st.positions : [];
+        const manual = semua.filter(p => p && (!p.src || p.src === 'manual'));
+        if (!manual.length) { updateGuardStatus({ open: 0 }); return; }
         const prefs = guardPrefs();
         const risks = readJson(GUARD_RISK_KEY, {});
-        let risksChanged = false, slChanged = false, protectedCount = 0;
-        const toClose = [];
+        let risksChanged = false, slChanged = false, protectedCount = 0, dipantau = 0, tanpaHarga = 0, pasarTutup = 0;
+        const tersentuh = [];
+        const kini = Date.now();
 
-        st.positions.forEach(p => {
-            const price = parseFloat(st.prices[p.symbol] && st.prices[p.symbol].price);
+        manual.forEach(p => {
+            const isBuy = p.side === 'BUY';
+            const q = typeof window.ptKutipanPaper === 'function' ? window.ptKutipanPaper(p.symbol) : st.prices[p.symbol];
+            if (q && q.market === 'closed') { pasarTutup++; return; }   // pasar tutup: harga tidak bergerak
+            // Harga PENUTUPAN yang segar: BUY ditutup di bid, SELL di ask (dashboard-app.js ptHargaNilai).
+            // Harga basi / kurs referensi harian → null → posisi tidak dinilai sama sekali (dan tidak dihitung
+            // "dipantau": dulu status mengaku memantau semua posisi walau tak satu pun punya harga).
+            const price = typeof window.ptHargaNilai === 'function'
+                ? window.ptHargaNilai(p.symbol, !isBuy)
+                : parseFloat(q && (isBuy ? (q.bid ?? q.price) : (q.ask ?? q.price)));
             const entry = parseFloat(p.entryPrice);
             const sl = parseFloat(p.sl), tp = parseFloat(p.tp);
-            if (!(price > 0) || !(entry > 0)) return;
-            const isBuy = p.side === 'BUY';
+            if (!(price > 0) || !(entry > 0)) { tanpaHarga++; return; }
+            dipantau++;
             const key = riskKey(p);
 
             // Risiko awal dicatat sekali, selagi SL masih di sisi rugi.
@@ -392,7 +450,7 @@
             }
             const initialRisk = risks[key];
 
-            if (initialRisk > 0) {
+            if (initialRisk > 0 && (jedaSimpan[p.id] || 0) <= kini) {
                 const profit = isBuy ? price - entry : entry - price;
                 let newSl = sl > 0 ? sl : null;
                 const better = cand => newSl === null || (isBuy ? cand > newSl : cand < newSl);
@@ -407,38 +465,42 @@
                     if (rounded !== sl) {
                         p.sl = rounded;
                         slChanged = true;
-                        notifySlMove(p, rounded === +entry.toFixed(decimals) ? 'break-even' : 'trailing');
+                        scheduleSave(p, rounded === +entry.toFixed(decimals) ? 'break-even' : 'trailing');
                     }
                 }
-                if (prefs.breakEven || prefs.trailing) protectedCount++;
             }
+            if (initialRisk > 0 && (prefs.breakEven || prefs.trailing)) protectedCount++;
 
-            if (prefs.autoExit) {
-                const curSl = parseFloat(p.sl);
-                if (curSl > 0 && (isBuy ? price <= curSl : price >= curSl)) toClose.push({ id: p.id, reason: 'SL' });
-                else if (tp > 0 && (isBuy ? price >= tp : price <= tp)) toClose.push({ id: p.id, reason: 'TP' });
-            }
+            const curSl = parseFloat(p.sl);
+            const kena = (curSl > 0 && (isBuy ? price <= curSl : price >= curSl)) || (tp > 0 && (isBuy ? price >= tp : price <= tp));
+            if (kena && (tungguSampai[p.id] || 0) <= kini) tersentuh.push(p.id);
         });
 
         if (risksChanged) writeJson(GUARD_RISK_KEY, risks);
-        if (slChanged) scheduleSave();
-        toClose.forEach(({ id, reason }) => {
-            const pos = st.positions.find(x => x.id === id);
-            if (!pos || typeof window.ptClosePosition !== 'function') return;
-            toast(`${reason} tersentuh — ${pos.symbol} ${pos.side} ditutup otomatis`, reason === 'TP' ? 'success' : 'warning');
-            window.ptClosePosition(id);
-        });
-        if ((slChanged || toClose.length) && typeof window.ptRender === 'function') window.ptRender();
-        updateGuardStatus(st.positions.length, protectedCount);
+        // Tidak ada toast di sini: "Stop loss / Take profit tersentuh — … ditutup server @ …" diucapkan
+        // dashboard-app.js (ptUmumkanTutupServer) SETELAH server benar-benar menutup posisinya. Satu permintaan
+        // untuk semua posisi yang tersentuh, paling sering 10 detik sekali (batas 60/menit paper-trading.php).
+        if (tersentuh.length && kini - mintaPada >= JEDA_MINTA_MS && typeof window.ptMintaPenyelesaianServer === 'function') {
+            mintaPada = kini;
+            const tandaiTunggu = () => {
+                const masih = new Set((paperState().positions || []).map(p => p && p.id));
+                tersentuh.forEach(id => { if (masih.has(id)) tungguSampai[id] = Date.now() + JEDA_TUNGGU_MS; });
+            };
+            Promise.resolve(window.ptMintaPenyelesaianServer()).then(tandaiTunggu, tandaiTunggu);
+        }
+        if (slChanged && typeof window.ptRender === 'function') window.ptRender();
+        updateGuardStatus({ open: manual.length, dipantau, tanpaHarga, pasarTutup, protectedCount });
     }
 
-    function updateGuardStatus(open, protectedCount) {
+    function updateGuardStatus(s) {
         const el = $('qtGuardStatus');
         if (!el) return;
-        const prefs = guardPrefs();
-        el.textContent = open
-            ? `${open} posisi dipantau · ${prefs.autoExit ? 'SL/TP otomatis aktif' : 'SL/TP otomatis mati'} · ${protectedCount} dengan BE/trailing`
-            : 'Tidak ada posisi terbuka.';
+        if (!s.open) { el.textContent = 'Tidak ada posisi manual terbuka.'; return; }
+        const bagian = [`${s.dipantau} dari ${s.open} posisi manual dipantau`];
+        if (s.tanpaHarga) bagian.push(`${s.tanpaHarga} tanpa harga live`);
+        if (s.pasarTutup) bagian.push(`${s.pasarTutup} pasar tutup`);
+        bagian.push('SL/TP ditegakkan server', `${s.protectedCount} dengan BE/trailing`);
+        el.textContent = bagian.join(' · ');
     }
 
     function init() {

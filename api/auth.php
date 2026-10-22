@@ -22,8 +22,17 @@ if ($type === 'verify_token') {
         echo json_encode(['status' => 'success', 'data' => [
             'email' => $user['email'], 'role' => $user['role'], 'expires_at' => $user['expires_at']
         ]]);
+        exit();
+    }
+    // Tiga keadaan yang dulu semuanya dijawab 401 AUTH_REQUIRED — dan klien menghapus sesi pada 401:
+    //  · DB tidak terjangkau → 503 DB_UNAVAILABLE (sesi tetap disimpan klien);
+    //  · login belum lolos 2FA → 401 2FA_REQUIRED;
+    //  · token memang ditolak → 401 AUTH_REQUIRED.
+    qi_tolak_bila_db_gagal();
+    http_response_code(401);
+    if (!empty($GLOBALS['qi_2fa_tertunda'])) {
+        echo json_encode(['status' => 'error', 'message' => 'Verifikasi dua langkah belum diselesaikan.', 'code' => '2FA_REQUIRED']);
     } else {
-        http_response_code(401);
         echo json_encode(['status' => 'error', 'message' => 'Sesi tidak valid atau kadaluarsa.', 'code' => 'AUTH_REQUIRED']);
     }
     exit();
@@ -136,7 +145,7 @@ if ($type === 'license') {
         qi_login_cek($pdo, $subjek);
 
         // Cari user berdasarkan email
-        $stmt = $pdo->prepare('SELECT id, email, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email, full_name, password_hash, role, is_active FROM users WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => strtolower($email)]);
         $user = $stmt->fetch();
 
@@ -154,6 +163,8 @@ if ($type === 'license') {
                     'user_id' => (int)$user['id'],
                     'email' => $user['email'],
                     'role' => $user['role'],
+                    // Nama untuk layar "Masuk sebagai …" (login.html) dan sidebar dashboard.
+                    'full_name' => $user['full_name'] ?? null,
                     'token' => $session['token'],
                     'token_expires' => $session['expires_at']
                 ]
@@ -245,9 +256,10 @@ if ($type === 'license') {
         $pdo = qi_db();
 
         // Cari user by email; kalau belum ada → buat akun baru (role 'user')
-        $stmt = $pdo->prepare('SELECT id, email, role, is_active FROM users WHERE email = :email LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, email, full_name, role, is_active FROM users WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
+        $fullName = null;
 
         if (!$user) {
             // Password acak — login Google tidak pakai password, tapi kolom NOT NULL
@@ -257,6 +269,7 @@ if ($type === 'license') {
             $ins->execute([':name' => $name ?: 'Pengguna Google', ':email' => $email, ':ph' => $randomHash, ':role' => 'user', ':st' => 'active']);
             $userId = (int)$pdo->lastInsertId();
             $role = 'user';
+            $fullName = $name ?: 'Pengguna Google';
         } else {
             if (!$user['is_active']) {
                 http_response_code(403);
@@ -265,6 +278,7 @@ if ($type === 'license') {
             }
             $userId = (int)$user['id'];
             $role = $user['role'];
+            $fullName = $user['full_name'] ?? null;
         }
 
         $session = createSession($pdo, $userId);
@@ -275,6 +289,7 @@ if ($type === 'license') {
                 'user_id'       => $userId,
                 'email'         => $email,
                 'role'          => $role,
+                'full_name'     => $fullName,
                 'token'         => $session['token'],
                 'token_expires' => $session['expires_at'],
             ],
