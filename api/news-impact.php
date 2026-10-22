@@ -10,7 +10,7 @@ qi_rate_limit(30, 60);
 // Dataset ini HANYA punya dua jendela pengukuran: 30 menit (avg30m) dan 1 jam (avg1h).
 // Nilai lain ditolak ke '1h' supaya klien tidak bisa menampilkan jendela yang tidak ada
 // datanya (sebelumnya '2h' dan '4h' diterima lalu diam-diam memakai angka 1 jam).
-$window   = in_array(($_GET['window'] ?? '1h'), ['30m', '1h'], true) ? $_GET['window'] : '1h';
+$window   = in_array(($_GET['window'] ?? '1h'), ['30m', '1h'], true) ? ($_GET['window'] ?? '1h') : '1h';
 $groupBy  = $_GET['group_by'] ?? 'event_pair';
 $impact   = strtoupper($_GET['impact'] ?? 'HIGH');
 $currency = strtoupper($_GET['currency'] ?? 'ALL');

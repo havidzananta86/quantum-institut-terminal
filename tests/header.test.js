@@ -66,5 +66,15 @@ cek('peran tak dikenal / kosong → free', H.lencanaPaket(undefined).kode === 'f
 cek('pro, vip, admin → lencana bernama', ['pro', 'vip', 'admin'].every(p => H.lencanaPaket(p).teks === p.toUpperCase() && H.lencanaPaket(p).href === 'profile.html'));
 cek('huruf besar tetap dikenali', H.lencanaPaket('PRO').kode === 'pro');
 
+// Chip profil: nama pendek, bukan email utuh (dulu ±200 px → tombol kanan header keluar layar di 1440 px).
+{
+  const fs = require('fs'), path = require('path');
+  const qd = fs.readFileSync(path.join(__dirname, '..', 'assets/js/qim-dashboard.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '..', 'assets/css/qim-dashboard.css'), 'utf8');
+  const sync = qd.slice(qd.indexOf('function syncUserName'), qd.indexOf('function syncUserName') + 1600);
+  cek('nama profil memakai aturan namaTampilan (bukan email utuh)', /QuantumAuth\.namaTampilan\(user\)/.test(sync) && !/user\.name \|\| user\.email/.test(sync));
+  cek('nama profil dibatasi lebarnya dengan elipsis', /#qimUserName \{[^}]*max-width:\s*120px[^}]*text-overflow:\s*ellipsis/.test(css));
+}
+
 if (gagal) { console.error('\nFAIL — ' + gagal + ' pemeriksaan gagal'); process.exit(1); }
 console.log('\nPASS — status data, sesi pasar, dan lencana paket di header');

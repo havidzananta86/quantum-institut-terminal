@@ -612,13 +612,19 @@
             if (name === 'Trader') {
                 const raw = localStorage.getItem('qi_user') || sessionStorage.getItem('qi_user');
                 if (raw) {
+                    // Aturan nama yang sama dengan layar masuk (auth.js namaTampilan): nama lengkap →
+                    // nama → bagian depan email. Dulu email UTUH dipakai, sehingga pada sesi tanpa
+                    // qi_user_name (sesi lama, login email) chip profil selebar ±200 px mendorong tombol
+                    // kanan header keluar layar di 1440 px (ditemukan uji e2e).
                     const user = JSON.parse(raw);
-                    name = user.name || user.email || name;
+                    name = (window.QuantumAuth && QuantumAuth.namaTampilan)
+                        ? QuantumAuth.namaTampilan(user)
+                        : (user.full_name || user.name || String(user.email || '').split('@')[0] || name);
                 }
             }
         } catch (error) { console.info('[QIM] Nama profil tidak tersedia:', error.message); }
         const target = document.getElementById('qimUserName');
-        if (target) target.textContent = name;
+        if (target) { target.textContent = name; target.title = name; }
         const avatar = document.querySelector('.qim-avatar');
         if (avatar) avatar.textContent = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
     }

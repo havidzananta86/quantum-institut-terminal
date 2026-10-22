@@ -77,6 +77,8 @@ body:has(#sidebar.sidebar-collapsed) { --qim-sb:0px; }
 .qim-profile { display:flex; align-items:center; gap:8px; color:var(--qim-text); text-decoration:none; font-size:11px; white-space:nowrap; }
 .qim-avatar { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; color:#dce7f5; background:linear-gradient(145deg,#667b9d,#26364e); font-size:9px; font-weight:700; }
 .qim-profile-chevron { color:var(--qim-muted); }
+/* Nama panjang tidak boleh melebarkan header: dipotong dengan elipsis, nama lengkap tetap di title. */
+#qimUserName { display:inline-block; max-width:120px; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
 
 #sidebar {
     grid-area: 2 / 1 / 3 / 2;

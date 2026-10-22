@@ -34,14 +34,14 @@
       }
     },
     "inti": {
-      "file": "assets/dist/inti.34d2108480.js",
+      "file": "assets/dist/inti.56fbb1789c.js",
       "muat": "sinkron",
       "sumber": {
         "qim-price-store.js": "352ac0b781a22a7c",
         "qim-chart-store.js": "b19a3cf8bac1c78f",
         "qim-paper-math.js": "aee88cf55d36654c",
         "dashboard-app.js": "b188b2fa49af247e",
-        "qim-dashboard.js": "44bcb09dd719a980",
+        "qim-dashboard.js": "1a0f078bce339185",
         "qim-indicators.js": "865b12d971fb3be1",
         "qim-trading-tools.js": "a61c5336edc67d48",
         "qim-mt5-socket.js": "56b7070dfcd743c8",
@@ -52,7 +52,7 @@
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.bb31eb93ba.js",
+      "file": "assets/dist/fitur.d17d997cd9.js",
       "muat": "sinkron",
       "sumber": {
         "pro-features.js": "668f6b3e81cc8de7",
@@ -76,7 +76,7 @@
         "ui-improvements.js": "1263b37ebfe2d850",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "1755101f1c5e1e42",
-        "halaman-dashboard.js": "f96bba458735c1e9"
+        "halaman-dashboard.js": "ba08d90256a592be"
       }
     },
     "tunda": {
@@ -110,5 +110,5 @@
       }
     }
   },
-  "versi": "7f4759b370"
+  "versi": "434546e880"
 }
