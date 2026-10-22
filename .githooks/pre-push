@@ -1,12 +1,54 @@
 #!/bin/sh
-# Pre-push: uji e2e menyeluruh (tests/e2e/klik.test.mjs) di XAMPP lokal sebelum kode naik —
+# Pre-push: uji e2e menyeluruh (tests/e2e/klik.test.mjs) sebelum kode naik —
 # push ke master langsung ter-deploy ke Hostinger.
 #   - Semua API baca, semua halaman, semua panel dashboard, simbol watchlist, timeframe,
 #     layar penuh (desktop & iPhone), plus PHP Warning/Fatal baru di log server.
-#   - Bila XAMPP/Edge/PHP tidak tersedia, uji dilewati dengan peringatan (E2E_WAJIB=1 untuk mewajibkan).
+#   - Bila browser / PHP tidak tersedia, uji dilewati dengan peringatan (E2E_WAJIB=1 untuk mewajibkan).
 # Aktifkan sekali per clone:  npm run hooks:install
 # Lewati sekali:              git push --no-verify
+#
+# BASIS URL DIHITUNG SENDIRI dari pohon kerja yang sedang di-push.
+#   Dulu hook ini selalu memakai http://localhost/webapp, yaitu checkout UTAMA — apa pun cabang
+#   yang di-push. Jadi gerbang terakhir sebelum deploy mengaudit kode yang sama sekali lain:
+#   ia bisa meluluskan cabang yang belum pernah disentuhnya, atau menggagalkan push gara-gara
+#   kerja setengah jadi milik checkout utama. Sejak 2026-10-22 basisnya diturunkan dari letak
+#   pohon kerja di bawah DocumentRoot Apache, sehingga setiap worktree menguji dirinya sendiri.
+#   Override: E2E_BASE (paksa URL), QI_DOCROOT (letak DocumentRoot), XAMPP_DIR (letak XAMPP).
+
 if [ -z "$PHP_BIN" ] && [ -x "D:/xamp/php/php.exe" ]; then export PHP_BIN="D:/xamp/php/php.exe"; fi
-echo "pre-push: menjalankan uji e2e (± 3 menit)…" >&2
+
+if [ -z "$E2E_BASE" ]; then
+    pohon=$(git rev-parse --show-toplevel 2>/dev/null)
+    docroot="$QI_DOCROOT"
+    if [ -z "$docroot" ]; then
+        conf="${XAMPP_DIR:-D:/xamp}/apache/conf/httpd.conf"
+        if [ -r "$conf" ]; then
+            docroot=$(sed -n 's/^[[:space:]]*DocumentRoot[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}[[:space:]]*$/\1/p' "$conf" | tail -1)
+        fi
+    fi
+    [ -z "$docroot" ] && docroot="D:/xamp/htdocs"
+    docroot=${docroot%/}
+
+    case "$pohon" in
+        "$docroot"/*)
+            E2E_BASE="http://localhost${pohon#$docroot}"
+            export E2E_BASE
+            ;;
+        *)
+            echo "pre-push: pohon kerja ini ($pohon) tidak berada di bawah DocumentRoot Apache" >&2
+            echo "          ($docroot), jadi uji e2e DILEWATI. Memakai http://localhost/webapp di sini" >&2
+            echo "          berarti mengaudit salinan kerja LAIN, bukan kode yang sedang di-push." >&2
+            echo "          Set E2E_BASE ke URL yang menyajikan pohon ini bila ingin tetap menguji." >&2
+            exit 0
+            ;;
+    esac
+fi
+
+if ! git diff --quiet HEAD 2>/dev/null; then
+    echo "pre-push: PERINGATAN — ada perubahan belum di-commit. Uji e2e memeriksa POHON KERJA," >&2
+    echo "          jadi yang lulus di sini belum tentu sama persis dengan commit yang di-push." >&2
+fi
+
+echo "pre-push: menjalankan uji e2e di $E2E_BASE (± 3 menit)…" >&2
 npm run --silent test:e2e || { echo "pre-push: uji e2e GAGAL — push dibatalkan. Lihat daftar masalah di atas." >&2; exit 1; }
 exit 0
