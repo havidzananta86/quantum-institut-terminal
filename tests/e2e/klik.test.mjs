@@ -297,7 +297,13 @@ async function cekDashboard(lebar, tinggi, label) {
         else {
           if (document.querySelectorAll('.qim-pk-t').length !== 2) hasil.fitur.push('indikator Pine: tabel BUY/SELL tidak muncul');
           if (!document.querySelector('.qim-pk-t.buy .st td:last-child').textContent.trim()) hasil.fitur.push('indikator Pine: status BUY kosong');
-          if (h.n < 500) hasil.fitur.push('indikator Pine: hanya ' + h.n + ' bar dipakai');
+          // Maksudnya: Pine memakai riwayat DALAM, bukan hanya bar chart. Ambang tetap 500 tidak selalu
+          // mungkin — e2e terakhir mengklik timeframe 1W pada simbol kripto, dan ETHUSDT mingguan memang
+          // hanya punya ±480 bar sepanjang sejarahnya (Binance mulai 2017-08-14). Jadi syaratnya:
+          // tidak pernah kurang dari bar chart yang ada (chart OANDA/Binance memuat hingga 1.000 bar, jadi
+          // minimal 500 tetap berlaku kecuali pasarnya sendiri belum punya sebanyak itu).
+          const barChart = ((window.qiChartKonteks ? window.qiChartKonteks() : {}).candles || []).length;
+          if (h.n < barChart) hasil.fitur.push('indikator Pine: hanya ' + h.n + ' bar dipakai (chart punya ' + barChart + ')');
           if (!(h.zona.supply.length + h.zona.demand.length)) hasil.fitur.push('indikator Pine: tidak ada zona sama sekali');
         }
         K.matikan(); await tidur(300);
