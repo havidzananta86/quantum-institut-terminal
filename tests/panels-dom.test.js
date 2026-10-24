@@ -24,7 +24,7 @@ check('pemilihan pair dan timeframe tersedia', /id="qtSymbol"/.test(html) && /id
 check('indikator EMA, RSI, MACD, dan MTF tersedia', ['qt-ind-ema', 'qt-ind-rsi', 'qt-ind-macd', 'qt-ind-mtf'].every(id => html.includes(`id="${id}"`)));
 check('signal memiliki entry, SL, TP, dan alasan', ['qtSignalEntry', 'qtSignalSL', 'qtSignalTP', 'qtSignalReason'].every(id => html.includes(`id="${id}"`)));
 check('loading pair menunggu feed, chart, analisa, ready', /id="qtPairLoading"/.test(html) && ['feed', 'chart', 'analysis', 'ready'].every(step => html.includes(`data-qt-load-step="${step}"`)));
-check('chart tools dan fullscreen tersedia', ['qtChartZoomIn', 'qtChartZoomOut', 'qtChartReset', 'qtChartFullscreen'].every(id => html.includes(`id="${id}"`)));
+check('toolbar chart mengambang dihapus', !/class="qt-chart-tools"/.test(html) && !/qtChartZoom(In|Out)|qtChartReset|qtChartFullscreen/.test(html));
 check('shell mengirim overlay signal ke chart', /qt-signal-overlay/.test(shell));
 check('shell memuat signal engine terbaru', /signalEngineVersion = 'qt-signal-v2\.3'/.test(shell));
 

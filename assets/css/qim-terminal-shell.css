@@ -181,13 +181,6 @@
 .qt-quality-grid strong.wait { color: var(--qt-shell-amber); }
 .qt-quality-panel p { margin: 9px 0 0; color: #718095; font: 9px/1.45 Inter, system-ui, sans-serif; }
 
-.qt-chart-tools { position: fixed; left: 20px; bottom: 20px; z-index: 41; display: inline-flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid rgba(148, 163, 184, .18); border-radius: 11px; background: rgba(8, 14, 23, .9); box-shadow: 0 12px 28px rgba(0, 0, 0, .3); backdrop-filter: blur(12px); }
-.qt-chart-tool { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; color: #93a4b8; background: transparent; font: 700 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: pointer; }
-.qt-chart-tool:hover { color: #e6faff; border-color: rgba(34, 211, 238, .28); background: rgba(34, 211, 238, .08); }
-.qt-chart-tool.is-active { color: var(--qt-shell-cyan); border-color: rgba(34, 211, 238, .24); background: rgba(34, 211, 238, .09); }
-.qt-chart-tool svg { width: 14px; height: 14px; flex: 0 0 auto; }
-.qt-chart-tool span { white-space: nowrap; }
-
 .qt-backtest-intro { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .qt-backtest-eyebrow { color: var(--qt-shell-cyan); font: 700 9px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .13em; text-transform: uppercase; }
 .qt-backtest-intro .qt-panel-heading { margin-top: 5px; margin-bottom: 0; }
@@ -254,9 +247,6 @@
 
 @media (max-width: 700px) {
     .qt-assist-launcher { right: 14px; bottom: 14px; min-height: 40px; padding: 0 12px; }
-    .qt-chart-tools { left: 10px; bottom: 14px; }
-    .qt-chart-tool { min-width: 31px; padding: 0 7px; }
-    .qt-chart-tool span { display: none; }
     .qt-assist-drawer { top: auto; right: 0; bottom: 0; width: 100%; max-height: min(660px, 86vh); border-radius: 18px 18px 0 0; }
     .qt-assist-context { grid-template-columns: 1fr 82px auto; padding-left: 14px; padding-right: 14px; }
     .qt-workspace-bar, .qt-context-meta { padding-left: 14px; padding-right: 14px; }
@@ -854,9 +844,7 @@
 }
 
 /* ── Chart memenuhi layar ────────────────────────────────────────────────
-   Tidak ada bar atas dan tidak ada kolom permanen: iframe chart mengisi seluruh jendela (seperti terminal tunggal).
-   Navigasi = tombol Menu di bar kontrol kiri-bawah; Quick Trade = panel Order yang digeser dari kanan. Keduanya
-   tertutup bawaan, jadi tidak ada yang menyempitkan chart; jalur order tetap satu klik dari mana pun. */
+   Tidak ada bar atas dan tidak ada kolom permanen: iframe chart mengisi seluruh jendela (seperti terminal tunggal). */
 .terminal-layout { position: relative; width: 100%; height: 100%; }
 
 /* Panel Order (rail Quick Trade). Selektor ber-id menang atas aturan lama #qimRightPanel di qim-dashboard.css. */
@@ -875,32 +863,13 @@
 }
 .qim-rail-tutup:hover { color: #e2e8f0; border-color: rgba(34, 211, 238, .5); }
 .qim-rail-tutup svg { width: 14px; height: 14px; }
-.qim-rail-tutup:focus-visible, .qt-chart-tool:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+.qim-rail-tutup:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
 
-/* Kontrol mengambang diangkat di atas bar bawah widget (rentang 1D…All, jam, % / log / auto ±46 px) supaya tidak menutupinya. */
-/* left: 64px = di sebelah kanan toolbar gambar milik widget (±52 px), supaya ikon paling bawahnya tidak tertutup. */
-.qt-chart-tools { bottom: 58px; left: 64px; }
 .qt-assist-launcher { bottom: 58px; }
 .qt-assist-drawer { z-index: 50; }
-.qt-chart-tool--teks { width: auto; padding: 0 10px; gap: 6px; display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; }
-.qt-chart-tool--teks svg { width: 15px; height: 15px; }
-
-/* Menu halaman lain (pengganti bar atas). */
-.qt-menu {
-    position: fixed; left: 64px; bottom: 112px; z-index: 42; display: grid; gap: 2px; min-width: 200px; padding: 8px;
-    font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
-    border: 1px solid rgba(148, 163, 184, .2); border-radius: 12px; background: rgba(11, 14, 19, .96);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, .5); backdrop-filter: blur(8px);
-}
-.qt-menu[hidden] { display: none; }
-.qt-menu a { padding: 9px 12px; border-radius: 8px; color: #cbd5e1; font-size: 13px; text-decoration: none; }
-.qt-menu a:hover, .qt-menu a:focus-visible { color: #e2e8f0; background: rgba(148, 163, 184, .12); outline: none; }
-.qt-menu a[aria-current="page"] { color: #0b0e13; background: #22d3ee; font-weight: 600; }
-/* Ponsel: bar kontrol di kiri-bawah (melewati tombol gambar widget), Signal Center & Order bertumpuk di kanan supaya tidak tumpang tindih. */
+/* Ponsel: Signal Center & Order bertumpuk di kanan supaya tidak tumpang tindih. */
 @media (max-width: 760px) {
-    .qt-chart-tools { left: 58px; bottom: 60px; }
     .qt-assist-launcher { right: 12px; bottom: 108px; }
-    .qt-menu { left: 58px; bottom: 112px; }
 }
 @media (prefers-reduced-motion: reduce) {
     #qimRightPanel.qim-right-panel, #qimRightPanel.qim-right-panel.is-open { transition: none; }

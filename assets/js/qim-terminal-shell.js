@@ -64,7 +64,6 @@
         history: readHistory(),
         overlay: savedWorkspace && typeof savedWorkspace.overlay === 'boolean' ? savedWorkspace.overlay : readOverlayPreference(),
         mtfEnabled: !savedWorkspace || savedWorkspace.mtfEnabled !== false,
-        crosshairMode: savedWorkspace && savedWorkspace.crosshairMode === 'normal' ? 'normal' : 'magnet',
         palette: savedWorkspace && chartPalettes[savedWorkspace.palette] ? savedWorkspace.palette : 'quantum',
         activeTab: savedWorkspace && allowedTabs.includes(savedWorkspace.activeTab) ? savedWorkspace.activeTab : 'signal',
         pairLoading: false,
@@ -106,7 +105,7 @@
             localStorage.setItem(workspaceKey, JSON.stringify({
                 version: 2, symbol: state.symbol, timeframe: state.timeframe,
                 indicators: { ...state.indicators }, mtfEnabled: state.mtfEnabled,
-                overlay: state.overlay, crosshairMode: state.crosshairMode, palette: state.palette,
+                overlay: state.overlay, palette: state.palette,
                 activeTab: state.activeTab, savedAt: Date.now()
             }));
         } catch (e) {}
@@ -1005,7 +1004,7 @@
         state.timeframe = intervalMap[context.timeframe] ? context.timeframe : state.timeframe;
         $('qtSymbol').value = state.symbol; $('qtTimeframe').value = state.timeframe;
         $('qt-ind-ema').checked = state.indicators.ema; $('qt-ind-rsi').checked = state.indicators.rsi; $('qt-ind-macd').checked = state.indicators.macd; $('qt-ind-mtf').checked = state.mtfEnabled;
-        renderSymbolMapping(); renderChartTools();
+        renderSymbolMapping();
     }
 
     async function applyChartContext() {
@@ -1042,43 +1041,11 @@
         if (persist !== false) saveWorkspace('Preset warna tersimpan');
     }
 
-    function renderChartTools() {
-        const crosshair = $('qtChartCrosshair');
-        if (!crosshair) return;
-        const magnet = state.crosshairMode === 'magnet';
-        crosshair.classList.toggle('is-active', magnet);
-        crosshair.setAttribute('aria-pressed', String(magnet));
-        crosshair.querySelector('span').textContent = magnet ? 'Magnet' : 'Precise';
-    }
-
-    function toggleCrosshair() {
-        state.crosshairMode = state.crosshairMode === 'magnet' ? 'normal' : 'magnet';
-        postChartCommand('crosshair', { mode: state.crosshairMode });
-        renderChartTools(); saveWorkspace('Mode crosshair tersimpan');
-    }
-
-    function resetChartView() {
-        postChartCommand('reset');
-    }
-
-    function zoomChart(direction) {
-        postChartCommand('zoom', { direction });
-    }
-
-    async function toggleChartFullscreen() {
-        try {
-            if (document.fullscreenElement) await document.exitFullscreen();
-            else if (frame.requestFullscreen) await frame.requestFullscreen();
-        } catch (e) {
-            postChartCommand('fullscreen');
-        }
-    }
-
     function resetWorkspace() {
         expireActiveSignal('Workspace dikembalikan ke default');
         state.symbol = 'XAUUSD'; state.timeframe = '5m';
         state.indicators = { ema: true, rsi: true, macd: true }; state.mtfEnabled = true;
-        state.overlay = true; state.crosshairMode = 'magnet'; state.palette = 'quantum'; state.activeTab = 'signal'; state.lastFetch = 0;
+        state.overlay = true; state.palette = 'quantum'; state.activeTab = 'signal'; state.lastFetch = 0;
         try { localStorage.removeItem(workspaceKey); localStorage.removeItem('qt_signal_overlay'); } catch (e) {}
         $('qtSymbol').value = state.symbol; $('qtTimeframe').value = state.timeframe;
         $('qt-ind-ema').checked = true; $('qt-ind-rsi').checked = true; $('qt-ind-macd').checked = true; $('qt-ind-mtf').checked = true; $('qtOverlayToggle').checked = true;
@@ -1114,11 +1081,6 @@
     $('qtWorkspaceReset').addEventListener('click', resetWorkspace);
     $('qtRefreshSignal').addEventListener('click', () => refreshSignal(true));
     $('qtRunBacktest').addEventListener('click', runBacktest);
-    $('qtChartCrosshair')?.addEventListener('click', toggleCrosshair);
-    $('qtChartZoomOut').addEventListener('click', () => zoomChart('out'));
-    $('qtChartZoomIn').addEventListener('click', () => zoomChart('in'));
-    $('qtChartReset').addEventListener('click', resetChartView);
-    $('qtChartFullscreen').addEventListener('click', toggleChartFullscreen);
     $('qtChartPalette').addEventListener('change', event => applyPalette(event.target.value));
     $('qtOverlayToggle').checked = state.overlay;
     $('qtOverlayToggle').addEventListener('change', event => setOverlay(event.target.checked));
@@ -1126,19 +1088,9 @@
     document.querySelectorAll('[data-qt-tab]').forEach(button => button.addEventListener('click', () => setTab(button.dataset.qtTab)));
     ['ema', 'rsi', 'macd'].forEach(key => $("qt-ind-" + key).addEventListener('change', event => { state.indicators[key] = event.target.checked; saveWorkspace('Pengaturan indikator tersimpan'); refreshSignal(true); }));
     $('qt-ind-mtf').addEventListener('change', event => { state.mtfEnabled = event.target.checked; saveWorkspace('Konfirmasi MTF tersimpan'); refreshSignal(true); });
-    frame.addEventListener('load', () => { window.setTimeout(() => { syncSelects(); postChartCommand('crosshair', { mode: state.crosshairMode }); applyPalette(state.palette, false); refreshSignal(false); if (state.lastResult) postChartOverlay(state.lastResult); }, 500); });
+    frame.addEventListener('load', () => { window.setTimeout(() => { syncSelects(); applyPalette(state.palette, false); refreshSignal(false); if (state.lastResult) postChartOverlay(state.lastResult); }, 500); });
     window.setInterval(() => { if (drawer.classList.contains('is-open')) refreshSignal(false); }, 15000);
-    document.addEventListener('fullscreenchange', () => {
-        const button = $('qtChartFullscreen');
-        const active = Boolean(document.fullscreenElement);
-        button.classList.toggle('is-active', active);
-        button.querySelector('span').textContent = active ? 'Exit' : 'Full';
-    });
     window.addEventListener('keydown', event => {
-        const key = String(event.key || '').toLowerCase();
-        if (event.ctrlKey && event.shiftKey && key === 'c') { event.preventDefault(); toggleCrosshair(); return; }
-        if (event.ctrlKey && event.shiftKey && key === 'r') { event.preventDefault(); resetChartView(); return; }
-        if (event.ctrlKey && event.shiftKey && key === 'f') { event.preventDefault(); toggleChartFullscreen(); return; }
         if (event.key === 'Escape' && drawer.classList.contains('is-open')) toggleDrawer(false);
     });
 
@@ -1149,7 +1101,7 @@
     }
     $('qtOverlayToggle').checked = state.overlay; $('qtChartPalette').value = state.palette;
     $('qt-ind-ema').checked = state.indicators.ema; $('qt-ind-rsi').checked = state.indicators.rsi; $('qt-ind-macd').checked = state.indicators.macd; $('qt-ind-mtf').checked = state.mtfEnabled;
-    setTab(state.activeTab); syncSelects(); restoreActiveSignal(); renderChartTools(); renderSymbolMapping(); applyPalette(state.palette, false); renderHistory();
+    setTab(state.activeTab); syncSelects(); restoreActiveSignal(); renderSymbolMapping(); applyPalette(state.palette, false); renderHistory();
     renderWorkspaceStatus(savedWorkspace ? 'Workspace dipulihkan' : 'Disimpan otomatis di perangkat ini');
     window.setTimeout(() => refreshSignal(true), 900);
 })();

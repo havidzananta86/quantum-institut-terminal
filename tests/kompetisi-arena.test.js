@@ -147,7 +147,7 @@ console.log('\nGerbang akses & tautan');
   cek('halaman memuat gerbang sebelum isinya', html.indexOf('halaman-kompetisi-gerbang.js') < html.indexOf('halaman-kompetisi.js'));
   const dash = baca('dashboard.html');
   cek('dashboard menautkan arena di sidebar', /href="kompetisi\.html"/.test(dash));
-  cek('tautan arena muncul dua kali (sidebar + bar atas)', (dash.match(/href="kompetisi\.html"/g) || []).length >= 2);
+  cek('tautan arena tersedia dari Signal Center', (dash.match(/href="kompetisi\.html"/g) || []).length >= 1);
 }
 
 console.log('\nTampilan kompetisi profesional & ponsel');

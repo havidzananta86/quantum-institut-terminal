@@ -240,26 +240,17 @@ async function cekDashboard(lebar, tinggi, label) {
       if (!/dashboard\\.html$/.test(location.pathname)) m('dialihkan dari dashboard ke ' + location.pathname);
       if (window.QI_PERAN !== 'admin') m('window.QI_PERAN = ' + window.QI_PERAN + ' (harus admin untuk sesi uji) — Quick Trade membacanya untuk membuka paper trading');
 
-      // 2. Tata letak CHART PENUH: iframe mengisi seluruh jendela (tanpa bar atas, tanpa kolom permanen); menu dan panel Order
-      // tertutup bawaan. Dulu <body> memakai grid dashboard lama sehingga iframe setinggi 12px.
-      const fr = rc('#quantumTerminalFrame'), rail = rc('#qimRightPanel'), alat = rc('.qt-chart-tools');
+      // 2. Tata letak CHART PENUH: iframe mengisi seluruh jendela (tanpa bar atas, toolbar mengambang, atau kolom permanen).
+      // Dulu <body> memakai grid dashboard lama sehingga iframe setinggi 12px.
+      const fr = rc('#quantumTerminalFrame'), rail = rc('#qimRightPanel');
       if (document.querySelector('.qt-topbar')) m('bar atas muncul lagi — chart seharusnya memenuhi layar');
       if (!fr || fr.w < innerWidth - 2 || fr.h < innerHeight - 2) m('chart tidak memenuhi layar: ' + JSON.stringify(fr) + ' vs ' + innerWidth + '×' + innerHeight);
       const gayaRail = document.getElementById('qimRightPanel') ? getComputedStyle(document.getElementById('qimRightPanel')) : null;
       if (!rail || !gayaRail) m('panel Order tidak ada');
       else if (gayaRail.visibility !== 'hidden' || document.getElementById('qimRightPanel').classList.contains('is-open')) m('panel Order terbuka bawaan (seharusnya tertutup)');
-      const menuEl = document.getElementById('qtMenu');
-      if (!menuEl || !menuEl.hidden) m('menu halaman tidak ada atau terbuka bawaan');
-      if (alat && alat.bawah > innerHeight - 50) m('bar kontrol chart menutupi bar bawah widget (rentang 1D…All): bawah ' + alat.bawah + ' vs ' + innerHeight);
+      if (document.querySelector('.qt-chart-tools') || document.getElementById('qtMenu')) m('toolbar/menu chart lama masih tampil');
       if (document.documentElement.scrollWidth > innerWidth + 1) m('halaman melebar menyamping: scrollWidth ' + document.documentElement.scrollWidth + ' > ' + innerWidth);
-      hasil.ringkas.layout = { fr, rail, alat };
-
-      // 2b. Menu: terbuka lewat tombol, memuat tautan halaman lain, tertutup oleh Esc.
-      document.getElementById('qtMenuBtn').click(); await tidur(200);
-      const tautan = [...document.querySelectorAll('#qtMenu a')].map(a => a.getAttribute('href'));
-      if (menuEl.hidden || tautan.length < 5 || !['kompetisi.html', 'economic-calendar.html', 'transparansi.html', 'profile.html'].every(h => tautan.includes(h))) m('menu halaman tidak lengkap: ' + JSON.stringify(tautan));
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tidur(200);
-      if (!menuEl.hidden) m('Esc tidak menutup menu halaman');
+      hasil.ringkas.layout = { fr, rail };
 
       // 2c. Peluncur Order dihapus sesuai keputusan produk; panel tetap tersembunyi.
       if (document.getElementById('qtOrderLauncher')) m('peluncur Order lama masih tampil');
@@ -279,20 +270,6 @@ async function cekDashboard(lebar, tinggi, label) {
       if (!kanvas) m('chart terminal tidak menggambar kanvas apa pun');
       if (/Connection failed|Failed to fetch/i.test(isiFrame)) m('chart terminal menampilkan galat koneksi: ' + (isiFrame.match(/Connection failed|Failed to fetch/i) || [''])[0]);
       hasil.ringkas.kanvas = kanvas;
-
-      // 3b. Jembatan shell → chart (Zoom/Reset): chart harus diekspos ke shell (event qt-chart-ready) dan tombolnya benar-benar
-      // menggerakkan kanvas. Dulu build embed yang terpasang tidak memancarkan event itu: semua tombol shell diam tanpa pesan.
-      try {
-        const fc = document.getElementById('quantumTerminalFrame').contentWindow;
-        if (!fc.__quantumTerminalChart) m('chart terminal tidak diekspos ke shell (qt-chart-ready tidak terkirim) — tombol Zoom/Reset mati');
-        else {
-          const sidik = () => [...fc.document.querySelectorAll('canvas')].map(c => { try { const d = c.toDataURL(); let x = 0; for (let i = 0; i < d.length; i += 97) x = (x * 31 + d.charCodeAt(i)) | 0; return x; } catch (e) { return 0; } }).join(',');
-          const awal = sidik();
-          document.getElementById('qtChartZoomIn').click(); await tidur(900);
-          if (sidik() === awal) m('tombol Zoom + tidak mengubah chart');
-          document.getElementById('qtChartReset').click(); await tidur(600);
-        }
-      } catch (e) { m('uji jembatan chart gagal: ' + e.message); }
 
       // 4. Quick Trade: simbol terbaca dari chart, tombol BUY/SELL aktif untuk admin, tanpa teks rusak.
       const qt = document.getElementById('qtKartu');

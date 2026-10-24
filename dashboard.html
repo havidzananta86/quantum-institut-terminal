@@ -54,9 +54,7 @@
 <!-- Tahap diisi dari kejadian nyata oleh halaman-dashboard-pemuat.js (tanpa bundel di halaman ini). -->
 <script src="assets/js/halaman-dashboard-pemuat.js?v=b63a8a0a50"></script>
 
-<!-- CHART PENUH LAYAR. Tidak ada bar atas dan tidak ada kolom permanen yang menyempitkan chart: navigasi ke halaman
-     lain ada di tombol Menu (bar kontrol kiri-bawah), dan Quick Trade ada di panel Order yang digeser dari kanan
-     (tombol Order di sebelah Signal Center). Dua-duanya tertutup secara bawaan. -->
+<!-- CHART PENUH LAYAR. Tidak ada bar atas dan tidak ada kolom permanen yang menyempitkan chart. -->
 <div class="terminal-layout">
     <main class="terminal-shell" aria-label="Quantum Terminal">
         <div class="terminal-loading" id="terminalLoading"><span><i></i>Memuat Quantum Terminal…</span></div>
@@ -348,23 +346,6 @@
     <button type="button" class="qim-rail-tutup" id="qtOrderClose" aria-label="Tutup panel Order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
 </aside>
 </div>
-
-    <nav class="qt-menu" id="qtMenu" aria-label="Halaman lain" hidden>
-        <a href="index.html">Beranda</a>
-        <a href="dashboard.html" aria-current="page">Chart</a>
-        <a href="kompetisi.html">Arena Kompetisi</a>
-        <a href="economic-calendar.html">Kalender Ekonomi</a>
-        <a href="transparansi.html">Transparansi</a>
-        <a href="profile.html">Profil &amp; Broker</a>
-    </nav>
-
-    <div class="qt-chart-tools" aria-label="Kontrol chart">
-        <button class="qt-chart-tool qt-chart-tool--teks" id="qtMenuBtn" type="button" aria-controls="qtMenu" aria-expanded="false" title="Halaman lain: Arena, Kalender, Transparansi, Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span></button>
-        <button class="qt-chart-tool" id="qtChartZoomOut" type="button" title="Zoom out chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M16 16l5 5"></path></svg><span>−</span></button>
-        <button class="qt-chart-tool" id="qtChartZoomIn" type="button" title="Zoom in chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M11 8v6M16 16l5 5"></path></svg><span>+</span></button>
-        <button class="qt-chart-tool" id="qtChartReset" type="button" title="Reset tampilan chart · Ctrl+Shift+R"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12a8 8 0 1 0 2.34-5.66"></path><path d="M4 5v5h5"></path></svg><span>Reset</span></button>
-        <button class="qt-chart-tool" id="qtChartFullscreen" type="button" title="Fullscreen chart · Ctrl+Shift+F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"></path></svg><span>Full</span></button>
-    </div>
 
     <!-- Jalur order: dispatcher aksi CSP-safe, model P/L, lalu logika Paper Trading / Real MT5. -->
     <script src="assets/js/qim-aksi.js?v=525d8a366d"></script>
