@@ -402,8 +402,51 @@ function qi_normalisasi_simbol_broker(string $simbol): string
     // Buang akhiran broker setelah titik / pagar (mis. XAUUSD.a → XAUUSD).
     $s = preg_replace('/[.#].*$/', '', $s);
     $s = preg_replace('/[^A-Z0-9]/', '', (string)$s);
-    $alias = ['GOLD' => 'XAUUSD', 'SILVER' => 'XAGUSD', 'XAU' => 'XAUUSD'];
-    return $alias[$s] ?? (string)$s;
+    $alias = [
+        'GOLD' => 'XAUUSD', 'XAU' => 'XAUUSD', 'SILVER' => 'XAGUSD', 'XAG' => 'XAGUSD',
+        'BTCUSD' => 'BTCUSDT', 'BTC' => 'BTCUSDT', 'ETHUSD' => 'ETHUSDT',
+    ];
+    if (isset($alias[$s])) return $alias[$s];
+
+    // MT5 brokers commonly append m/a/b/c, PRO, RAW, ECN, STD, MINI, or
+    // MICRO without a separator (XAUUSDm, EURUSD.pro). Strip only a known
+    // suffix from a known canonical instrument; never guess arbitrary text.
+    $canonical = ['XAUUSD','XAGUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','NZDUSD','USDCHF','USDCAD','EURGBP','EURJPY','GBPJPY','AUDJPY','USDTRY','AUDNZD','CHFJPY','CADJPY','BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT'];
+    foreach ($canonical as $base) {
+        if (!str_starts_with($s, $base)) continue;
+        $suffix = substr($s, strlen($base));
+        if ($suffix === '') return $base;
+        if (preg_match('/^(M|A|B|C|Z|PRO|RAW|ECN|STD|MINI|MICRO|CASH)$/', $suffix)) return $base;
+    }
+    foreach ($alias as $name => $base) {
+        if (str_starts_with($s, $name)) {
+            $suffix = substr($s, strlen($name));
+            if ($suffix === '' || preg_match('/^(M|A|B|C|Z|PRO|RAW|ECN|STD|MINI|MICRO|CASH)$/', $suffix)) return $base;
+        }
+    }
+    return (string)$s;
+}
+
+/**
+ * Return canonical symbol first, followed by broker spellings worth trying.
+ * This is used by the MT5 candle bridge and is also safe for quote lookups.
+ */
+function qi_broker_symbol_candidates(string $simbol): array
+{
+    $canonical = qi_normalisasi_simbol_broker($simbol);
+    if ($canonical === '') return [];
+    $aliases = [
+        'XAUUSD' => ['XAUUSD','GOLD'], 'XAGUSD' => ['XAGUSD','SILVER'],
+        'BTCUSDT' => ['BTCUSDT','BTCUSD'], 'ETHUSDT' => ['ETHUSDT','ETHUSD'],
+    ];
+    $out = $aliases[$canonical] ?? [$canonical];
+    if (defined('QI_MT5_BRIDGE_SYMBOLS')) {
+        foreach (explode(',', (string)QI_MT5_BRIDGE_SYMBOLS) as $entry) {
+            $parts = array_map('trim', explode(':', $entry, 2));
+            if (count($parts) === 2 && qi_normalisasi_simbol_broker($parts[0]) === $canonical && $parts[1] !== '') $out[] = strtoupper($parts[1]);
+        }
+    }
+    return array_values(array_unique($out));
 }
 
 /**
@@ -872,14 +915,26 @@ if (!function_exists('qi_mt5_allowed')) {
     }
 }
 if (!function_exists('qi_chart_use_mt5')) {
+    function qi_mt5_symbol_configured(string $symbol): bool {
+        if (!defined('QI_MT5_BRIDGE_SYMBOLS')) return false;
+        $wanted = qi_normalisasi_simbol_broker($symbol);
+        foreach (explode(',', (string)QI_MT5_BRIDGE_SYMBOLS) as $entry) {
+            $alias = trim(explode(':', $entry, 2)[0]);
+            if ($alias !== '' && qi_normalisasi_simbol_broker($alias) === $wanted) return true;
+        }
+        return false;
+    }
+
     /**
      * Pakai candle feed broker MT5 untuk simbol ini? Ya bila simbol didukung bridge dan
      * (a) pemanggilnya proses sinyal server (konstanta QI_SERVER_MT5: generator & evaluator
      * otomatis — sinyalnya mengikuti harga broker), atau (b) pengguna login yang berhak.
      */
     function qi_chart_use_mt5(string $symbol): bool {
-        if (qi_tv_bridge_symbol($symbol) === null) return false;
-        if (defined('QI_SERVER_MT5') && QI_SERVER_MT5) return qi_mt5_configured();
+        $symbol = strtoupper(trim($symbol));
+        $supported = qi_tv_bridge_symbol($symbol) !== null || qi_mt5_symbol_configured($symbol);
+        if (!$supported || !qi_mt5_configured()) return false;
+        if (defined('QI_SERVER_MT5') && QI_SERVER_MT5) return true;
         return qi_mt5_allowed();
     }
 }
@@ -948,17 +1003,20 @@ if (!function_exists('qi_candle_kripto_basi')) {
 if (!function_exists('qi_mt5_candles')) {
     /** Candle feed broker MT5 (oldest-first) atau [] bila tidak tersedia → pemanggil fallback. */
     function qi_mt5_candles(string $symbol, string $interval, int $limit = 1000): array {
-        $raw = qi_mt5_request('/api/candles?symbol=' . rawurlencode(strtoupper($symbol)) . '&tf=' . rawurlencode($interval) . '&count=' . $limit, 8);
-        if (!$raw) return [];
-        $d = json_decode($raw, true);
-        if (!is_array($d) || empty($d['candles']) || !is_array($d['candles'])) return [];
-        $out = [];
-        foreach ($d['candles'] as $c) {
-            if (!isset($c['time'], $c['open'], $c['high'], $c['low'], $c['close'])) continue;
-            $out[] = ['time' => (int)$c['time'], 'open' => (float)$c['open'], 'high' => (float)$c['high'],
-                      'low' => (float)$c['low'], 'close' => (float)$c['close'], 'volume' => (float)($c['volume'] ?? 0)];
+        foreach (qi_broker_symbol_candidates($symbol) as $candidate) {
+            $raw = qi_mt5_request('/api/candles?symbol=' . rawurlencode($candidate) . '&tf=' . rawurlencode($interval) . '&count=' . $limit, 8);
+            if (!$raw) continue;
+            $d = json_decode($raw, true);
+            if (!is_array($d) || empty($d['candles']) || !is_array($d['candles'])) continue;
+            $out = [];
+            foreach ($d['candles'] as $c) {
+                if (!isset($c['time'], $c['open'], $c['high'], $c['low'], $c['close'])) continue;
+                $out[] = ['time' => (int)$c['time'], 'open' => (float)$c['open'], 'high' => (float)$c['high'],
+                          'low' => (float)$c['low'], 'close' => (float)$c['close'], 'volume' => (float)($c['volume'] ?? 0)];
+            }
+            if (count($out) >= 5) return $out;
         }
-        return count($out) >= 5 ? $out : [];
+        return [];
     }
 }
 if (!function_exists('qi_mt5_quotes')) {

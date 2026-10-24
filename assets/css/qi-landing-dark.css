@@ -1,0 +1,529 @@
+/* Quantum Institut — premium dark launch page layer.
+   The page keeps its existing content and data hooks, while this layer gives it
+   the quieter, editorial SaaS feel used by the new brand direction. */
+
+:root {
+    --qi-launch-bg: #050509;
+    --qi-launch-panel: #0b0b12;
+    --qi-launch-panel-2: #10101a;
+    --qi-launch-line: rgba(255,255,255,.09);
+    --qi-launch-muted: #8d8da1;
+    --qi-launch-text: #f5f3ff;
+    --qi-launch-violet: #a78bfa;
+    --qi-launch-cyan: #65e6d1;
+}
+
+.qi-dark-launch {
+    background:
+        radial-gradient(900px 520px at 50% -8%, rgba(111,74,255,.16), transparent 65%),
+        radial-gradient(620px 460px at 92% 30%, rgba(0,229,255,.06), transparent 70%),
+        var(--qi-launch-bg) !important;
+    color: var(--qi-launch-text);
+    font-family: Inter, system-ui, sans-serif;
+}
+
+.qi-dark-launch .qi-grid-bg {
+    opacity: .18;
+    background-image: radial-gradient(rgba(255,255,255,.12) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: linear-gradient(to bottom, #000, transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 72%);
+}
+
+.qi-dark-launch header {
+    background: rgba(5,5,9,.72) !important;
+    border-bottom-color: rgba(255,255,255,.08) !important;
+}
+
+.qi-dark-launch header > div {
+    max-width: 1180px;
+}
+
+.qi-dark-launch header nav a {
+    color: rgba(220,218,235,.62);
+    font-size: 12px;
+    letter-spacing: .01em;
+}
+
+.qi-dark-launch header nav a:hover {
+    color: #fff;
+}
+
+.qi-dark-launch #terminal {
+    padding-top: clamp(76px, 11vw, 142px);
+    padding-bottom: clamp(64px, 9vw, 116px);
+    overflow: hidden;
+}
+
+.qi-dark-launch #terminal .qi-hero-mesh {
+    background:
+        radial-gradient(ellipse 52% 42% at 50% 12%, rgba(167,139,250,.17), transparent 70%),
+        radial-gradient(ellipse 30% 38% at 10% 42%, rgba(101,230,209,.06), transparent 72%),
+        radial-gradient(ellipse 28% 34% at 92% 48%, rgba(124,77,255,.09), transparent 72%);
+}
+
+.qi-dark-launch #terminal .max-w-7xl > .grid {
+    display: block;
+}
+
+.qi-dark-launch #terminal .max-w-7xl > .grid > .space-y-6 {
+    width: min(100%, 900px);
+    margin: 0 auto;
+    text-align: center;
+}
+
+.qi-dark-launch #terminal .qi-eyebrow {
+    margin-inline: auto;
+    color: rgba(210,198,255,.9);
+    background: rgba(167,139,250,.09);
+    border-color: rgba(167,139,250,.26);
+    box-shadow: 0 0 28px rgba(124,77,255,.08);
+}
+
+.qi-dark-launch #terminal h1 {
+    max-width: 920px;
+    margin-inline: auto;
+    font-size: clamp(3.05rem, 7vw, 6.5rem);
+    line-height: .98;
+    letter-spacing: -.075em;
+    text-wrap: balance;
+}
+
+.qi-dark-launch #terminal h1 span {
+    background-image: linear-gradient(95deg, #e7e0ff 0%, #b9a4ff 43%, #65e6d1 100%);
+}
+
+.qi-dark-launch #terminal .max-w-lg {
+    max-width: 610px;
+    margin-inline: auto;
+    color: rgba(203,201,218,.68);
+    font-size: clamp(.95rem, 1.5vw, 1.1rem);
+}
+
+.qi-dark-launch #terminal .flex.flex-col.sm\:flex-row {
+    justify-content: center;
+}
+
+.qi-dark-launch #terminal .flex.flex-col.sm\:flex-row a:first-child {
+    color: #0a0a0e;
+    background: #f4f0ff;
+    box-shadow: 0 10px 34px rgba(167,139,250,.18);
+}
+
+.qi-dark-launch #terminal .flex.flex-col.sm\:flex-row a:first-child:hover {
+    background: #fff;
+    box-shadow: 0 12px 42px rgba(167,139,250,.3);
+}
+
+.qi-dark-launch #terminal .flex.flex-col.sm\:flex-row a:nth-child(2) {
+    background: rgba(255,255,255,.045) !important;
+    border-color: rgba(255,255,255,.14) !important;
+    color: rgba(245,243,255,.82) !important;
+}
+
+.qi-dark-launch #terminal .flex.flex-col.sm\:flex-row a:nth-child(2):hover {
+    background: rgba(255,255,255,.09) !important;
+}
+
+.qi-dark-launch #terminal .qi-trust {
+    color: rgba(183,181,199,.55);
+}
+
+.qi-dark-launch #terminal .flex.flex-wrap.items-center {
+    justify-content: center;
+}
+
+.qi-dark-launch #panduan {
+    width: min(100%, 1040px);
+    margin: clamp(64px, 8vw, 102px) auto 0;
+}
+
+.qi-dark-launch #panduan .signal-card-glow {
+    padding: clamp(12px, 2.2vw, 22px);
+    border-color: rgba(255,255,255,.13) !important;
+    background: linear-gradient(145deg, rgba(20,18,31,.94), rgba(8,9,15,.94)) !important;
+    box-shadow:
+        0 34px 100px rgba(0,0,0,.45),
+        0 0 0 1px rgba(167,139,250,.04),
+        0 0 90px rgba(124,77,255,.12);
+    animation: none;
+}
+
+.qi-dark-launch #panduan .signal-card-glow::before {
+    content: "";
+    display: block;
+    height: 1px;
+    margin: -22px -22px 18px;
+    background: linear-gradient(90deg, transparent, rgba(167,139,250,.7), rgba(101,230,209,.6), transparent);
+}
+
+.qi-dark-launch .qi-mini-chart {
+    height: clamp(180px, 24vw, 290px);
+    background: #08090f;
+    border-color: rgba(255,255,255,.1) !important;
+}
+
+.qi-dark-launch #terminal + section {
+    background: transparent !important;
+    border-color: rgba(255,255,255,.08) !important;
+}
+
+.qi-dark-launch #terminal + section .grid > div {
+    position: relative;
+}
+
+.qi-dark-launch #terminal + section .grid > div:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 12%;
+    right: 0;
+    height: 76%;
+    width: 1px;
+    background: rgba(255,255,255,.09);
+}
+
+.qi-dark-launch #mesin-kuantum,
+.qi-dark-launch #quantum-plus,
+.qi-dark-launch #trade-ideas,
+.qi-dark-launch #download,
+.qi-dark-launch #faq {
+    border-color: rgba(255,255,255,.08) !important;
+}
+
+.qi-dark-launch .qi-card,
+.qi-dark-launch #mesin-kuantum .rounded-2xl,
+.qi-dark-launch #trade-ideas .rounded-2xl,
+.qi-dark-launch #download .rounded-2xl {
+    background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.018)) !important;
+    border-color: rgba(255,255,255,.09) !important;
+    box-shadow: 0 14px 36px rgba(0,0,0,.12);
+}
+
+.qi-dark-launch .qi-card:hover,
+.qi-dark-launch #mesin-kuantum .rounded-2xl:hover,
+.qi-dark-launch #trade-ideas .rounded-2xl:hover {
+    transform: translateY(-4px);
+    border-color: rgba(167,139,250,.34) !important;
+    background: linear-gradient(145deg, rgba(167,139,250,.09), rgba(255,255,255,.025)) !important;
+}
+
+.qi-dark-launch #mesin-kuantum .qi-eyebrow,
+.qi-dark-launch #quantum-plus .qi-eyebrow,
+.qi-dark-launch #faq .qi-eyebrow {
+    background: rgba(167,139,250,.08);
+    border-color: rgba(167,139,250,.23);
+}
+
+.qi-dark-launch #mesin-kuantum h2,
+.qi-dark-launch #quantum-plus h2,
+.qi-dark-launch #trade-ideas h2,
+.qi-dark-launch #faq h2 {
+    letter-spacing: -.045em;
+}
+
+.qi-dark-launch .animate-ticker {
+    animation-duration: 42s;
+}
+
+.qi-dark-launch footer {
+    background: #050509 !important;
+    border-color: rgba(255,255,255,.08) !important;
+}
+
+@media (max-width: 767px) {
+    .qi-dark-launch #terminal h1 {
+        font-size: clamp(2.65rem, 13vw, 4.5rem);
+        letter-spacing: -.065em;
+    }
+
+    .qi-dark-launch #terminal .flex.flex-wrap.items-center {
+        gap: 8px 12px;
+    }
+
+    .qi-dark-launch #terminal + section .grid > div:not(:last-child)::after {
+        top: auto;
+        right: 10%;
+        bottom: 0;
+        width: 80%;
+        height: 1px;
+    }
+
+    .qi-dark-launch #panduan .signal-card-glow::before {
+        margin-inline: -12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qi-dark-launch .qi-card:hover,
+    .qi-dark-launch #mesin-kuantum .rounded-2xl:hover,
+    .qi-dark-launch #trade-ideas .rounded-2xl:hover {
+        transform: none;
+    }
+}
+
+/* ── DarkMesh-style launch composition ─────────────────────────────────── */
+.qi-dark-launch .qi-launch-page {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    background: #07080a;
+    color: #f4f4f5;
+}
+
+.qi-dark-launch > main#main-content,
+.qi-dark-launch > footer#belajar {
+    display: none !important;
+}
+
+.qi-launch-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .38;
+    background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, #000, transparent 34%);
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 34%);
+}
+
+.qi-launch-hero {
+    min-height: 680px;
+    padding: 126px 24px 84px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.qi-launch-hero-inner {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 920px);
+}
+
+.qi-launch-kicker {
+    color: #8b93a3;
+    font: 600 10px/1.2 "Geist Mono", "JetBrains Mono", monospace;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+
+.qi-launch-kicker > span,
+.qi-proof-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+    vertical-align: 1px;
+    border-radius: 50%;
+    background: #00d992;
+    box-shadow: 0 0 14px rgba(0,217,146,.8);
+}
+
+.qi-launch-hero h1,
+.qi-launch-final h2,
+.qi-launch-section-head h2,
+.qi-workflow-copy h2 {
+    margin: 24px auto 0;
+    font-family: "Plus Jakarta Sans", Inter, sans-serif;
+    font-size: clamp(3.25rem, 8.2vw, 7rem);
+    font-weight: 800;
+    line-height: .98;
+    letter-spacing: -.075em;
+    color: #f4f4f5;
+}
+
+.qi-launch-hero h1 em,
+.qi-launch-final h2 em,
+.qi-launch-section-head h2 em,
+.qi-workflow-copy h2 em {
+    color: #8c93a0;
+    font-style: normal;
+}
+
+.qi-launch-lead {
+    width: min(100%, 610px);
+    margin: 30px auto 0;
+    color: #8b93a3;
+    font-size: 15px;
+    line-height: 1.75;
+}
+
+.qi-launch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 32px;
+}
+
+.qi-launch-btn {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 0 20px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.qi-launch-btn:hover { transform: translateY(-2px); }
+.qi-launch-btn-primary { background: #f4f4f5; color: #090a0c; box-shadow: 0 10px 28px rgba(0,0,0,.26); }
+.qi-launch-btn-primary:hover { background: #fff; box-shadow: 0 14px 34px rgba(0,217,146,.14); }
+.qi-launch-btn-ghost { border: 1px solid rgba(255,255,255,.14); color: #d4d7dd; background: rgba(255,255,255,.025); }
+.qi-launch-btn-ghost:hover { border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.06); }
+
+.qi-launch-proof {
+    margin-top: 30px;
+    color: #687181;
+    font: 10px/1.5 "Geist Mono", "JetBrains Mono", monospace;
+    letter-spacing: .03em;
+}
+.qi-launch-proof b { margin: 0 8px; color: #343a44; }
+
+.qi-launch-orbit {
+    position: absolute;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 999px;
+    pointer-events: none;
+    transform: rotate(-18deg);
+}
+.qi-launch-orbit-a { width: 780px; height: 290px; top: 90px; left: 50%; margin-left: -390px; box-shadow: 0 0 80px rgba(0,217,146,.04); }
+.qi-launch-orbit-b { width: 1100px; height: 400px; top: 30px; left: 50%; margin-left: -550px; opacity: .4; }
+
+.qi-launch-showcase {
+    position: relative;
+    z-index: 2;
+    width: min(calc(100% - 40px), 1220px);
+    margin: -20px auto 0;
+}
+
+.qi-showcase-window {
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    background: #0b0d11;
+    box-shadow: 0 34px 90px rgba(0,0,0,.46), 0 0 0 8px rgba(255,255,255,.012);
+}
+
+.qi-showcase-topbar,
+.qi-showcase-bottom {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    gap: 24px;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    color: #687181;
+    font: 10px "Geist Mono", "JetBrains Mono", monospace;
+}
+.qi-showcase-brand { display: flex; align-items: center; gap: 8px; color: #e5e7eb; font-weight: 600; white-space: nowrap; }
+.qi-showcase-logo { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border: 1px solid rgba(101,230,209,.4); border-radius: 6px; color: #65e6d1; font-size: 11px; font-weight: 800; }
+.qi-showcase-tabs { display: flex; align-self: stretch; align-items: center; gap: 24px; margin-left: 22px; }
+.qi-showcase-tabs span { display: inline-flex; height: 100%; align-items: center; border-bottom: 1px solid transparent; }
+.qi-showcase-tabs .active { border-color: #65e6d1; color: #d6fff7; }
+.qi-showcase-status { display: flex; align-items: center; gap: 6px; margin-left: auto; color: #00d992; }
+.qi-showcase-status i, .qi-showcase-bottom i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #00d992; box-shadow: 0 0 10px #00d992; }
+
+.qi-showcase-body { display: grid; grid-template-columns: 205px minmax(0,1fr) 250px; min-height: 490px; }
+.qi-showcase-watchlist, .qi-showcase-signal { padding: 18px 14px; background: rgba(255,255,255,.018); }
+.qi-showcase-watchlist { border-right: 1px solid rgba(255,255,255,.07); }
+.qi-showcase-signal { border-left: 1px solid rgba(255,255,255,.07); }
+.qi-mini-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; color: #7c8492; font: 600 9px "Geist Mono", monospace; letter-spacing: .12em; }
+.qi-mini-label .live { padding: 3px 5px; border: 1px solid rgba(0,217,146,.25); border-radius: 4px; color: #00d992; font-size: 8px; }
+.qi-watch-search { margin-bottom: 16px; padding: 8px 9px; border: 1px solid rgba(255,255,255,.08); border-radius: 5px; color: #687181; font-size: 10px; }
+.qi-watch-group { margin: 14px 0 8px; color: #566070; font: 9px "Geist Mono", monospace; letter-spacing: .14em; }
+.qi-watch-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 6px; align-items: center; min-height: 34px; padding: 4px 5px; border-radius: 5px; color: #8c93a0; font-size: 9px; }
+.qi-watch-row.selected { background: rgba(101,230,209,.09); color: #e5e7eb; }
+.qi-watch-row strong { font-weight: 600; }
+.qi-watch-row small { grid-column: 2 / -1; margin-top: -7px; color: #00d992; font: 8px "Geist Mono", monospace; text-align: right; }
+.qi-watch-row small.down { color: #fb7185; }
+.qi-asset-icon { display: inline-flex; width: 19px; height: 19px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: 8px; font-weight: 800; }
+.qi-asset-icon.gold { background: #d5a51f; color: #fff7d0; }.qi-asset-icon.blue { background: #2563eb; }.qi-asset-icon.purple { background: #7c3aed; }.qi-asset-icon.red { background: #c94b58; }.qi-asset-icon.orange { background: #f59e0b; }.qi-asset-icon.cyan { background: #06b6d4; }
+
+.qi-showcase-chart { min-width: 0; background: #080a0e; }
+.qi-chart-toolbar { display: flex; min-height: 45px; align-items: center; gap: 14px; padding: 0 15px; border-bottom: 1px solid rgba(255,255,255,.06); color: #687181; font: 9px "Geist Mono", monospace; white-space: nowrap; }
+.qi-chart-toolbar strong { display: flex; align-items: center; gap: 7px; color: #e5e7eb; font-weight: 600; }
+.qi-chart-toolbar .active { color: #65e6d1; }
+.qi-toolbar-spacer { flex: 1; }
+.qi-chart-area { position: relative; height: 445px; overflow: hidden; }
+.qi-chart-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 25% 25%; }
+.qi-chart-area svg { position: absolute; inset: 38px 30px 28px 18px; width: calc(100% - 48px); height: calc(100% - 66px); }
+.qi-chart-price-label { position: absolute; right: 8px; color: #586170; font: 9px "Geist Mono", monospace; }.qi-chart-price-label.p1 { top: 55px; }.qi-chart-price-label.p2 { top: 160px; }.qi-chart-price-label.p3 { top: 265px; }.qi-chart-price-label.p4 { top: 370px; }
+.qi-chart-current { position: absolute; right: 0; top: 258px; padding: 5px 7px; border-radius: 3px 0 0 3px; background: #65e6d1; color: #07100f; font: 700 9px "Geist Mono", monospace; }
+.qi-chart-signal { position: absolute; left: 18%; top: 178px; padding: 5px 8px; border-radius: 4px; font: 9px "Geist Mono", monospace; }.qi-signal-buy { border: 1px solid rgba(0,217,146,.35); background: rgba(0,217,146,.1); color: #65e6d1; }
+.qi-chart-time { position: absolute; right: 36px; bottom: 8px; color: #566070; font: 8px "Geist Mono", monospace; }
+
+.qi-signal-symbol { display: flex; align-items: center; gap: 8px; padding: 11px 0; color: #e5e7eb; font-size: 13px; }.qi-signal-wait { margin-left: auto; padding: 4px 6px; border: 1px solid rgba(0,217,146,.35); border-radius: 4px; color: #00d992; font: 700 9px "Geist Mono", monospace; }.qi-signal-caption { color: #687181; font: 9px "Geist Mono", monospace; }
+.qi-signal-reason { display: grid; gap: 7px; margin-top: 22px; padding: 12px; border: 1px solid rgba(255,255,255,.08); border-radius: 6px; background: rgba(255,255,255,.025); }.qi-signal-reason span, .qi-signal-levels small { color: #687181; font: 8px "Geist Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }.qi-signal-reason strong { color: #d5fff7; font-size: 11px; }.qi-signal-reason small { color: #8c93a0; font: 9px "Geist Mono", monospace; }
+.qi-signal-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }.qi-signal-levels div { display: grid; gap: 5px; padding: 9px; border: 1px solid rgba(255,255,255,.07); border-radius: 5px; }.qi-signal-levels strong { color: #d9dde5; font: 700 10px "Geist Mono", monospace; }.qi-signal-levels strong.loss { color: #fb7185; }.qi-signal-levels strong.profit { color: #00d992; }
+.qi-signal-footer { display: flex; justify-content: space-between; margin-top: 18px; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.07); color: #687181; font: 9px "Geist Mono", monospace; }.qi-signal-footer strong { color: #65e6d1; }
+.qi-showcase-bottom { min-height: 36px; border-top: 1px solid rgba(255,255,255,.07); border-bottom: 0; font-size: 9px; }.qi-showcase-bottom span:nth-child(2) { margin-left: auto; }.qi-showcase-bottom span:last-child { color: #a78bfa; }
+
+.qi-launch-section { position: relative; z-index: 1; width: min(calc(100% - 48px), 1120px); margin: 0 auto; padding: 150px 0; }
+.qi-launch-section-head { max-width: 580px; }.qi-launch-section-head h2, .qi-workflow-copy h2 { margin-top: 18px; font-size: clamp(2.65rem, 5vw, 4.7rem); }.qi-launch-section-head p, .qi-workflow-copy p { max-width: 480px; margin-top: 22px; color: #7f8795; font-size: 14px; line-height: 1.75; }
+.qi-capability-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 55px; }.qi-capability-grid article { position: relative; min-height: 270px; padding: 23px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: rgba(255,255,255,.025); transition: transform .2s ease, border-color .2s ease, background .2s ease; }.qi-capability-grid article:hover { transform: translateY(-4px); border-color: rgba(0,217,146,.28); background: rgba(0,217,146,.035); }.qi-card-number { position: absolute; top: 22px; right: 22px; color: #47505d; font: 10px "Geist Mono", monospace; }.qi-card-icon { display: flex; width: 36px; height: 36px; align-items: center; justify-content: center; margin-bottom: 26px; border: 1px solid rgba(101,230,209,.28); border-radius: 8px; color: #65e6d1; font-size: 22px; }.qi-capability-grid h3 { color: #e5e7eb; font-family: "Plus Jakarta Sans", Inter, sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -.03em; }.qi-capability-grid p { margin-top: 12px; color: #7f8795; font-size: 12px; line-height: 1.7; }.qi-capability-grid a, .qi-launch-inline-link { display: inline-flex; gap: 10px; margin-top: 24px; color: #65e6d1; font: 600 10px "Geist Mono", monospace; }.qi-capability-grid a span, .qi-launch-inline-link span { transition: transform .2s ease; }.qi-capability-grid a:hover span, .qi-launch-inline-link:hover span { transform: translate(3px,-3px); }
+
+.qi-workflow { display: grid; grid-template-columns: .9fr 1.1fr; gap: 90px; align-items: start; border-top: 1px solid rgba(255,255,255,.08); }.qi-workflow-steps { display: grid; gap: 0; }.qi-workflow-steps > div { display: grid; grid-template-columns: 42px 1fr; gap: 14px; padding: 22px 0; border-bottom: 1px solid rgba(255,255,255,.08); }.qi-workflow-steps span { color: #00d992; font: 10px "Geist Mono", monospace; }.qi-workflow-steps strong { color: #e5e7eb; font-size: 14px; }.qi-workflow-steps p { grid-column: 2; margin-top: -6px; color: #727b89; font-size: 12px; line-height: 1.65; }
+.qi-launch-final { position: relative; z-index: 1; padding: 170px 24px 190px; text-align: center; overflow: hidden; border-top: 1px solid rgba(255,255,255,.08); }.qi-launch-final h2 { position: relative; z-index: 1; font-size: clamp(3.2rem, 8vw, 6.6rem); }.qi-launch-final p { position: relative; z-index: 1; width: min(100%, 520px); margin: 25px auto 30px; color: #7f8795; font-size: 14px; line-height: 1.75; }.qi-launch-final .qi-launch-kicker, .qi-launch-final .qi-launch-btn { position: relative; z-index: 1; }.qi-launch-final-glow { position: absolute; width: 560px; height: 260px; left: 50%; top: 50%; transform: translate(-50%,-50%); background: radial-gradient(ellipse, rgba(0,217,146,.13), transparent 68%); filter: blur(8px); }
+
+@media (max-width: 900px) {
+    .qi-launch-hero { min-height: 620px; }
+    .qi-showcase-body { grid-template-columns: 170px minmax(0,1fr); }
+    .qi-showcase-signal { display: none; }
+    .qi-showcase-watchlist { padding-inline: 10px; }
+    .qi-watch-row { font-size: 8px; }
+    .qi-chart-toolbar { gap: 10px; }
+    .qi-workflow { gap: 42px; }
+}
+@media (max-width: 680px) {
+    .qi-launch-hero { min-height: 610px; padding: 100px 18px 72px; }
+    .qi-launch-hero h1 { font-size: clamp(2.9rem, 14vw, 4.6rem); }
+    .qi-launch-lead { font-size: 13px; }
+    .qi-launch-proof { line-height: 2.3; }
+    .qi-launch-orbit-a { width: 550px; margin-left: -275px; }
+    .qi-launch-orbit-b { width: 700px; margin-left: -350px; }
+    .qi-launch-showcase { width: calc(100% - 24px); }
+    .qi-showcase-topbar { gap: 12px; padding-inline: 10px; }
+    .qi-showcase-tabs { display: none; }
+    .qi-showcase-status { font-size: 8px; }
+    .qi-showcase-body { display: block; }
+    .qi-showcase-watchlist { display: none; }
+    .qi-chart-area { height: 310px; }
+    .qi-chart-toolbar { gap: 9px; overflow: hidden; }
+    .qi-chart-toolbar span:nth-last-child(-n+2) { display: none; }
+    .qi-showcase-bottom { gap: 8px; padding-inline: 10px; font-size: 8px; }
+    .qi-showcase-bottom span:nth-child(2) { display: none; }
+    .qi-launch-section { width: calc(100% - 36px); padding: 100px 0; }
+    .qi-capability-grid { grid-template-columns: 1fr; margin-top: 34px; }
+    .qi-capability-grid article { min-height: 220px; }
+    .qi-workflow { grid-template-columns: 1fr; gap: 44px; }
+    .qi-launch-final { padding: 120px 18px 140px; }
+}
+
+@media (max-width: 420px) {
+    .qi-launch-hero { min-height: 590px; padding-inline: 14px; }
+    .qi-launch-hero h1 { font-size: clamp(2.5rem, 13.5vw, 3.5rem); }
+    .qi-launch-actions { flex-direction: column; width: 100%; }
+    .qi-launch-actions .qi-launch-btn { width: min(100%, 280px); }
+    .qi-launch-proof { max-width: 290px; margin-inline: auto; }
+    .qi-showcase-window { border-radius: 8px; }
+    .qi-showcase-brand { font-size: 9px; }
+    .qi-showcase-status { display: none; }
+    .qi-chart-toolbar { font-size: 8px; }
+    .qi-chart-toolbar span:nth-child(2), .qi-chart-toolbar span:nth-child(4), .qi-chart-toolbar span:nth-child(5) { display: none; }
+    .qi-chart-area { height: 260px; }
+    .qi-chart-price-label.p1 { top: 42px; }.qi-chart-price-label.p2 { top: 105px; }.qi-chart-price-label.p3 { top: 168px; }.qi-chart-price-label.p4 { top: 231px; }
+    .qi-chart-current { top: 164px; }
+    .qi-chart-signal { left: 10%; top: 110px; max-width: 150px; font-size: 8px; }
+    .qi-chart-time { right: 12px; font-size: 7px; }
+    .qi-launch-section { width: calc(100% - 28px); padding: 82px 0; }
+    .qi-launch-section-head h2, .qi-workflow-copy h2 { font-size: clamp(2.35rem, 12vw, 3.2rem); }
+    .qi-launch-final h2 { font-size: clamp(2.8rem, 14vw, 4rem); }
+}

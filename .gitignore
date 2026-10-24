@@ -60,3 +60,15 @@ cache/errorlogs/
 qim-vps-bundle.zip
 deploy/caddy_*.zip
 deploy/caddy_*_checksums.txt
+
+# Rahasia bridge. Sebelumnya tv-bridge/.env TIDAK terabaikan — satu `git add -A`
+# cukup untuk mendorongnya ke repo publik yang langsung ter-deploy.
+.env
+*.env
+.env.*
+
+# Salinan situs vendor tradecanvas.dev yang di-mirror untuk iframe terminal
+# (~83 MB, lengkap dengan docs 8 bahasa, robots.txt, dan canonical ke domain
+# vendor). Bukan kode sumber: bila TradeCanvas dipakai, pasang lewat npm
+# (@tradecanvas/chart) sehingga yang masuk repo hanya bundel yang dibutuhkan.
+/quantum-terminal/

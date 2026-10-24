@@ -95,3 +95,4 @@ define('QI_PAYMENT_WEBHOOK_SECRET', '');
 // define('QI_MT5_BRIDGE_AUDIENCE', 'pro');
 // define('QI_MT5_BRIDGE_ACCOUNT', '');         // nomor login MT5 (dipakai bila AUDIENCE = 'owner')
 // define('QI_MT5_BRIDGE_API_URL', '');         // opsional: https://… bila REST berbeda dari URL WebSocket
+// define('QI_MT5_BRIDGE_SYMBOLS', 'XAUUSD,EURUSD,GBPUSD,USDJPY,AUDUSD,NZDUSD,USDCHF,USDCAD,EURGBP,EURJPY,GBPJPY,XAGUSD');

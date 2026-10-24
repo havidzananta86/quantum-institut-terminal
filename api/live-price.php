@@ -399,6 +399,7 @@ function qi_frankfurter_fx_prices(array $needed): array {
         'USDJPY' => ['cur'=>'JPY','inv'=>false],
         'USDCHF' => ['cur'=>'CHF','inv'=>false],
         'USDCAD' => ['cur'=>'CAD','inv'=>false],
+        'USDTRY' => ['cur'=>'TRY','inv'=>false],
     ];
 
     $out = [];
@@ -457,11 +458,80 @@ foreach (array_merge($fxMap, ['EURUSD'=>'EUR/USD']) as $sym => $tdSym) {
     $fxNeedFrankfurter[] = $sym;
 }
 
+// ECB/Frankfurter is a free daily fallback for USD/TRY when no broker or
+// Twelve Data quote is available.
+if (in_array('USDTRY', $symbols, true) && !isset($result['USDTRY'])) {
+    $fxNeedFrankfurter[] = 'USDTRY';
+}
+
 // Frankfurter batch fallback (single HTTP call covers all missing pairs)
 if (!empty($fxNeedFrankfurter)) {
     $fkPrices = qi_frankfurter_fx_prices($fxNeedFrankfurter);
     foreach ($fkPrices as $sym => $data) {
         if (!isset($result[$sym])) $result[$sym] = $data;
+    }
+}
+
+// ─── Cross-pair fallback ────────────────────────────────────────────────────
+// Crosses are derived from the already fetched USD majors. This avoids one
+// provider request per row while keeping the watchlist useful on free plans.
+$deriveCross = function (string $symbol, string $left, string $right, string $operation) use (&$result): void {
+    if (isset($result[$symbol]) || empty($result[$left]['price']) || empty($result[$right]['price'])) return;
+    $leftPrice  = (float)$result[$left]['price'];
+    $rightPrice = (float)$result[$right]['price'];
+    if ($leftPrice <= 0 || $rightPrice <= 0) return;
+    $leftOpen  = (float)($result[$left]['open'] ?? $leftPrice);
+    $rightOpen = (float)($result[$right]['open'] ?? $rightPrice);
+    if ($operation === 'divide') {
+        $price = $leftPrice / $rightPrice;
+        $open  = $leftOpen / max($rightOpen, 1e-12);
+    } else {
+        $price = $leftPrice * $rightPrice;
+        $open  = $leftOpen * $rightOpen;
+    }
+    if ($price <= 0 || $open <= 0) return;
+    $result[$symbol] = [
+        'price'  => $price,
+        'open'   => $open,
+        'high'   => max($price, $open),
+        'low'    => min($price, $open),
+        'chgPct' => round(($price - $open) / $open * 100, 4),
+        'vol'    => 0,
+        'source' => 'derived_fx',
+    ];
+};
+
+if (in_array('EURGBP', $symbols, true)) $deriveCross('EURGBP', 'EURUSD', 'GBPUSD', 'divide');
+if (in_array('EURJPY', $symbols, true)) $deriveCross('EURJPY', 'EURUSD', 'USDJPY', 'multiply');
+if (in_array('GBPJPY', $symbols, true)) $deriveCross('GBPJPY', 'GBPUSD', 'USDJPY', 'multiply');
+if (in_array('AUDJPY', $symbols, true)) $deriveCross('AUDJPY', 'AUDUSD', 'USDJPY', 'multiply');
+
+// Silver has no Binance spot equivalent. Use the same public quote provider
+// as the chart endpoint when the broker/bridge did not return it first.
+if (in_array('XAGUSD', $symbols, true) && empty($result['XAGUSD'])) {
+    $tdSilver = qi_twelvedata_price('XAG/USD', 'xagusd');
+    if (!empty($tdSilver['price']) && (float)$tdSilver['price'] > 0) $result['XAGUSD'] = $tdSilver;
+    if (empty($result['XAGUSD'])) {
+        $silverRaw = qi_http_get('https://biquote.io/api/XAGUSD/ohlc?interval=1m&limit=2', 4);
+        $silverData = $silverRaw ? json_decode($silverRaw, true) : null;
+        $silverBars = is_array($silverData) ? ($silverData['bars'] ?? $silverData) : [];
+        if (is_array($silverBars) && count($silverBars) > 0) {
+            $silverLast = $silverBars[count($silverBars) - 1];
+            $silverPrev = count($silverBars) > 1 ? $silverBars[count($silverBars) - 2] : $silverLast;
+            $silverPrice = (float)($silverLast['close'] ?? 0);
+            $silverOpen  = (float)($silverPrev['close'] ?? $silverPrice);
+            if ($silverPrice > 0) {
+                $result['XAGUSD'] = [
+                    'price'  => $silverPrice,
+                    'open'   => $silverOpen,
+                    'high'   => (float)($silverLast['high'] ?? $silverPrice),
+                    'low'    => (float)($silverLast['low'] ?? $silverPrice),
+                    'chgPct' => $silverOpen > 0 ? round(($silverPrice - $silverOpen) / $silverOpen * 100, 4) : 0,
+                    'vol'    => (float)($silverLast['tickVolume'] ?? $silverLast['volume'] ?? 0),
+                    'source' => 'biquote',
+                ];
+            }
+        }
     }
 }
 

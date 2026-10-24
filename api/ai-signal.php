@@ -64,6 +64,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 900) {
 require_once __DIR__ . '/_sinyal_pasar.php';
 
 // ── Signal calculation (EMA / RSI / MACD) ─────────────────────────────────
+require_once __DIR__ . '/_signal_engine.php';
 /**
  * Ambil candle untuk analisa.
  * Mengembalikan ['candles' => array, 'simulated' => bool, 'source', 'stale', 'umur_detik'].
@@ -128,41 +129,32 @@ function ai_analyze(string $sym, string $iv): ?array {
     $loaded = ai_load_candles($sym, $iv);
     // Data simulasi = candle acak: jangan dianalisa sama sekali.
     if (!empty($loaded['simulated'])) return null;
-    $mentah = $loaded['candles'];
-    // Bar ber-rentang nol (O=H=L=C, harga beku saat pasar tutup) dibuang sebelum indikator
-    // dihitung — deret datar itulah yang dulu membuat RSI M15 = 100 di akhir pekan.
-    $candles = qi_sp_buang_datar($mentah);
-    if (count($candles) < 55) return null;
-    $closes = array_column($candles, 'close');
-    $last   = end($closes);
-    $ema20  = ai_ema($closes, 20);
-    $ema50  = ai_ema($closes, 50);
-    // RSI atas SELURUH riwayat (dulu array_slice(-30): bobot nilai awal ±33%).
-    $rsi    = ai_rsi($closes, 14);
-    $macdH  = ai_macd_hist(array_slice($closes, -60));
-
-    $bull = 0; $bear = 0;
-    if ($ema20 && $ema50) {
-        if ($ema20 > $ema50) $bull++; else $bear++;
-        if ($last  > $ema20) $bull++; else $bear++;
+    try {
+        // Bar ber-rentang nol dibuang dulu (penjaga pasar tutup milik master).
+        $all = qt_signal_normalize_candle_series(qi_sp_buang_datar($loaded["candles"] ?? []));
+        if (count($all) < 57) return null;
+        // Chart dan AI wajib memakai candle close yang sama. Candle berjalan
+        // hanya boleh tampil sebagai provisional di UI, bukan keputusan AI.
+        $result = qt_signal_analyze(array_slice($all, 0, -1), ['source' => $loaded['source'] ?? 'Chart feed']);
+        return [
+            'signal' => $result['signal'], 'side' => $result['side'], 'rsi' => round((float)$result['rsi'], 1),
+            'ema20' => $result['ema20'] !== null ? round((float)$result['ema20'], 5) : null,
+            'ema50' => $result['ema50'] !== null ? round((float)$result['ema50'], 5) : null,
+            'ema_cross' => $result['ema20'] !== null && $result['ema50'] !== null ? ($result['ema20'] > $result['ema50'] ? 'UP' : 'DOWN') : null,
+            'macd_hist' => $result['macd'] !== null ? round((float)$result['macd'], 6) : 0,
+            'bull_pts' => (int)$result['bull'], 'bear_pts' => (int)$result['bear'],
+            'price' => $result['current'] !== null ? round((float)$result['current'], 5) : null,
+            'entry' => $result['entry'], 'sl' => $result['sl'], 'tp' => $result['tp'], 'risk_reward' => $result['rr'],
+            'confidence' => (int)$result['confidence'], 'reason' => $result['reason'], 'basis' => $result['basis'],
+            'candle_time' => $result['candleTime'], 'engine_version' => QT_SIGNAL_ENGINE_VERSION,
+            'snapshot_id' => qt_signal_snapshot_id($result, $sym, $iv),
+            // Data dari cache basi dilaporkan apa adanya, bukan disamarkan.
+            'stale' => !empty($loaded['stale']),
+        ];
+    } catch (Throwable $e) {
+        error_log('[AI-SIGNAL] feed rejected for ' . $sym . '/' . $iv . ': ' . $e->getMessage());
+        return null;
     }
-    if ($rsi  > 55) $bull++; elseif ($rsi  < 45) $bear++;
-    if ($macdH > 0) $bull++; elseif ($macdH < 0) $bear++;
-
-    $signal = $bull >= 3 ? 'BULLISH' : ($bear >= 3 ? 'BEARISH' : 'NEUTRAL');
-    return [
-        'signal'    => $signal,
-        'rsi'       => round($rsi, 1),
-        'ema20'     => $ema20 ? round($ema20, 5) : null,
-        'ema50'     => $ema50 ? round($ema50, 5) : null,
-        'ema_cross' => ($ema20 && $ema50) ? ($ema20 > $ema50 ? 'UP' : 'DOWN') : null,
-        'macd_hist' => round($macdH, 6),
-        'bull_pts'  => $bull,
-        'bear_pts'  => $bear,
-        'price'     => round((float)(end($mentah)['close'] ?? $last), 5),
-        // Data dari cache basi (semua sumber gagal) dilaporkan apa adanya, bukan disamarkan.
-        'stale'     => !empty($loaded['stale']),
-    ];
 }
 
 /**
@@ -412,12 +404,22 @@ try {
         // Bila AI memberi arah tetapi levelnya tidak konsisten, level diturunkan
         // dari ATR14 candle H1 NYATA — bukan dikarang. Arah tetap dari AI, jarak
         // dari volatilitas nyata, dan asal level ditulis apa adanya di 'basis'.
-        if (!qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek) && $hargaAcuan > 0 && $atrAcuan > 0) {
-            $epRek = round($hargaAcuan, 5);
-            $slRek = round($arahRek === 'BUY' ? $hargaAcuan - 1.2 * $atrAcuan : $hargaAcuan + 1.2 * $atrAcuan, 5);
-            $tpRek = round($arahRek === 'BUY' ? $hargaAcuan + 3.0 * $atrAcuan : $hargaAcuan - 3.0 * $atrAcuan, 5);
-            $basisLevel = 'level dari ATR14 (AI tidak memberi level yang konsisten)';
-            $levelAtr = true;
+        if (!qi_signal_level_sah($arahRek, $epRek, $tpRek, $slRek)) {
+            $muatRek = ai_load_candles($symbol, '60');
+            if (!empty($muatRek['candles']) && empty($muatRek['simulated'])) {
+                $cndRek = qt_signal_normalize_candle_series($muatRek['candles']);
+                $cndRek = array_slice($cndRek, 0, -1);
+                $nRek = count($cndRek);
+                $pcRek = (float)($cndRek[$nRek - 1]['close'] ?? 0);
+                $atrRek = qt_signal_atr($cndRek, 14) ?? 0.0;
+                if ($atrRek > 0) {
+                    $epRek = round($pcRek, 5);
+                    $slRek = round($arahRek === 'BUY' ? $pcRek - 1.5 * $atrRek : $pcRek + 1.5 * $atrRek, 5);
+                    $tpRek = round($arahRek === 'BUY' ? $pcRek + 3.0 * $atrRek : $pcRek - 3.0 * $atrRek, 5);
+                    $basisLevel = 'level dari ATR14 (AI tidak memberi level yang konsisten; SL 1,5×ATR, TP 2×SL)';
+                    $levelAtr = true;
+                }
+            }
         }
 
         // Entry yang tidak bisa dibandingkan dengan harga pasar tidak boleh masuk rekor publik.

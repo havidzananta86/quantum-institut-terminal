@@ -525,6 +525,62 @@ if (empty($candles) && in_array($symbol, $forexMajors, true)) {
     }
 }
 
+// 1e. Pair Forex lain yang tersedia di katalog Quantum Terminal.
+// Twelve Data tetap dipanggil dari server agar API key tidak pernah masuk ke
+// bundle browser. Jika MT5 bridge dikonfigurasi untuk pair tersebut, blok
+// MT5 di atas sudah menang lebih dulu; bagian ini menjadi fallback publik.
+$forexCurrencies = ['AUD', 'CAD', 'CHF', 'CNH', 'CNY', 'EUR', 'GBP', 'HKD', 'INR', 'JPY', 'MXN', 'NOK', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'TRY', 'USD', 'ZAR'];
+$forexBase = substr($symbol, 0, 3);
+$forexQuote = substr($symbol, 3, 3);
+$isGenericForex = preg_match('/^[A-Z]{6}$/', $symbol)
+    && ((in_array($forexBase, $forexCurrencies, true) && in_array($forexQuote, $forexCurrencies, true))
+        || (in_array($forexBase, ['XAU', 'XAG'], true) && $forexQuote === 'USD'));
+$handledForex = array_merge(['XAUUSD', 'EURUSD'], $forexMajors);
+if (empty($candles) && $isGenericForex && !in_array($symbol, $handledForex, true)) {
+    if (!qi_td_quota_blocked()) {
+        $tdSymbol = $forexBase . '/' . $forexQuote;
+        $tdUrl = 'https://api.twelvedata.com/time_series?symbol=' . urlencode($tdSymbol)
+               . '&interval=' . $tdInterval . '&outputsize=300&apikey=' . TWELVE_DATA_KEY;
+        $raw = qi_http_get($tdUrl, 6);
+        if ($raw) {
+            $d = json_decode($raw, true);
+            $values = $d['values'] ?? [];
+            if (is_array($values) && count($values) > 5 && !isset($d['code'])) {
+                $candles = qi_parse_td_candles($values);
+                $source  = 'twelvedata';
+            }
+        } elseif (($GLOBALS['qi_last_http_code'] ?? 0) === 429) {
+            qi_td_quota_mark();
+        }
+    }
+
+    if (empty($candles)) {
+        $biquoteTf = qi_biquote_tf($interval);
+        $raw = qi_http_get("https://biquote.io/api/{$symbol}/ohlc?interval={$biquoteTf}&limit=300", 4);
+        if ($raw) {
+            $data = json_decode($raw, true);
+            $bars = $data['bars'] ?? (is_array($data) ? $data : []);
+            if (is_array($bars) && count($bars) > 0) {
+                foreach ($bars as $b) {
+                    $t = strtotime($b['openTime'] ?? $b['time'] ?? '');
+                    if ($t > 0) {
+                        $candles[] = [
+                            'time'   => $t,
+                            'open'   => (float)$b['open'],
+                            'high'   => (float)$b['high'],
+                            'low'    => (float)$b['low'],
+                            'close'  => (float)$b['close'],
+                            'volume' => (float)($b['tickVolume'] ?? $b['volume'] ?? 0),
+                        ];
+                    }
+                }
+                usort($candles, fn($a, $b) => $a['time'] - $b['time']);
+                $source = 'biquote';
+            }
+        }
+    }
+}
+
 // 2. SEMUA SUMBER GAGAL → cache NYATA terakhir (ditandai basi + umurnya), bukan candle acak.
 // MENGAPA (audit sinyal 2026-10-22): dulu permintaan yang memegang kunci langsung membuat 201
 // candle rand() dari harga dasar tetap (BTC 68450, XAU 2654,2, EURUSD 1,0895) — walau cache

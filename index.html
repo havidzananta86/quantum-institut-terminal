@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="dark">
-    <title>Quantum Institut Market Terminal | Sembilan Mesin Kuantum Membaca Pasar</title>
-    <meta name="description" content="Sembilan mesin analisa kuantum membaca lebih dari 120 pasar kripto, emas, forex, dan indeks setiap penutupan candle — lengkap dengan level, prasyarat, dan biaya eksekusi.">
-    <meta name="keywords" content="Quantum Institut, Market Terminal, Trading Bot, Trading Indicator, Crypto, Forex, Gold, SMC, SNR, Ichimoku, Fibonacci">
-    <meta name="author" content="Quantum Institut Market Terminal">
+    <title>Quantum Institut | Quantum Terminal untuk Forex &amp; Crypto</title>
+    <meta name="description" content="Quantum Terminal adalah ruang analisa chart untuk Forex dan Crypto dengan 18 tipe chart, 134 indikator, 69 drawing tools, replay, backtesting, dan paper trading.">
+    <meta name="keywords" content="Quantum Institut, Quantum Terminal, chart forex, chart crypto, indikator trading, drawing tools, backtesting, paper trading">
+    <meta name="author" content="Quantum Institut">
     
     <!-- Open Graph / Meta Sosial -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://quantum-institut.com/">
-    <meta property="og:title" content="Quantum Institut Market Terminal">
-    <meta property="og:description" content="Sembilan mesin kuantum membaca pasar. Kamu yang memegang kendali. Terminal analisa multi-pasar 24/7.">
+    <meta property="og:title" content="Quantum Institut | Quantum Terminal">
+    <meta property="og:description" content="Chart-first terminal untuk membaca Forex dan Crypto dengan alat analisa yang lengkap dan transparan.">
     <meta property="og:image" content="https://quantum-institut.com/og-image.png">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Quantum Institut Market Terminal">
-    <meta name="twitter:description" content="Sembilan mesin kuantum membaca pasar. Terminal analisa multi-pasar 24/7.">
+    <meta name="twitter:title" content="Quantum Institut | Quantum Terminal">
+    <meta name="twitter:description" content="Chart-first terminal untuk membaca Forex dan Crypto dengan alat analisa yang lengkap dan transparan.">
     <meta name="twitter:image" content="https://quantum-institut.com/og-image.png">
 
     <!-- PWA / Mobile -->
@@ -41,7 +41,7 @@
       "name": "Quantum Institut",
       "url": "https://quantum-institut.com",
       "logo": "https://quantum-institut.com/assets/img/logo.svg",
-      "description": "Platform terminal analisa pasar multi-aset dengan sembilan mesin kuantum — crypto, forex, emas, dan indeks.",
+      "description": "Platform Quantum Terminal untuk analisa chart Forex dan Crypto dengan indikator, drawing tools, replay, backtesting, dan paper trading.",
       "sameAs": [
         "https://t.me/quantuminstitutterminal",
         "https://discord.gg/quantuminstitut"
@@ -52,7 +52,7 @@
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Quantum Institut Market Terminal",
+      "name": "Quantum Institut Quantum Terminal",
       "url": "https://quantum-institut.com",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "Web",
@@ -60,7 +60,7 @@
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "IDR",
-        "description": "Gratis untuk fitur dasar, PRO mulai Rp55.000/bulan"
+        "description": "Ruang analisa chart untuk Forex dan Crypto"
       }
     }
     </script>
@@ -94,7 +94,7 @@
           "name": "Berapa akurasi sinyal secara real?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Win rate bervariasi per mesin dan per instrumen — kami tidak menjanjikan angka tetap. Angka sebenarnya — termasuk sinyal yang kalah dan interval keyakinannya — tampil apa adanya di halaman Transparansi dan berubah seiring sinyal baru; saat sampelnya masih kecil, kami menulisnya. Namun, akurasi masa lalu tidak menjamin hasil di masa depan."
+            "text": "Hasil signal bervariasi per indikator dan instrumen — kami tidak menjanjikan angka tetap. Data historis dan signal yang kalah tetap ditampilkan apa adanya di halaman Transparansi. Namun, akurasi masa lalu tidak menjamin hasil di masa depan."
           }
         },
         {
@@ -138,7 +138,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Tailwind (pre-built) -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=4d4e1ced9f">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=86f9b77463">
 
     <link rel="stylesheet" href="assets/css/style.css?v=9f82b23c06">
     <link rel="stylesheet" href="assets/css/responsive.css?v=ba959512cd">
@@ -218,16 +218,25 @@
         /* Logo mark hover */
         .qi-logo-mark { transition: filter .3s; }
         a:hover > .qi-logo-mark { filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)); }
+
+        /* Quantum Terminal chart preview */
+        .qi-mini-chart { position: relative; height: 132px; background: #080c13; }
+        .qi-mini-chart-grid { position: absolute; inset: 0; opacity: .72; background-image: linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); background-size: 36px 36px; }
+        .qi-mini-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .qi-mini-chart-label, .qi-mini-chart-price { position: absolute; z-index: 2; font: 10px 'JetBrains Mono', monospace; }
+        .qi-mini-chart-label { left: 10px; top: 8px; color: rgba(148,163,184,.78); }
+        .qi-mini-chart-price { right: 10px; top: 68px; padding: 3px 6px; border: 1px solid rgba(19,184,166,.35); border-radius: 4px; color: #b8fff1; background: rgba(19,184,166,.18); }
     </style>
     <link rel="stylesheet" href="assets/css/qim-sentuh.css?v=942aa50821">
+    <link rel="stylesheet" href="assets/css/qi-landing-dark.css?v=d1736b0054">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
-    <meta property="og:site_name" content="Quantum Institut Market Terminal">
+    <meta property="og:site_name" content="Quantum Institut">
     <meta property="og:locale" content="id_ID">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
 </head>
-<body class="relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
+<body class="qi-dark-launch relative text-slate-200 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden min-w-[320px]">
 
     <!-- PROFESSIONAL LOADING SCREEN -->
     <div id="qiLoader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black" style="transition:opacity 0.3s ease">
@@ -250,7 +259,7 @@
     <script src="assets/js/halaman-index-pemuat.js?v=1.0.0"></script>
 
     <!-- Lewati navbar sticky (hanya muncul saat fokus keyboard) -->
-    <a href="#main-content" class="skip-link">Lompat ke konten utama</a>
+    <a href="#qi-darkmesh-main" class="skip-link">Lompat ke konten utama</a>
 
     <!-- OLED BLACK BACKGROUND + subtle dot-grid texture (replaces particle canvas) -->
     <div class="qi-grid-bg"></div>
@@ -282,23 +291,21 @@
                     <span class="font-heading font-bold text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
                         Quantum<span class="text-cyan-400">Institut</span>
                     </span>
-                    <span class="text-[9px] sm:text-[10px] tracking-[0.2em] font-mono text-cyan-400/80 uppercase">Market Terminal</span>
+                    <span class="text-[9px] sm:text-[10px] tracking-[0.2em] font-mono text-cyan-400/80 uppercase">Quantum Terminal</span>
                 </div>
             </a>
 
             <!-- Menu Horizontal Desktop (≥1024px) & Compact Tablet (768-1024px) -->
             <nav class="hidden md:flex items-center gap-4 lg:gap-8 text-xs lg:text-sm font-medium text-slate-300">
-                <a href="#mesin-kuantum" class="hover:text-cyan-400 transition-colors py-1">Mesin Kuantum</a>
+                <a href="#qi-capabilities" class="hover:text-cyan-400 transition-colors py-1">Fitur</a>
+                <a href="#qi-terminal-preview" class="hover:text-cyan-400 transition-colors py-1">Terminal</a>
+                <a href="#qi-workflow" class="hover:text-cyan-400 transition-colors py-1">Cara kerja</a>
                 <a href="transparansi.html" class="hover:text-cyan-400 transition-colors py-1">Transparansi</a>
-                <a href="#terminal" class="hover:text-cyan-400 transition-colors py-1">Terminal</a>
-                <a href="#panduan" class="hover:text-cyan-400 transition-colors py-1">Panduan</a>
-                <a href="#quantum-plus" class="hover:text-purple-400 transition-colors py-1 font-semibold text-purple-300 flex items-center gap-1">
-                    Quantum+ <span class="px-1.5 py-0.5 text-[9px] font-mono bg-purple-500/20 text-purple-300 rounded border border-purple-500/40">PRO</span>
-                </a>
-                <a href="#belajar" class="hover:text-cyan-400 transition-colors py-1">Belajar</a>
-                <a href="#download" class="hover:text-emerald-400 transition-colors py-1 flex items-center gap-1">
+                <a href="#qi-access" class="hover:text-purple-400 transition-colors py-1 font-semibold text-purple-300">Akses</a>
+                <a href="#faq" class="hover:text-cyan-400 transition-colors py-1">FAQ</a>
+                <a href="dashboard.html" class="hover:text-emerald-400 transition-colors py-1 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Download
+                    Buka Terminal
                 </a>
             </nav>
 
@@ -322,8 +329,8 @@
                                 <svg class="w-4 h-4" style="color:#7C4DFF" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
                             </span>
                             <div>
-                                <div class="text-xs font-bold text-white">Command Center</div>
-                                <div class="text-[10px] text-slate-400">Dashboard & AI</div>
+                                <div class="text-xs font-bold text-white">Quantum Terminal</div>
+                                <div class="text-[10px] text-slate-400">Chart workspace</div>
                             </div>
                         </a>
                         <div style="border-top:1px solid #1a1a1a"></div>
@@ -355,22 +362,22 @@
 
         <!-- Mobile Menu Drawer (<768px) -->
         <div id="mobileMenu" class="hidden md:hidden bg-black/95 backdrop-blur-xl border-b border-white/[0.06] px-4 sm:px-6 py-6 space-y-4">
-            <a href="#mesin-kuantum" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Mesin Kuantum</a>
+            <a href="#qi-capabilities" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Fitur Terminal</a>
+            <a href="#qi-terminal-preview" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Quantum Terminal</a>
+            <a href="#qi-workflow" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Cara kerja</a>
             <a href="transparansi.html" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Transparansi</a>
-            <a href="#terminal" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Terminal</a>
-            <a href="#panduan" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Panduan</a>
-            <a href="#quantum-plus" class="mobile-nav-link block py-2 text-purple-300 hover:text-purple-400 font-medium">Quantum+ (PRO)</a>
-            <a href="#belajar" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">Belajar</a>
-            <a href="#download" class="mobile-nav-link block py-2 text-emerald-300 hover:text-emerald-400 font-medium flex items-center gap-2">
+            <a href="#qi-access" class="mobile-nav-link block py-2 text-purple-300 hover:text-purple-400 font-medium">Akses</a>
+            <a href="#faq" class="mobile-nav-link block py-2 text-slate-300 hover:text-cyan-400 font-medium">FAQ</a>
+            <a href="dashboard.html" class="mobile-nav-link block py-2 text-emerald-300 hover:text-emerald-400 font-medium flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Download Aplikasi
+                Buka Terminal
             </a>
             <div class="pt-4 border-t border-slate-800 flex flex-col gap-3">
                 <a href="login.html" data-qi-nav-masuk class="w-full min-h-[44px] py-3 text-center text-sm font-medium text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center">Masuk</a>
                 <div class="grid grid-cols-2 gap-2">
                     <a href="dashboard.html" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-white rounded-lg flex items-center justify-center gap-1.5" style="background:rgba(124,77,255,0.2);border:1px solid rgba(124,77,255,0.4)">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10-3a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/></svg>
-                        Command Center
+                        Quantum Terminal
                     </a>
                     <a href="dashboard.html?panel=panel-charts" class="mobile-nav-link min-h-[44px] py-3 text-center text-xs font-semibold text-slate-950 bg-cyan-400 rounded-lg shadow-cyan-glow flex items-center justify-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -381,6 +388,74 @@
         </div>
 
     </header>
+
+    <!-- Quantum Institut launch page — trading adaptation of the DarkMesh composition -->
+    <main id="qi-darkmesh-main" class="qi-launch-page">
+        <section class="qi-launch-hero">
+            <div class="qi-launch-orbit qi-launch-orbit-a"></div>
+            <div class="qi-launch-orbit qi-launch-orbit-b"></div>
+            <div class="qi-launch-hero-inner">
+                <div class="qi-launch-kicker"><span></span> QUANTUM INSTITUT · TRADING WORKSPACE</div>
+                <h1>Read the market.<br><em>Trade with a process.</em></h1>
+                <p class="qi-launch-lead">Quantum Terminal memberi kamu ruang kerja yang tenang untuk membaca Forex dan Crypto, menguji setup, dan memahami alasan di balik setiap signal.</p>
+                <div class="qi-launch-actions">
+                    <a class="qi-launch-btn qi-launch-btn-primary" href="dashboard.html">Buka Quantum Terminal <span>↗</span></a>
+                    <a class="qi-launch-btn qi-launch-btn-ghost" href="#qi-workflow">Lihat cara kerja <span>↓</span></a>
+                </div>
+                <div class="qi-launch-proof"><span class="qi-proof-dot"></span> 18 tipe chart <b>·</b> 134 indikator <b>·</b> 69 drawing tools <b>·</b> Forex + Crypto</div>
+            </div>
+        </section>
+
+        <section id="qi-terminal-preview" class="qi-launch-showcase" aria-label="Preview Quantum Terminal">
+            <div class="qi-showcase-window">
+                <div class="qi-showcase-topbar">
+                    <div class="qi-showcase-brand"><span class="qi-showcase-logo">Q</span><span>Quantum Terminal</span></div>
+                    <div class="qi-showcase-tabs"><span class="active">Chart</span><span>Signal Center</span><span>Backtest</span></div>
+                    <div class="qi-showcase-status"><i></i> Market live</div>
+                </div>
+                <div class="qi-showcase-body">
+                    <aside class="qi-showcase-watchlist">
+                        <div class="qi-mini-label">WATCHLIST <span>+</span></div>
+                        <div class="qi-watch-search">⌕ &nbsp; Cari simbol</div>
+                        <div class="qi-watch-group">FOREX</div>
+                        <div class="qi-watch-row selected"><span class="qi-asset-icon gold">Au</span><strong>XAU/USD</strong><span>3.993,68</span><small class="down">−2,30%</small></div>
+                        <div class="qi-watch-row"><span class="qi-asset-icon blue">€</span><strong>EUR/USD</strong><span>1,0742</span><small>+0,18%</small></div>
+                        <div class="qi-watch-row"><span class="qi-asset-icon purple">£</span><strong>GBP/USD</strong><span>1,2488</span><small>+0,06%</small></div>
+                        <div class="qi-watch-row"><span class="qi-asset-icon red">¥</span><strong>USD/JPY</strong><span>156,80</span><small>−0,12%</small></div>
+                        <div class="qi-watch-group">CRYPTO</div>
+                        <div class="qi-watch-row"><span class="qi-asset-icon orange">₿</span><strong>BTC/USDT</strong><span>80.944</span><small class="down">−0,46%</small></div>
+                        <div class="qi-watch-row"><span class="qi-asset-icon cyan">Ξ</span><strong>ETH/USDT</strong><span>2.387</span><small>+0,08%</small></div>
+                    </aside>
+                    <div class="qi-showcase-chart">
+                        <div class="qi-chart-toolbar"><strong><span class="qi-asset-icon gold">Au</span> Emas · XAU/USD</strong><span>5m</span><span>15m</span><span class="active">1H</span><span>4H</span><span>1D</span><span class="qi-toolbar-spacer"></span><span>Indicators</span><span>⚙</span></div>
+                        <div class="qi-chart-area">
+                            <div class="qi-chart-grid"></div><div class="qi-chart-price-label p1">4.040,00</div><div class="qi-chart-price-label p2">4.020,00</div><div class="qi-chart-price-label p3">4.000,00</div><div class="qi-chart-price-label p4">3.980,00</div>
+                            <svg viewBox="0 0 900 390" preserveAspectRatio="none" aria-label="XAUUSD chart preview"><polyline points="0,188 24,178 39,202 56,168 73,180 90,154 108,192 123,186 139,214 157,196 176,228 190,216 208,240 226,212 244,221 262,206 281,220 299,190 315,207 333,180 351,201 369,192 387,215 404,183 422,170 439,192 457,177 477,198 492,176 510,204 531,187 548,212 566,190 584,226 601,205 620,240 640,218 660,230 679,206 698,219 717,198 738,230 759,220 779,244 800,233 820,252 840,242 858,260 880,250 900,260" fill="none" stroke="#65e6d1" stroke-width="2.2" vector-effect="non-scaling-stroke"/><polyline points="0,205 24,192 39,220 56,187 73,192 90,172 108,205 123,196 139,226 157,210 176,243 190,228 208,250 226,224 244,232 262,219 281,232 299,201 315,219 333,194 351,214 369,204 387,228 404,197 422,187 439,204 457,191 477,212 492,193 510,219 531,203 548,226 566,204 584,239 601,218 620,252 640,230 660,243 679,220 698,232 717,210 738,242 759,232 779,255 800,245 820,263 840,252 858,271 880,260 900,270" fill="none" stroke="rgba(167,139,250,.5)" stroke-width="1.3" vector-effect="non-scaling-stroke"/><line x1="0" y1="260" x2="900" y2="260" stroke="#65e6d1" stroke-opacity=".45" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/><circle cx="900" cy="260" r="5" fill="#65e6d1"/></svg>
+                            <div class="qi-chart-current">3.993,68</div><div class="qi-chart-signal qi-signal-buy">BUY · RSI keluar oversold</div><div class="qi-chart-time">09:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 12:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 15:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 18:00</div>
+                        </div>
+                    </div>
+                    <aside class="qi-showcase-signal">
+                        <div class="qi-mini-label">SIGNAL CENTER <span class="live">LIVE</span></div>
+                        <div class="qi-signal-symbol"><span class="qi-asset-icon gold">Au</span><strong>XAU/USD</strong><span class="qi-signal-wait">BUY</span></div>
+                        <div class="qi-signal-caption">Candle close · 1H · 24 Okt, 15:00</div>
+                        <div class="qi-signal-reason"><span>Reason</span><strong>RSI keluar oversold</strong><small>EMA 20/50 bullish · MACD BUY</small></div>
+                        <div class="qi-signal-levels"><div><small>ENTRY</small><strong>3.993,68</strong></div><div><small>STOP LOSS</small><strong class="loss">3.985,20</strong></div><div><small>TAKE PROFIT</small><strong class="profit">4.010,64</strong></div><div><small>RISK : REWARD</small><strong>1 : 2</strong></div></div>
+                        <div class="qi-signal-footer"><span>CONFIDENCE</span><strong>73%</strong></div>
+                    </aside>
+                </div>
+                <div class="qi-showcase-bottom"><span><i class="green"></i> Data feed aktif</span><span>Signal terkunci setelah candle close</span><span>Paper mode</span></div>
+            </div>
+        </section>
+
+        <section id="qi-capabilities" class="qi-launch-section qi-capabilities">
+            <div class="qi-launch-section-head"><div class="qi-launch-kicker">BUILT FOR MARKET ANALYSIS</div><h2>From first glance<br><em>to a testable idea.</em></h2><p>Bukan signal yang berisik. Bukan dashboard yang penuh distraksi. Hanya alat yang membantu kamu membaca chart dengan lebih disiplin.</p></div>
+            <div class="qi-capability-grid"><article><span class="qi-card-number">01</span><div class="qi-card-icon">⌁</div><h3>See the market clearly</h3><p>18 tipe chart, 134 indikator, dan 69 drawing tools untuk membangun konteks dari harga yang sama.</p><a href="dashboard.html">Explore the chart <span>↗</span></a></article><article><span class="qi-card-number">02</span><div class="qi-card-icon">◌</div><h3>Understand the signal</h3><p>Signal menyertakan alasan indikator, status MTF, kualitas setup, dan level risiko yang dapat diaudit.</p><a href="transparansi.html">Read our method <span>↗</span></a></article><article><span class="qi-card-number">03</span><div class="qi-card-icon">↗</div><h3>Test before you trade</h3><p>Gunakan replay, backtesting, dan paper trading untuk menguji proses sebelum mempertaruhkan modal.</p><a href="dashboard.html">Open paper mode <span>↗</span></a></article></div>
+        </section>
+
+        <section id="qi-workflow" class="qi-launch-section qi-workflow"><div class="qi-workflow-copy"><div class="qi-launch-kicker">THE WORKFLOW</div><h2>One workspace.<br><em>Less noise.</em></h2><p>Dari memilih pair sampai meninjau hasil setup, semua langkah berada dalam alur yang sama.</p><a class="qi-launch-inline-link" href="dashboard.html">Masuk ke Quantum Terminal <span>↗</span></a></div><div class="qi-workflow-steps"><div><span>01</span><strong>Pilih market</strong><p>Forex dan Crypto, dengan watchlist yang bisa kamu susun sendiri.</p></div><div><span>02</span><strong>Bangun setup</strong><p>Gabungkan indikator, drawing tools, dan timeframe multi-market.</p></div><div><span>03</span><strong>Validasi ide</strong><p>Kunci signal saat candle close. Uji dengan replay, backtest, atau paper mode.</p></div></div></section>
+
+        <section id="qi-access" class="qi-launch-final"><div class="qi-launch-final-glow"></div><div class="qi-launch-kicker">QUANTUM INSTITUT</div><h2>Trade with more<br><em>clarity.</em></h2><p>Workspace analisa yang dirancang untuk membantu kamu membuat keputusan dengan proses yang bisa dijelaskan.</p><a class="qi-launch-btn qi-launch-btn-primary" href="dashboard.html">Buka Quantum Terminal <span>↗</span></a></section>
+    </main>
 
 
     <!-- 2. HERO SECTION RESPONSIF -->
@@ -399,30 +474,30 @@
                     <!-- Top Badge -->
                     <div class="qi-eyebrow qi-eyebrow-cyan">
                         <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                        Live Engine V4.2 Active
+                        Quantum Institut · Trading Intelligence Workspace
                     </div>
 
                     <!-- Heading -->
                     <h1 class="qi-h2 text-3xl sm:text-4xl md:text-5xl lg:text-[3.4rem] xl:text-6xl leading-[1.1]">
-                        Mesin kuantum<br class="hidden sm:block"/> membaca chart.<br/>
+                        Analisa market tanpa noise.<br class="hidden sm:block"/> Bangun proses yang terukur.<br/>
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400">
-                            Kamu yang memutuskan.
+                            Keputusan tetap milikmu.
                         </span>
                     </h1>
 
                     <!-- Subjudul -->
                     <p class="text-sm sm:text-base lg:text-lg text-slate-400 font-normal leading-relaxed max-w-lg mx-auto md:mx-0">
-                        Sembilan mesin analisa kuantum membaca lebih dari 120 pasar kripto, emas, forex, dan indeks setiap penutupan candle — lengkap dengan level, prasyarat, dan biaya eksekusi.
+                        Quantum Terminal menyatukan chart, indikator, signal berbasis candle close, replay, backtesting, dan paper trading dalam satu workspace untuk Forex dan Crypto.
                     </p>
 
                     <!-- CTA: 2 tombol (primary + secondary) -->
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center md:justify-start gap-3 pt-1">
                         <a href="dashboard.html" class="min-h-[48px] px-7 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-slate-950 font-heading font-bold text-sm lg:text-base shadow-[0_0_28px_rgba(0,229,255,0.28)] transition-all flex items-center justify-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            Buka Terminal
+                            Mulai analisa gratis
                         </a>
                         <a href="#mesin-kuantum" class="group min-h-[48px] px-7 py-3 rounded-xl font-heading font-semibold text-sm lg:text-base transition-all flex items-center justify-center gap-2 text-slate-300 hover:text-white" style="border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03)">
-                            Lihat 9 Mesin
+                            Lihat cara kerja
                             <svg class="w-4 h-4 transition-transform group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                         </a>
                     </div>
@@ -431,22 +506,22 @@
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 pt-2">
                         <span class="qi-trust">
                             <svg class="text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L3.5 6.5v5C3.5 16.65 7.24 21.33 12 22c4.76-.67 8.5-5.35 8.5-10.5v-5L12 2zm-1 14l-4-4 1.41-1.41L11 13.17l6.59-6.59L19 8l-8 8z"/></svg>
-                            SSL 256-bit
+                            Forex + Crypto
                         </span>
                         <span class="text-slate-700">·</span>
                         <span class="qi-trust">
                             <svg class="text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            <a href="transparansi.html" class="hover:text-white transition-colors">Track record terbuka</a>
+                            <a href="transparansi.html" class="hover:text-white transition-colors">Signal transparan</a>
                         </span>
                         <span class="text-slate-700">·</span>
                         <span class="qi-trust">
                             <svg class="text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 3"/></svg>
-                            24/7 Monitor
+                            134 Indikator
                         </span>
                         <span class="text-slate-700">·</span>
                         <span class="qi-trust">
                             <svg class="text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            Gratis Mulai
+                            Paper Trading
                         </span>
                     </div>
 
@@ -456,33 +531,45 @@
                 <div id="panduan" class="relative mt-8 md:mt-0 reveal hero-float">
                     <div class="signal-card-glow rounded-2xl p-4 sm:p-6 overflow-hidden" style="background:linear-gradient(160deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015));border:1px solid rgba(0,229,255,0.3);backdrop-filter:blur(12px)">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/10 font-mono text-xs">
-                            <span class="text-cyan-400 font-bold flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> LIVE SIGNAL READOUT
+                                <span class="text-cyan-400 font-bold flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> QUANTUM TERMINAL / LIVE CHART
                             </span>
                             <span class="text-slate-400 bg-white/5 px-2 py-0.5 rounded">WIB: <strong class="text-cyan-300" id="wibClock">14:00:00</strong></span>
                         </div>
 
                         <div class="space-y-3 font-mono text-xs">
                             <div class="flex justify-between items-center">
-                                <h3 id="sigPair" class="text-lg sm:text-xl font-bold font-heading text-white">BTCUSDT <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">H1</span></h3>
+                                <h3 id="sigPair" class="text-lg sm:text-xl font-bold font-heading text-white">XAU/USD <span class="text-xs px-2 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">M15</span></h3>
                                 <span id="sigStatus" class="px-2.5 py-1 text-[11px] font-bold rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/40">LOADING…</span>
                             </div>
-                            <p id="sigMode" class="text-slate-300 text-xs">Mode: Quantum SNR & SMC — Memuat data live…</p>
+                            <p id="sigMode" class="text-slate-300 text-xs">Signal mengikuti indikator aktif — menunggu data live…</p>
+
+                            <div class="qi-mini-chart rounded-xl overflow-hidden border border-cyan-400/15">
+                                <div class="qi-mini-chart-grid"></div>
+                                <svg viewBox="0 0 640 180" preserveAspectRatio="none" aria-label="Preview chart Quantum Terminal" role="img">
+                                    <path d="M0 118 L42 102 L76 128 L112 84 L148 94 L182 63 L218 88 L252 54 L288 71 L322 42 L356 66 L390 48 L426 86 L464 70 L500 96 L540 62 L578 74 L640 42" fill="none" stroke="#31d6c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M0 146 H640" fill="none" stroke="rgba(255,255,255,.14)" stroke-dasharray="5 5"/>
+                                    <path d="M0 32 H640 M0 88 H640 M0 146 H640" fill="none" stroke="rgba(255,255,255,.06)"/>
+                                    <circle cx="578" cy="74" r="5" fill="#00e5ff"/>
+                                </svg>
+                                <span class="qi-mini-chart-label">XAU/USD · M15 · LIVE</span>
+                                <span class="qi-mini-chart-price">3.993,68</span>
+                            </div>
 
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
-                                    <div class="text-slate-400 text-[10px]">POTENSI ENTRY</div>
+                                    <div class="text-slate-400 text-[10px]">ENTRY</div>
                                     <div id="sigEntry" class="text-cyan-300 font-bold">—</div>
                                 </div>
                                 <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
-                                    <div class="text-slate-400 text-[10px]">STOP LOSS (SL)</div>
+                                    <div class="text-slate-400 text-[10px]">STOP LOSS</div>
                                     <div id="sigSL" class="text-rose-400 font-bold">—</div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-2 text-xs">
                                 <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
-                                    <div class="text-slate-400 text-[10px]">TARGET PROFIT (TP)</div>
+                                    <div class="text-slate-400 text-[10px]">TAKE PROFIT</div>
                                     <div id="sigTP" class="text-emerald-400 font-bold">—</div>
                                 </div>
                                 <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06]">
@@ -492,13 +579,13 @@
                             </div>
 
                             <div class="bg-black/40 p-2.5 rounded-lg border border-white/[0.06] flex justify-between">
-                                <span class="text-slate-400">Prasyarat Terpenuhi:</span>
+                                <span class="text-slate-400">Status signal:</span>
                                 <span id="sigConditions" class="text-cyan-400 font-bold">—</span>
                             </div>
 
                             <!-- CTA di bawah signal card -->
                             <a href="dashboard.html" class="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 text-xs font-bold transition-all group">
-                                <span>Lihat Analisa Lengkap di Terminal →</span>
+                                <span>Buka chart lengkap di Quantum Terminal →</span>
                                 <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                             </a>
                         </div>
@@ -515,26 +602,25 @@
     <section class="relative z-10 py-10 sm:py-12 border-y border-white/[0.06]" style="background:rgba(255,255,255,0.015)">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
-                <!-- Stat 1 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-cyan-500 tabular-nums" id="idxStatSinyal">—</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Sinyal Tercatat</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-cyan-500 tabular-nums">18</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Tipe Chart</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">dari candlestick hingga Renko</div>
                 </div>
-                <!-- Stat 2 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-emerald-300 to-emerald-500 tabular-nums" id="idxStatWr">—</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Win Rate Sinyal Selesai</div>
-                    <div id="idxStatWrN" class="text-[10px] text-slate-500 mt-1 font-mono leading-snug">memuat…</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-emerald-300 to-emerald-500 tabular-nums">134</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Indikator</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">atur sesuai setup kamu</div>
                 </div>
-                <!-- Stat 3 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-purple-300 to-purple-500 tabular-nums" data-count-to="9" data-count-suffix="">0</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Mesin Analisa Aktif</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-purple-300 to-purple-500 tabular-nums">69</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Drawing Tools</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">level, garis, zona, dan pola</div>
                 </div>
-                <!-- Stat 4 -->
                 <div class="reveal">
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-amber-300 to-orange-500">24/7</div>
-                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Monitor Non-stop</div>
+                    <div class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-br from-amber-300 to-orange-500">2</div>
+                    <div class="text-[11px] sm:text-xs text-slate-400 font-mono uppercase tracking-wider mt-2">Market Utama</div>
+                    <div class="text-[10px] text-slate-500 mt-1 font-mono">Forex + Crypto</div>
                 </div>
             </div>
         </div>
@@ -546,17 +632,17 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
             <div class="text-center max-w-2xl mx-auto mb-10 space-y-3 reveal">
                 <div class="qi-eyebrow qi-eyebrow-amber"><span class="qi-dot"></span>Transparansi</div>
-                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">Bukti, bukan janji</h2>
-                <p class="text-slate-400 text-sm sm:text-base">Kami tidak memajang testimoni atau angka akurasi tetap. Yang kami tampilkan adalah catatan sinyal sungguhan — termasuk yang kalah.</p>
+                <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">Chart dulu. Klaim belakangan.</h2>
+                <p class="text-slate-400 text-sm sm:text-base">Quantum Terminal dibuat untuk membantu kamu membaca chart dengan proses yang jelas, bukan menjual janji profit atau signal tanpa alasan.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 reveal">
                 <div class="qi-card p-5">
-                    <div class="font-heading font-bold text-white text-sm mb-2">Setiap sinyal dicatat</div>
-                    <p class="text-[12px] text-slate-400 leading-relaxed">Waktu terbit, arah, entry, SL, dan TP tercatat otomatis saat sinyal keluar, lalu dinilai dari candle sesudahnya.</p>
+                    <div class="font-heading font-bold text-white text-sm mb-2">Signal mengikuti indikator</div>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Signal hanya dibuat dari indikator yang kamu pilih, dengan entry, SL, dan TP yang punya dasar perhitungan.</p>
                 </div>
                 <div class="qi-card p-5">
-                    <div class="font-heading font-bold text-white text-sm mb-2">Yang kalah ikut tampil</div>
-                    <p class="text-[12px] text-slate-400 leading-relaxed">Win rate disertai interval keyakinan 95% dan hasil dalam R. Jika sampelnya masih kecil, kami menulisnya terang-terangan.</p>
+                    <div class="font-heading font-bold text-white text-sm mb-2">Candle berjalan tidak dipaksakan</div>
+                    <p class="text-[12px] text-slate-400 leading-relaxed">Signal pada candle aktif ditandai provisional. Setelah candle close, signal dikunci agar tidak mudah berubah atau repaint.</p>
                 </div>
                 <div class="qi-card p-5">
                     <div class="font-heading font-bold text-white text-sm mb-2">Cara menilai ditulis jelas</div>
@@ -599,174 +685,174 @@
     </div>
 
 
-    <!-- 3. SECTION 9 MESIN KUANTUM RESPONSIF -->
-    <!-- BREAKPOINT GRID 9 MESIN: Mobile (grid-cols-1), Tablet (sm:grid-cols-2), Desktop (lg:grid-cols-3) -->
+    <!-- 3. SECTION TOOLKIT TERMINAL -->
+    <!-- BREAKPOINT GRID FITUR: Mobile (grid-cols-1), Tablet (sm:grid-cols-2), Desktop (lg:grid-cols-3) -->
     <section id="mesin-kuantum" class="py-14 md:py-20 lg:py-24 relative z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
             <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-16 reveal">
-                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Quantum Engine Matrix</div>
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Quantum Terminal Toolkit</div>
                 <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
-                    Satu pasar, <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">sembilan cara membacanya</span>
+                    Semua alat penting, <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">satu workspace</span>
                 </h2>
                 <p class="text-slate-400 text-sm sm:text-base">
-                    Setiap mesin kuantum beroperasi independen dengan logika matematika spesifik.
+                    Bangun cara membaca chart kamu sendiri. Pilih pair, timeframe, indikator, dan tools tanpa berpindah platform.
                 </p>
             </div>
 
-            <!-- Grid 9 Cards Responsif -->
+            <!-- Grid 9 Fitur Responsif -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
                 
-                <!-- Card 1 — SNR: icon horizontal lines with dots (support/resistance) -->
+                <!-- Card 1 — Watchlist -->
                 <div class="qi-card p-5 sm:p-6 flex flex-col justify-between reveal">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="#00E5FF"/><circle cx="16" cy="18" r="2" fill="#00FFA3"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">ALL PAIRS · M15-H4</span>
+                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">FOREX + CRYPTO</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading">Quantum SNR</h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Mendeteksi level berulang & kekuatan retest Support/Resistance.</p>
+                        <h3 class="text-lg font-bold text-white font-heading">Market Watchlist</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Pilih dan pantau pair Forex serta aset Crypto dalam satu panel.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 border-t border-slate-800 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Gratis
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> TERMINAL CORE
                     </div>
                 </div>
 
-                <!-- Card 2 — SMC: icon block structure (BOS/ChoCH) -->
+                <!-- Card 2 — Chart types -->
                 <div class="qi-card p-5 sm:p-6 flex flex-col justify-between reveal">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="14" width="5" height="7" rx="1"/><rect x="10" y="9" width="5" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 14l6-5 7-5"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">CRYPTO/FOREX · H1-H4</span>
+                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">18 CHART TYPES</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading">Quantum SMC</h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Struktur pasar (BOS/CHoCH), Order Block, & Liquidity Sweep.</p>
+                        <h3 class="text-lg font-bold text-white font-heading">18 Tipe Chart</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Candlestick, line, area, Heikin Ashi, Renko, dan pilihan chart lainnya.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 border-t border-slate-800 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Gratis
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> TERMINAL CORE
                     </div>
                 </div>
 
-                <!-- Card 3 — EMA200: trend line with EMA ribbon -->
+                <!-- Card 3 — Indicators -->
                 <div class="qi-card p-5 sm:p-6 flex flex-col justify-between reveal">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 17l4-8 4 4 4-6 4 3"/><path stroke-linecap="round" stroke-width="1" stroke-dasharray="3 2" d="M3 14l4-3 4 1 4-4 4 2" stroke="#FFAB00"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">TREND FOLLOWING · H1</span>
+                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">134 INDICATORS</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading">Quantum EMA200 Pullback</h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Arah tren makro & penolakan presisi garis EMA200.</p>
+                        <h3 class="text-lg font-bold text-white font-heading">134 Indikator</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Tambahkan indikator teknikal ke chart dan atur parameternya sendiri.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 border-t border-slate-800 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Gratis
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> TERMINAL CORE
                     </div>
                 </div>
 
-                <!-- Card 4 — Ichimoku: cloud shape -->
+                <!-- Card 4 — Drawing tools -->
                 <div class="qi-card p-5 sm:p-6 flex flex-col justify-between reveal">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16c2-4 4-6 9-6s7 2 9 6"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 20c2-4 4-6 9-6s7 2 9 6" stroke="#7C4DFF"/><path stroke-linecap="round" stroke-width="1.5" d="M5 8l4-3 4 2 4-3" stroke="#00E5FF"/><path stroke-linecap="round" stroke-width="1.5" d="M5 12l4-2 4 1 4-2" stroke="#FF6B6B"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">ALL MARKET · H4-D1</span>
+                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">69 DRAWING TOOLS</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading">Quantum Ichimoku</h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Analisa Kumo Cloud & persilangan Tenkan/Kijun.</p>
+                        <h3 class="text-lg font-bold text-white font-heading">69 Drawing Tools</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Tandai level, trendline, Fibonacci, zona, dan struktur market dengan presisi.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 border-t border-slate-800 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Gratis
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> TERMINAL CORE
                     </div>
                 </div>
 
-                <!-- Card 5 — Fibonacci: fib retracement levels -->
+                <!-- Card 5 — Indicator signal -->
                 <div class="qi-card p-5 sm:p-6 flex flex-col justify-between reveal">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.5" d="M3 5h18" stroke="#94A3B8"/><path stroke-linecap="round" stroke-width="2" d="M3 10h18" stroke="#FFAB00"/><path stroke-linecap="round" stroke-width="2" d="M3 14h18" stroke="#FFAB00"/><path stroke-linecap="round" stroke-width="2.5" d="M3 17.5h18" stroke="#FF6B6B"/><path stroke-linecap="round" stroke-width="1.5" d="M3 21h18" stroke="#94A3B8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 3l-4 4M4 3l4 4" stroke="#00FFA3"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">GOLDEN ZONE · M30-H1</span>
+                            <span class="text-[9px] font-mono text-cyan-300/80 px-2 py-0.5 rounded tracking-wider" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15)">CANDLE-CLOSE SIGNAL</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading">Quantum Fibonacci</h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Rasio emas Golden Zone (0.382–0.618) retracement.</p>
+                        <h3 class="text-lg font-bold text-white font-heading">Signal berbasis indikator</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Signal mengikuti indikator yang dipilih, lengkap dengan entry, SL, dan TP.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-slate-400 flex items-center gap-1.5 border-t border-slate-800 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Gratis
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> TERMINAL CORE
                     </div>
                 </div>
 
-                <!-- Card 6 PRO — TrenM5: scalping lightning bolt -->
+                <!-- Card 6 — Replay -->
                 <div class="rounded-2xl p-5 sm:p-6 flex flex-col justify-between reveal transition-all" style="background:linear-gradient(170deg,rgba(124,77,255,0.06),rgba(124,77,255,0.01));border:1px solid rgba(124,77,255,0.28)">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">QI+ EXCLUSIVE · M5</span>
+                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">REPLAY</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Quantum TrenM5 <span class="text-[9px] bg-purple-500 text-slate-950 px-1 py-0.5 rounded">QI+</span></h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Scalping M5 cepat, koreksi singkat 1–3 candle.</p>
+                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Replay Candle</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Putar ulang pergerakan harga untuk menguji pembacaan chart kamu.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-purple-400 flex items-center gap-1.5 border-t border-purple-900/60 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Quantum+ PRO
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> TERMINAL TOOLS
                     </div>
                 </div>
 
-                <!-- Card 7 PRO — MomentumNY: clock/NY session -->
+                <!-- Card 7 — Backtesting -->
                 <div class="rounded-2xl p-5 sm:p-6 flex flex-col justify-between reveal transition-all" style="background:linear-gradient(170deg,rgba(124,77,255,0.06),rgba(124,77,255,0.01));border:1px solid rgba(124,77,255,0.28)">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 7v5l3 3"/><circle cx="12" cy="12" r="1.5" fill="#7C4DFF"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">QI+ EXCLUSIVE · GOLD</span>
+                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">HISTORICAL TEST</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Quantum MomentumNY <span class="text-[9px] bg-purple-500 text-slate-950 px-1 py-0.5 rounded">QI+</span></h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Impuls Emas & Forex pembukaan Sesi New York (19:30 WIB).</p>
+                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Backtesting</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Uji setup dengan data historis sebelum dipakai untuk analisa live.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-purple-400 flex items-center gap-1.5 border-t border-purple-900/60 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Quantum+ PRO
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> TERMINAL TOOLS
                     </div>
                 </div>
 
-                <!-- Card 8 PRO — MACD: histogram bars -->
+                <!-- Card 8 — Paper trading -->
                 <div class="rounded-2xl p-5 sm:p-6 flex flex-col justify-between reveal transition-all" style="background:linear-gradient(170deg,rgba(124,77,255,0.06),rgba(124,77,255,0.01));border:1px solid rgba(124,77,255,0.28)">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M3 12h18" stroke="#94A3B8"/><rect x="5" y="7" width="3" height="5" rx="0.5" fill="#00FFA3" stroke="none"/><rect x="10" y="5" width="3" height="7" rx="0.5" fill="#00FFA3" stroke="none"/><rect x="15" y="9" width="3" height="3" rx="0.5" fill="#FF4D6D" stroke="none"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 15l4-3 4 1 4-3 4 2" stroke="#7C4DFF"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">QI+ EXCLUSIVE · ALL</span>
+                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">PAPER MODE</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Quantum MACD <span class="text-[9px] bg-purple-500 text-slate-950 px-1 py-0.5 rounded">QI+</span></h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Histogram MACD cross nol & pergeseran volume.</p>
+                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Paper Trading</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Latihan entry dan manajemen risiko tanpa terhubung ke akun sungguhan.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-purple-400 flex items-center gap-1.5 border-t border-purple-900/60 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Quantum+ PRO
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> TERMINAL TOOLS
                     </div>
                 </div>
 
-                <!-- Card 9 PRO — Golden Cross: two intersecting lines (EMA) -->
+                <!-- Card 9 — One workspace -->
                 <div class="rounded-2xl p-5 sm:p-6 flex flex-col justify-between reveal transition-all" style="background:linear-gradient(170deg,rgba(124,77,255,0.06),rgba(124,77,255,0.01));border:1px solid rgba(124,77,255,0.28)">
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20L20 4" stroke="#FFD700"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12L20 8" stroke="#C0C0C0"/><circle cx="13.5" cy="8.8" r="2" fill="none" stroke="#00FFA3" stroke-width="1.5"/></svg>
                             </div>
-                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">QI+ EXCLUSIVE · H4-D1</span>
+                            <span class="text-[9px] font-mono text-purple-200/90 px-2 py-0.5 rounded tracking-wider" style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.25)">ONE WORKSPACE</span>
                         </div>
-                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Quantum Golden Cross <span class="text-[9px] bg-purple-500 text-slate-950 px-1 py-0.5 rounded">QI+</span></h3>
-                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Persilangan EMA50 x EMA200 tren makro jangka panjang.</p>
+                        <h3 class="text-lg font-bold text-white font-heading flex items-center gap-2">Multi-market Terminal</h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">Berpindah antara Forex dan Crypto tanpa meninggalkan workspace analisa.</p>
                     </div>
                     <div class="mt-4 text-[10px] font-mono text-purple-400 flex items-center gap-1.5 border-t border-purple-900/60 pt-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Quantum+ PRO
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> TERMINAL TOOLS
                     </div>
                 </div>
 
@@ -784,70 +870,70 @@
             <div class="text-center max-w-2xl mx-auto space-y-3 mb-12 md:mb-16 reveal">
                 <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Quantum Institut+ (QI+)</div>
                 <h2 class="qi-h2 text-2xl sm:text-3xl md:text-4xl">
-                    Akses penuh sembilan mesin <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">& fitur Pro</span>
+                    Sesuaikan workspace <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">dengan cara analisamu</span>
                 </h2>
-                <p class="text-slate-400 text-sm sm:text-base">Mulai gratis, upgrade kapan saja. Tanpa kontrak, bisa berhenti kapan pun.</p>
+                <p class="text-slate-400 text-sm sm:text-base">Mulai dari chart dasar sampai workflow analisa lengkap. Pilih akses yang sesuai kebutuhanmu.</p>
             </div>
 
-            <!-- FREE vs PRO Comparison Table -->
+            <!-- TERMINAL ACCESS Comparison Table -->
             <div class="max-w-3xl mx-auto mb-10 md:mb-14 reveal">
                 <div class="overflow-hidden rounded-2xl border border-slate-700/60">
                     <table class="w-full text-xs">
                         <thead>
                             <tr>
                                 <th class="px-4 py-3 text-left text-slate-400 font-mono uppercase tracking-wider bg-slate-900/60">Fitur</th>
-                                <th class="px-4 py-3 text-center text-cyan-400 font-mono uppercase tracking-wider bg-slate-900/60">GRATIS</th>
-                                <th class="px-4 py-3 text-center text-purple-300 font-mono uppercase tracking-wider bg-purple-900/20 border-l border-purple-500/20">PRO</th>
+                                <th class="px-4 py-3 text-center text-cyan-400 font-mono uppercase tracking-wider bg-slate-900/60">CORE</th>
+                                <th class="px-4 py-3 text-center text-purple-300 font-mono uppercase tracking-wider bg-purple-900/20 border-l border-purple-500/20">PLUS</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Kalender Ekonomi</td>
+                                <td class="px-4 py-2.5 text-slate-300">Forex + Crypto</td>
                                 <td class="px-4 py-2.5 text-center text-green-400">✓</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Berita Pasar Real-time</td>
+                                <td class="px-4 py-2.5 text-slate-300">18 Tipe Chart</td>
                                 <td class="px-4 py-2.5 text-center text-green-400">✓</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Order Book Live</td>
+                                <td class="px-4 py-2.5 text-slate-300">134 Indikator</td>
                                 <td class="px-4 py-2.5 text-center text-green-400">✓</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Paper Trading Simulator</td>
+                                <td class="px-4 py-2.5 text-slate-300">69 Drawing Tools</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Confluence Matrix</td>
+                                <td class="px-4 py-2.5 text-slate-300">Replay Candle</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Track Record Audit</td>
+                                <td class="px-4 py-2.5 text-slate-300">Backtesting</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">AI Radar Scanner</td>
+                                <td class="px-4 py-2.5 text-slate-300">Paper Trading</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Correlation Matrix 10×10</td>
+                                <td class="px-4 py-2.5 text-slate-300">Signal berbasis indikator</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Command Center Dashboard</td>
+                                <td class="px-4 py-2.5 text-slate-300">Workspace chart</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
                             <tr class="border-t border-slate-800/60">
-                                <td class="px-4 py-2.5 text-slate-300">Telegram Alert Otomatis</td>
+                                <td class="px-4 py-2.5 text-slate-300">Layout & preferensi</td>
                                 <td class="px-4 py-2.5 text-center text-slate-400">—</td>
                                 <td class="px-4 py-2.5 text-center text-green-400 bg-purple-900/10 border-l border-purple-500/20">✓</td>
                             </tr>
@@ -862,7 +948,7 @@
                 <p class="text-center text-[11px] text-slate-400 mt-3 font-mono">
                     <a href="dashboard.html" class="text-cyan-400 hover:underline">→ Coba Terminal Gratis</a>
                     &nbsp;·&nbsp;
-                    <a href="pricing.html" class="text-purple-400 hover:underline">→ Lihat Paket PRO</a>
+                    <a href="pricing.html" class="text-purple-400 hover:underline">→ Lihat Paket Quantum+</a>
                 </p>
             </div>
 
@@ -1057,27 +1143,27 @@
     </section>
 
 
-    <!-- #6 Quick Comparison Table (Gratis vs PRO) -->
+    <!-- #6 Quick Comparison Table -->
     <section class="py-14 md:py-16 relative z-10 border-t border-white/[0.06]">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 md:px-8">
             <div class="text-center mb-10 reveal flex flex-col items-center space-y-3">
-                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Gratis vs Pro</div>
-                <h2 class="qi-h2 text-2xl sm:text-3xl">Bandingkan fitur</h2>
-                <p class="text-slate-400 text-sm sm:text-base">Lihat perbedaan akun gratis dan Quantum+ PRO.</p>
+                <div class="qi-eyebrow qi-eyebrow-purple"><span class="qi-dot"></span>Terminal Access</div>
+                <h2 class="qi-h2 text-2xl sm:text-3xl">Pilih ruang kerjamu</h2>
+                <p class="text-slate-400 text-sm sm:text-base">Gunakan fitur inti untuk mulai membaca chart, lalu tambah akses sesuai kebutuhan.</p>
             </div>
             <div class="rounded-2xl overflow-hidden reveal" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07)">
                 <div class="grid grid-cols-3 border-b border-white/[0.07] text-center text-[10px] font-mono font-bold tracking-widest" style="background:rgba(255,255,255,0.025)">
                     <div class="px-4 py-3 text-left text-slate-400 uppercase">Fitur</div>
-                    <div class="px-4 py-3 text-cyan-400 uppercase border-l border-white/[0.06]">Gratis</div>
-                    <div class="px-4 py-3 text-purple-300 uppercase border-l border-white/[0.06]" style="background:rgba(124,77,255,0.05)">Pro</div>
+                    <div class="px-4 py-3 text-cyan-400 uppercase border-l border-white/[0.06]">Core</div>
+                    <div class="px-4 py-3 text-purple-300 uppercase border-l border-white/[0.06]" style="background:rgba(124,77,255,0.05)">Plus</div>
                 </div>
                 <div class="divide-y divide-white/[0.05] text-xs">
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Chart Realtime</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">5 instrumen</div><div class="px-4 py-3 text-center text-purple-300 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">Unlimited</div></div>
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Mesin Kuantum</div><div class="px-4 py-3 text-center text-slate-400 border-l border-white/[0.05]">2 dasar</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">9 penuh</div></div>
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">AI Radar Scanner</div><div class="px-4 py-3 text-center text-slate-400 border-l border-white/[0.05]">—</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Paper Trading</div><div class="px-4 py-3 text-center text-slate-400 border-l border-white/[0.05]">—</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Alert Telegram</div><div class="px-4 py-3 text-center text-slate-400 border-l border-white/[0.05]">—</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓ Realtime</div></div>
-                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Command Center</div><div class="px-4 py-3 text-center text-slate-400 border-l border-white/[0.05]">—</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓ Full</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Chart realtime</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-purple-300 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">18 tipe chart</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-purple-300 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">134 indikator</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">69 drawing tools</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Replay & backtesting</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
+                    <div class="grid grid-cols-3"><div class="px-4 py-3 text-slate-300">Paper trading</div><div class="px-4 py-3 text-center text-cyan-300 border-l border-white/[0.05]">✓</div><div class="px-4 py-3 text-center text-emerald-400 border-l border-white/[0.05]" style="background:rgba(124,77,255,0.04)">✓</div></div>
                 </div>
             </div>
             <div class="text-center mt-6 reveal">
@@ -1116,7 +1202,7 @@
                         Berapa akurasi sinyal secara real?
                         <span class="text-slate-400 group-open:rotate-45 transition-transform text-lg">+</span>
                     </summary>
-                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Win rate bervariasi per mesin dan per instrumen — kami tidak menjanjikan angka tetap. Angka sebenarnya — termasuk sinyal yang kalah dan interval keyakinannya — tampil apa adanya di halaman Transparansi dan berubah seiring sinyal baru; saat sampelnya masih kecil, kami menulisnya. Namun, akurasi masa lalu tidak menjamin hasil di masa depan.</div>
+                    <div class="px-5 pb-4 text-[12px] text-slate-400 leading-relaxed">Hasil signal bervariasi per indikator dan instrumen — kami tidak menjanjikan angka tetap. Data historis dan signal yang kalah tetap ditampilkan apa adanya di halaman Transparansi. Namun, akurasi masa lalu tidak menjamin hasil di masa depan.</div>
                 </details>
                 <details class="group rounded-xl overflow-hidden" style="border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02)">
                     <summary class="flex items-center justify-between px-5 py-4 cursor-pointer text-sm text-white font-medium hover:bg-white/[0.03] transition-colors">
@@ -1161,7 +1247,7 @@
                         <h3 class="font-heading font-bold text-amber-400 text-sm">Penolakan Risiko Trading</h3>
                     </div>
                     <div class="space-y-2 text-[11px] text-slate-400 leading-relaxed">
-                        <p>Semua sinyal, analisa teknikal, dan konten yang tersedia di Quantum Institut Market Terminal bersifat <strong class="text-slate-300">EDUKATIF SEMATA</strong> dan <strong class="text-slate-300">BUKAN merupakan saran investasi, rekomendasi keuangan, atau ajakan untuk membeli/menjual aset keuangan</strong>.</p>
+                        <p>Semua sinyal, analisa teknikal, dan konten yang tersedia di Quantum Terminal bersifat <strong class="text-slate-300">EDUKATIF SEMATA</strong> dan <strong class="text-slate-300">BUKAN merupakan saran investasi, rekomendasi keuangan, atau ajakan untuk membeli/menjual aset keuangan</strong>.</p>
                         <p>Trading forex, kripto, emas, dan instrumen keuangan lainnya mengandung <strong class="text-slate-300">risiko kerugian yang tinggi</strong>. Anda bisa kehilangan sebagian atau seluruh modal yang Anda investasikan. Pastikan Anda memahami risiko yang terlibat dan berkonsultasi dengan penasihat keuangan berlisensi sebelum membuat keputusan trading.</p>
                         <p>Past performance (hasil masa lalu) tidak menjamin hasil yang sama di masa mendatang. Seluruh data, sinyal, dan statistik akurasi yang ditampilkan bersifat historis dan tidak dapat dijadikan jaminan profit.</p>
                     </div>
@@ -1174,7 +1260,7 @@
                         <h3 class="font-heading font-bold text-cyan-400 text-sm">Hak Cipta & Penyalahgunaan Data</h3>
                     </div>
                     <div class="space-y-2 text-[11px] text-slate-400 leading-relaxed">
-                        <p>© 2026 <strong class="text-white">Quantum Institut Market Terminal</strong>. Seluruh hak cipta dilindungi undang-undang.</p>
+                        <p>© 2026 <strong class="text-white">Quantum Institut · Quantum Terminal</strong>. Seluruh hak cipta dilindungi undang-undang.</p>
                         <p>Dilarang keras menyalin, mendistribusikan, memodifikasi, menjual, atau menggunakan konten, algoritma, sinyal, kode sumber, desain antarmuka, atau data yang terdapat dalam platform ini untuk keperluan komersial tanpa izin tertulis dari Quantum Institut.</p>
                         <p>Penyalahgunaan data — termasuk scraping otomatis, distribusi ulang sinyal tanpa izin, atau penggunaan API untuk keperluan di luar yang diizinkan — merupakan pelanggaran yang dapat ditindak secara hukum sesuai dengan <strong class="text-slate-300">Undang-Undang No. 28 Tahun 2014 tentang Hak Cipta</strong> dan <strong class="text-slate-300">Undang-Undang No. 11 Tahun 2008 jo. UU No. 19 Tahun 2016 tentang Informasi dan Transaksi Elektronik (ITE)</strong>.</p>
                     </div>
@@ -1219,16 +1305,16 @@
                         </svg>
                         <span class="font-heading font-bold text-lg text-white">Quantum<span class="text-cyan-400">Institut</span></span>
                     </div>
-                    <p class="text-xs text-slate-400">"Sembilan mesin kuantum membaca pasar. Kamu yang memegang kendali."</p>
+                    <p class="text-xs text-slate-400">"Chart-first terminal untuk membaca market dengan lebih terukur."</p>
                 </div>
 
                 <!-- Kolom 2 Navigasi -->
                 <div class="space-y-2 text-xs">
                     <div class="font-bold text-white uppercase font-heading mb-2">Navigasi</div>
-                    <div><a href="#mesin-kuantum" class="hover:text-cyan-400">Mesin Kuantum</a></div>
-                    <div><a href="dashboard.html" class="hover:text-cyan-400">Terminal Pro</a></div>
-                    <div><a href="pricing.html" class="hover:text-purple-400">Quantum+</a></div>
-                    <div><a href="#download" class="hover:text-emerald-400">Download Aplikasi</a></div>
+                    <div><a href="#mesin-kuantum" class="hover:text-cyan-400">Fitur Terminal</a></div>
+                    <div><a href="dashboard.html" class="hover:text-cyan-400">Buka Terminal</a></div>
+                    <div><a href="pricing.html" class="hover:text-purple-400">Paket Akses</a></div>
+                    <div><a href="#download" class="hover:text-emerald-400">Install PWA</a></div>
                     <div><a href="transparansi.html" class="hover:text-cyan-400">Transparansi Sinyal</a></div>
                     <div><a href="status.html" class="hover:text-cyan-400">Status API</a></div>
                 </div>
@@ -1253,7 +1339,7 @@
             </div>
 
             <div class="pt-6 text-xs font-mono text-slate-400">
-                © 2026 Quantum Institut Market Terminal. Hak Cipta Dilindungi.
+                © 2026 Quantum Institut · Quantum Terminal. Hak Cipta Dilindungi.
             </div>
 
         </div>

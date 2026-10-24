@@ -13,8 +13,8 @@
  *      pada M15, H1, H4, D1 (fungsi yang sama dipakai AI Radar).
  *   2. SYARAT MASUK: minimal 3 timeframe sepakat (BULLISH atau BEARISH).
  *   3. ANTI COUNTER-TREND: arah sinyal tidak boleh melawan bias D1 (EMA20 vs EMA50).
- *   4. LEVEL ATAU TIDAK SAMA SEKALI: SL = 1,2 × ATR14, TP = 2,5 × jarak SL
- *      (R:R tetap 1 : 2,5 seperti sinyal lain di aplikasi).
+ *   4. LEVEL ATAU TIDAK SAMA SEKALI: SL = 1,5 × ATR14, TP = 2 × jarak SL
+ *      (R:R tetap 1 : 2, sama dengan Quantum Terminal chart).
  *   5. FILTER BERITA: ditahan bila ada event High impact ±30 menit.
  *   6. KENDALI BEBAN: kunci ATOMIK (satu proses), jeda 15 menit, cooldown 4 jam
  *      per simbol, maksimal 3 simbol per jalan (yang sinyalnya paling lama kosong).
@@ -226,13 +226,19 @@ foreach ($kandidat as $simbol) {
         $hasil[] = ['simbol' => $simbol, 'hasil' => (string)$layak['alasan'], 'catatan' => $layak['catatan']];
         continue;
     }
-    $candles = $muat['candles'];
+    try {
+        $allCandles = qt_signal_normalize_candle_series($muat['candles'] ?? []);
+        $candles = array_slice($allCandles, 0, -1);
+    } catch (Throwable $e) {
+        $hasil[] = ['simbol' => $simbol, 'hasil' => 'data_candle_tidak_valid'];
+        continue;
+    }
     $harga = (float)($candles[count($candles) - 1]['close'] ?? 0);
-    $atr   = gen_atr($candles, 14);
+    $atr   = qt_signal_atr($candles, 14) ?? 0.0;
     if ($harga <= 0 || $atr <= 0) { $hasil[] = ['simbol' => $simbol, 'hasil' => 'atr_tidak_valid']; continue; }
 
-    $jarakSl = 1.2 * $atr;                       // SL = 1,2 × ATR14
-    $jarakTp = 2.5 * $jarakSl;                   // R:R 1 : 2,5
+    $jarakSl = 1.5 * $atr;                       // SL = 1,5 × ATR14
+    $jarakTp = 2.0 * $jarakSl;                   // R:R 1 : 2
     $entry = round($harga, 5);
     $sl = round(($arah === 'BUY') ? $harga - $jarakSl : $harga + $jarakSl, 5);
     $tp = round(($arah === 'BUY') ? $harga + $jarakTp : $harga - $jarakTp, 5);
@@ -294,7 +300,7 @@ foreach ($kandidat as $simbol) {
         'entry'         => $entry,
         'sl'            => $sl,
         'tp'            => $tp,
-        'rr'            => '1 : 2.50',
+        'rr'            => '1 : 2.00',
         'atr'           => round($atr, 5),
         'invalidation'  => 'Level TP/SL tersentuh, atau struktur M15 berbalik',
         'status'        => 'AKTIF',
@@ -309,7 +315,7 @@ foreach ($kandidat as $simbol) {
         'ai_alasan'     => mb_substr((string)$aiAlasan, 0, 240),
         'ai_keyakinan'  => $aiYakin,
         'sumber'        => 'auto_generator',
-        'basis'         => 'EMA20/50 + RSI14 + MACD (M15–D1), level dari ATR14 (1,2×SL, 2,5×TP). '
+        'basis'         => 'EMA20/50 + RSI14 + MACD (M15–D1), level dari ATR14 (SL 1,5×ATR, TP 2×SL). '
             . 'Verdict AI: ' . (is_array($verdictAi) ? $verdictAi['action'] . ' (keyakinan ' . $aiYakin . ')' : 'tidak ada penilaian'),
         'setuju_bull'   => $bull,
         'setuju_bear'   => $bear,

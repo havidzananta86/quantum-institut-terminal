@@ -42,6 +42,8 @@ if (!$isCli) {
 require_once __DIR__ . '/_paper_math.php';
 // RSI Wilder bersama + penjaga pasar tutup (api/_sinyal_pasar.php).
 require_once __DIR__ . '/_sinyal_pasar.php';
+// Rumus sinyal tunggal (EMA/RSI/MACD) dipakai bersama cron, ai-signal, dan klien.
+require_once __DIR__ . '/_signal_engine.php';
 
 $pdo = qi_db();
 
@@ -122,21 +124,25 @@ function cron_analyze(string $sym, string $iv): ?array {
     foreach (cron_chart_files($sym, $iv) as $c) { if (file_exists($c)) { $f = $c; break; } }
     if ($f === null) return null;
     $d = json_decode(file_get_contents($f),true);
-    if (!empty($d['simulated'])) return null;               // candle acak tidak pernah dianalisa
-    $candles = qi_sp_buang_datar($d['candles'] ?? []);      // bar O=H=L=C (harga beku) dibuang
-    if (count($candles)<55) return null;
-    $cl=array_column($candles,'close');
-    $last=end($cl);
-    $e20=cron_ema($cl,20);$e50=cron_ema($cl,50);
-    $rsi=cron_rsi($cl,14);                                  // seluruh riwayat (dulu 30 close terakhir)
-    $macd=cron_macd(array_slice($cl,-60));
-    $bull=0;$bear=0;
-    if($e20&&$e50){if($e20>$e50)$bull++;else$bear++;if($last>$e20)$bull++;else$bear++;}
-    if($rsi>55)$bull++;elseif($rsi<45)$bear++;
-    if($macd>0)$bull++;elseif($macd<0)$bear++;
-    return ['signal'=>$bull>=3?'BULLISH':($bear>=3?'BEARISH':'NEUTRAL'),
-            'rsi'=>round($rsi,1),'ema_cross'=>($e20&&$e50)?($e20>$e50?'UP':'DOWN'):null,
-            'macd'=>$macd>0?'POS':'NEG','bull'=>$bull,'bear'=>$bear,'price'=>round((float)$last,5)];
+    if (!empty($d['simulated'])) return null;
+    try {
+        // Bar ber-rentang nol (O=H=L=C saat pasar tutup) tetap dibuang sebelum masuk
+        // mesin: deret datar itulah yang dulu membuat RSI akhir pekan = 100.
+        $all = qt_signal_normalize_candle_series(qi_sp_buang_datar($d["candles"] ?? []));
+        if (count($all) < 57) return null;
+        $r = qt_signal_analyze(array_slice($all, 0, -1), ['source' => $d['source'] ?? 'Chart feed']);
+        return [
+            'signal' => $r['signal'], 'side' => $r['side'], 'rsi' => round((float)$r['rsi'], 1),
+            'ema_cross' => $r['ema20'] !== null && $r['ema50'] !== null ? ($r['ema20'] > $r['ema50'] ? 'UP' : 'DOWN') : null,
+            'macd' => ($r['macd'] ?? 0) > 0 ? 'POS' : (($r['macd'] ?? 0) < 0 ? 'NEG' : 'ZERO'),
+            'bull' => (int)$r['bull'], 'bear' => (int)$r['bear'], 'price' => round((float)$r['current'], 5),
+            'entry' => $r['entry'], 'sl' => $r['sl'], 'tp' => $r['tp'], 'risk_reward' => $r['rr'],
+            'confidence' => (int)$r['confidence'], 'reason' => $r['reason'], 'engine_version' => QT_SIGNAL_ENGINE_VERSION,
+        ];
+    } catch (Throwable $e) {
+        cron_log("  {$sym}/{$iv}: signal feed rejected — " . $e->getMessage());
+        return null;
+    }
 }
 
 // ── Ambil sinyal AI dari cache (ai-signal.php sudah cache ke file) ─────────
