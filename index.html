@@ -270,7 +270,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
 
             <!-- Logo Kiri -->
-            <a href="index.html" class="flex items-center gap-2.5 group shrink-0">
+            <a href="index.html" class="qi-brand-link flex items-center gap-2.5 group shrink-0" aria-label="Quantum Institut — Quantum Terminal">
                 <svg class="qi-logo-mark h-9 w-9 sm:h-10 sm:w-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Quantum Institut">
                     <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#qiLogoFill)" stroke="url(#qiLogoStroke)" stroke-width="1.2"/>
                     <circle cx="20" cy="19" r="8" stroke="#00E5FF" stroke-width="1.6"/>
@@ -287,11 +287,11 @@
                         </linearGradient>
                     </defs>
                 </svg>
-                <div class="hidden xs:block">
-                    <span class="font-heading font-bold text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
+                <div class="qi-brand-copy hidden xs:block">
+                    <span class="qi-brand-name font-heading font-bold text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-cyan-400 transition-colors block leading-none">
                         Quantum<span class="text-cyan-400">Institut</span>
                     </span>
-                    <span class="text-[9px] sm:text-[10px] tracking-[0.2em] font-mono text-cyan-400/80 uppercase">Quantum Terminal</span>
+                    <span class="qi-brand-subtitle text-[9px] sm:text-[10px] tracking-[0.2em] font-mono text-cyan-400/80 uppercase">Quantum Terminal</span>
                 </div>
             </a>
 
@@ -394,15 +394,40 @@
         <section class="qi-launch-hero">
             <div class="qi-launch-orbit qi-launch-orbit-a"></div>
             <div class="qi-launch-orbit qi-launch-orbit-b"></div>
+            <div class="qi-launch-signal-field" aria-label="Pilih modul Quantum Terminal">
+                <button type="button" class="qi-signal-node qi-signal-node-gold is-active" data-qi-hero-module="chart" aria-label="Pilih modul Chart" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v16M5 7h4M5 17h4M17 4v16M15 9h4M15 14h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7 10h0M17 11h0" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                </button>
+                <button type="button" class="qi-signal-node qi-signal-node-cyan" data-qi-hero-module="signal" aria-label="Pilih modul Signal" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 17.5 9 12l3.5 3 7.5-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 7h4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="qi-signal-node qi-signal-node-violet" data-qi-hero-module="backtest" aria-label="Pilih modul Backtest" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v4l2.5 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+                <button type="button" class="qi-signal-node qi-signal-node-green" data-qi-hero-module="market" aria-label="Pilih modul Market" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.5"/></svg>
+                </button>
+                <button type="button" class="qi-signal-node qi-signal-node-red" data-qi-hero-module="workflow" aria-label="Pilih modul Workflow" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5v14M5 9h4M5 15h4M17 5v14M15 8h4M15 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </button>
+            </div>
             <div class="qi-launch-hero-inner">
-                <div class="qi-launch-kicker"><span></span> QUANTUM INSTITUT · TRADING WORKSPACE</div>
-                <h1>Read the market.<br><em>Trade with a process.</em></h1>
-                <p class="qi-launch-lead">Quantum Terminal memberi kamu ruang kerja yang tenang untuk membaca Forex dan Crypto, menguji setup, dan memahami alasan di balik setiap signal.</p>
+                <div class="qi-launch-kicker"><span></span> QUANTUM INSTITUT · MARKET INTELLIGENCE</div>
+                <div class="qi-hero-active-label"><span class="qi-proof-dot"></span><span id="qiHeroActiveLabel">CHART WORKSPACE · READY</span><b>CLICK A MODULE</b></div>
+                <h1><span id="qiHeroTitleMain">Read the market.</span><br><em id="qiHeroTitleSub">Trade with a process.</em></h1>
+                <p class="qi-launch-lead" id="qiHeroLead">Quantum Terminal memberi kamu ruang kerja yang tenang untuk membaca Forex dan Crypto, menguji setup, dan memahami alasan di balik setiap signal.</p>
                 <div class="qi-launch-actions">
                     <a class="qi-launch-btn qi-launch-btn-primary" href="dashboard.html">Buka Quantum Terminal <span>↗</span></a>
                     <a class="qi-launch-btn qi-launch-btn-ghost" href="#qi-workflow">Lihat cara kerja <span>↓</span></a>
                 </div>
-                <div class="qi-launch-proof"><span class="qi-proof-dot"></span> 18 tipe chart <b>·</b> 134 indikator <b>·</b> 69 drawing tools <b>·</b> Forex + Crypto</div>
+                <div class="qi-hero-module-picker" role="tablist" aria-label="Modul Quantum Terminal">
+                    <button type="button" class="is-active" data-qi-hero-module="chart" role="tab" aria-selected="true"><span>⌁</span> Chart</button>
+                    <button type="button" data-qi-hero-module="signal" role="tab" aria-selected="false"><span>◌</span> Signal</button>
+                    <button type="button" data-qi-hero-module="backtest" role="tab" aria-selected="false"><span>↗</span> Backtest</button>
+                    <button type="button" data-qi-hero-module="market" role="tab" aria-selected="false"><span>⊕</span> Market</button>
+                    <button type="button" data-qi-hero-module="workflow" role="tab" aria-selected="false"><span>⌘</span> Workflow</button>
+                </div>
+                <div class="qi-launch-proof"><span class="qi-proof-dot"></span> <span id="qiHeroProof">18 tipe chart · 134 indikator · 69 drawing tools · Forex + Crypto</span></div>
             </div>
         </section>
 
@@ -410,7 +435,7 @@
             <div class="qi-showcase-window">
                 <div class="qi-showcase-topbar">
                     <div class="qi-showcase-brand"><span class="qi-showcase-logo">Q</span><span>Quantum Terminal</span></div>
-                    <div class="qi-showcase-tabs"><span class="active">Chart</span><span>Signal Center</span><span>Backtest</span></div>
+                    <div class="qi-showcase-tabs"><span class="active" data-qi-hero-showcase-tab="chart">Chart</span><span data-qi-hero-showcase-tab="signal">Signal Center</span><span data-qi-hero-showcase-tab="backtest">Backtest</span></div>
                     <div class="qi-showcase-status"><i></i> Market live</div>
                 </div>
                 <div class="qi-showcase-body">
@@ -430,7 +455,7 @@
                         <div class="qi-chart-toolbar"><strong><span class="qi-asset-icon gold">Au</span> Emas · XAU/USD</strong><span>5m</span><span>15m</span><span class="active">1H</span><span>4H</span><span>1D</span><span class="qi-toolbar-spacer"></span><span>Indicators</span><span>⚙</span></div>
                         <div class="qi-chart-area">
                             <div class="qi-chart-grid"></div><div class="qi-chart-price-label p1">4.040,00</div><div class="qi-chart-price-label p2">4.020,00</div><div class="qi-chart-price-label p3">4.000,00</div><div class="qi-chart-price-label p4">3.980,00</div>
-                            <svg viewBox="0 0 900 390" preserveAspectRatio="none" aria-label="XAUUSD chart preview"><polyline points="0,188 24,178 39,202 56,168 73,180 90,154 108,192 123,186 139,214 157,196 176,228 190,216 208,240 226,212 244,221 262,206 281,220 299,190 315,207 333,180 351,201 369,192 387,215 404,183 422,170 439,192 457,177 477,198 492,176 510,204 531,187 548,212 566,190 584,226 601,205 620,240 640,218 660,230 679,206 698,219 717,198 738,230 759,220 779,244 800,233 820,252 840,242 858,260 880,250 900,260" fill="none" stroke="#65e6d1" stroke-width="2.2" vector-effect="non-scaling-stroke"/><polyline points="0,205 24,192 39,220 56,187 73,192 90,172 108,205 123,196 139,226 157,210 176,243 190,228 208,250 226,224 244,232 262,219 281,232 299,201 315,219 333,194 351,214 369,204 387,228 404,197 422,187 439,204 457,191 477,212 492,193 510,219 531,203 548,226 566,204 584,239 601,218 620,252 640,230 660,243 679,220 698,232 717,210 738,242 759,232 779,255 800,245 820,263 840,252 858,271 880,260 900,270" fill="none" stroke="rgba(167,139,250,.5)" stroke-width="1.3" vector-effect="non-scaling-stroke"/><line x1="0" y1="260" x2="900" y2="260" stroke="#65e6d1" stroke-opacity=".45" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/><circle cx="900" cy="260" r="5" fill="#65e6d1"/></svg>
+                            <svg viewBox="0 0 900 390" preserveAspectRatio="none" aria-label="XAUUSD chart preview"><polyline class="qi-chart-live-line" points="0,188 24,178 39,202 56,168 73,180 90,154 108,192 123,186 139,214 157,196 176,228 190,216 208,240 226,212 244,221 262,206 281,220 299,190 315,207 333,180 351,201 369,192 387,215 404,183 422,170 439,192 457,177 477,198 492,176 510,204 531,187 548,212 566,190 584,226 601,205 620,240 640,218 660,230 679,206 698,219 717,198 738,230 759,220 779,244 800,233 820,252 840,242 858,260 880,250 900,260" fill="none" stroke="#65e6d1" stroke-width="2.2" vector-effect="non-scaling-stroke"/><polyline class="qi-chart-shadow-line" points="0,205 24,192 39,220 56,187 73,192 90,172 108,205 123,196 139,226 157,210 176,243 190,228 208,250 226,224 244,232 262,219 281,232 299,201 315,219 333,194 351,214 369,204 387,228 404,197 422,187 439,204 457,191 477,212 492,193 510,219 531,203 548,226 566,204 584,239 601,218 620,252 640,230 660,243 679,220 698,232 717,210 738,242 759,232 779,255 800,245 820,263 840,252 858,271 880,260 900,270" fill="none" stroke="rgba(167,139,250,.5)" stroke-width="1.3" vector-effect="non-scaling-stroke"/><line x1="0" y1="260" x2="900" y2="260" stroke="#65e6d1" stroke-opacity=".45" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/><circle class="qi-chart-live-dot" cx="900" cy="260" r="5" fill="#65e6d1"/></svg>
                             <div class="qi-chart-current">3.993,68</div><div class="qi-chart-signal qi-signal-buy">BUY · RSI keluar oversold</div><div class="qi-chart-time">09:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 12:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 15:00 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 18:00</div>
                         </div>
                     </div>
@@ -448,13 +473,83 @@
         </section>
 
         <section id="qi-capabilities" class="qi-launch-section qi-capabilities">
-            <div class="qi-launch-section-head"><div class="qi-launch-kicker">BUILT FOR MARKET ANALYSIS</div><h2>From first glance<br><em>to a testable idea.</em></h2><p>Bukan signal yang berisik. Bukan dashboard yang penuh distraksi. Hanya alat yang membantu kamu membaca chart dengan lebih disiplin.</p></div>
-            <div class="qi-capability-grid"><article><span class="qi-card-number">01</span><div class="qi-card-icon">⌁</div><h3>See the market clearly</h3><p>18 tipe chart, 134 indikator, dan 69 drawing tools untuk membangun konteks dari harga yang sama.</p><a href="dashboard.html">Explore the chart <span>↗</span></a></article><article><span class="qi-card-number">02</span><div class="qi-card-icon">◌</div><h3>Understand the signal</h3><p>Signal menyertakan alasan indikator, status MTF, kualitas setup, dan level risiko yang dapat diaudit.</p><a href="transparansi.html">Read our method <span>↗</span></a></article><article><span class="qi-card-number">03</span><div class="qi-card-icon">↗</div><h3>Test before you trade</h3><p>Gunakan replay, backtesting, dan paper trading untuk menguji proses sebelum mempertaruhkan modal.</p><a href="dashboard.html">Open paper mode <span>↗</span></a></article></div>
+            <div class="qi-launch-section-head">
+                <div class="qi-launch-kicker"><span class="qi-proof-dot"></span> FITUR UTAMA &amp; KEMAMPUAN WORKSTATION</div>
+                <div class="qi-feature-intro"><h2>Satu workspace.<br><em>Lebih sedikit noise.</em></h2><p>Quantum Terminal menyatukan chart, signal, validasi, dan catatan trading dalam satu alur yang bisa kamu pahami sebelum mengambil keputusan.</p></div>
+            </div>
+            <div class="qi-feature-filters" role="tablist" aria-label="Kategori fitur">
+                <button type="button" class="qi-feature-filter is-active" data-qi-feature-filter="all" role="tab" aria-selected="true">Semua Fitur (6)</button>
+                <button type="button" class="qi-feature-filter" data-qi-feature-filter="chart" role="tab" aria-selected="false">Chart &amp; Analisa</button>
+                <button type="button" class="qi-feature-filter" data-qi-feature-filter="signal" role="tab" aria-selected="false">Signal &amp; Risiko</button>
+                <button type="button" class="qi-feature-filter" data-qi-feature-filter="terminal" role="tab" aria-selected="false">Terminal &amp; MT5</button>
+                <button type="button" class="qi-feature-filter" data-qi-feature-filter="workflow" role="tab" aria-selected="false">Workflow &amp; Jurnal</button>
+            </div>
+            <div class="qi-capability-grid">
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="chart">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">⌁</div><span class="qi-card-number">01</span></div>
+                    <div class="qi-feature-eyebrow">CHART &amp; ANALISA</div><h3>Chart workspace yang lebih jelas</h3><p>Bangun konteks market dari chart yang rapi, indikator yang terukur, dan drawing tools yang membantu kamu membaca harga.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>TIPE CHART</small><strong>18</strong></div><div class="qi-feature-metric"><small>INDIKATOR</small><strong>134</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ XAU/USD · 1H</span><b>READY</b></div><div><span>⌁ Drawing tools</span><b>ACTIVE</b></div></div><a class="qi-feature-card-link" href="dashboard.html">Buka chart <span>↗</span></a>
+                </article>
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="signal">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">◌</div><span class="qi-card-number">02</span></div>
+                    <div class="qi-feature-eyebrow">SIGNAL &amp; RISIKO</div><h3>Signal dengan alasan yang bisa diaudit</h3><p>Setiap ide punya konteks indikator, timeframe, dan level risiko agar keputusan tidak berhenti di panah BUY atau SELL.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>KONTEKS</small><strong>MTF</strong></div><div class="qi-feature-metric"><small>VALIDASI</small><strong>CLOSE</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ RSI + EMA + MACD</span><b>READY</b></div><div><span>⌁ Alasan signal</span><b>VISIBLE</b></div></div><a class="qi-feature-card-link" href="transparansi.html">Baca metodologi <span>↗</span></a>
+                </article>
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="signal">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">↗</div><span class="qi-card-number">03</span></div>
+                    <div class="qi-feature-eyebrow">VALIDASI IDE</div><h3>Uji setup sebelum mengambil risiko</h3><p>Gunakan replay, backtest, dan paper mode untuk meninjau proses trading tanpa langsung mempertaruhkan modal.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>REPLAY</small><strong>ON</strong></div><div class="qi-feature-metric"><small>MODE</small><strong>PAPER</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ Backtest workspace</span><b>READY</b></div><div><span>⌁ Entry · SL · TP</span><b>READY</b></div></div><a class="qi-feature-card-link" href="dashboard.html">Buka paper mode <span>↗</span></a>
+                </article>
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="terminal">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">↔</div><span class="qi-card-number">04</span></div>
+                    <div class="qi-feature-eyebrow">TERMINAL &amp; MT5</div><h3>Workspace siap dihubungkan ke akun</h3><p>Pantau market dari terminal yang sama. Koneksi bridge MT5 disiapkan sebagai langkah berikutnya, sementara paper mode tetap aman untuk validasi.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>BRIDGE MT5</small><strong>LATER</strong></div><div class="qi-feature-metric"><small>EKSEKUSI LIVE</small><strong>OFF</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ Bridge account</span><b class="is-waiting">WAIT</b></div><div><span>⌁ Paper mode</span><b>READY</b></div></div><a class="qi-feature-card-link" href="dashboard.html">Masuk terminal <span>↗</span></a>
+                </article>
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="workflow">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">⌁</div><span class="qi-card-number">05</span></div>
+                    <div class="qi-feature-eyebrow">WORKFLOW &amp; JURNAL</div><h3>Alert dan jurnal dalam satu alur</h3><p>Simpan konteks setup, tinjau alert server, dan lihat kembali track record agar proses trading bisa berkembang dari data nyata.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>ALERT</small><strong>SERVER</strong></div><div class="qi-feature-metric"><small>JURNAL</small><strong>ACTIVE</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ Price alert</span><b>READY</b></div><div><span>⌁ Track record</span><b>READY</b></div></div><a class="qi-feature-card-link" href="dashboard.html">Lihat workflow <span>↗</span></a>
+                </article>
+                <article class="qi-feature-card" data-qi-feature-card data-feature-category="workflow">
+                    <div class="qi-feature-card-top"><div class="qi-card-icon">◇</div><span class="qi-card-number">06</span></div>
+                    <div class="qi-feature-eyebrow">TRANSPARANSI</div><h3>Metode yang terbuka untuk ditinjau</h3><p>Kenali cara kerja signal, batasan data, dan proses validasi sebelum menjadikan sebuah ide sebagai keputusan.</p>
+                    <div class="qi-feature-metrics"><div class="qi-feature-metric"><small>METODE</small><strong>OPEN</strong></div><div class="qi-feature-metric"><small>REVIEW</small><strong>READY</strong></div></div>
+                    <div class="qi-feature-log"><div><span>⌁ Metodologi</span><b>READY</b></div><div><span>⌁ Data &amp; risiko</span><b>VISIBLE</b></div></div><a class="qi-feature-card-link" href="transparansi.html">Baca transparansi <span>↗</span></a>
+                </article>
+            </div>
         </section>
 
-        <section id="qi-workflow" class="qi-launch-section qi-workflow"><div class="qi-workflow-copy"><div class="qi-launch-kicker">THE WORKFLOW</div><h2>One workspace.<br><em>Less noise.</em></h2><p>Dari memilih pair sampai meninjau hasil setup, semua langkah berada dalam alur yang sama.</p><a class="qi-launch-inline-link" href="dashboard.html">Masuk ke Quantum Terminal <span>↗</span></a></div><div class="qi-workflow-steps"><div><span>01</span><strong>Pilih market</strong><p>Forex dan Crypto, dengan watchlist yang bisa kamu susun sendiri.</p></div><div><span>02</span><strong>Bangun setup</strong><p>Gabungkan indikator, drawing tools, dan timeframe multi-market.</p></div><div><span>03</span><strong>Validasi ide</strong><p>Kunci signal saat candle close. Uji dengan replay, backtest, atau paper mode.</p></div></div></section>
+        <section id="qi-workflow" class="qi-launch-section qi-workflow"><div class="qi-workflow-copy"><div class="qi-launch-kicker"><span class="qi-proof-dot"></span> CARA KERJA · 3 LANGKAH</div><h2>Dari market.<br><em>Ke eksekusi.</em></h2><p>Dari memilih pair sampai meninjau hasil setup, semua langkah berada dalam satu alur Quantum Terminal.</p><a class="qi-launch-inline-link" href="dashboard.html">Masuk ke Quantum Terminal <span>↗</span></a><div class="qi-workflow-steps"><button type="button" class="qi-workflow-step is-active" data-workflow-step="0" data-label="LANGKAH 01" data-title="Pilih market yang ingin dibaca" data-body="Mulai dari Forex atau Crypto, lalu susun watchlist sesuai market yang sedang kamu pantau." data-input="Watchlist & market" data-process="Harga, volume, dan timeframe" data-result="Konteks market siap dibaca"><span class="qi-workflow-step-number">01</span><span class="qi-workflow-step-copy"><strong>Pilih market</strong><small>Forex dan Crypto, dengan watchlist yang bisa kamu susun sendiri.</small></span><span class="qi-workflow-step-arrow">↗</span></button><button type="button" class="qi-workflow-step" data-workflow-step="1" data-label="LANGKAH 02" data-title="Bangun setup yang bisa dijelaskan" data-body="Gabungkan indikator, drawing tools, dan timeframe multi-market untuk membentuk ide yang punya konteks." data-input="Indikator & drawing" data-process="Setup multi-timeframe" data-result="Rencana entry dan risiko"><span class="qi-workflow-step-number">02</span><span class="qi-workflow-step-copy"><strong>Bangun setup</strong><small>Gabungkan indikator, drawing tools, dan timeframe multi-market.</small></span><span class="qi-workflow-step-arrow">↗</span></button><button type="button" class="qi-workflow-step" data-workflow-step="2" data-label="LANGKAH 03" data-title="Validasi ide sebelum mengambil risiko" data-body="Kunci signal saat candle close. Uji dengan replay, backtest, atau paper mode sebelum keputusan nyata." data-input="Signal candle close" data-process="Replay, backtest, paper mode" data-result="Ide siap ditinjau"><span class="qi-workflow-step-number">03</span><span class="qi-workflow-step-copy"><strong>Validasi ide</strong><small>Kunci signal saat candle close. Uji dengan replay, backtest, atau paper mode.</small></span><span class="qi-workflow-step-arrow">↗</span></button></div></div><div class="qi-workflow-panel" data-active-step="0" aria-live="polite"><div class="qi-workflow-panel-top"><span><i></i> QUANTUM TERMINAL · WORKFLOW</span><small>PANDUAN INTERAKTIF · <b id="qiWorkflowCounter">01 / 03</b></small></div><div class="qi-workflow-stage"><div class="qi-workflow-stage-grid"></div><div class="qi-workflow-stage-label">ACCESS MODULE <b id="qiWorkflowStageNumber">01</b></div><div class="qi-workflow-orbit qi-workflow-orbit-a"></div><div class="qi-workflow-orbit qi-workflow-orbit-b"></div><div class="qi-workflow-flow-line qi-workflow-flow-line-a"></div><div class="qi-workflow-flow-line qi-workflow-flow-line-b"></div><div class="qi-workflow-stage-core"><span class="qi-workflow-core-mark">Q</span><strong id="qiWorkflowCoreTitle">MARKET CORE</strong><small id="qiWorkflowCoreSub">WATCHLIST READY</small></div><span class="qi-workflow-stage-node qi-workflow-node-a">XAU/USD <i></i></span><span class="qi-workflow-stage-node qi-workflow-node-b">BTC/USDT <i></i></span><span class="qi-workflow-stage-node qi-workflow-node-c">EUR/USD <i></i></span><span class="qi-workflow-stage-node qi-workflow-node-d">SIGNAL <i></i></span><svg class="qi-workflow-stage-chart" viewBox="0 0 560 210" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,150 36,143 70,158 105,119 142,132 180,91 215,111 251,78 288,104 321,67 354,91 390,53 427,82 463,45 500,71 560,32"/></svg><div class="qi-workflow-stage-pulse"></div></div><div class="qi-workflow-detail"><small class="qi-workflow-detail-label" id="qiWorkflowLabel">LANGKAH 01</small><h3 id="qiWorkflowTitle">Pilih market yang ingin dibaca</h3><p id="qiWorkflowBody">Mulai dari Forex atau Crypto, lalu susun watchlist sesuai market yang sedang kamu pantau.</p><div class="qi-workflow-facts"><div><small>INPUT</small><strong id="qiWorkflowInput">Watchlist & market</strong></div><div><small>PROSES</small><strong id="qiWorkflowProcess">Harga, volume, dan timeframe</strong></div><div><small>HASIL</small><strong id="qiWorkflowResult">Konteks market siap dibaca</strong></div></div><a class="qi-workflow-detail-link" href="dashboard.html">Lihat di Quantum Terminal <span>→</span></a><span class="qi-workflow-fps">LIVE FLOW · 60 FPS</span></div></div></section>
 
-        <section id="qi-access" class="qi-launch-final"><div class="qi-launch-final-glow"></div><div class="qi-launch-kicker">QUANTUM INSTITUT</div><h2>Trade with more<br><em>clarity.</em></h2><p>Workspace analisa yang dirancang untuk membantu kamu membuat keputusan dengan proses yang bisa dijelaskan.</p><a class="qi-launch-btn qi-launch-btn-primary" href="dashboard.html">Buka Quantum Terminal <span>↗</span></a></section>
+        <section id="qi-access" class="qi-launch-final qi-access-module">
+            <div class="qi-launch-final-glow"></div>
+            <div class="qi-access-copy">
+                <div class="qi-launch-kicker"><span class="qi-proof-dot"></span> AKSES WORKSPACE · READY WHEN YOU ARE</div>
+                <h2>Masuk ke market.<br><em>Dengan lebih banyak clarity.</em></h2>
+                <p>Mulai dari watchlist, susun setup, lalu validasi ide di Quantum Terminal sebelum mengambil keputusan.</p>
+                <a class="qi-launch-btn qi-launch-btn-primary" href="dashboard.html">Buka Quantum Terminal <span>↗</span></a>
+                <div class="qi-access-proof"><span><i></i> PAPER MODE READY</span><span>FOREX + CRYPTO</span><span>MT5 BRIDGE · NEXT</span></div>
+            </div>
+            <div class="qi-access-console" aria-label="Modul akses Quantum Terminal">
+                <div class="qi-access-console-head"><span><i></i> QUANTUM TERMINAL · ACCESS GATE</span><small>WORKSPACE READY</small></div>
+                <div class="qi-access-stage">
+                    <div class="qi-access-stage-grid"></div>
+                    <div class="qi-access-orbit qi-access-orbit-a"></div><div class="qi-access-orbit qi-access-orbit-b"></div><div class="qi-access-orbit qi-access-orbit-c"></div>
+                    <span class="qi-access-particle qi-access-particle-a"></span><span class="qi-access-particle qi-access-particle-b"></span><span class="qi-access-particle qi-access-particle-c"></span>
+                    <div class="qi-access-route qi-access-route-a"></div><div class="qi-access-route qi-access-route-b"></div>
+                    <div class="qi-access-core"><span class="qi-access-core-mark">Q</span><strong>QUANTUM</strong><small>WORKSPACE ONLINE</small><b><i></i> SECURE SESSION</b></div>
+                    <div class="qi-access-node qi-access-node-a"><span>⌁</span><strong>CHART</strong><small>18 TYPES</small></div>
+                    <div class="qi-access-node qi-access-node-b"><span>◌</span><strong>SIGNAL</strong><small>EXPLAINED</small></div>
+                    <div class="qi-access-node qi-access-node-c"><span>↗</span><strong>BACKTEST</strong><small>PAPER MODE</small></div>
+                </div>
+                <div class="qi-access-console-detail" aria-live="polite"><div class="qi-access-detail-kicker"><span id="qiAccessStepLabel">ACCESS 01</span><span>03 MODULES</span></div><h3 id="qiAccessStepTitle">Satu pintu untuk membaca market</h3><p id="qiAccessStepBody">Pilih market, susun setup, dan bawa ide ke ruang kerja yang sama.</p><div class="qi-access-detail-bars"><span><b>CHART</b><i><em></em></i></span><span><b>SIGNAL</b><i><em></em></i></span><span><b>VALIDATE</b><i><em></em></i></span></div></div>
+            </div>
+        </section>
     </main>
 
 

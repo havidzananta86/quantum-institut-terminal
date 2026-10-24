@@ -449,3 +449,254 @@ function perbaruiNavSesi() {
         }
     });
 })();
+
+// ── Ambient landing interactions ──────────────────────────────────────────
+// Dekorasi ini hanya memperkaya halaman; konten dan navigasi tetap berfungsi
+// tanpa JavaScript, dan gerakannya menghormati preferensi reduced motion.
+(function () {
+    var launch = document.querySelector('.qi-launch-page');
+    if (!launch) return;
+
+    if (!window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        launch.addEventListener('pointermove', function (event) {
+            var rect = launch.getBoundingClientRect();
+            launch.style.setProperty('--qi-pointer-x', ((event.clientX - rect.left) / rect.width * 100).toFixed(2) + '%');
+            launch.style.setProperty('--qi-pointer-y', ((event.clientY - rect.top) / rect.height * 100).toFixed(2) + '%');
+        }, { passive: true });
+    }
+})();
+
+// Feature cards masuk dengan urutan yang halus saat section terlihat.
+(function () {
+    var launch = document.querySelector('.qi-launch-page');
+    if (!launch || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var targets = launch.querySelectorAll(
+        '.qi-capability-grid article, .qi-launch-section-head, .qi-workflow-copy, .qi-workflow-steps > div, .qi-workflow-steps > .qi-workflow-step'
+    );
+    if (!targets.length) return;
+
+    launch.classList.add('qi-motion-ready');
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+        });
+    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+    targets.forEach(function (target) { observer.observe(target); });
+})();
+
+// Workflow panel interaktif: langkah yang dipilih mengubah isi panel kanan.
+(function () {
+    var panel = document.querySelector('.qi-workflow-panel');
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.qi-workflow-step'));
+    if (!panel || !steps.length) return;
+
+    var fields = {
+        label: document.getElementById('qiWorkflowLabel'),
+        title: document.getElementById('qiWorkflowTitle'),
+        body: document.getElementById('qiWorkflowBody'),
+        input: document.getElementById('qiWorkflowInput'),
+        process: document.getElementById('qiWorkflowProcess'),
+        result: document.getElementById('qiWorkflowResult'),
+        counter: document.getElementById('qiWorkflowCounter'),
+        stageNumber: document.getElementById('qiWorkflowStageNumber'),
+        coreTitle: document.getElementById('qiWorkflowCoreTitle'),
+        coreSub: document.getElementById('qiWorkflowCoreSub')
+    };
+    var coreCopy = [
+        ['MARKET CORE', 'WATCHLIST READY'],
+        ['SETUP CORE', 'INDICATORS ALIGNED'],
+        ['VALIDATION CORE', 'IDE READY TO TEST']
+    ];
+    var current = 0;
+
+    function activate(button, announce) {
+        var index = Number(button.getAttribute('data-workflow-step')) || 0;
+        current = index;
+        steps.forEach(function (step) {
+            var active = step === button;
+            step.classList.toggle('is-active', active);
+            step.setAttribute('aria-current', active ? 'step' : 'false');
+        });
+        panel.setAttribute('data-active-step', String(index));
+        if (fields.label) fields.label.textContent = button.dataset.label || '';
+        if (fields.title) fields.title.textContent = button.dataset.title || '';
+        if (fields.body) fields.body.textContent = button.dataset.body || '';
+        if (fields.input) fields.input.textContent = button.dataset.input || '';
+        if (fields.process) fields.process.textContent = button.dataset.process || '';
+        if (fields.result) fields.result.textContent = button.dataset.result || '';
+        if (fields.counter) fields.counter.textContent = String(index + 1).padStart(2, '0') + ' / 03';
+        if (fields.stageNumber) fields.stageNumber.textContent = String(index + 1).padStart(2, '0');
+        if (fields.coreTitle) fields.coreTitle.textContent = coreCopy[index][0];
+        if (fields.coreSub) fields.coreSub.textContent = coreCopy[index][1];
+        if (announce && fields.title) fields.title.setAttribute('tabindex', '-1');
+    }
+
+    steps.forEach(function (step) {
+        step.addEventListener('click', function () { activate(step, true); });
+    });
+    activate(steps[0], false);
+
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduced && steps.length > 1) {
+        window.setInterval(function () {
+            if (panel.matches(':hover') || panel.contains(document.activeElement)) return;
+            activate(steps[(current + 1) % steps.length], false);
+        }, 7200);
+    }
+})();
+
+// Filter katalog fitur tanpa reload halaman.
+(function () {
+    var filters = Array.prototype.slice.call(document.querySelectorAll('[data-qi-feature-filter]'));
+    var cards = Array.prototype.slice.call(document.querySelectorAll('[data-qi-feature-card]'));
+    if (!filters.length || !cards.length) return;
+
+    function applyFilter(filter) {
+        var category = filter.getAttribute('data-qi-feature-filter') || 'all';
+        filters.forEach(function (button) {
+            var active = button === filter;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        cards.forEach(function (card) {
+            var visible = category === 'all' || card.getAttribute('data-feature-category') === category;
+            card.hidden = !visible;
+            if (visible) {
+                card.classList.remove('is-visible');
+                window.requestAnimationFrame(function () { card.classList.add('is-visible'); });
+            }
+        });
+    }
+
+    filters.forEach(function (filter) {
+        filter.addEventListener('click', function () { applyFilter(filter); });
+        filter.addEventListener('keydown', function (event) {
+            if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+            event.preventDefault();
+            var index = filters.indexOf(filter);
+            var next = event.key === 'ArrowRight' ? (index + 1) % filters.length : (index - 1 + filters.length) % filters.length;
+            filters[next].focus();
+            applyFilter(filters[next]);
+        });
+    });
+})();
+
+// Access gate: panel kanan berganti modul secara perlahan seperti guided module.
+(function () {
+    var consolePanel = document.querySelector('.qi-access-console');
+    var label = document.getElementById('qiAccessStepLabel');
+    var title = document.getElementById('qiAccessStepTitle');
+    var body = document.getElementById('qiAccessStepBody');
+    if (!consolePanel || !label || !title || !body) return;
+
+    var modules = [
+        ['ACCESS 01', 'Satu pintu untuk membaca market', 'Pilih market, susun setup, dan bawa ide ke ruang kerja yang sama.'],
+        ['ACCESS 02', 'Signal hadir bersama konteksnya', 'Lihat indikator, timeframe, dan level risiko sebelum sebuah ide menjadi keputusan.'],
+        ['ACCESS 03', 'Validasi dulu. Eksekusi belakangan.', 'Gunakan replay, backtest, dan paper mode untuk menguji proses tanpa terburu-buru.']
+    ];
+    var current = 0;
+
+    function render(index) {
+        var copy = modules[index];
+        current = index;
+        label.textContent = copy[0];
+        title.textContent = copy[1];
+        body.textContent = copy[2];
+        consolePanel.setAttribute('data-access-step', String(index));
+    }
+
+    render(0);
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    window.setInterval(function () {
+        if (consolePanel.matches(':hover') || consolePanel.contains(document.activeElement)) return;
+        render((current + 1) % modules.length);
+    }, 5200);
+})();
+
+// Hero command surface: klik node atau pill untuk mengganti fokus halaman.
+(function () {
+    var hero = document.querySelector('.qi-launch-hero');
+    var controls = Array.prototype.slice.call(document.querySelectorAll('[data-qi-hero-module]'));
+    var titleMain = document.getElementById('qiHeroTitleMain');
+    var titleSub = document.getElementById('qiHeroTitleSub');
+    var lead = document.getElementById('qiHeroLead');
+    var activeLabel = document.getElementById('qiHeroActiveLabel');
+    var proof = document.getElementById('qiHeroProof');
+    var showcaseTabs = Array.prototype.slice.call(document.querySelectorAll('[data-qi-hero-showcase-tab]'));
+    if (!hero || !controls.length || !titleMain || !titleSub || !lead || !activeLabel || !proof) return;
+
+    var modules = {
+        chart: {
+            main: 'Read the market.', sub: 'Trade with a process.',
+            lead: 'Quantum Terminal memberi kamu ruang kerja yang tenang untuk membaca Forex dan Crypto, menguji setup, dan memahami alasan di balik setiap signal.',
+            label: 'CHART WORKSPACE · READY', proof: '18 tipe chart · 134 indikator · 69 drawing tools · Forex + Crypto', tab: 'chart'
+        },
+        signal: {
+            main: 'See the signal.', sub: 'Know the reason.',
+            lead: 'Signal hadir bersama konteks indikator, timeframe, dan level risiko yang bisa kamu tinjau sebelum mengambil keputusan.',
+            label: 'SIGNAL CENTER · LIVE', proof: 'Candle close · MTF context · Entry · SL · TP', tab: 'signal'
+        },
+        backtest: {
+            main: 'Test the idea.', sub: 'Before the risk.',
+            lead: 'Replay, backtest, dan paper mode membantu kamu menguji proses sebelum modal ikut bergerak.',
+            label: 'BACKTEST LAB · PAPER MODE', proof: 'Replay · Backtest · Paper mode · Risk review', tab: 'backtest'
+        },
+        market: {
+            main: 'One market view.', sub: 'Less noise.',
+            lead: 'Susun Forex dan Crypto dalam satu watchlist yang tenang, lalu fokus pada pair yang sedang kamu baca.',
+            label: 'MARKET WATCH · ONLINE', proof: 'Forex + Crypto · Watchlist · Multi-timeframe', tab: 'chart'
+        },
+        workflow: {
+            main: 'From setup.', sub: 'To a testable idea.',
+            lead: 'Pilih market, bangun setup, lalu validasi ide dalam alur yang sama di Quantum Terminal.',
+            label: 'WORKFLOW · 3 STEPS', proof: 'Watchlist · Setup · Validate · Review', tab: 'backtest'
+        }
+    };
+    var current = 'chart';
+    var pauseUntil = 0;
+    var order = ['chart', 'signal', 'backtest', 'market', 'workflow'];
+
+    function activate(name, animate) {
+        var copy = modules[name] || modules.chart;
+        current = modules[name] ? name : 'chart';
+        controls.forEach(function (control) {
+            var active = control.getAttribute('data-qi-hero-module') === current;
+            control.classList.toggle('is-active', active);
+            if (control.hasAttribute('aria-pressed')) control.setAttribute('aria-pressed', active ? 'true' : 'false');
+            if (control.hasAttribute('aria-selected')) control.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        titleMain.textContent = copy.main;
+        titleSub.textContent = copy.sub;
+        lead.textContent = copy.lead;
+        activeLabel.textContent = copy.label;
+        proof.textContent = copy.proof;
+        showcaseTabs.forEach(function (tab) {
+            tab.classList.toggle('active', tab.getAttribute('data-qi-hero-showcase-tab') === copy.tab);
+        });
+        if (animate) {
+            hero.classList.remove('is-switching');
+            window.requestAnimationFrame(function () { hero.classList.add('is-switching'); });
+            window.setTimeout(function () { hero.classList.remove('is-switching'); }, 600);
+        }
+    }
+
+    controls.forEach(function (control) {
+        control.addEventListener('click', function () {
+            pauseUntil = Date.now() + 10000;
+            activate(control.getAttribute('data-qi-hero-module'), true);
+        });
+    });
+    activate(current, false);
+
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
+    window.setInterval(function () {
+        if (Date.now() < pauseUntil) return;
+        activate(order[(order.indexOf(current) + 1) % order.length], true);
+    }, 6400);
+})();
