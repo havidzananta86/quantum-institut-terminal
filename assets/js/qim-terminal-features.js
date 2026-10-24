@@ -172,8 +172,9 @@
     // ── Pine SMC+SnD overlay ───────────────────────────────────────────────
     let pineResult = null;
     function sendPineOverlay() {
-        const frame = $('quantumTerminalFrame'), enabled = Boolean($('qtPineOverlay')?.checked && pineResult);
-        if (!frame?.contentWindow) return;
+        const frame = $('quantumTerminalFrame');
+        if (!frame?.contentWindow || !pineResult) return;
+        const enabled = Boolean($('qtPineOverlay')?.checked);
         const h = pineResult, side = h.buy?.valid ? 'BUY' : h.sell?.valid ? 'SELL' : null, levels = side === 'BUY' ? h.buy : h.sell;
         const last = pineResult._candles?.[pineResult._candles.length - 1];
         const signal = side && last ? { side, time: last.time, price: levels.entry, entry: levels.entry, stopLoss: levels.sl, takeProfit: levels.tp3, confidence: 0.8, reason: 'Pine SMC+SnD · ' + levels.status, source: 'Pine SMC+SnD' } : null;
