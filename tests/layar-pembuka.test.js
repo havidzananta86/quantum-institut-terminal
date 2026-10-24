@@ -292,7 +292,10 @@ console.log('\nTanpa markup layar pembuka');
 }
 
 console.log('\nKontrak markup');
-const blok = (HTML.match(/<div id="qiLoadScreen"[\s\S]*?<!-- bundel:pemuat/) || [''])[0];
+// Penutup blok dulu penanda <!-- bundel:pemuat -->. Dashboard chart-first memuat
+// halaman-dashboard-pemuat.js langsung (tanpa bundel), jadi penutupnya kini salah satu
+// dari keduanya — yang diuji tetap isi layar pembukanya, bukan cara skripnya dimuat.
+const blok = (HTML.match(/<div id="qiLoadScreen"[\s\S]*?(?=<!-- bundel:pemuat|<script src="assets\/js\/halaman-dashboard-pemuat)/) || [''])[0];
 cek('tiga tahap ada di dashboard.html', /id="qiBootSesi"/.test(blok) && /id="qiBootData"/.test(blok) && /id="qiBootSiap"/.test(blok));
 cek('teks tahapan Bahasa Indonesia', /Memverifikasi sesi/.test(blok) && /Menyambungkan data pasar/.test(blok) && /Menyiapkan terminal/.test(blok));
 cek('tidak ada lagi teks Inggris lama', !/Initializing Command Center/.test(HTML) && !/Connecting to data feeds/.test(JS));

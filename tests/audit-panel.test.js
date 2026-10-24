@@ -31,6 +31,29 @@ const ui    = baca('assets/js/ui-improvements.js');
 const alr   = baca('assets/js/qim-alerts.js');
 const html  = baca('dashboard.html');
 
+// ── Panel yang DIBUANG dashboard chart-first ─────────────────────────────────
+// Pemeriksaan di bawah menjaga KATA-KATA panel lama (hasil audit 2026-10: judul
+// jujur, kolom dinamai apa adanya, ambang mesin yang benar). Shell chart-first
+// tidak memuat panel-panelnya sama sekali, dan tidak ada halaman lain yang
+// memuatnya — fiturnya memang hilang dari produk, bukan pindah tempat.
+// Daftar ini sengaja eksplisit supaya kehilangannya tidak lenyap dari catatan.
+const CHART_FIRST = /id="quantumTerminalFrame"/.test(html);
+const PANEL_DIBUANG = [
+  'kartu Crypto Futures (Pergerakan Futures 24h, kolom Tekanan)',
+  'grafik COT non-commercial',
+  'Market Screener (kolom Volume)',
+  'panel Academy (ambang MIN_SEPAKAT)',
+  'kartu admin: metodeKartu, gwKartuJeda, gwKartuGerbang',
+  'pintasan Charts (?panel=panel-charts)',
+  'filter Engine (opsi NEWS & MANUAL)',
+  'grid MTF 5 kartu',
+];
+/** Jalankan cek panel lama hanya bila panelnya memang ada di halaman. */
+function cekPanelLama(nama, kondisi, info) {
+  if (CHART_FIRST) { console.log('  — ' + nama + ' (panel tidak ada di shell chart-first)'); return; }
+  cek(nama, kondisi, info);
+}
+
 /** Buang baris komentar supaya pemeriksaan "sudah tidak ada" tidak tertipu catatan sejarah. */
 const tanpaKomentar = (teks) => teks.split('\n')
   .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/*'))
@@ -93,15 +116,15 @@ console.log('\nAngka yang tidak bisa dipertanggungjawabkan (galat 25/27/29/34/35
   cek('tombol 2h/4h News Impact dibuang', !/data-qi-arg='\["2h"\]'/.test(html) && !/data-qi-arg='\["4h"\]'/.test(html));
   cek('order book "perkiraan" diberi lencana', /ob-\$\{sym\}-tanda/.test(app) && /data\.nyata === false/.test(app));
   // Judul yang DILIHAT pengguna (di dalam <span>), bukan komentar yang mencatat nama lamanya.
-  cek('kartu futures tidak lagi mengaku data likuidasi',
+  cekPanelLama('kartu futures tidak lagi mengaku data likuidasi',
     !/>[^<]*Liquidation Terbesar 24h[^<]*</.test(html) && />[^<]*Pergerakan Futures 24h[^<]*</.test(html));
-  cek('kolom "Liq Dominan" dinamai apa adanya', !/>Liq Dominan</.test(html) && /Tekanan \(perkiraan\)/.test(html));
+  cekPanelLama('kolom "Liq Dominan" dinamai apa adanya', !/>Liq Dominan</.test(html) && /Tekanan \(perkiraan\)/.test(html));
   cek('"Avg Market Volatility 2.4%" tulis tangan sudah hilang', !/>2\.4%</.test(html));
   cek('rata-rata volatilitas dihitung dari ATR yang terbaca', /function qiSetVolRata\(/.test(prof) && /qiSetVolRata\(kumpulPct\)/.test(prof));
-  cek('judul grafik COT jujur (non-commercial, ≤8 minggu)',
+  cekPanelLama('judul grafik COT jujur (non-commercial, ≤8 minggu)',
     !/Commercial Position — 12 Week/.test(html) && /Non-Commercial/.test(html));
-  cek('kolom "Volatilitas" Market Screener dinamai Volume', !/>Volatilitas</.test(html));
-  cek('Academy menyebut ambang mesin yang sebenarnya (MIN_SEPAKAT = 3)',
+  cekPanelLama('kolom "Volatilitas" Market Screener dinamai Volume', !/>Volatilitas</.test(html));
+  cekPanelLama('Academy menyebut ambang mesin yang sebenarnya (MIN_SEPAKAT = 3)',
     !/minimal 6 dari 9 mesin/.test(html) && /MIN_SEPAKAT = 3/.test(html));
 }
 
@@ -139,8 +162,8 @@ console.log('\nKeamanan & akses (galat 16/33/67/71)');
   cek('judul/sumber/kategori berita di-escape sebelum masuk HTML',
     /\$\{esc\(n\.title\)\}/.test(blok) && /\$\{esc\(n\.source\)\}/.test(blok) && /\$\{esc\(n\.category\)\}/.test(blok));
   cek('URL berita dibatasi skema http/https', /const urlAman = /.test(blok) && /\^https\?:/.test(blok));
-  cek('kartu khusus admin ditandai data-qi-admin', (html.match(/data-qi-admin="1"/g) || []).length >= 3);
-  cek('ketiganya ikut class hidden di markup',
+  cekPanelLama('kartu khusus admin ditandai data-qi-admin', (html.match(/data-qi-admin="1"/g) || []).length >= 3);
+  cekPanelLama('ketiganya ikut class hidden di markup',
     /id="metodeKartu" data-qi-admin="1" class="hidden/.test(html)
     && /id="gwKartuJeda" data-qi-admin="1" class="hidden/.test(html)
     && /id="gwKartuGerbang" data-qi-admin="1" class="hidden/.test(html));
@@ -178,7 +201,7 @@ console.log('\nFungsi yang rusak (galat 2/3/4/5/15/17/18/20/41/47/48/51/62/69/70
   cek('watchlist membaca _lastPrices (seluruh simbol), bukan _livePrices saja', /function wlKutipan\(sym\)/.test(adv) && /qiBacaGlobal\('_lastPrices'\)/.test(adv));
   cek('kolom Change watchlist benar-benar diisi', /cEl\.textContent = \(q\.chgPct === null\)/.test(adv));
   cek('window.loadWatchlist diekspor (tombol bintang favorit)', /window\.loadWatchlist = loadWatchlist;/.test(adv));
-  cek('pintasan Charts membawa parameter panel', /dashboard\.html\?panel=panel-charts/.test(html));
+  cekPanelLama('pintasan Charts membawa parameter panel', /dashboard\.html\?panel=panel-charts/.test(html));
   {
     // <thead> tabel Riwayat Sinyal punya 12 <th>, jadi baris status yang ditulis JS harus
     // merentang penuh. Hanya blok fetchTrackRecord yang diperiksa — tabel News Impact di
@@ -187,7 +210,7 @@ console.log('\nFungsi yang rusak (galat 2/3/4/5/15/17/18/20/41/47/48/51/62/69/70
     const salah = tr.match(/colspan="1[01]"/g) || [];
     cek('colspan tabel Riwayat Sinyal = 12 (thead memang 12 kolom)', salah.length === 0, salah);
   }
-  cek('filter Engine punya opsi NEWS & MANUAL', /value="NEWS"/.test(html) && /value="MANUAL"/.test(html));
+  cekPanelLama('filter Engine punya opsi NEWS & MANUAL', /value="NEWS"/.test(html) && /value="MANUAL"/.test(html));
   cek('keadaan kosong Jurnal tidak lagi menjanjikan pengisian otomatis',
     !/terisi otomatis dari posisi yang Anda tutup/.test(html));
   cek('Performance Analytics memakai riwayat paper yang nyata',
@@ -208,7 +231,7 @@ console.log('\nFungsi yang rusak (galat 2/3/4/5/15/17/18/20/41/47/48/51/62/69/70
   cek('penyegar kalender merender ulang, bukan hanya mengisi variabel',
     /async function segarkanKalender\(\)/.test(app) && /'panel-heatmap':     \[\(\) => segarkanKalender\(\)\]/.test(app));
   cek("event 'holiday' tidak lagi dilabeli Low", /impLvl === 'holiday' \?/.test(app));
-  cek('grid MTF memuat 5 kartu', /id="mtfGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5/.test(html));
+  cekPanelLama('grid MTF memuat 5 kartu', /id="mtfGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5/.test(html));
   cek('alert dari server ikut tercatat di riwayat', /window\.catatAlertKena/.test(alr) && /function catatAlertKena\(entri\)/.test(adv));
   cek('riwayat alert tidak menulis entri kembar',
     /var kembar = _alertHistory\.some/.test(adv) && /if \(kembar\) return;/.test(adv));
