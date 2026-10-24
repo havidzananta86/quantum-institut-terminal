@@ -261,10 +261,9 @@ async function cekDashboard(lebar, tinggi, label) {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tidur(200);
       if (!menuEl.hidden) m('Esc tidak menutup menu halaman');
 
-      // 2c. Panel Order: terbuka lewat tombol, berada di dalam layar, tertutup lagi oleh tombol silang.
-      document.getElementById('qtOrderLauncher').click(); await tidur(500);
-      const railBuka = rc('#qimRightPanel');
-      if (getComputedStyle(document.getElementById('qimRightPanel')).visibility !== 'visible' || !railBuka || railBuka.x < -1 || railBuka.kanan > innerWidth + 1 || railBuka.h < innerHeight - 2) m('panel Order tidak tampil utuh saat dibuka: ' + JSON.stringify(railBuka));
+      // 2c. Peluncur Order dihapus sesuai keputusan produk; panel tetap tersembunyi.
+      if (document.getElementById('qtOrderLauncher')) m('peluncur Order lama masih tampil');
+      if (getComputedStyle(document.getElementById('qimRightPanel')).visibility !== 'hidden' || document.getElementById('qimRightPanel').classList.contains('is-open')) m('panel Order terbuka padahal peluncurnya sudah dihapus');
 
       // 3. Chart terminal termuat: kanvas ada dan tidak tertahan di layar muat / galat.
       let kanvas = 0, isiFrame = '';
@@ -328,10 +327,6 @@ async function cekDashboard(lebar, tinggi, label) {
         hasil.ringkas.sinyal = { lencana, sumber, status: (document.getElementById('qtAssistFooterText') || {}).textContent };
         document.getElementById('qtAssistClose').click();
       }
-
-      // Panel Order ditutup kembali lewat tombol silang.
-      document.getElementById('qtOrderClose').click(); await tidur(500);
-      if (getComputedStyle(document.getElementById('qimRightPanel')).visibility !== 'hidden') m('tombol silang tidak menutup panel Order');
 
       // 6. Teks seluruh halaman (di luar iframe) bebas dari NaN/undefined/galat PHP.
       const semua = (document.body.innerText || '').replace(/\\s+/g, ' ');
