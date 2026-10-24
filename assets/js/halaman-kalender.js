@@ -7,6 +7,9 @@ let _cdInterval  = null;
 let _nextHighEvent = null;
 let _lastFetch   = null;
 
+// Judul, negara dan angka berasal dari feed ForexFactory pihak ketiga — selalu di-escape sebelum masuk innerHTML.
+const escKal = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
 const DAYS_ID  = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -148,7 +151,7 @@ function impactPill(impact) {
 
 function valueCell(val) {
     if (!val || val === '-' || val === '') return '<span class="text-slate-700">—</span>';
-    return `<span class="text-slate-300">${val}</span>`;
+    return `<span class="text-slate-300">${escKal(val)}</span>`;
 }
 
 function actualCell(actual, forecast) {
@@ -159,7 +162,7 @@ function actualCell(actual, forecast) {
     if (!isNaN(a) && !isNaN(f)) {
         cls = a > f ? 'text-qi-green font-semibold' : a < f ? 'text-qi-red font-semibold' : 'text-slate-300';
     }
-    return `<span class="${cls}">${actual}</span>`;
+    return `<span class="${cls}">${escKal(actual)}</span>`;
 }
 
 function renderCalendar() {
@@ -219,7 +222,7 @@ function renderCalendar() {
                 const evTime  = new Date(ev.date).getTime();
                 const isPast  = evTime < now;
                 const isNext  = _nextHighEvent && ev.id === _nextHighEvent.id;
-                const cur     = (ev.currency || ev.country || '—').toUpperCase();
+                const cur     = escKal((ev.currency || ev.country || '—').toUpperCase());
                 const rowCls  = `ev-row border-b border-qi-border/50 ${isPast ? 'past' : ''} ${isNext ? 'upcoming bg-qi-red/5' : ''}`;
                 const hasActual = ev.actual && ev.actual !== '-';
 
@@ -229,7 +232,7 @@ function renderCalendar() {
                         <span class="text-[11px] font-semibold text-slate-300">${cur}</span>
                     </td>
                     <td class="px-3 py-2.5 text-white max-w-[180px] sm:max-w-none">
-                        <div class="truncate font-semibold text-[11px]">${ev.title || '—'}</div>
+                        <div class="truncate font-semibold text-[11px]">${escKal(ev.title || '—')}</div>
                         <div class="text-[10px] text-slate-600 sm:hidden">${cur}</div>
                     </td>
                     <td class="px-2 py-2.5 text-center">${impactPill((ev.impact||'').toLowerCase())}</td>

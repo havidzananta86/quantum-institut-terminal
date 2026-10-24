@@ -147,6 +147,9 @@ window.checkPriceAlerts = function(prices) {
         if (a.direction === 'below' && cur <= a.price) triggered = true;
         if (triggered) {
             a.active = false;
+            // Alert milik server: catat id-nya supaya qim-alerts.js tidak mengumumkannya LAGI saat server
+            // melaporkannya di baru_kena, dan tidak menyalakannya kembali sebelum server ikut menandai kena.
+            if (a.server) { window._qiAlertKenaLokal = window._qiAlertKenaLokal || {}; window._qiAlertKenaLokal[a.id] = 1; }
             if (typeof saveAlerts === 'function') saveAlerts();
             catatAlertKena({ symbol: a.symbol, price: a.price, direction: a.direction, currentPrice: cur, sumber: 'lokal' });
             var msg = a.symbol + ' mencapai ' + a.price + ' (sekarang: ' + cur + ')';

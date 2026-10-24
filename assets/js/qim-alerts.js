@@ -26,7 +26,8 @@
     /** Isi ulang daftar milik pro-features.js (bentuk lama: {id, symbol, price, direction, active}). */
     function terapkan(daftar) {
         const arr = window._priceAlerts;
-        const baru = (daftar || []).map(a => ({ id: a.id, symbol: a.symbol, price: a.price, direction: a.direction, active: a.active, createdAt: a.createdAt, triggeredAt: a.triggeredAt, server: true }));
+        const kenaLokal = window._qiAlertKenaLokal || {};
+        const baru = (daftar || []).map(a => ({ id: a.id, symbol: a.symbol, price: a.price, direction: a.direction, active: a.active && !kenaLokal[a.id], createdAt: a.createdAt, triggeredAt: a.triggeredAt, server: true }));
         if (Array.isArray(arr)) { arr.length = 0; baru.forEach(x => arr.push(x)); } else window._priceAlerts = baru;
         try { localStorage.setItem('qi_price_alerts', JSON.stringify(baru)); } catch (e) {}
         try { if (typeof window.renderAlerts === 'function') window.renderAlerts(); } catch (e) {}
@@ -54,7 +55,9 @@
     }
 
     function umumkan(kena) {
-        (kena || []).forEach(k => {
+        const kenaLokal = window._qiAlertKenaLokal || {};
+        // Yang sudah diumumkan pemeriksa harga di peramban (advanced-trading.js) tidak diumumkan dua kali.
+        (kena || []).filter(k => !kenaLokal[k.id]).forEach(k => {
             const msg = k.symbol + ' ' + (k.arah === 'above' ? 'naik ke ' : 'turun ke ') + k.target + ' (sekarang ' + k.harga + ')';
             toast('🔔 Price alert: ' + msg, 'success');
             try { if (typeof window.sendBrowserNotification === 'function') window.sendBrowserNotification('Price Alert: ' + k.symbol, msg); } catch (e) {}

@@ -243,6 +243,7 @@
 
     function muatHarga() {
         if (!trader()) return Promise.resolve();
+        const simbolAwal = st.simbol;
         return sekali('harga', async () => {
             // Simbol tiket + SEMUA simbol posisi saya (server melayani seluruh simbol paper — audit G1: posisi
             // turnamen di luar 10 simbol arena dulu tidak pernah punya harga di sini).
@@ -263,6 +264,9 @@
             perbaruiSelPosisi();
             renderRingkas();
             perbaruiCandleTerakhir();
+            // Simbol diganti selama permintaan berjalan: sekali() menolak panggilan baru itu, jadi minta
+            // ulang segera — dulu tiket tertahan "TANPA HARGA" sampai detak 4 detik berikutnya.
+            if (st.simbol !== simbolAwal) setTimeout(muatHarga, 0);
         });
     }
 
@@ -279,6 +283,7 @@
                 if (d.sekarang) st.selisihJam = new Date(d.sekarang).getTime() - Date.now();
                 st.turnamen = d.turnamen || null;
                 st.sayaMinggu = d.saya_minggu || null;
+                st.admin = !!d.admin;   // admin = penyelenggara, sengaja tidak masuk papan (_kompetisi_papan.php)
                 renderTurnamen(d);
                 renderPapan(d);
                 renderFeed(d.aktivitas || []);
@@ -312,13 +317,16 @@
         if (lev && t.leverage) lev.textContent = 'Leverage 1:' + t.leverage + ' · stop-out ' + (t.stopout_pct ?? 50) + '%';
 
         const saya = st.sayaMinggu;
-        const teksRank = saya && saya.aktif ? '#' + saya.rank + ' dari ' + (saya.dari || '—') : (saya ? 'Belum trading' : '—');
+        // Admin tidak pernah punya baris papan; tanpa ini arena menulis "Belum ada posisi" walau admin sedang memegang posisi.
+        const teksRank = st.admin ? 'Admin · tidak diperingkat'
+            : saya && saya.aktif ? '#' + saya.rank + ' dari ' + (saya.dari || '—') : (saya ? 'Belum trading' : '—');
         const chip = $('kompChipRank');
-        if (chip) chip.textContent = trader() ? (saya ? teksRank : 'Belum ada posisi') : '—';
+        if (chip) chip.textContent = trader() ? (saya || st.admin ? teksRank : 'Belum ada posisi') : '—';
         const rank = $('kompRankSaya');
-        if (rank) rank.textContent = saya ? teksRank : '—';
+        if (rank) rank.textContent = saya || st.admin ? teksRank : '—';
         const status = $('kompStatusDaftar');
-        if (status) status.textContent = t.terdaftar ? '✓ Terdaftar ' + (t.periode || '') : 'otomatis terdaftar saat order pertama';
+        if (status) status.textContent = st.admin ? 'Penyelenggara — tidak ikut peringkat & hadiah'
+            : t.terdaftar ? '✓ Terdaftar ' + (t.periode || '') : 'otomatis terdaftar saat order pertama';
         const daftar = $('kompDaftar');
         if (daftar) {
             daftar.classList.toggle('hidden', !trader() || !!t.terdaftar);
@@ -701,6 +709,13 @@
                 crosshair: { mode: M.CrosshairMode ? M.CrosshairMode.Normal : 0 },
                 autoSize: true,
             });
+            // Sumbu waktu WIB seperti dashboard (chart-style.js); tanpa ini sumbu tampil dalam UTC,
+            // 7 jam di belakang jam & periode turnamen yang tertulis "(WIB)" di halaman yang sama.
+            const G = window.QuantumChartStyle;
+            if (G) st.chart.applyOptions({
+                timeScale: { tickMarkFormatter: (t, tipe) => G.labelWaktu(t, tipe) },
+                localization: { locale: 'id-ID', timeFormatter: (t) => G.labelLengkap(t) },
+            });
             st.seri = st.chart.addSeries(M.CandlestickSeries, {
                 upColor: '#10B981', downColor: '#EF4444', borderVisible: false, wickUpColor: '#10B981', wickDownColor: '#EF4444',
             });
@@ -904,7 +919,9 @@
             try {
                 const r = await fetch('api/competition.php?trader=' + encodeURIComponent(kode), { headers: authHeaders(), cache: 'no-store' });
                 const d = await r.json().catch(() => ({}));
-                if (kode !== st.laciKode) return;
+                // Trader lain dibuka selama menunggu: permintaannya ditolak sekali(), jadi muat sekarang
+                // (setelah kunci dilepas) — dulu laci tertahan "Memuat…" sampai detak 10 detik berikutnya.
+                if (kode !== st.laciKode) { setTimeout(muatLaci, 0); return; }
                 if (!r.ok || d.status !== 'success') { if (isi) isi.innerHTML = '<p class="komp-kecil">' + esc(d.message || 'Detail trader tidak tersedia.') + '</p>'; return; }
                 renderLaci(d);
             } catch (e) {

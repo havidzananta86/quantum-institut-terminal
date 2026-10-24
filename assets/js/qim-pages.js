@@ -415,10 +415,12 @@
         if (ringkas) return h > 0 ? h + ' hari' : j > 0 ? j + ' jam' : m + ' mnt';
         return (h ? h + ' Hari ' : '') + j + ' Jam ' + m + ' Menit';
     }
+    // Selalu WIB (zona periode turnamen) dan bulan di kedua ujung: dulu getDate() zona peramban
+    // (WITA/WIT bergeser sehari) dan satu nama bulan saja ("26 - 1 November 2026").
     function rentangTanggal(mulai, selesai) {
         const a = new Date(mulai), b = new Date(new Date(selesai).getTime() - 1);
-        const bulan = b.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-        return a.getDate() + ' - ' + b.getDate() + ' ' + bulan;
+        const opsi = { day: 'numeric', month: 'short', timeZone: 'Asia/Jakarta' };
+        return a.toLocaleDateString('id-ID', opsi) + ' – ' + b.toLocaleDateString('id-ID', Object.assign({ year: 'numeric' }, opsi)) + ' (WIB)';
     }
 
     async function muatKompetisi(papan) {

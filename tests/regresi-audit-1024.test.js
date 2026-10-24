@@ -55,6 +55,18 @@ for (const f of ['api/mt5-bridge-token.php', 'api/_middleware.php']) {
   cek(`${f}: gerbang owner hanya provider MT5`, !/LIKE 'mt%'/.test(s) && /provider = 'MT5'/.test(s));
 }
 
+console.log('\nFront-end (audit JS)');
+const app = baca('assets/js/dashboard-app.js');
+const ada = (teks, potongan) => teks.includes(potongan);
+cek('chart utama membuang respons basi (nomor urut + kunci simbol|TF)', ada(app, 'const req = ++_lwSeq, kunciAwal = _lwKunci(), seriAwal = _lwSeries;')
+  && ada(app, 'if (req !== _lwSeq || kunciAwal !== _lwKunci() || seriAwal !== _lwSeries) return;'));
+cek('mini chart Paper memakai ?interval= (bukan tf/limit yang diabaikan server)', ada(app, '&interval=${tfParam}`') && !ada(app, '&tf=${tfParam}'));
+cek('realtime.js: handler WebSocket terikat ke soketnya sendiri', /s\.onclose = function \(\) \{\s*if \(soket !== s\) return;/.test(baca('assets/js/realtime.js')));
+cek('arena memuat chart-style.js (sumbu waktu WIB)', ada(baca('kompetisi.html'), 'assets/js/chart-style.js') && ada(baca('assets/js/halaman-kompetisi.js'), 'G.labelWaktu(t, tipe)'));
+cek('rentang periode kompetisi dashboard berzona Asia/Jakarta', /function rentangTanggal[\s\S]{0,400}timeZone: 'Asia\/Jakarta'/.test(baca('assets/js/qim-pages.js')));
+cek('kalender ekonomi: judul feed di-escape', ada(baca('assets/js/halaman-kalender.js'), 'escKal(ev.title') && ada(app, 'escK(e.title || e.event'));
+cek('alert server yang sudah kena di peramban tidak diumumkan dua kali', ada(baca('assets/js/qim-alerts.js'), 'filter(k => !kenaLokal[k.id])'));
+
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });
 if (probe.error || probe.status !== 0) {
   console.error(`\nSKIP — PHP binary tidak dapat dijalankan ("${PHP}").`);

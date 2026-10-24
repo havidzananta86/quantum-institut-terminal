@@ -84,8 +84,11 @@
             autoSize: true,
             layout: Object.assign({}, dasar.layout, { attributionLogo: false }),
             grid: dasar.grid,
+            // Format waktu WIB chart utama ikut disalin; dulu hanya layout & grid sehingga sel tambahan berlabel UTC.
+            localization: dasar.localization,
             rightPriceScale: { borderVisible: false },
-            timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 4 },
+            timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false, rightOffset: 4,
+                tickMarkFormatter: (dasar.timeScale || {}).tickMarkFormatter },
             crosshair: { mode: 1 },
             handleScroll: true, handleScale: true,
         };

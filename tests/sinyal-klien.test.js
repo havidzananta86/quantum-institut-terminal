@@ -315,7 +315,8 @@ console.log('\n5. Penanda `simulated` bertahan melewati sinkron chart, dan semua
       WL_GROUPS: [{ syms: [{ tv: 'OANDA:XAUUSD', key: 'XAUUSD' }] }], _tvSymbol: 'OANDA:XAUUSD', _tvInterval: '60',
       _lastPrices: {}, DP: {}, _lwRsi: null, _lwCandlesMeta: null,
       _lwSeries: { setData() { catat.setData++; }, update() {} },
-      _lwLastCandles: lokal,
+      _lwLastCandles: lokal, _lwSeq: 0,
+      _lwKunci() { return ctx._tvSymbol + '|' + ctx._tvInterval; },
       document: { getElementById: () => null },
       perbaruiVolume() {}, _calcRSI: () => [], drawAutoIndicators() {},
       CustomEvent: function (nama, o) { this.type = nama; this.detail = o && o.detail; },
@@ -394,6 +395,16 @@ console.log('\n5. Penanda `simulated` bertahan melewati sinkron chart, dan semua
       const { ctx, catat } = siapkan(lokal, asli(201, sekarang - JAM));
       await ctx.sinkron(); await tunggu();
       cek('kontrol: nyata → nyata dengan bar baru tetap disinkronkan', catat.setData === 1 && ctx._lwLastCandles.length === 201 && ctx._lwLastCandles.simulated !== true);
+    }
+    // (e) Simbol berganti SELAMA sinkron menunggu jawaban → jawaban basi dibuang (audit JS 2026-10-24:
+    //     dulu candle simbol lama tergambar di bawah judul simbol baru).
+    {
+      const lokal = nyata(200, sekarang - 2 * JAM);
+      const { ctx, catat } = siapkan(lokal, asli(201, sekarang - JAM));
+      const janji = ctx.sinkron();
+      ctx._tvSymbol = 'BINANCE:BTCUSDT';
+      await janji; await tunggu();
+      cek('jawaban sinkron untuk simbol lama dibuang setelah simbol berganti', catat.setData === 0 && ctx._lwLastCandles === lokal);
     }
 
     // Panel Setup Analisa: candle simulasi → deteksi tidak pernah dipanggil, statusnya jujur.

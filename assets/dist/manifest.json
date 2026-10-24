@@ -34,25 +34,25 @@
       }
     },
     "inti": {
-      "file": "assets/dist/inti.c8d2df9508.js",
+      "file": "assets/dist/inti.cc8b310e75.js",
       "muat": "sinkron",
       "sumber": {
         "qim-price-store.js": "352ac0b781a22a7c",
         "qim-chart-store.js": "b19a3cf8bac1c78f",
         "qim-paper-math.js": "aee88cf55d36654c",
-        "dashboard-app.js": "38f1e3560405e76b",
+        "dashboard-app.js": "28311f1613409a35",
         "qim-dashboard.js": "1a0f078bce339185",
         "qim-indicators.js": "865b12d971fb3be1",
         "qim-trading-tools.js": "a61c5336edc67d48",
         "qim-mt5-socket.js": "56b7070dfcd743c8",
         "qim-notifications.js": "78fa5e780d4db523",
-        "qim-pages.js": "421bcdad660193e8",
+        "qim-pages.js": "c6fcb8e9ec62b34c",
         "qim-risk.js": "b2e6279cbc6bcbd2",
-        "qim-alerts.js": "7f281183be087286"
+        "qim-alerts.js": "a882f72372c3ec8d"
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.13870b6e22.js",
+      "file": "assets/dist/fitur.5300393ecc.js",
       "muat": "sinkron",
       "sumber": {
         "pro-features.js": "668f6b3e81cc8de7",
@@ -71,20 +71,20 @@
         "qim-brief-harian.js": "35d06ba5cf71ab56",
         "qim-mobile.js": "bd80a6a3bacf9526",
         "dashboard-pro.js": "010648f49221fe34",
-        "advanced-trading.js": "0eb845c9ef29dc69",
+        "advanced-trading.js": "dd64520426adee29",
         "perf-upgrades.js": "7c09df0e5d70d2d9",
         "ui-improvements.js": "1263b37ebfe2d850",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "1755101f1c5e1e42",
-        "halaman-dashboard.js": "92998d8c25fbf197"
+        "halaman-dashboard.js": "5fafe9cd1a8bc935"
       }
     },
     "tunda": {
-      "file": "assets/dist/tunda.7a7be7a1eb.js",
+      "file": "assets/dist/tunda.84599f9381.js",
       "muat": "defer",
       "sumber": {
         "main.js": "2fb473f15eb88b8e",
-        "realtime.js": "c66fb445d8ece8c1",
+        "realtime.js": "6aeac89f31bdc519",
         "cookie-consent.js": "f1b2f2a59a15a052"
       }
     }
@@ -97,9 +97,9 @@
       }
     },
     "multichart": {
-      "file": "assets/dist/lazy-multichart.bb8586a158.js",
+      "file": "assets/dist/lazy-multichart.176d0749c7.js",
       "sumber": {
-        "qim-multichart.js": "f8e2f6d942ba4d3a"
+        "qim-multichart.js": "c1bf9d5b639a4a89"
       }
     },
     "pine": {
@@ -110,5 +110,5 @@
       }
     }
   },
-  "versi": "f7da813537"
+  "versi": "f61f71ef64"
 }

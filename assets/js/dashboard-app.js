@@ -3115,6 +3115,8 @@ function renderCalTable() {
     if (cntEl) cntEl.textContent = `${filtered.length} events`;
 
     let lastDay = '';
+    // Judul & angka kalender berasal dari feed ForexFactory pihak ketiga — di-escape sebelum masuk HTML.
+    const escK = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     body.innerHTML = filtered.map(e => {
         const impLvl = (e.impact||'').toLowerCase();
         // ForexFactory juga mengirim 'holiday' (libur bursa). Dulu nilai itu jatuh ke
@@ -3158,12 +3160,12 @@ function renderCalTable() {
 
         return `${dayHeader}<tr class="border-b border-qi-border/30 hover:bg-white/[.015] transition-colors">
             <td class="px-4 py-2.5 font-mono text-[10px] text-slate-400 whitespace-nowrap">${timeStr}</td>
-            <td class="px-3 py-2.5 text-center font-mono font-bold text-[11px] text-white">${cur2}</td>
+            <td class="px-3 py-2.5 text-center font-mono font-bold text-[11px] text-white">${escK(cur2)}</td>
             <td class="px-3 py-2.5 text-center">${impHtml}</td>
-            <td class="px-4 py-2.5 text-[11px] text-slate-200">${e.title || e.event || '—'}</td>
-            <td class="px-3 py-2.5 text-right font-mono text-[11px] ${actualCls}">${actual}</td>
-            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-400">${forecast}</td>
-            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-500">${previous}</td>
+            <td class="px-4 py-2.5 text-[11px] text-slate-200">${escK(e.title || e.event || '—')}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] ${actualCls}">${escK(actual)}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-400">${escK(forecast)}</td>
+            <td class="px-3 py-2.5 text-right font-mono text-[11px] text-slate-500">${escK(previous)}</td>
         </tr>`;
     }).join('');
 }
@@ -3406,7 +3408,7 @@ async function buildLwChart() {
         _lwIchiT = _lwIchiK = _lwIchiChi = _lwIchiSA = _lwIchiSB = null;
         _lwPriceLines = [];
         try { _lwChart.remove(); } catch(e){}
-        _lwChart = null; _lwSeries = null;
+        _lwChart = null; _lwSeries = null; _lwLastCandles = [];   // tick yang datang selama memuat tidak boleh menempel ke batang simbol lama
     }
     container.innerHTML = '';
 
@@ -3508,8 +3510,15 @@ async function buildLwChart() {
     if (st) st.textContent = _tvSymLabel + ' · ' + ({'1':'1m','5':'5m','15':'M15','30':'30m','60':'H1','240':'H4','D':'D1','W':'W1','MN':'MN1'}[_tvInterval]||_tvInterval);
 }
 
+// Nomor urut permintaan candle chart utama. Respons yang tiba SETELAH pengguna berganti simbol/timeframe
+// dibuang — tanpa ini respons yang paling lambat yang digambar (mis. candle M15 berlabel H1, atau harga
+// SOL ditempel ke batang ETH). Pola yang sama dengan st.seqCandle di halaman-kompetisi.js.
+var _lwSeq = 0;
+function _lwKunci() { return _tvSymbol + '|' + _tvInterval; }
+
 async function lwFetchAndSetData() {
     if (!_lwSeries) return;
+    const req = ++_lwSeq, kunciAwal = _lwKunci(), seriAwal = _lwSeries;
     const allSyms = WL_GROUPS.flatMap(g => g.syms);
     const found   = allSyms.find(s => s.tv === _tvSymbol);
     if (!found) return;
@@ -3520,6 +3529,7 @@ async function lwFetchAndSetData() {
         if (st) st.textContent = 'Memuat data…';
         const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
         const data = await res.json();
+        if (req !== _lwSeq || kunciAwal !== _lwKunci() || seriAwal !== _lwSeries) return;   // sudah basi
         const candles = (data.candles || []).filter(c => c.time && c.open);
         if (!candles.length) {
             // Jangan biarkan candle simbol SEBELUMNYA tetap tampil di bawah judul simbol baru.
@@ -5014,14 +5024,15 @@ function selectCalDay2(key) {
     panel.classList.remove('hidden');
     if (title) title.textContent = `${evts.length} event pada ${key}`;
     const IMPACT_CLS = { high:'text-qi-red', medium:'text-qi-gold', low:'text-qi-green' };
+    const escK = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));   // feed kalender pihak ketiga
     list.innerHTML = evts.map(e => {
         const imp = (e.impact||'low').toLowerCase();
         const cls = IMPACT_CLS[imp] || 'text-slate-400';
         const t = e.date ? new Date(e.date).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
         return `<div class="flex items-start gap-2 py-1 border-b border-qi-border/40 last:border-0">
             <span class="text-[9px] font-mono text-slate-600 w-10 shrink-0 mt-0.5">${t}</span>
-            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${e.currency||''}</span>
-            <span class="text-[10px] text-slate-300 leading-tight">${e.title||'—'}</span>
+            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${escK(e.currency||'')}</span>
+            <span class="text-[10px] text-slate-300 leading-tight">${escK(e.title||'—')}</span>
             <span class="ml-auto text-[9px] ${cls} shrink-0">${imp.toUpperCase()}</span>
         </div>`;
     }).join('');
@@ -5033,14 +5044,15 @@ function renderCalFullList(events) {
     const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
     const IMPACT_CLS = { high:'text-qi-red', medium:'text-qi-gold', low:'text-qi-green' };
     if (!sorted.length) { el.innerHTML = '<div class="px-4 py-6 text-center text-slate-600 text-xs">Tidak ada data</div>'; return; }
+    const escK = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));   // feed kalender pihak ketiga
     el.innerHTML = sorted.map(e => {
         const imp = (e.impact||'low').toLowerCase();
         const cls = IMPACT_CLS[imp] || 'text-slate-400';
         const dt = e.date ? new Date(e.date).toLocaleString('id-ID',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
         return `<div class="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[.02] transition-colors">
             <span class="text-[9px] font-mono text-slate-500 w-28 shrink-0">${dt}</span>
-            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${e.currency||''}</span>
-            <span class="text-[10px] text-slate-300 leading-tight flex-1 truncate">${e.title||'—'}</span>
+            <span class="text-[9px] font-semibold ${cls} w-6 shrink-0 uppercase">${escK(e.currency||'')}</span>
+            <span class="text-[10px] text-slate-300 leading-tight flex-1 truncate">${escK(e.title||'—')}</span>
             <span class="text-[9px] ${cls} shrink-0 font-semibold">${imp.toUpperCase()}</span>
         </div>`;
     }).join('');
@@ -7265,11 +7277,12 @@ async function fetchTrackRecord() {
                 }
             } catch (e) {}
             const bl = document.getElementById('trBlackout');
+            const escBo = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));   // judul berita dari feed kalender pihak ketiga
             if (bl && bo) {
                 if (bo.aktif && bo.event) {
                     bl.className = 'mx-4 mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-200 leading-snug';
-                    bl.innerHTML = '⏸ <b>Filter berita aktif</b> — sinyal baru ditahan ±30 menit: <b>' + bo.event.judul + '</b> ('
-                        + bo.event.mata_uang + ') ' + bo.event.arah + ' ' + bo.event.menit + ' menit.';
+                    bl.innerHTML = '⏸ <b>Filter berita aktif</b> — sinyal baru ditahan ±30 menit: <b>' + escBo(bo.event.judul) + '</b> ('
+                        + escBo(bo.event.mata_uang) + ') ' + escBo(bo.event.arah) + ' ' + escBo(bo.event.menit) + ' menit.';
                 } else {
                     bl.className = 'mx-4 mt-3 rounded-lg border border-slate-700 bg-slate-900/60 p-2.5 text-[11px] text-slate-400 leading-snug';
                     bl.innerHTML = '✓ Filter berita aktif — ' + (bo.catatan || 'tidak ada berita berdampak tinggi saat ini.')
@@ -7804,9 +7817,11 @@ async function updateOhlcBar() {
     if (akhirLokal && !lokalSimulasiAwal && kini < akhirLokal.time + durBatang) return;
     if (kini < _ohlcSync.boleh) return;
     _ohlcSync.boleh = kini + 15;
+    const seqAwal = _lwSeq, kunciAwal = _lwKunci(), seriAwal = _lwSeries;
     try {
         const res  = await fetch(`api/get-chart-data.php?symbol=${found.key}&interval=${_tvInterval}`);
         const data = await res.json();
+        if (seqAwal !== _lwSeq || kunciAwal !== _lwKunci() || seriAwal !== _lwSeries) return;   // simbol/timeframe berganti selama menunggu
         const candles = (data.candles || []).filter(c => c.time && c.open);
         if (!candles.length) return;
         // INTEGRITAS DATA (audit sinyal 2026-10-22): `.filter()` membuat array BARU, dan dulu
@@ -7912,6 +7927,11 @@ async function renderPtMiniChart() {
         handleScroll: true, handleScale: true,
         autoSize: true,
     });
+    // Sumbu waktu WIB, sama dengan chart utama (tanpa ini lightweight-charts menampilkan UTC).
+    if (window.QuantumChartStyle) _ptMiniChart.applyOptions({
+        timeScale: { tickMarkFormatter: (t, tipe) => window.QuantumChartStyle.labelWaktu(t, tipe) },
+        localization: { locale: 'id-ID', timeFormatter: (t) => window.QuantumChartStyle.labelLengkap(t) },
+    });
     _ptMiniSeries = _ptMiniChart.addSeries(CandlestickSeries, {
         upColor: '#26a69a', downColor: '#ef5350',
         borderUpColor: '#26a69a', borderDownColor: '#ef5350',
@@ -7920,11 +7940,16 @@ async function renderPtMiniChart() {
 
     // Fetch data
     try {
-        const url = `api/get-chart-data.php?symbol=${encodeURIComponent(symKey)}&tf=${tfParam}&limit=150`;
+        // get-chart-data.php hanya mengenal `interval` (dulu dikirim `tf` & `limit` yang diabaikan,
+        // sehingga M15/H4/D1 semuanya menampilkan H1). 150 bar terakhir dipotong di sini.
+        const seriAwal = _ptMiniSeries;
+        const url = `api/get-chart-data.php?symbol=${encodeURIComponent(symKey)}&interval=${tfParam}`;
         const r   = await fetch(url);
         const raw = await r.json();
+        if (seriAwal !== _ptMiniSeries) return;   // tombol TF/simbol lain ditekan selama menunggu
         const candles = (raw.candles || raw).filter(c => c.time && c.close != null)
-            .map(c => ({ time: +c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close }));
+            .map(c => ({ time: +c.time, open: +c.open, high: +c.high, low: +c.low, close: +c.close }))
+            .slice(-150);
         if (candles.length) {
             _ptMiniSeries.setData(candles);
             // Plot EMA20 overlay

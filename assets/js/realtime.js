@@ -145,21 +145,27 @@
     function sambungKe(host) {
         if (!sedangJalan || dijeda) return;
         setKeadaanWs('mencoba');
+        var s;
         try {
-            soket = new WebSocket(urlGabungan(host));
+            s = soket = new WebSocket(urlGabungan(host));
         } catch (e) {
             gagalBerturut++;
             return jadwalkanUlang();
         }
-        soket.onopen = function () {
+        // Setiap handler terikat ke soketnya SENDIRI. Saat tab disembunyikan lalu dibuka lagi dengan
+        // cepat, onclose soket LAMA tiba setelah soket baru dibuat; dulu ia mengosongkan `soket`
+        // (rujukan ke soket baru hilang, tidak bisa ditutup lagi) lalu menjadwalkan soket ketiga.
+        s.onopen = function () {
+            if (soket !== s) return;
             hostAktif = host;
             terbukaSejak = Date.now();
             tickSaatBuka = jumlahTick;
             setKeadaanWs('stream');
         };
-        soket.onmessage = tanganiPesan;
-        soket.onerror = function () { /* penutupan ditangani onclose */ };
-        soket.onclose = function () {
+        s.onmessage = function (ev) { if (soket === s) tanganiPesan(ev); };
+        s.onerror = function () { /* penutupan ditangani onclose */ };
+        s.onclose = function () {
+            if (soket !== s) return;   // soket lama yang sudah diganti: jangan sentuh keadaan soket baru
             // Reset penghitung hanya bila sesi benar-benar stabil (lama terbuka DAN ada data);
             // kalau di-reset saat onopen, siklus buka-tutup cepat tidak pernah mencapai MAKS_GAGAL.
             var stabil = terbukaSejak && (Date.now() - terbukaSejak) >= STABIL_MIN_MS && jumlahTick > tickSaatBuka;
