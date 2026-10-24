@@ -1,14 +1,14 @@
 /**
  * DELEGASI AKSI — pengganti atribut on*="..." yang dilarang CSP tanpa 'unsafe-inline'.
  *
- *   <button data-qi-aksi="switchPanel" data-qi-arg='["panel-charts"]'>      ← dulu onclick="switchPanel('panel-charts')"
- *   <select data-qi-aksi-change="fetchMtfBias" data-qi-arg-change='["$nilai"]'>  ← dulu onchange="fetchMtfBias(this.value)"
+ *   <button data-qi-aksi="qtSetAkun" data-qi-arg='["real"]'>      ← dulu onclick="qtSetAkun('real')"
+ *   <select data-qi-aksi-change="qtSetAkun" data-qi-arg-change='["$nilai"]'>  ← dulu onchange="qtSetAkun(this.value)"
  *
  * - data-qi-aksi = klik; data-qi-aksi-<jenis> untuk change / input / submit / keydown. Satu pendengar per jenis
  *   peristiwa di document, jadi elemen yang digambar ulang lewat innerHTML tetap jalan tanpa dipasang ulang.
  * - Nama aksi dicari dulu di daftar QIAksi.daftar(...), lalu di window (boleh bertitik: "QIMTools.calcPnl"
  *   dipanggil dengan this = QIMTools). Dicari SAAT diklik, seperti handler inline dulu — jadi pembungkus
- *   yang dipasang belakangan (mis. a11y.js membungkus window.switchPanel) tetap terpakai.
+ *   yang dipasang belakangan (mis. pembungkus yang dipasang modul lain pada window.qtSetAkun) tetap terpakai.
  * - data-qi-arg = larik JSON. Token khusus: "$el" = elemennya (dulu `this`), "$event" = peristiwanya,
  *   "$nilai" = el.value. Tanpa data-qi-arg fungsi dipanggil tanpa argumen.
  * - Urutan & penghentian sama seperti handler inline: dari target naik ke leluhur; aksi "hentikan"

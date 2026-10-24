@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
-const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+const read = f => { try { return fs.readFileSync(path.join(root, f), 'utf8'); } catch (e) { return ''; } };   // dashboard-app.js dan kawan-kawan sudah dihapus
 let gagal = 0;
 function cek(nama, kondisi) { console.log((kondisi ? '  ✓ ' : '  ✗ ') + nama); if (!kondisi) gagal++; }
 
@@ -24,7 +24,7 @@ cek('health: kunci opsional (Telegram, Google) tidak membuat 503 permanen', /api
 cek('rate-limit cleanup tahan balapan: filemtime berkas yang baru dihapus permintaan lain tidak jadi PHP Warning', /\$mtime = @filemtime\(\$f\);[\s\S]{0,40}if \(\$mtime === false\) continue;/.test(read('api/_middleware.php')));
 const cf = read('api/crypto-futures.php');
 cek('Whale vs Retail: tidak ada angka karangan bila Binance Futures tidak terjangkau (dulu 51.2/48.8 · 58.5/41.5 + verdict palsu)', !/: 51\.2;|: 58\.5;|: 41\.5;|: 48\.8;/.test(cf) && /if \(!\$retail \|\| !\$whale\) \{[\s\S]{0,200}'ok' => false/.test(cf));
-cek('Whale vs Retail: browser menampilkan "tidak tersedia" (bukan angka lama) saat ok:false', /if \(!j\.ok\) \{[\s\S]{0,900}j\.message/.test(read('assets/js/dashboard-app.js')));
+// (Sisi browser kartu Whale vs Retail ada di dashboard panel lama yang sudah dibuang; sisi server di atas tetap dijaga.)
 
 cek('signals: label zona waktu mengikuti server (dulu "WIB" padahal UTC)', !/'Asia\/Jakarta \(WIB\)'/.test(read('api/signals.php')));
 

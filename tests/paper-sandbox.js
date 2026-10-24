@@ -324,6 +324,10 @@ function sandbox(opsi = {}) {
   vm.runInContext(ambilFungsi('fmt'), ctx);
   // Jalur order REAL memakai fungsi ASLI (dulu ditiru — tiruan selalu "sukses", sehingga toast hijau
   // "Order masuk antrean." untuk order yang tidak pernah dikirim tidak tertangkap uji).
+  // Daftar akun MT5 kini disimpan di memori (_akunLive), bukan di <select id="liveAccountId"> — dashboard
+  // tidak lagi punya pemilih itu (pengaturan broker pindah ke Profil). Pilihan tersimpan: localStorage 'qi_live_akun'.
+  vm.runInContext('var _akunLive = [];', ctx);
+  ctx.localStorage = { getItem: (k) => (opsi.akunTersimpan !== undefined && k === 'qi_live_akun' ? String(opsi.akunTersimpan) : null), setItem() {} };
   for (const nama of ['liveHeaders', 'loadLiveExecution', 'liveAction']) vm.runInContext(ambilFungsi(nama), ctx);
   vm.runInContext(MATH, ctx);
   vm.runInContext(AKSI, ctx);

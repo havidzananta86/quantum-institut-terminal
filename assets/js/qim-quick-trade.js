@@ -95,17 +95,10 @@ async function fetchMarketData() {
         _lastPricesAt = kiniMs;
         // Harga berubah → P/L mengambang di kartu Simulation ikut diperbarui.
         try { ptSiarkanState(); } catch (e) {}
-        renderTicker(_lastPrices);
-        renderMarketTape(_lastPrices);
-        renderStatCards(_lastPrices);
-        const tapeUpd = document.getElementById('tapeUpdated');
-        if (tapeUpd) tapeUpd.textContent = new Date().toLocaleTimeString('id-ID');
-        if (typeof updateWatchlistPrices === 'function') updateWatchlistPrices();
-        // Pro features: floating ticker + price alerts
-        var flatPrices = {};
-        Object.entries(_lastPrices).forEach(function(e) { flatPrices[e[0]] = parseFloat(e[1].price); });
-        if (typeof updateFloatingTicker === 'function') updateFloatingTicker(flatPrices);
-        if (typeof checkPriceAlerts === 'function') checkPriceAlerts(flatPrices);
+        // Harga baru → kartu Quick Trade ikut menyegarkan tombol BUY/SELL. (Penggambar ticker, pita pasar, kartu statistik,
+        // watchlist, ticker mengambang, dan price alert milik dashboard panel lama dibuang; sebelumnya pemanggilan
+        // renderTicker() yang tak lagi ada melempar galat yang tertelan di sini sehingga tak ada yang diperbarui.)
+        try { qtSegarkan(); } catch (e) {}
     } catch(e) {}
 }
 
@@ -115,21 +108,25 @@ function fmt(sym, price) {
 }
 
 function liveHeaders() { return window.QuantumAuth?.authHeaders ? QuantumAuth.authHeaders({ 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }; }
+/**
+ * Akun MT5 milik pengguna untuk jalur Real MT5. Dashboard tidak lagi punya pemilih akun (pengaturan broker
+ * pindah ke profile.html → #brokerSection), jadi daftarnya disimpan di memori dan pilihan terakhir di
+ * localStorage 'qi_live_akun' (diisi pemilih di Profil). Bawaan: akun aktif pertama, lalu akun pertama.
+ */
+let _akunLive = [];
 async function loadLiveExecution() {
-    const select = document.getElementById('liveAccountId'), state = document.getElementById('liveExecutionState');
     try {
-        const res = await fetch('api/live-trade.php', { headers: window.QuantumAuth?.authHeaders ? QuantumAuth.authHeaders() : {} });
+        const res = await fetch('api/live-trade.php', { headers: window.QuantumAuth?.authHeaders ? QuantumAuth.authHeaders() : {}, cache: 'no-store' });
         const data = await res.json(); if (!res.ok || data.status !== 'success') throw new Error('LOAD_FAILED');
-        const accounts = Array.isArray(data.accounts) ? data.accounts : [];
-        if (select) select.innerHTML = accounts.length ? accounts.map(a => `<option value="${Number(a.id)}">${String(a.account_label || 'MT5').replace(/[<>&"]/g, '')} · ${a.connection_status}</option>`).join('') : '<option value="">Belum ada akun MT5</option>';
-        const current = accounts[0];
-        if (state) state.textContent = current ? (Number(current.enabled) ? 'EKSEKUSI REAL AKTIF — pantau terminal dan log order.' : 'Eksekusi nonaktif. Guardrail tetap berlaku saat diaktifkan.') : 'Hubungkan MT5 read-only terlebih dahulu.';
-    } catch (error) { if (state) state.textContent = 'Status eksekusi belum tersedia.'; }
+        _akunLive = Array.isArray(data.accounts) ? data.accounts : [];
+    } catch (error) { _akunLive = []; }
+    return _akunLive;
 }
 
 async function liveAction(payload) {
-    const accountId = Number(document.getElementById('liveAccountId')?.value);
-    if (!Number.isInteger(accountId) || accountId < 1) { showQuantumToast('Pilih akun MT5 yang sudah terhubung.', 'warning'); return null; }
+    const terpilih = ptAkunRealTerpilih();
+    const accountId = terpilih ? terpilih.id : NaN;
+    if (!Number.isInteger(accountId) || accountId < 1) { showQuantumToast('Hubungkan akun MT5 di Profil → Broker MT5 lebih dulu.', 'warning'); return null; }
     const res = await fetch('api/live-trade.php', { method: 'POST', headers: liveHeaders(), body: JSON.stringify({ ...payload, account_id: accountId }) });
     const data = await res.json(); if (!res.ok || data.status !== 'success') throw new Error(data.message || 'LIVE_ACTION_FAILED'); return data;
 }
@@ -966,15 +963,21 @@ function ptGantiAkun() {
  * saat EA meminta instruksi, memakai angka yang sudah mutakhir.
  */
 /**
- * Akun MT5 yang terpilih di Broker → Eksekusi MT5 (#liveAccountId) beserta labelnya, atau null.
- * Label diambil dari opsinya sendiri ("Nama akun · connected") supaya dialog konfirmasi menyebut TUJUAN order.
+ * Akun MT5 tujuan order real beserta labelnya, atau null. Label ("Nama akun · connected") ikut ke dialog
+ * konfirmasi supaya pengguna melihat TUJUAN order. Pilihan terakhir pengguna (Profil → Broker MT5) dipakai
+ * bila akunnya masih ada; kalau tidak, akun yang terhubung aktif pertama.
  */
 function ptAkunRealTerpilih() {
-    const sel = document.getElementById('liveAccountId');
-    const id = Number(sel?.value);
-    if (!sel || !Number.isInteger(id) || id < 1) return null;
-    let label = '';
-    try { const o = sel.options && sel.options[sel.selectedIndex]; label = String((o && o.textContent) || '').trim(); } catch (e) {}
+    const daftar = Array.isArray(_akunLive) ? _akunLive : [];
+    if (!daftar.length) return null;
+    let simpan = 0;
+    try { simpan = Number(localStorage.getItem('qi_live_akun')) || 0; } catch (e) {}
+    const akun = daftar.find((a) => Number(a.id) === simpan)
+        || daftar.find((a) => a.connection_status === 'active')
+        || daftar[0];
+    const id = Number(akun && akun.id);
+    if (!Number.isInteger(id) || id < 1) return null;
+    const label = String((akun.account_label || 'MT5') + ' · ' + (akun.connection_status || '')).replace(/[<>&"]/g, '').trim();
     return { id, label: label || ('akun MT5 #' + id) };
 }
 
@@ -987,8 +990,7 @@ async function ptKirimOrderReal(o) {
     if (_ptBukaJalan) { toast('Order sebelumnya masih diproses — tunggu sebentar.', 'info'); return; }
     ptSetBukaJalan(true);
     try {
-        // 1) Akun tujuan dipastikan SEBELUM konfirmasi. #liveAccountId hanya terisi setelah panel Broker →
-        //    Eksekusi MT5 dibuka; dulu liveAction() mengembalikan null tanpa mengirim apa pun, lalu toast
+        // 1) Akun tujuan dipastikan SEBELUM konfirmasi. daftar akun dimuat dari server bila belum ada; dulu liveAction() mengembalikan null tanpa mengirim apa pun, lalu toast
         //    HIJAU "Order masuk antrean." tetap muncul — dan klik berikutnya diam-diam masuk ke akun pertama.
         let akun = ptAkunRealTerpilih();
         if (!akun && typeof loadLiveExecution === 'function') {
@@ -996,7 +998,7 @@ async function ptKirimOrderReal(o) {
             akun = ptAkunRealTerpilih();
         }
         if (!akun) {
-            toast('Order real TIDAK dikirim — belum ada akun MT5 terhubung yang bisa dipilih. Hubungkan dan pilih akun di Broker → Eksekusi MT5.', 'error', 9000);
+            toast('Order real TIDAK dikirim — belum ada akun MT5 terhubung yang bisa dipilih. Hubungkan akun di Profil → Broker MT5.', 'error', 9000);
             return;
         }
         // 2) Harga live yang SEGAR (feed tampilan; harga broker bagi yang berhak). Dulu dipakai harga di tombol
@@ -1028,7 +1030,7 @@ async function ptKirimOrderReal(o) {
         });
         // liveAction() mengembalikan null bila TIDAK mengirim apa pun — itu bukan sukses.
         if (!data) {
-            toast('Order real TIDAK dikirim — pilih akun MT5 di Broker → Eksekusi MT5.', 'error', 9000);
+            toast('Order real TIDAK dikirim — hubungkan akun MT5 di Profil → Broker MT5.', 'error', 9000);
             return;
         }
         toast(data.message || 'Order masuk antrean.', 'success');

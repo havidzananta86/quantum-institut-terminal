@@ -10,11 +10,11 @@
     <link rel="canonical" href="https://quantum-institut.com/dashboard.html">
     <link rel="icon" href="assets/img/logo-mark.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-    <link rel="stylesheet" href="assets/css/tokens.css?v=2d391c9b99">
-    <link rel="stylesheet" href="assets/css/qim-masuk.css?v=97774a8c8c">
-    <link rel="stylesheet" href="assets/css/qim-terminal-shell.css?v=dedde88db6">
-    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=ec31196791">
-    <script src="assets/js/auth.js?v=1.4.3"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css?v=602aff5e14">
+    <link rel="stylesheet" href="assets/css/qim-masuk.css?v=3500a99872">
+    <link rel="stylesheet" href="assets/css/qim-terminal-shell.css?v=8f59b5f14d">
+    <link rel="stylesheet" href="assets/css/qim-dashboard.css?v=3320b71378">
+    <script src="assets/js/auth.js?v=940c3caeda"></script>
     <style>
         :root { color-scheme: dark; }
         * { box-sizing: border-box; }
@@ -52,20 +52,11 @@
     </div>
 </div>
 <!-- Tahap diisi dari kejadian nyata oleh halaman-dashboard-pemuat.js (tanpa bundel di halaman ini). -->
-<script src="assets/js/halaman-dashboard-pemuat.js?v=1.0.0"></script>
+<script src="assets/js/halaman-dashboard-pemuat.js?v=b63a8a0a50"></script>
 
-<!-- BAR ATAS — shell chart-first sebelumnya tidak punya navigasi sama sekali, sehingga
-     Arena, kalender, dan profil tidak bisa dicapai dari terminal. -->
-<header class="qt-topbar">
-    <a class="qt-topbar-merek" href="index.html"><img src="assets/img/logo-mark.svg" alt="" width="20" height="20"><span>Quantum Terminal</span></a>
-    <nav class="qt-topbar-nav" aria-label="Halaman lain">
-        <a href="dashboard.html" aria-current="page">Chart</a>
-        <a href="kompetisi.html">Arena</a>
-        <a href="economic-calendar.html">Kalender</a>
-        <a href="transparansi.html">Transparansi</a>
-        <a href="profile.html">Profil</a>
-    </nav>
-</header>
+<!-- CHART PENUH LAYAR. Tidak ada bar atas dan tidak ada kolom permanen yang menyempitkan chart: navigasi ke halaman
+     lain ada di tombol Menu (bar kontrol kiri-bawah), dan Quick Trade ada di panel Order yang digeser dari kanan
+     (tombol Order di sebelah Signal Center). Dua-duanya tertutup secara bawaan. -->
 <div class="terminal-layout">
     <main class="terminal-shell" aria-label="Quantum Terminal">
         <div class="terminal-loading" id="terminalLoading"><span><i></i>Memuat Quantum Terminal…</span></div>
@@ -101,6 +92,11 @@
             <span class="qt-launcher-dot" aria-hidden="true"></span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5m0 14h16M8 16l3-4 3 2 5-7"></path><path d="M16 7h3v3"></path></svg>
             <span>Signal Center</span>
+        </button>
+
+        <button class="qt-assist-launcher qt-order-launcher" id="qtOrderLauncher" type="button" aria-controls="qimRightPanel" aria-expanded="false" aria-label="Buka panel Order (Quick Trade)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7"></path><path d="M14 8h6v6"></path></svg>
+            <span>Order</span>
         </button>
 
         <aside class="qt-assist-drawer" id="qtAssistDrawer" aria-label="Quantum Signal Center" aria-hidden="true">
@@ -229,133 +225,6 @@
             <footer class="qt-assist-footer"><span class="qt-assist-footer-status" id="qtAssistFooterStatus"><i aria-hidden="true"></i><span id="qtAssistFooterText">Menunggu feed</span></span><span>ATR-based levels · paper analysis</span></footer>
                 <a class="qt-assist-arena" href="kompetisi.html">Buka Arena Kompetisi →</a>
 
-<!-- BRIDGE MT5 — penyambungan broker, alert Telegram, dan status eksekusi EA.
-     Ketiganya BERSAUDARA, bukan bersarang: induk ber-class hidden membuat
-     remove("hidden") pada anaknya percuma (temuan audit #67). -->
-        <section id="bridgeSetup" class="hidden rounded-xl border border-qi-cyan/30 bg-qi-cyan/5 p-4">
-            <div class="flex items-start justify-between gap-3"><div><h3 class="text-sm font-bold text-white">Hubungkan MetaTrader secara read-only</h3><p class="mt-1 text-[11px] leading-relaxed text-slate-400">Bridge ini hanya menerima ringkasan akun. Jangan pernah masukkan password broker, investor password, atau API key broker.</p></div><button type="button" data-qi-aksi="toggleBridgeSetup" class="text-slate-400 hover:text-white" aria-label="Tutup">✕</button></div>
-            <form id="bridgeProvisionForm" data-qi-aksi-submit="provisionBridge" data-qi-arg-submit='["$event"]' class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
-                <label><span class="mb-1 block text-[10px] text-slate-500">Platform</span><select id="bridgeProvider" class="w-full rounded-lg border border-qi-border bg-qi-bg px-3 py-2 text-xs text-white outline-none focus:border-qi-cyan/60"><option value="MT5">MetaTrader 5</option><option value="MT4">MetaTrader 4</option></select></label>
-                <label><span class="mb-1 block text-[10px] text-slate-500">Nama akun</span><input id="bridgeAccountLabel" required maxlength="100" placeholder="Contoh: Akun utama" class="w-full rounded-lg border border-qi-border bg-qi-bg px-3 py-2 text-xs text-white outline-none focus:border-qi-cyan/60"></label>
-                <label><span class="mb-1 block text-[10px] text-slate-500">Nomor akun</span><input id="bridgeAccountReference" required maxlength="100" inputmode="numeric" placeholder="Contoh: 12345678" class="w-full rounded-lg border border-qi-border bg-qi-bg px-3 py-2 text-xs text-white outline-none focus:border-qi-cyan/60"></label>
-                <div class="flex items-end"><button id="bridgeProvisionBtn" type="submit" class="w-full rounded-lg border border-qi-cyan/40 bg-qi-cyan/10 px-3 py-2 text-[11px] font-semibold text-qi-cyan transition-colors hover:bg-qi-cyan/20">Buat Bridge Key</button></div>
-            </form>
-            <div class="mt-4 rounded-lg border border-qi-border bg-black/20 p-3">
-                <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Endpoint untuk EA — salin apa adanya</div>
-                <div class="mt-2 flex flex-col gap-2 sm:flex-row"><code id="bridgeEndpointValue" class="min-w-0 flex-1 break-all rounded bg-black/30 px-2 py-2 text-[10px] text-qi-cyan">Memuat endpoint…</code><button type="button" data-qi-aksi="copyBridgeEndpoint" class="rounded border border-qi-cyan/40 px-3 py-2 text-[10px] font-semibold text-qi-cyan hover:bg-qi-cyan/10">Salin</button></div>
-                <p class="mt-2 text-[10px] leading-relaxed text-slate-400">Di MetaTrader buka <span class="text-slate-300">Tools → Options → Expert Advisors</span>, centang <span class="text-slate-300">Allow WebRequest for listed URL</span>, lalu tambahkan <code id="bridgeOriginValue" class="text-qi-cyan">…</code>. Tanpa langkah ini EA tidak bisa mengirim snapshot sama sekali (log EA menampilkan <code>HTTP=-1</code>).</p>
-            </div>
-            <div id="bridgeAccountList" class="mt-4 hidden rounded-lg border border-qi-border bg-black/20 p-3">
-                <div class="flex items-center justify-between gap-2"><div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Akun terdaftar di bridge</div><button type="button" data-qi-aksi="refreshAccountConnection" class="text-[10px] font-semibold text-qi-cyan hover:underline">Muat ulang</button></div>
-                <div id="bridgeAccountRows" class="mt-2 space-y-2"></div>
-                <p class="mt-2 text-[10px] leading-relaxed text-slate-500">Kalau ada akun yang salah platform (misalnya MT4 padahal terminal Anda MT5), klik <span class="text-slate-300">Cabut</span> pada baris itu supaya tidak ikut menunggu.</p>
-            </div>
-            <div id="bridgeKeyResult" class="hidden mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3">
-                <div class="text-[10px] font-semibold text-amber-300">Simpan Bridge Key ini sekarang. Demi keamanan, key tidak dapat ditampilkan lagi.</div>
-                <div class="mt-2 flex flex-col gap-2 sm:flex-row"><code id="bridgeKeyValue" data-qi-aksi="selectBridgeKey" title="Klik untuk memilih seluruh key" class="min-w-0 flex-1 cursor-text select-all break-all rounded bg-black/20 px-2 py-2 text-[10px] text-white"></code><button type="button" data-qi-aksi="copyBridgeKey" class="rounded border border-amber-300/30 px-3 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-300/10">Salin</button></div>
-                <ol class="mt-3 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300"><li>Unduh <a href="api/mt-bridge-ea.php?platform=mt4" download class="text-qi-cyan hover:underline">EA MT4</a> atau <a href="api/mt-bridge-ea.php?platform=mt5" download class="text-qi-cyan hover:underline">EA MT5</a> — input <code>Endpoint</code> di dalamnya sudah terisi otomatis untuk domain ini (versi manual: <a href="assets/mt-bridge/QuantumReadOnlyBridge.mq5" download class="text-qi-cyan hover:underline">template MT5</a>).</li><li>Buka file itu di MetaEditor, compile, lalu pasang EA ke satu grafik di terminal yang memakai akun ini.</li><li>Centang <span class="text-slate-300">Allow WebRequest for listed URL</span> dan tambahkan <code id="bridgeOriginStep" class="text-qi-cyan">…</code>.</li><li>Isi input <code>BridgeKey</code> pada EA dengan key di atas, lalu aktifkan AutoTrading — hanya supaya timer EA berjalan, EA tidak mengirim order.</li><li>Status pada kartu <span class="text-slate-300">Akun Trading</span> berubah menjadi TERHUBUNG otomatis setelah snapshot pertama diterima (maksimal 60 detik).</li></ol>
-            </div>
-
-        </section>
-
-        <!-- tgKartu SENGAJA di LUAR #bridgeSetup. Dulu ia bersarang di dalamnya, sehingga
-             muatTelegramStatus() memanggil kartu.classList.remove('hidden') tetapi kartunya
-             tetap tak terlihat karena INDUKNYA masih hidden — admin praktis tidak pernah
-             bisa melihat pengaturan Telegram kecuali kebetulan membuka form bridge. -->
-        <!-- ══ NOTIFIKASI TELEGRAM (khusus admin) ═══════════════════════════
-             Pengiriman otomatis setiap sinyal baru dicatat (semua mesin:
-             AUTO_SIGNAL, AI, NEWS, TradingView). Bila bot/chat belum diatur,
-             statusnya ditampilkan JUJUR beserta apa yang masih kurang — sinyal
-             tetap tercatat normal, hanya notifikasinya yang tidak terkirim.
-             Token bot tidak pernah ditampilkan kembali (hanya 4 karakter akhir). -->
-        <section id="tgKartu" class="hidden mt-4 rounded-xl border border-qi-border bg-black/20 p-4">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-white">Notifikasi Telegram</h3>
-                    <p class="mt-1 text-[11px] text-slate-400">Kirim sinyal baru (entry, SL, TP, grade) langsung ke Telegram Anda.</p>
-                </div>
-                <span id="tgStatusBadge" class="shrink-0 rounded-full border border-qi-border px-2 py-0.5 text-[10px] font-mono text-slate-400">memuat…</span>
-            </div>
-            <div id="tgCatatan" class="mt-2 text-[10px] leading-relaxed text-slate-500"></div>
-            <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-                <div>
-                    <label class="text-[10px] text-slate-400" for="tgToken">Token bot (dari @BotFather)</label>
-                    <input id="tgToken" type="password" autocomplete="off" placeholder="123456789:AA…" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-400" for="tgChat">Chat id (angka) atau @nama-kanal</label>
-                    <input id="tgChat" type="text" autocomplete="off" placeholder="-1001234567890 atau @kanalsaya" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                </div>
-            </div>
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-                <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[false]' class="rounded-lg border border-qi-cyan/40 bg-qi-cyan/10 px-3 py-2 text-[10px] font-semibold text-qi-cyan hover:bg-qi-cyan/20">Simpan</button>
-                <button type="button" data-qi-aksi="tgSimpan" data-qi-arg='[true]' class="rounded-lg border border-qi-green/40 bg-qi-green/10 px-3 py-2 text-[10px] font-semibold text-qi-green hover:bg-qi-green/20">Simpan &amp; Kirim Uji</button>
-                <button type="button" data-qi-aksi="tgHapus" class="rounded-lg border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Hapus Pengaturan</button>
-                <span id="tgHasil" class="text-[10px] font-mono text-slate-400"></span>
-            </div>
-            <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
-                <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Cara mendapatkan token &amp; chat id</summary>
-                <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
-                    <li>Buka Telegram → cari <span class="text-white">@BotFather</span> → kirim <code class="text-qi-cyan">/newbot</code> → ikuti petunjuk.</li>
-                    <li>BotFather memberi <span class="text-white">token</span> berbentuk <code class="text-qi-cyan">123456789:AA…</code> → tempel di kolom Token.</li>
-                    <li>Kirim pesan apa pun ke bot Anda, lalu buka <code class="text-qi-cyan">https://api.telegram.org/bot&lt;token&gt;/getUpdates</code> dan ambil nilai <code class="text-qi-cyan">chat.id</code>.</li>
-                    <li>Untuk kanal: tambahkan bot sebagai admin kanal, lalu pakai <code class="text-qi-cyan">@namakanal</code>.</li>
-                    <li>Tekan <span class="text-white">Simpan &amp; Kirim Uji</span> — pesan uji harus masuk ke Telegram Anda.</li>
-                </ol>
-            </details>
-        </section>
-
-        <!-- EKSEKUSI MT5 AKUN REAL — juga sengaja di LUAR #bridgeSetup. Dulu blok ini
-             bersarang di dalam form "Buat Bridge Key" yang tersembunyi, sehingga pengguna
-             yang bridge-nya SUDAH jadi tidak punya jalan wajar untuk membuka guardrail,
-             status EA, maupun tombol Hentikan Darurat. -->
-        <section class="mt-4 rounded-lg border border-qi-red/30 bg-qi-red/5 p-3">
-            <div class="text-[11px] font-bold text-qi-red">Eksekusi MT5 akun real — nonaktif secara default</div>
-            <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Buat dan aktifkan hanya setelah EA MT5 terhubung. Limit ini adalah batas keras server: 0,01 lot, rugi harian maksimal 50%, dan 10 posisi.</p>
-            <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-4"><select id="liveAccountId" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"></select><input id="liveSymbols" value="XAUUSD,EURUSD,GBPUSD,USDJPY" class="rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white" aria-label="Simbol yang diizinkan"><button type="button" data-qi-aksi="saveLiveGuardrails" class="rounded border border-qi-red/40 px-2 py-2 text-[10px] font-semibold text-qi-red hover:bg-qi-red/10">Simpan Guardrail</button><button type="button" data-qi-aksi="emergencyStopLive" class="rounded border border-amber-400/40 px-2 py-2 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10">Hentikan Darurat</button></div>
-            <div class="mt-2 flex flex-col gap-2 sm:flex-row"><input id="liveConfirmText" placeholder="Ketik AKTIFKAN REAL" class="min-w-0 flex-1 rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white"><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[true]' class="rounded bg-qi-red/20 px-3 py-2 text-[10px] font-bold text-qi-red hover:bg-qi-red/30">Aktifkan Real</button><button type="button" data-qi-aksi="setLiveExecution" data-qi-arg='[false]' class="rounded border border-qi-border px-3 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">Nonaktifkan</button></div>
-            <div id="liveExecutionState" class="mt-2 text-[10px] text-slate-500">Memuat status eksekusi MT5…</div>
-            <a href="api/mt-bridge-ea.php?platform=mt5-exec" download class="mt-2 inline-block text-[10px] font-semibold text-qi-cyan hover:underline">Unduh EA Eksekusi MT5 (Endpoint terisi otomatis)</a>
-
-            <!-- ── Pemetaan simbol, batas risiko, status, dan panduan ─────── -->
-            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div>
-                    <label for="liveSymbolMap" class="text-[10px] font-semibold text-slate-300">Pemetaan simbol broker <span class="text-slate-500">(satu per baris)</span></label>
-                    <textarea id="liveSymbolMap" rows="4" spellcheck="false" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 font-mono text-[10px] text-white" placeholder="XAUUSD=XAUUSD.pro&#10;EURUSD=EURUSD"></textarea>
-                    <p class="mt-1 text-[9px] leading-relaxed text-slate-500">Nama simbol berbeda antar broker (<span class="text-slate-400">XAUUSD</span> vs <span class="text-slate-400">XAUUSD.pro</span> vs <span class="text-slate-400">GOLD</span>). Tanpa pemetaan, EA menolak dengan “Symbol is unavailable”. Tulis <code>XAUUSD=</code> (nilai kosong) bila simbol itu tidak ingin dieksekusi di akun ini. Huruf besar/kecil nilai dipertahankan.</p>
-                </div>
-                <div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label for="liveDailyLoss" class="text-[10px] font-semibold text-slate-300">Batas rugi harian (%)</label>
-                            <input id="liveDailyLoss" type="number" min="0.5" max="50" step="0.5" value="5" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                        </div>
-                        <div>
-                            <label for="liveMaxPositions" class="text-[10px] font-semibold text-slate-300">Maks posisi terbuka</label>
-                            <input id="liveMaxPositions" type="number" min="1" max="10" step="1" value="3" class="mt-1 w-full rounded border border-qi-border bg-qi-bg px-2 py-2 text-[10px] text-white">
-                        </div>
-                    </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <button type="button" data-qi-aksi="muatStatusEksekusi" class="rounded border border-qi-border px-2 py-2 text-[10px] font-semibold text-slate-300 hover:text-white">⟳ Muat status eksekusi</button>
-                        <span class="text-[9px] text-slate-500">Lot tetap 0,01 (batas keras server &amp; EA).</span>
-                    </div>
-                    <div id="liveExecStatus" class="mt-2 text-[10px] leading-relaxed text-slate-400">Tekan “Muat status eksekusi” untuk melihat kesegaran EA dan perintah terakhir.</div>
-                    <div id="liveExecOrders" class="mt-2 space-y-1"></div>
-                </div>
-            </div>
-
-            <details class="mt-3 rounded border border-qi-border bg-black/20 p-2">
-                <summary class="cursor-pointer text-[10px] font-semibold text-qi-cyan">Panduan memasang EA EKSEKUSI (5 langkah)</summary>
-                <ol class="mt-2 list-decimal space-y-1 pl-4 text-[10px] leading-relaxed text-slate-300">
-                    <li>Akun ini harus berpaket <span class="text-white">PRO/VIP</span>, dan guardrail sudah disimpan (minimal satu simbol diizinkan).</li>
-                    <li>Unduh <span class="text-white">EA Eksekusi MT5</span> di tautan di atas → buka di MetaEditor → <span class="text-white">Compile</span>.</li>
-                    <li>Di MT5: <span class="text-white">Tools → Options → Expert Advisors</span> → centang <span class="text-white">Allow WebRequest for listed URL</span> → tambahkan <code class="text-qi-cyan">https://quantum-institut.com</code>.</li>
-                    <li>Pasang EA ke <span class="text-white">satu</span> grafik, isi input <code>BridgeKey</code> akun ini, <span class="text-white">biarkan <code>AllowRealExecution=false</code> lebih dulu</span>, lalu nyalakan tombol <span class="text-white">AutoTrading</span>. Status di atas harus berubah menjadi “EA hidup”.</li>
-                    <li>Setelah yakin, ubah <code>AllowRealExecution=true</code> lalu tekan <span class="text-white">Aktifkan Real</span>. MT5 harus tetap berjalan — PC sendiri atau VPS Windows.</li>
-                </ol>
-                <p class="mt-2 text-[9px] leading-relaxed text-slate-500">Perintah hanya dikirim bila <span class="text-slate-400">semua</span> terpenuhi: akun PRO/VIP, eksekusi aktif, terminal tersambung, simbol diizinkan, lot ≤ 0,01, rugi harian di bawah batas, dan posisi belum penuh. Satu sinyal = satu perintah per akun. EA memeriksa ulang semuanya secara lokal sebelum mengirim order, dan melaporkan tiket + kode hasil kembali ke sini.</p>
-            </details>
-        </section>
         </aside>
     </main>
 
@@ -381,7 +250,7 @@
             <span>Mengambang <b id="qtFloat">—</b></span>
         </div>
         <div class="qim-qt-realinfo" id="qtRealInfo" hidden>Mode <b>UANG SUNGGUHAN</b>. Posisi akun real dikelola terminal MT5 —
-            lihat <button type="button" data-qi-aksi="switchPanel" data-qi-arg='["panel-account"]'>Broker → Eksekusi MT5</button>.</div>
+            atur akun, batas risiko, dan status EA di <a href="profile.html#brokerSection">Profil → Broker MT5</a>.</div>
         <div class="qim-qt-sides">
             <button type="button" id="qtBuy" class="qim-qt-side qim-qt-buy" data-qi-aksi="qtOrder" data-qi-arg='["BUY"]'>
                 <em class="qim-qt-real-badge">REAL</em><span>BUY</span><b id="qtBuyHarga">—</b>
@@ -422,86 +291,34 @@
         <p class="qim-qt-nota" id="qtNota">Simulasi — tanpa uang sungguhan.</p>
         <a class="qim-qt-upgrade" id="qtUpgrade" href="pricing.html" hidden>Lihat paket PRO →</a>
     </section>
-        <!-- Trade form -->
-        <div class="bg-qi-card border border-qi-border rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-qi-border flex flex-wrap items-center gap-x-3 gap-y-2">
-                <span class="font-heading font-semibold text-white text-sm uppercase tracking-wider">Buka Posisi Baru</span>
-                <label class="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-wider">Akun
-                    <select id="ptAkun" data-qi-aksi-change="ptGantiAkun" class="text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 outline-none focus:border-qi-cyan/50">
-                        <option value="sim">Simulasi</option>
-                        <option value="real">Real MT5</option>
-                    </select>
-                </label>
-                <span id="ptAkunNota" class="text-[10px] text-slate-500">Posisi simulasi — tanpa uang sungguhan.</span>
-            </div>
-            <div class="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Instrumen</label>
-                    <select id="ptSymbol" data-qi-aksi-change="ptUpdateLivePrice" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
-                        <option value="BTCUSDT">BTC/USDT</option>
-                        <option value="ETHUSDT">ETH/USDT</option>
-                        <option value="SOLUSDT">SOL/USDT</option>
-                        <option value="XAUUSD">XAU/USD</option>
-                        <option value="EURUSD">EUR/USD</option>
-                        <option value="GBPUSD">GBP/USD</option>
-                        <option value="USDJPY">USD/JPY</option>
-                        <option value="XAGUSD">XAG/USD</option>
-                        <option value="US30">US30</option>
-                        <option value="NAS100">NAS100</option>
-                        <option value="SPX500">SPX500</option>
-                        <option value="GER40">GER40</option>
-                        <option value="UK100">UK100</option>
-                        <option value="JP225">JP225</option>
-                        <option value="USOIL">WTI</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Arah</label>
-                    <select id="ptSide" data-qi-aksi-change="ptUpdateLivePrice" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
-                        <option value="BUY">BUY ▲</option>
-                        <option value="SELL">SELL ▼</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Lots</label>
-                    <input id="ptLots" type="number" value="0.1" min="0.01" max="100" step="0.01" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-white rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
-                </div>
-                <div>
-                    <!-- Order pasar: kolom ini BACA SAJA (ask untuk BUY, bid untuk SELL). Dulu bisa diketik dan
-                         terbaca sebagai harga masuk, padahal server mengeksekusi di harga pasarnya sendiri. -->
-                    <label for="ptEntryPrice" class="text-[10px] text-slate-500 block mb-1" title="Order pasar — server mengeksekusi di ask (BUY) / bid (SELL) saat order diterima">Harga eksekusi (pasar)</label>
-                    <input id="ptEntryPrice" type="number" step="any" placeholder="Menunggu harga live" readonly tabindex="-1" aria-readonly="true" title="Order pasar — server mengeksekusi di ask (BUY) / bid (SELL) saat order diterima" class="w-full text-[11px] bg-slate-950 border border-slate-800 text-slate-400 rounded px-2 py-1.5 outline-none cursor-default">
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Stop Loss</label>
-                    <input id="ptSL" type="number" step="any" placeholder="Opsional" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 block mb-1">Take Profit</label>
-                    <input id="ptTP" type="number" step="any" placeholder="Opsional" class="w-full text-[11px] bg-slate-900 border border-slate-700 text-slate-300 rounded px-2 py-1.5 outline-none focus:border-qi-cyan/50">
-                </div>
-            </div>
-            <div class="px-4 pb-4 flex items-center gap-3">
-                <div class="text-[10px] text-slate-500 font-mono">Live: <span id="ptLivePrice" class="text-white font-semibold">—</span></div>
-                <button id="ptOpenBtn" data-qi-aksi="ptOpenPosition" class="ml-auto px-4 py-2 rounded-lg font-heading font-bold text-slate-950 text-sm" style="background:linear-gradient(135deg,#00E5FF,#7C4DFF)">+ Buka Posisi</button>
-            </div>
-            <!-- Pengaman posisi: break-even & trailing stop (qim-trading-tools.js). SL/TP sendiri ditegakkan SERVER
-                 (qi_paper_settle) — pilihan "SL/TP otomatis" lama dibuang karena mematikannya tidak mematikan apa pun. -->
-            <div class="px-4 py-3 border-t border-qi-border flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-slate-400">
-                <span class="font-semibold text-slate-300 uppercase tracking-wider">Pengaman Posisi</span>
-                <span class="flex items-center gap-1.5 text-slate-300" title="SL dan TP posisi manual diperiksa server di feed eksekusinya, juga saat dashboard tertutup">SL/TP: ditegakkan server</span>
-                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardBE" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> Break-even di
-                    <input id="qtGuardBEAt" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
-                <label class="flex items-center gap-1.5 cursor-pointer"><input id="qtGuardTrail" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> Trailing stop
-                    <input id="qtGuardTrailBy" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" class="w-12 bg-slate-900 border border-slate-700 text-white rounded px-1 py-0.5 outline-none"> R</label>
-                <span id="qtGuardStatus" class="ml-auto font-mono text-slate-500">—</span>
-                <p class="w-full text-slate-500 leading-relaxed">SL dan TP posisi manual ditegakkan server di feed eksekusinya — juga saat dashboard tertutup — dan posisinya ditutup di sana dengan sebab SL/TP. R = jarak SL awal ke entry. Break-even memindah SL ke entry saat profit mencapai nilai itu; trailing mulai di titik yang sama lalu mengikuti harga sejauh nilai R-nya. Keduanya dihitung di dashboard setiap 2 detik (bid untuk BUY, ask untuk SELL) selama dashboard terbuka, disimpan ke server paling cepat 15 detik sekali, dan baru berlaku setelah server menerimanya — hanya untuk posisi manual; posisi AUTO/AI dikelola server.</p>
-            </div>
-        </div>
+    <!-- PENGAMAN POSISI — break-even & trailing stop untuk posisi manual (qim-trading-tools.js).
+         Form "Buka Posisi Baru" lama dihapus: Quick Trade di atas sudah mengirim order yang sama
+         (simulasi maupun Real MT5). SL/TP sendiri ditegakkan SERVER (qi_paper_settle). -->
+    <section class="qim-qt-guard" aria-label="Pengaman posisi">
+        <h3>Pengaman posisi</h3>
+        <span class="qim-qt-guard-server" title="SL dan TP posisi manual diperiksa server di feed eksekusinya, juga saat dashboard tertutup">SL/TP: ditegakkan server</span>
+        <label class="qim-qt-guard-baris"><input id="qtGuardBE" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> <span>Break-even di</span>
+            <input id="qtGuardBEAt" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" aria-label="Break-even pada kelipatan R"> <span>R</span></label>
+        <label class="qim-qt-guard-baris"><input id="qtGuardTrail" type="checkbox" data-qi-aksi-change="QIMTools.saveGuardPrefs"> <span>Trailing stop</span>
+            <input id="qtGuardTrailBy" type="number" min="0.1" step="0.1" value="1" data-qi-aksi-change="QIMTools.saveGuardPrefs" aria-label="Trailing stop sejauh kelipatan R"> <span>R</span></label>
+        <span id="qtGuardStatus" class="qim-qt-guard-status">—</span>
+        <p class="qim-qt-guard-nota">SL dan TP posisi manual ditegakkan server di feed eksekusinya, juga saat dashboard tertutup. R = jarak SL awal ke entry. Break-even memindah SL ke entry saat profit mencapai nilai itu; trailing mulai di titik yang sama lalu mengikuti harga sejauh nilai R-nya. Keduanya dihitung di dashboard selama terbuka dan baru berlaku setelah server menerimanya, hanya untuk posisi manual; posisi AUTO/AI dikelola server.</p>
+    </section>
+    <button type="button" class="qim-rail-tutup" id="qtOrderClose" aria-label="Tutup panel Order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
 </aside>
 </div>
 
+    <nav class="qt-menu" id="qtMenu" aria-label="Halaman lain" hidden>
+        <a href="index.html">Beranda</a>
+        <a href="dashboard.html" aria-current="page">Chart</a>
+        <a href="kompetisi.html">Arena Kompetisi</a>
+        <a href="economic-calendar.html">Kalender Ekonomi</a>
+        <a href="transparansi.html">Transparansi</a>
+        <a href="profile.html">Profil &amp; Broker</a>
+    </nav>
+
     <div class="qt-chart-tools" aria-label="Kontrol chart">
+        <button class="qt-chart-tool qt-chart-tool--teks" id="qtMenuBtn" type="button" aria-controls="qtMenu" aria-expanded="false" title="Halaman lain: Arena, Kalender, Transparansi, Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span></button>
         <button class="qt-chart-tool is-active" id="qtChartCrosshair" type="button" aria-pressed="true" title="Ganti mode crosshair · Ctrl+Shift+C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M3 12h18"></path><circle cx="12" cy="12" r="4"></circle></svg><span>Magnet</span></button>
         <button class="qt-chart-tool" id="qtChartZoomOut" type="button" title="Zoom out chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M16 16l5 5"></path></svg><span>−</span></button>
         <button class="qt-chart-tool" id="qtChartZoomIn" type="button" title="Zoom in chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M11 8v6M16 16l5 5"></path></svg><span>+</span></button>
@@ -510,11 +327,13 @@
     </div>
 
     <!-- Jalur order: dispatcher aksi CSP-safe, model P/L, lalu logika Paper Trading / Real MT5. -->
-    <script src="assets/js/qim-aksi.js?v=1.0.0"></script>
-    <script src="assets/js/qim-paper-math.js?v=1.0.0"></script>
-    <script src="assets/js/main.js?v=1.4.2"></script>
-    <script src="assets/js/qim-quick-trade.js?v=1.0.0"></script>
-    <script src="assets/js/qim-terminal-gate.js?v=1.0.0"></script>
-    <script src="assets/js/qim-terminal-shell.js?v=1.3.0"></script>
+    <script src="assets/js/qim-aksi.js?v=525d8a366d"></script>
+    <script src="assets/js/qim-paper-math.js?v=852a6908d6"></script>
+    <script src="assets/js/main.js?v=87c76936c2"></script>
+    <script src="assets/js/qim-terminal-konteks.js?v=237727c01e"></script>
+    <script src="assets/js/qim-quick-trade.js?v=2fa11a7e83"></script>
+    <script src="assets/js/qim-terminal-gate.js?v=06b44f9921"></script>
+    <script src="assets/js/qim-terminal-shell.js?v=3b947cff81"></script>
+    <script src="assets/js/qim-terminal-panel.js?v=eef4b4a5c8"></script>
 </body>
 </html>

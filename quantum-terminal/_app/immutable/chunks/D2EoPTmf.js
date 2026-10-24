@@ -1,0 +1,84 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as P,_ as M,$ as I,a as g,s as e,a0 as _,c as n,r as t,a1 as D,t as B,b as L,f as p}from"./vnnAQmBw.js";import{h as S}from"./Di_Vksbt.js";import{s as A}from"./BbGUZXP3.js";import{i as R}from"./w5vomPQw.js";import{u as q}from"./BPYnHL8L.js";var X=p('<meta name="description" content="Mở rộng TradeCanvas bằng chỉ báo, công cụ vẽ, loại biểu đồ và lớp phủ tuỳ chỉnh qua plugin SDK."/>'),V=p(`<h1>Plugin</h1> <p>Mở rộng biểu đồ bằng <strong>chỉ báo</strong>, <strong>công cụ vẽ</strong>, <strong>loại biểu đồ</strong> và <strong>lớp phủ</strong> tuỳ chỉnh — đăng ký toàn cục hoặc cho từng biểu đồ.</p> <h2>Đăng ký</h2> <p>Có ba cách đăng ký, theo thứ tự ưu tiên: mặc định toàn cục, qua constructor, rồi gọi trực tiếp trên instance.</p> <pre><code></code></pre> <h2>Các loại plugin</h2> <table><thead><tr><th>Loại</th><th>Interface</th><th>Vẽ ở</th></tr></thead><tbody><tr><td><code>indicator</code></td><td><code>IndicatorPlugin</code> — <code>calculate()</code> + <code>render()</code></td><td>phủ lên biểu đồ hoặc bảng riêng</td></tr><tr><td><code>drawing</code></td><td><code>DrawingPlugin</code> — <code>render()</code> + <code>hitTest()</code></td><td>lớp overlay</td></tr><tr><td><code>chartType</code></td><td><code>ChartTypePlugin</code> — <code>createRenderer()</code> + <code>transform()</code> tuỳ chọn</td><td>chuỗi chính</td></tr><tr><td><code>overlay</code></td><td><code>OverlayPlugin</code> — <code>render(ctx, &#123; viewport, data, theme &#125;)</code></td><td><code>main</code> / <code>overlay</code> / <code>ui</code></td></tr></tbody></table> <h2>Chỉ báo tuỳ chỉnh</h2> <p>Kế thừa <code>IndicatorBase</code> để có sẵn các hàm hỗ trợ vẽ, rồi đăng ký và thêm nó như mọi chỉ báo có sẵn:</p> <pre><code></code></pre> <p>Với <code>values</code>, hãy dùng <code>new IndicatorValueMap()</code> thay vì <code>new Map()</code>: nó thay thế trực tiếp
+  được cho <code>Map</code> nhưng rẻ hơn nhiều lần khi điền từng nến theo thứ tự thời gian, đúng là việc mà mỗi lần
+  đổi mã hay khung thời gian phải làm trên toàn bộ lịch sử.</p> <h3>Cập nhật trực tiếp nhanh (tuỳ chọn)</h3> <p>Mỗi tick trực tiếp chỉ làm thay đổi nến đang hình thành. Cài đặt <code>update()</code> để chỉ tính lại
+  các nến từ <code>from</code> trở đi thay vì toàn bộ lịch sử — biểu đồ dùng nó khi có tick và
+  nến mới, và quay về <code>calculate()</code> khi hàm này không có hoặc trả về <code>null</code>.
+  Nó phải cho ra đúng các giá trị mà <code>calculate()</code> sẽ cho.</p> <pre><code></code></pre> <h2>Công cụ vẽ tuỳ chỉnh</h2> <p>Kế thừa <code>DrawingBase</code> để có sẵn các hàm hỗ trợ (đổi điểm neo ra
+  pixel, kiểu nét, điểm kéo), mô tả công cụ rồi đăng ký nó. Các cài đặt liệt kê
+  trong <code>descriptor.options</code> sẽ hiện trong hộp thoại cài đặt của
+  widget và được lưu cùng hình vẽ.</p> <pre><code></code></pre> <p>Descriptor còn có thể cho biết công cụ được vẽ ra sao (<code>creation</code>: <code>'clicks'</code>, <code>'freehand'</code> hoặc <code>'path'</code>, kèm <code>maxAnchors</code>) và hộp thoại có cho chọn màu nền
+  (<code>fill</code>) hay chữ (<code>text</code>) hay không. Công cụ có thể
+  di chuyển các điểm kéo không phải điểm neo bằng <code>moveHandle()</code>, và
+  nhận các nến của biểu đồ qua <code>setDataGetter()</code> khi nó vẽ dựa trên
+  chúng.</p> <h2>Loại biểu đồ tuỳ chỉnh</h2> <p>Một <code>ChartTypePlugin</code> cung cấp bộ render và một phép biến đổi dữ liệu tuỳ chọn; chuyển sang nó như với một loại có sẵn:</p> <pre><code></code></pre> <h2>Lớp phủ tuỳ chỉnh</h2> <p>Một <code>OverlayPlugin</code> vẽ mỗi khung hình trên lớp bạn chọn, nhận khung nhìn, dữ liệu và giao diện (theme) hiện tại:</p> <pre><code></code></pre> <p><code>overlayScale(context)</code> đặt mọi thứ đúng chỗ chart vẽ: <code>timeToX</code> / <code>xToTime</code> theo thời gian nến (giữa hai nến và sau nến mới nhất thì theo tỉ lệ), <code>indexToX</code> / <code>xToIndex</code>, <code>priceToY</code> / <code>yToPrice</code> (cả thang log và thang đảo ngược), <code>barWidth</code>, và <code>visible</code> là các nến đang hiện trên màn hình. Muốn chia hàng theo lưới giá thì dùng <code>chart.getPriceStep()</code>: bước giá nhỏ nhất của mã (<code>minTick</code>), đơn vị phân số, hoặc một
+  đơn vị của số lẻ đang hiển thị. Renderer của chỉ báo và loại chart chỉ nhận viewport; cho chúng, <code>priceToY</code>, <code>barIndexToX</code>, <code>timeToX</code> và các hàm ngược được export sẵn. Các nến là
+  nến đang vẽ: trên chart Renko hay Kagi là các viên gạch của nó (<code>chart.isTimeAligned()</code> cho biết khi nào
+  chúng trùng với nến của nguồn dữ liệu).</p> <p>Overlay có cài đặt riêng (kiểu hiển thị, công tắc) có thể hiện thay đổi ngay, kể cả khi không có tick nào
+  tới để vẽ lại chart: đặt <code>enabled: false</code> trên plugin để ẩn nó mà vẫn giữ đăng ký, và gọi <code>chart.requestRender()</code> sau khi đổi một trong hai. Nhiều lần gọi trước khung hình kế tiếp chỉ vẽ một khung.</p> <p>Xem <a>Tham chiếu API</a> để biết đầy đủ chữ ký kiểu của plugin.</p>`,1);function $(u,m){P(m,!1);const{href:v}=q();R();var l=V();S("svuglh",h=>{var C=X();M(()=>{I.title="Plugin — Tài liệu TradeCanvas"}),g(h,C)});var c=e(_(l),8),b=n(c);b.textContent=`import { Chart, registerPlugin } from '@tradecanvas/chart'
+
+// 1) Global — every Chart created afterward inherits it
+registerPlugin({ kind: 'indicator', plugin: new MyIndicator() })
+
+// 2) Per-chart at construction
+const chart = new Chart(el, { plugins: [{ kind: 'overlay', plugin: myHeatmap }] })
+
+// 3) Imperative on an instance
+chart.plugins.register({ kind: 'chartType', plugin: myCandles })
+chart.plugins.unregister('chartType:my-candles')
+chart.plugins.list()`,t(c);var o=e(c,10),k=n(o);k.textContent=`import { IndicatorBase, IndicatorValueMap, registerPlugin } from '@tradecanvas/chart'
+
+class DoubleSMA extends IndicatorBase {
+  descriptor = {
+    id: 'double-sma', name: 'Double SMA',
+    placement: 'overlay', defaultConfig: { fast: 10, slow: 30 },
+  }
+  calculate(data, config) { /* values = new IndicatorValueMap(); return { values, series } */ }
+  render(ctx, output, viewport, style) { /* draw lines */ }
+}
+
+registerPlugin({ kind: 'indicator', plugin: new DoubleSMA() })
+chart.addIndicator('double-sma', { fast: 10, slow: 30 })`,t(o);var r=e(o,8),y=n(r);y.textContent=`update(data, config, prev, from) {
+  if (!this.canResume(data, prev, from)) return null   // IndicatorBase helper
+  for (let i = from; i < data.length; i++) {
+    this.writePoint(prev, data, i, { value: /* recompute bar i */ 0 })
+  }
+  return prev
+}`,t(r);var i=e(r,6),f=n(i);f.textContent=`import { DrawingBase, registerPlugin } from '@tradecanvas/chart'
+
+class TargetLine extends DrawingBase {
+  descriptor = {
+    type: 'targetLine', name: 'Target Line', requiredAnchors: 1,
+    options: { label: { kind: 'text', label: 'Label', default: 'Target' } },
+  }
+  render(ctx, state, viewport, selected) { /* tại this.anchorToPixel(state.anchors[0], viewport) */ }
+  hitTest(point, state, viewport, tolerance) { /* con trỏ có nằm trên nó không? */ return false }
+  // tuỳ chọn: giá của các đường, để cảnh báo có thể bám theo
+  priceAt(state) { return [state.anchors[0].price] }
+}
+
+registerPlugin({ kind: 'drawing', plugin: new TargetLine() })
+chart.setDrawingTool('targetLine')`,t(i);var a=e(i,8),T=n(a);T.textContent=`registerPlugin({
+  kind: 'chartType',
+  plugin: {
+    descriptor: { type: 'my-bricks', name: 'My Bricks' },
+    createRenderer: () => new MyBrickRenderer(),
+    transform: (raw) => toBricks(raw),   // optional
+  },
+})
+
+chart.setChartType('my-bricks')`,t(a);var d=e(a,6),x=n(d);x.textContent=`import { overlayScale, registerPlugin } from '@tradecanvas/chart'
+
+registerPlugin({
+  kind: 'overlay',
+  plugin: {
+    descriptor: { id: 'high-marks', name: 'High marks', layer: 'main' },
+    render(ctx, context) {
+      const s = overlayScale(context)
+      ctx.fillStyle = '#f2a93b'
+      for (let i = s.visible.from; i <= s.visible.to; i++) {
+        const bar = context.data[i]
+        ctx.fillRect(s.indexToX(i) - s.barWidth / 2, s.priceToY(bar.high) - 1, s.barWidth, 2)
+      }
+    },
+  },
+})`,t(d);var s=e(d,6),w=e(n(s));D(),t(s),B(h=>A(w,"href",h),[()=>v("/docs/api")]),g(u,l),L()}export{$ as default};

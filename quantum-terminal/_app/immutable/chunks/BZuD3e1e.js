@@ -1,0 +1,64 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as P,_ as U,$,a as T,s as e,a0 as F,c as t,r as d,a1 as a,t as I,b as M,f as b}from"./vnnAQmBw.js";import{h as O}from"./Di_Vksbt.js";import{s as q}from"./BbGUZXP3.js";import{i as L}from"./w5vomPQw.js";import{u as Z}from"./BPYnHL8L.js";var H=b('<meta name="description" content="TradeCanvas 的 React、Vue 和 Svelte 封装包，提供符合各框架习惯的 props 与 ref。"/>'),j=b(`<h1>框架封装</h1> <p>为 React、Vue 和 Svelte 提供符合各自习惯的封装组件。三者暴露相同的 props，并把底层的 <code>Chart</code> 实例交给你。</p> <h2>安装</h2> <pre><code></code></pre> <h2>React</h2> <pre><code></code></pre> <h2>Vue</h2> <pre><code></code></pre> <h2>Svelte</h2> <pre><code></code></pre> <h2>通用 props</h2> <p>你自己的 K 线、带参数的指标，以及一个从不自行打开数据流的图表：</p> <pre><code></code></pre> <table><thead><tr><th>Prop</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td><code>symbol</code></td><td><code>string</code></td><td>数据流的交易对。默认 <code>'BTCUSDT'</code>。</td></tr><tr><td><code>timeframe</code></td><td><code>TimeFrame</code></td><td>数据流的周期。默认 <code>'5m'</code>。</td></tr><tr><td><code>theme</code></td><td><code>'dark' | 'light' | Theme</code></td><td>默认 <code>'dark'</code>。</td></tr><tr><td><code>chartType</code></td><td><code>ChartType</code></td><td>默认 <code>'candlestick'</code>。</td></tr><tr><td><code>data</code></td><td><code>OHLCBar[]</code></td><td>你自己的 K 线，原样显示。挂载时就提供则不打开数据流；之后才提供，已打开的数据流保持不变（<code></code> 会关闭它）。在 Vue 和 Svelte 中，向同一数组追加的 K 线或最后一根 K 线的变化会作为实时 tick 传入，视图保持不动；新的数组则是一个新序列。</td></tr><tr><td><code>adapter</code></td><td><code>DataAdapter</code></td><td>数据流的来源；不提供时使用 Binance。</td></tr><tr><td><code>stream</code></td><td><code>boolean</code></td><td><code>false</code>：完全不打开数据流，图表等待 <code>data</code>。默认 <code>true</code>。</td></tr><tr><td><code>historyLimit</code></td><td><code>number</code></td><td>数据流首先加载的 K 线数。默认 500。</td></tr><tr><td><code>indicators</code></td><td><code>IndicatorSpec[]</code></td><td><code>'rsi'</code>，或 <code></code>；参数改变的指标会以新参数重新添加。</td></tr><tr><td><code>features</code></td><td><code>FeaturesConfig</code></td><td>用户能在图表上做什么；挂载后的修改同样生效。</td></tr><tr><td><code>signalMarkers / tradeZones</code></td><td><code>数组</code></td><td>买卖标记和交易；回放到达时才显示。</td></tr><tr><td><code>signalMarkerStyle / tradeZoneStyle</code></td><td><code>样式</code></td><td>它们的颜色和标签。</td></tr><tr><td><code>overrides</code></td><td><code>ChartStyleOverrides</code></td><td>按键名设置图表外观（见<a>样式</a>）。</td></tr><tr><td><code>autoScale</code></td><td><code>boolean</code></td><td>默认 <code>true</code>。</td></tr><tr><td><code>watermarkText</code></td><td><code>string</code></td><td>K 线后面的水印文字。</td></tr><tr><td><code>options</code></td><td><code>Partial&lt;ChartOptions&gt;</code></td><td>props 未涵盖的图表选项（<code>maxBarSpacing</code>、<code>rightMargin</code>、<code>renderer</code>…），挂载时合并到组件默认值之上。挂载后的修改不会生效；<code>chartType</code>、<code>theme</code> 和 <code>autoScale</code> 始终取自各自的 props。</td></tr><tr><td><code>onReady</code></td><td><code>(chart) =&gt; void</code></td><td>图表挂载之后（Vue：<code>ready</code> 事件）。</td></tr></tbody></table> <blockquote>props 不够用？可以通过 <code>onReady</code>、ref（React / Vue）或 <code>bind:chart</code>（Svelte）拿到底层的 <code>Chart</code>，使用完整 API——
+  画线、交易、执行适配器、插件、可调整大小的窗格等等。</blockquote>`,1);function X(g,_){P(_,!1);const{href:S}=Z();L();var l=j();O("1m14gh1",m=>{var D=H();U(()=>{$.title="框架 — TradeCanvas 文档"}),T(m,D)});var r=e(F(l),6),R=t(r);R.textContent=`npm install @tradecanvas/react   # or @tradecanvas/vue · @tradecanvas/svelte
+npm install @tradecanvas/chart   # the core (peer of each wrapper)`,d(r);var o=e(r,4),k=t(o);k.textContent=`import { TradeCanvas, type TradeCanvasRef } from '@tradecanvas/react'
+import { BinanceAdapter } from '@tradecanvas/chart'
+import { useRef } from 'react'
+
+function App() {
+  const chartRef = useRef<TradeCanvasRef>(null)
+
+  return (
+    <TradeCanvas
+      ref={chartRef}
+      symbol="BTCUSDT"
+      timeframe="5m"
+      theme="dark"
+      adapter={new BinanceAdapter()}
+      onReady={(chart) => {
+        chart.on('orderPlace', e => console.log(e.payload))
+      }}
+    />
+  )
+}`,d(o);var c=e(o,4),B=t(c);B.textContent=`<script setup lang="ts">
+import { TradeCanvas } from '@tradecanvas/vue'
+import { BinanceAdapter } from '@tradecanvas/chart'
+
+const adapter = new BinanceAdapter()
+<\/script>
+
+<template>
+  <TradeCanvas
+    symbol="BTCUSDT"
+    timeframe="5m"
+    theme="dark"
+    :adapter="adapter"
+    @ready="(chart) => console.log('ready', chart)"
+  />
+</template>`,d(c);var n=e(c,4),x=t(n);x.textContent=`<script lang="ts">
+  import { TradeCanvas } from '@tradecanvas/svelte'
+  import { BinanceAdapter } from '@tradecanvas/chart'
+
+  const adapter = new BinanceAdapter()
+<\/script>
+
+<TradeCanvas
+  symbol="BTCUSDT"
+  timeframe="5m"
+  theme="dark"
+  {adapter}
+  onReady={(chart) => console.log('ready', chart)}
+/>`,d(n);var s=e(n,6),A=t(s);A.textContent=`<script lang="ts">
+  import { TradeCanvas } from '@tradecanvas/svelte'
+  import type { Chart } from '@tradecanvas/chart'
+
+  let { bars } = $props()
+  let chart = $state<Chart | null>(null)
+<\/script>
+
+<TradeCanvas
+  data={bars}
+  stream={false}
+  indicators={['rsi', { id: 'ema', params: { period: 50 } }]}
+  features={{ replay: true }}
+  bind:chart
+/>`,d(s);var h=e(s,2),v=e(t(h)),p=e(t(v),4),f=e(t(p),2),w=e(t(f));w.textContent="stream=false",a(),d(f),d(p);var i=e(p,4),u=e(t(i),2),K=e(t(u),2);K.textContent="{ id, params, position }",a(),d(u),d(i);var C=e(i,4),y=e(t(C),2),V=e(t(y));a(),d(y),d(C),a(4),d(v),d(h),a(2),I(m=>q(V,"href",m),[()=>S("/docs/styling#overrides")]),T(g,l),M()}export{X as default};

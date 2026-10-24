@@ -6,10 +6,11 @@
  *         membuat antarmuka tampil beda dari build terbaru di server.
  */
 
-// CACHE_NAME & STATIC_CACHE DITULIS OTOMATIS oleh 'npm run build:js' (hash build) — jangan diubah tangan.
-// Bundel JS ber-hash (assets/dist/) baru → cache lama dibuang saat SW baru aktif.
-const CACHE_NAME = 'quantum-terminal-e0d2f3d971';
-const STATIC_CACHE = 'quantum-static-e0d2f3d971';
+// Tanpa bundel JS ber-hash (dashboard chart-first memuat berkas apa adanya), jadi nama cache TIDAK lagi ditulis otomatis:
+// naikkan sufiks di bawah setiap kali rilis perlu membuang cache lama dari semua pengguna (cache lama berisi dashboard
+// panel lama). Rilis terminal chart-first = 'tf1'.
+const CACHE_NAME = 'quantum-terminal-tf1';
+const STATIC_CACHE = 'quantum-static-tf1';
 
 const CORE_ASSETS = [
 
@@ -24,11 +25,9 @@ const CORE_ASSETS = [
     'assets/js/main.js',
     'assets/js/auth.js',
     'assets/js/theme-toggle.js',
-    'assets/js/pro-features.js',
-    'assets/js/perf-upgrades.js',
     'assets/js/error-tracker.js',
-    // bundel:mulai (ditulis npm run build:js)
-    // bundel:akhir
+    'assets/css/qim-terminal-shell.css',
+    'assets/js/qim-terminal-shell.js',
 ];
 
 // ── Install: cache core assets ────────────────────────────────

@@ -21,7 +21,7 @@ const { spawnSync } = require('child_process');
 
 const PHP = process.env.PHP_BIN || (process.platform === 'win32' && fs.existsSync('D:/xamp/php/php.exe') ? 'D:/xamp/php/php.exe' : 'php');
 const root = path.join(__dirname, '..');
-const baca = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+const baca = (f) => { try { return fs.readFileSync(path.join(root, f), 'utf8'); } catch (e) { return ''; } };   // berkas dashboard lama sudah dihapus
 let gagal = 0;
 const cek = (nama, lulus, info) => {
   console.log(`  ${lulus ? '✓' : '✗'} ${nama}${lulus || info === undefined ? '' : '  ' + JSON.stringify(info)}`);
@@ -52,27 +52,25 @@ cek('pengguna tak berhak dijawab status disabled, bukan token', /BRIDGE_FORBIDDE
 
 // ── Label jujur di chart ─────────────────────────────────────────────────────
 console.log('\nLabel sumber candle di dashboard');
-const app = baca('assets/js/dashboard-app.js');
-const peta = (app.match(/const OHLC_SOURCE_LABELS = \{[\s\S]*?\};/) || [''])[0];
+// Label & catatan sumber kini ada di shell chart-first (qim-terminal-shell.js: SOURCE_LABELS / SOURCE_NOTES),
+// sebelumnya di dashboard panel lama (OHLC_SOURCE_LABELS). Isi & maknanya sama.
+const app = baca('assets/js/qim-terminal-shell.js');
+const peta = (app.match(/const SOURCE_LABELS = \{[\s\S]*?\};/) || [''])[0];
 cek("sumber 'mt5' punya label sendiri (bukan jatuh ke toUpperCase)", /\bmt5:\s*'[^']+'/.test(peta));
 cek("label mt5 menyebut BROKER QI, bukan 'MT5' polos", /\bmt5:\s*'[^']*BROKER QI[^']*'/.test(peta));
 cek('label mt5_tick juga menyebut BROKER QI', /mt5_tick:\s*'[^']*BROKER QI[^']*'/.test(peta));
 cek("label simulasi tetap ada", /simulasi:\s*'DATA SIMULASI'/.test(peta));
 
-const catatan = (app.match(/const OHLC_SOURCE_NOTES = \{[\s\S]*?\};/) || [''])[0];
+const catatan = (app.match(/const SOURCE_NOTES = \{[\s\S]*?\};/) || [''])[0];
 cek('ada penjelasan untuk sumber mt5', /\bmt5:\s*'[^']{40,}'/.test(catatan));
 cek('penjelasan mt5 memperingatkan harga broker pengguna bisa berbeda', /broker Anda sendiri bisa berbeda/i.test(catatan));
 cek('penjelasan mt5_tick ada', /mt5_tick:\s*'[^']{40,}'/.test(catatan));
 cek('penjelasan simulasi memperingatkan bukan harga pasar', /simulasi:\s*'[^']*bukan harga pasar/i.test(catatan));
 
-cek('lencana memasang tooltip dari OHLC_SOURCE_NOTES', /el\.title\s*=\s*OHLC_SOURCE_NOTES\[/.test(app));
-cek('tooltip direset saat sumber tidak diketahui', /el\.title\s*=\s*'Sumber data candle'/.test(app));
-cek('feed broker QI diberi warna berbeda dari sumber biasa', /brokerQi/.test(app) && /cyan-500/.test(app));
-// Lencana #ohlcSource milik dashboard panel lama tidak ada di shell chart-first. Asal candle
-// TETAP ditampilkan, tetapi pindah ke Signal Center (#qtSignalSource, diisi result.source).
-// CATATAN: tooltip OHLC_SOURCE_NOTES — termasuk peringatan "harga broker Anda sendiri bisa
-// berbeda" — belum punya tempat di shell baru, padahal watchlist dan chart memang bisa
-// menampilkan harga berbeda. Perlu dipasang kembali sebelum shell ini tayang.
+cek('lencana sumber di Signal Center memasang label & tooltip dari peta itu',
+    /qtSignalSource'\)\.textContent = sourceLabel\(result\.source\)/.test(app) && /qtSignalSource'\)\.title = sourceNote\(result\.source\)/.test(app));
+cek('status feed memakai label sumber yang sama', /'Live · ' \+ sourceLabel\(source\)/.test(app));
+cek('pasar tutup TIDAK berlabel "Live" hijau', /status === 'live' && marketClosed/.test(app) && /'Pasar tutup · '/.test(app));
 const dashChart = baca('dashboard.html');
 cek('asal candle tetap ditampilkan di shell chart-first (#qtSignalSource)',
     /id="qtSignalSource"/.test(dashChart) && /qtSignalSource.*result\.source/s.test(baca('assets/js/qim-terminal-shell.js')));

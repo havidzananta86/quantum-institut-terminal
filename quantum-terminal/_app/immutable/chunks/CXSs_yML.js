@@ -1,0 +1,78 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as C,_,$ as I,a as h,s as e,a0 as M,c as t,r,a1 as B,t as D,b as S,f as g}from"./vnnAQmBw.js";import{h as A}from"./Di_Vksbt.js";import{s as L}from"./BbGUZXP3.js";import{i as R}from"./w5vomPQw.js";import{u as X}from"./BPYnHL8L.js";var H=g('<meta name="description" content="プラグイン SDK で、独自のインジケーター、描画ツール、チャートタイプ、オーバーレイを追加して TradeCanvas を拡張できます。"/>'),V=g(`<h1>プラグイン</h1> <p>独自の<strong>インジケーター</strong>、<strong>描画ツール</strong>、<strong>チャートタイプ</strong>、 <strong>オーバーレイ</strong>でチャートを拡張できます。グローバルにも、チャートごとにも登録できます。</p> <h2>登録</h2> <p>登録方法は 3 つあり、優先順位の順に、グローバルな既定、コンストラクター、インスタンスへの命令的な呼び出しです。</p> <pre><code></code></pre> <h2>プラグインの種類</h2> <table><thead><tr><th>種類</th><th>インターフェース</th><th>描画先</th></tr></thead><tbody><tr><td><code>indicator</code></td><td><code>IndicatorPlugin</code> — <code>calculate()</code> + <code>render()</code></td><td>オーバーレイまたはパネル</td></tr><tr><td><code>drawing</code></td><td><code>DrawingPlugin</code> — <code>render()</code> + <code>hitTest()</code></td><td>オーバーレイレイヤー</td></tr><tr><td><code>chartType</code></td><td><code>ChartTypePlugin</code> — <code>createRenderer()</code> + 任意の <code>transform()</code></td><td>メイン系列</td></tr><tr><td><code>overlay</code></td><td><code>OverlayPlugin</code> — <code>render(ctx, &#123; viewport, data, theme &#125;)</code></td><td><code>main</code> / <code>overlay</code> / <code>ui</code></td></tr></tbody></table> <h2>カスタムインジケーター</h2> <p>描画用のヘルパーを使うために <code>IndicatorBase</code> を継承し、登録したら組み込みのインジケーターと同じように追加します：</p> <pre><code></code></pre> <p><code>values</code> には <code>new Map()</code> の代わりに <code>new IndicatorValueMap()</code> を使ってください。
+  そのまま置き換えられる <code>Map</code> で、時間順に 1 本ずつ値を入れていく場合のコストが数分の 1 で済みます。
+  シンボルや時間足を切り替えるたびに、履歴全体に対してまさにこの処理が行われます。</p> <h3>高速なライブ更新（任意）</h3> <p>ライブのティックごとに変わるのは形成中のバーだけです。<code>update()</code> を実装すると、履歴全体ではなく <code>from</code> 以降のバーだけを再計算できます。チャートはティックと新しいバーでこれを使い、
+  未実装の場合や <code>null</code> を返した場合は <code>calculate()</code> にフォールバックします。 <code>calculate()</code> と同じ値を返す必要があります。</p> <pre><code></code></pre> <h2>カスタム描画ツール</h2> <p>ヘルパー（アンカーからピクセルへの変換、線のスタイル、ハンドル）を使うために <code>DrawingBase</code> を継承し、ツールを記述して登録します。 <code>descriptor.options</code> に挙げた設定は、ウィジェットの設定ダイアログに表示され、
+  描画と一緒に保存されます。</p> <pre><code></code></pre> <p>ディスクリプターでは、ツールの描き方（<code>creation</code>： <code>'clicks'</code>、<code>'freehand'</code>、<code>'path'</code>。 <code>maxAnchors</code> も指定できます）と、ダイアログで塗りつぶし
+  （<code>fill</code>）やテキスト（<code>text</code>）を設定できるかどうかも記述できます。
+  ツールは <code>moveHandle()</code> でアンカーではないハンドルを動かせ、バーをもとに描画する場合は <code>setDataGetter()</code> でチャートのバーを受け取ります。</p> <h2>カスタムチャートタイプ</h2> <p><code>ChartTypePlugin</code> はレンダラーと、任意でデータの変換を提供します。組み込みのタイプと同じように切り替えられます：</p> <pre><code></code></pre> <h2>カスタムオーバーレイ</h2> <p><code>OverlayPlugin</code> は選んだレイヤーに毎フレーム描画し、現在のビューポート、データ、テーマを受け取ります：</p> <pre><code></code></pre> <p><code>overlayScale(context)</code> はチャート自身と同じ位置に配置します：<code>timeToX</code> / <code>xToTime</code> はバーの時刻で
+  （バーの間や最新バーの先は比例で）、<code>indexToX</code> / <code>xToIndex</code>、<code>priceToY</code> / <code>yToPrice</code> （対数・反転スケールにも対応）、<code>barWidth</code>、画面に見えているバーの範囲 <code>visible</code>。価格グリッドで行を分けるには <code>chart.getPriceStep()</code> を使います：銘柄の最小刻み（<code>minTick</code>）、分数の単位、または表示中の小数桁の 1 単位です。
+  インジケーターとチャートタイプのレンダラーは viewport だけを受け取るため、<code>priceToY</code>、<code>barIndexToX</code>、 <code>timeToX</code> とその逆関数もエクスポートしています。バーは画面に描かれている系列のもので、練行足や
+  Kagi ではそのブロックです（<code>chart.isTimeAligned()</code> でデータのバーと一致するかが分かります）。</p> <p>独自の設定（表示モードやスイッチ）を持つオーバーレイは、チャートを再描画する tick が来なくても変更をすぐに反映できます。
+  プラグインに <code>enabled: false</code> を設定すると登録したまま非表示になり、どちらかを変えたら <code>chart.requestRender()</code> を呼びます。次のフレームまでの複数の要求は 1 フレームにまとめられます。</p> <p>プラグインの型シグネチャの全体は、<a>API リファレンス</a>を参照してください。</p>`,1);function j(u,m){C(m,!1);const{href:v}=X();R();var p=V();A("3f7bip",s=>{var k=H();_(()=>{I.title="プラグイン — TradeCanvas ドキュメント"}),h(s,k)});var o=e(M(p),8),f=t(o);f.textContent=`import { Chart, registerPlugin } from '@tradecanvas/chart'
+
+// 1) Global — every Chart created afterward inherits it
+registerPlugin({ kind: 'indicator', plugin: new MyIndicator() })
+
+// 2) Per-chart at construction
+const chart = new Chart(el, { plugins: [{ kind: 'overlay', plugin: myHeatmap }] })
+
+// 3) Imperative on an instance
+chart.plugins.register({ kind: 'chartType', plugin: myCandles })
+chart.plugins.unregister('chartType:my-candles')
+chart.plugins.list()`,r(o);var a=e(o,10),y=t(a);y.textContent=`import { IndicatorBase, IndicatorValueMap, registerPlugin } from '@tradecanvas/chart'
+
+class DoubleSMA extends IndicatorBase {
+  descriptor = {
+    id: 'double-sma', name: 'Double SMA',
+    placement: 'overlay', defaultConfig: { fast: 10, slow: 30 },
+  }
+  calculate(data, config) { /* values = new IndicatorValueMap(); return { values, series } */ }
+  render(ctx, output, viewport, style) { /* draw lines */ }
+}
+
+registerPlugin({ kind: 'indicator', plugin: new DoubleSMA() })
+chart.addIndicator('double-sma', { fast: 10, slow: 30 })`,r(a);var d=e(a,8),b=t(d);b.textContent=`update(data, config, prev, from) {
+  if (!this.canResume(data, prev, from)) return null   // IndicatorBase helper
+  for (let i = from; i < data.length; i++) {
+    this.writePoint(prev, data, i, { value: /* recompute bar i */ 0 })
+  }
+  return prev
+}`,r(d);var c=e(d,6),T=t(c);T.textContent=`import { DrawingBase, registerPlugin } from '@tradecanvas/chart'
+
+class TargetLine extends DrawingBase {
+  descriptor = {
+    type: 'targetLine', name: 'Target Line', requiredAnchors: 1,
+    options: { label: { kind: 'text', label: 'Label', default: 'Target' } },
+  }
+  render(ctx, state, viewport, selected) { /* this.anchorToPixel(state.anchors[0], viewport) の位置に */ }
+  hitTest(point, state, viewport, tolerance) { /* ポインターが描画の上にあるか？ */ return false }
+  // 任意：ラインの価格。アラートがラインを追従できるようにする
+  priceAt(state) { return [state.anchors[0].price] }
+}
+
+registerPlugin({ kind: 'drawing', plugin: new TargetLine() })
+chart.setDrawingTool('targetLine')`,r(c);var n=e(c,8),x=t(n);x.textContent=`registerPlugin({
+  kind: 'chartType',
+  plugin: {
+    descriptor: { type: 'my-bricks', name: 'My Bricks' },
+    createRenderer: () => new MyBrickRenderer(),
+    transform: (raw) => toBricks(raw),   // optional
+  },
+})
+
+chart.setChartType('my-bricks')`,r(n);var i=e(n,6),w=t(i);w.textContent=`import { overlayScale, registerPlugin } from '@tradecanvas/chart'
+
+registerPlugin({
+  kind: 'overlay',
+  plugin: {
+    descriptor: { id: 'high-marks', name: 'High marks', layer: 'main' },
+    render(ctx, context) {
+      const s = overlayScale(context)
+      ctx.fillStyle = '#f2a93b'
+      for (let i = s.visible.from; i <= s.visible.to; i++) {
+        const bar = context.data[i]
+        ctx.fillRect(s.indexToX(i) - s.barWidth / 2, s.priceToY(bar.high) - 1, s.barWidth, 2)
+      }
+    },
+  },
+})`,r(i);var l=e(i,6),P=e(t(l));B(),r(l),D(s=>L(P,"href",s),[()=>v("/docs/api")]),h(u,p),S()}export{j as default};

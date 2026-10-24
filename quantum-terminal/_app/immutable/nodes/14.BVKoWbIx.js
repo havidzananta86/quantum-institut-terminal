@@ -1,0 +1,1 @@
+import{e}from"../chunks/Bq-rPRmx.js";const o=!1,r=()=>{e(404,"Not found")},n=Object.freeze(Object.defineProperty({__proto__:null,load:r,prerender:o},Symbol.toStringTag,{value:"Module"}));export{n as universal};

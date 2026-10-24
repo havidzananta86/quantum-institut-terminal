@@ -55,9 +55,13 @@ cek('tanpa klaim kelangkaan / popularitas tanpa data', !/paling laris|best ?sell
 cek('tanpa garansi uang kembali di halaman publik (changelog boleh mencatat penghapusannya)', HALAMAN.filter(h => h !== 'changelog.html').every(h => !/garansi|money.?back|uang kembali/i.test(isi[h])));
 cek('harga paket sama dengan yang dikirim ke api/payment.php', ['1 Bulan" data-harga="55000', '3 Bulan" data-harga="150000', '6 Bulan" data-harga="270000', '12 Bulan" data-harga="500000'].every(x => isi['pricing.html'].includes('data-plan="' + x)));
 cek('non-refundable dan tanpa perpanjangan otomatis dinyatakan', /Tidak ada pengembalian dana/.test(isi['pricing.html']) && /Tanpa perpanjangan otomatis/.test(isi['pricing.html']) && /terms\.html#pembayaran/.test(isi['pricing.html']) && /id="pembayaran"/.test(isi['terms.html']));
-cek('perbandingan fitur memakai kunci akses terminal (panel PRO di QI_PANEL_MIN)', (() => {
-  const app = read('assets/js/dashboard-app.js');
-  return /'panel-paper': 1/.test(app) && /'panel-correlation': 0/.test(app) && /'panel-mesin9': 1/.test(app);
+// Kunci akses panel (QI_PANEL_MIN) ikut dashboard panel lama. Kini yang dikunci per paket adalah paper trading di Quick Trade
+// (qim-quick-trade.js, memakai window.QI_PERAN dari qim-terminal-gate.js); halaman harga harus menyatakan hal yang sama.
+cek('perbandingan fitur: paper trading PRO di halaman harga = terkunci untuk akun gratis di Quick Trade', (() => {
+  const qt = read('assets/js/qim-quick-trade.js');
+  return /Paper trading dan Ikuti Auto Analisa<\/th><td class="is-tengah is-tidak">/.test(isi['pricing.html'])
+    && /const terkunci = !real && qiTingkatSaatIni\(\) < 1/.test(qt) && /Paper trading tersedia untuk paket PRO/.test(qt)
+    && /window\.QI_PERAN = /.test(read('assets/js/qim-terminal-gate.js'));
 })());
 
 console.log('Tanpa angka karangan');

@@ -459,7 +459,7 @@ function halamanLogin(o = {}) {
         fetch: () => Promise.resolve({ ok: http < 300, status: http, json: () => Promise.resolve(badan) }),
         Headers, CustomEvent: function (t, o) { this.type = t; this.detail = o && o.detail; },
         addEventListener() {}, dispatchEvent: (ev) => { kabar.push(ev); return true; },
-        JSON, String, console,
+        JSON, String, console, setTimeout: (f) => { f(); return 0; },   // gerbang mengalihkan lewat window.setTimeout(…, 250): di uji dijalankan seketika
       };
       ctx.window = ctx;
       vm.createContext(ctx);

@@ -67,8 +67,7 @@ deploy/caddy_*_checksums.txt
 *.env
 .env.*
 
-# Salinan situs vendor tradecanvas.dev yang di-mirror untuk iframe terminal
-# (~83 MB, lengkap dengan docs 8 bahasa, robots.txt, dan canonical ke domain
-# vendor). Bukan kode sumber: bila TradeCanvas dipakai, pasang lewat npm
-# (@tradecanvas/chart) sehingga yang masuk repo hanya bundel yang dibutuhkan.
-/quantum-terminal/
+# quantum-terminal/ = widget chart vendor (TradeCanvas) untuk iframe terminal. Mirror situs vendor LENGKAP (~83 MB: docs
+# 15 bahasa, ribuan chunk dari build lama) tidak boleh masuk repo; yang disimpan hanya berkas yang terjangkau dari
+# embed/index.html (±220 berkas, ±5 MB) beserta tambalannya — lihat quantum-terminal/CATATAN-VENDOR.md. Tanpa folder ini
+# dashboard di server kosong (git adalah jalur deploy-nya). Jangan menyalin mirror utuh kembali ke sini.

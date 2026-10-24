@@ -231,14 +231,37 @@
         return { ok: Number.isFinite(ageSeconds) && ageSeconds <= allowedAge, ageSeconds, latest, marketClosed, allowedAge };
     }
 
-    function renderFeedStatus(status, source, ageSeconds, detail) {
+    // Asal candle ditulis apa adanya. Feed broker MT5 milik QI diberi label "BROKER QI", bukan "MT5" polos:
+    // pengguna harus tahu ini harga broker KAMI — spread, swap, dan harga pastinya bisa berbeda beberapa poin
+    // dari akun mereka sendiri. Data simulasi tidak boleh terlihat seperti harga pasar.
+    const SOURCE_LABELS = {
+        oanda_tv: 'OANDA', binance: 'BINANCE', binance_ws: 'BINANCE · STREAM', binance_paxg: 'BINANCE·PAXG (proksi)',
+        mt5: 'MT5 · BROKER QI', mt5_tick: 'MT5 TICK · BROKER QI',
+        twelvedata: 'TWELVEDATA', biquote: 'BIQUOTE', candle_m1: 'BIQUOTE M1', candle_h1: 'BIQUOTE H1',
+        simulasi: 'DATA SIMULASI', unknown: 'SUMBER ?'
+    };
+    const SOURCE_NOTES = {
+        mt5: 'Candle dari terminal MetaTrader 5 milik Quantum Institut. Harga broker Anda sendiri bisa berbeda beberapa poin — gunakan ini sebagai acuan struktur, bukan harga eksekusi Anda.',
+        mt5_tick: 'Harga tick langsung dari terminal MetaTrader 5 milik Quantum Institut. Harga broker Anda sendiri bisa berbeda beberapa poin.',
+        simulasi: 'Data CONTOH, bukan harga pasar sebenarnya. Jangan dipakai untuk mengambil keputusan.',
+        binance_paxg: 'Proksi: harga PAXG di Binance dipakai sebagai pendekatan emas, bukan XAUUSD broker.',
+        unknown: 'Sumber data candle tidak dikenali.'
+    };
+    function sourceLabel(source) { return SOURCE_LABELS[source] || source || 'Chart feed'; }
+    function sourceNote(source) { return SOURCE_NOTES[source] || 'Sumber data candle'; }
+
+    function renderFeedStatus(status, source, ageSeconds, detail, marketClosed) {
         const footer = $('qtAssistFooterStatus');
         const text = $('qtAssistFooterText');
         if (!footer || !text) return;
         footer.classList.remove('live', 'is-loading', 'is-stale', 'is-error');
-        if (status === 'live') {
+        if (status === 'live' && marketClosed) {
+            // Data diterima tetapi pasarnya tutup: JANGAN berlabel "Live" hijau untuk harga yang berjam-jam usianya.
+            footer.classList.add('is-stale');
+            text.textContent = 'Pasar tutup · ' + sourceLabel(source) + (Number.isFinite(ageSeconds) ? ' · data terakhir ' + formatAge(ageSeconds) + ' lalu' : '');
+        } else if (status === 'live') {
             footer.classList.add('live');
-            text.textContent = 'Live · ' + (source || 'feed') + (Number.isFinite(ageSeconds) ? ' · ' + formatAge(ageSeconds) + ' lalu' : '');
+            text.textContent = 'Live · ' + sourceLabel(source) + (Number.isFinite(ageSeconds) ? ' · ' + formatAge(ageSeconds) + ' lalu' : '');
         } else if (status === 'loading' || status === 'retrying') {
             footer.classList.add('is-loading');
             text.textContent = detail || 'Menghubungkan feed…';
@@ -251,7 +274,7 @@
         } else {
             text.textContent = detail || 'Menunggu feed';
         }
-        state.feed = { status, source: source || null, ageSeconds: Number.isFinite(ageSeconds) ? ageSeconds : null };
+        state.feed = { status, source: source || null, ageSeconds: Number.isFinite(ageSeconds) ? ageSeconds : null, marketClosed: !!marketClosed };
     }
 
     function renderSymbolMapping() {
@@ -282,19 +305,36 @@
         return out;
     }
 
-    function rsi(values, period) {
-        if (!Array.isArray(values) || values.length <= period) return null;
+    /**
+     * RSI Wilder — rumus yang SAMA dengan Mesin 9 (engine-nine.js rsiWilder) dan server (api/_sinyal_pasar.php):
+     * riwayat penuh, seed rata-rata sederhana 14 perubahan pertama, bar ber-rentang nol (open=high=low=close — feed
+     * kosong di akhir pekan) DIBUANG, deret datar = 50, tanpa kerugian = 100. Menerima deret angka atau candle.
+     * Tanpa aturan ini deret datar berbunyi 100 dan dihitung sebagai suara BULL (audit sinyal 2026-10-22).
+     */
+    function rsi(data, period) {
+        if (!Array.isArray(data)) return null;
+        const closes = [];
+        for (const x of data) {
+            if (typeof x === 'number') { if (Number.isFinite(x)) closes.push(x); continue; }
+            if (!x) continue;
+            const c = Number(x.close);
+            if (!Number.isFinite(c)) continue;
+            if (Number(x.open) === Number(x.high) && Number(x.high) === Number(x.low) && Number(x.low) === c) continue;
+            closes.push(c);
+        }
+        if (closes.length <= period) return null;
         let gains = 0, losses = 0;
         for (let i = 1; i <= period; i++) {
-            const change = values[i] - values[i - 1];
-            if (change >= 0) gains += change; else losses -= change;
+            const change = closes[i] - closes[i - 1];
+            if (change > 0) gains += change; else losses -= change;
         }
         gains /= period; losses /= period;
-        for (let i = period + 1; i < values.length; i++) {
-            const change = values[i] - values[i - 1];
-            gains = (gains * (period - 1) + Math.max(0, change)) / period;
-            losses = (losses * (period - 1) + Math.max(0, -change)) / period;
+        for (let i = period + 1; i < closes.length; i++) {
+            const change = closes[i] - closes[i - 1];
+            gains = (gains * (period - 1) + (change > 0 ? change : 0)) / period;
+            losses = (losses * (period - 1) + (change < 0 ? -change : 0)) / period;
         }
+        if (gains === 0 && losses === 0) return 50;
         if (losses === 0) return 100;
         return 100 - 100 / (1 + gains / losses);
     }
@@ -340,7 +380,7 @@
         const closes = candles.map(c => Number(c.close));
         const last = candles[candles.length - 1];
         const current = closes[closes.length - 1];
-        const ema20 = ema(closes, 20), ema50 = ema(closes, 50), rsiValue = rsi(closes, 14), macd = macdHistogram(closes), atrValue = atr(candles, 14);
+        const ema20 = ema(closes, 20), ema50 = ema(closes, 50), rsiValue = rsi(candles, 14), macd = macdHistogram(closes), atrValue = atr(candles, 14);
         const votes = [], basis = [];
         const addVote = (name, side, reason) => {
             basis.push({ name, side: side || 'WAIT', reason });
@@ -573,7 +613,8 @@
         $('qtSignalTP').textContent = result.tp === null ? '—' : price(result.tp, state.symbol);
         $('qtSignalRR').textContent = result.rr === null ? '—' : '1 : ' + result.rr.toFixed(1);
         $('qtSignalConfidence').textContent = result.confidence ? result.confidence + '%' : '—';
-        $('qtSignalSource').textContent = result.source || 'Chart feed';
+        $('qtSignalSource').textContent = sourceLabel(result.source);
+        $('qtSignalSource').title = sourceNote(result.source);
         $('qtSignalVotes').textContent = result.side === 'WAIT' ? 'menunggu konfirmasi' : result.bull + ' bullish · ' + result.bear + ' bearish';
         $('qtSignalLock').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg><span>Signal dikunci dari candle close — tidak memakai candle berjalan</span>';
         const basis = $('qtSignalBasis');
@@ -589,7 +630,7 @@
         renderSymbolMapping();
         const riskNote = Number.isFinite(result.atr) ? 'SL = ATR(14) × 1,5 · TP = 2R · jarak dihitung dari data chart aktif.' : 'ATR belum cukup untuk menghitung level risiko.';
         $('qtSignalDataNote').textContent = riskNote + (result.snapshotId ? ' · Snapshot ' + result.snapshotId : '');
-        renderFeedStatus('live', result.source || state.feed.source, state.feed.ageSeconds);
+        renderFeedStatus('live', result.source || state.feed.source, state.feed.ageSeconds, null, state.feed.marketClosed);
         postChartOverlay(result);
     }
 
@@ -769,8 +810,8 @@
         }
         if (targetTimeframe === state.timeframe) {
             state.source = data.source || data.provider || 'Chart feed';
-            state.feed = { status: 'live', source: state.source, ageSeconds: freshness.ageSeconds };
-            renderFeedStatus('live', state.source, freshness.ageSeconds);
+            state.feed = { status: 'live', source: state.source, ageSeconds: freshness.ageSeconds, marketClosed: freshness.marketClosed };
+            renderFeedStatus('live', state.source, freshness.ageSeconds, null, freshness.marketClosed);
         }
         return { all, closed: all.slice(0, -1), freshness, integrity, source: data.source || data.provider || 'Chart feed', generatedAt: data.generated_at || null };
     }

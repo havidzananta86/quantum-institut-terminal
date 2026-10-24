@@ -31,6 +31,6 @@ if ! cmp -s "$kopi" assets/css/tailwind.css; then
 fi
 rm -f "$kopi"
 
-# Bundel JS dashboard (assets/dist/) — sama dengan langkah CI "Check JS bundles are up to date".
-npm run --silent cek:js || { echo "pre-commit: jalankan 'npm run build:js', 'git add' hasilnya, lalu commit lagi." >&2; exit 1; }
+# (Pemeriksaan bundel JS assets/dist/ dihapus: dashboard chart-first memuat berkas apa adanya, bundler tools/bundel-js.mjs
+# sudah tidak ada. Hook ini sebelumnya memanggil 'npm run cek:js' yang tidak lagi terdefinisi, sehingga setiap commit gagal.)
 exit 0

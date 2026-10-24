@@ -41,7 +41,7 @@ $TV_SYMBOLS = [
 ];
 
 $requestSymbols = isset($_GET['symbols'])
-    ? array_map('trim', explode(',', strtoupper($_GET['symbols'])))
+    ? array_map('trim', explode(',', strtoupper(qi_str($_GET['symbols']))))
     : array_keys($TV_SYMBOLS);
 
 $tickers = [];

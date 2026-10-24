@@ -1,0 +1,20 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{_ as g,$ as x,a as s,s as e,a0 as T,c as t,r as d,a1 as y,t as R,f as m}from"./vnnAQmBw.js";import{h as S}from"./Di_Vksbt.js";import{s as k}from"./BbGUZXP3.js";import{b as A}from"./CCwCktb8.js";import"./B0XwC4Ot.js";var L=m('<meta name="description" content="iframe URL 하나로 완전히 구성된 트레이딩 차트를 어떤 페이지에든 삽입합니다."/>'),U=m(`<h1>임베드 위젯</h1> <p><code>&lt;iframe&gt;</code> URL 하나로 완전히 구성된 트레이딩 차트를 어떤 페이지에든
+  넣을 수 있습니다. npm 설치도, 빌드 단계도 필요 없습니다.</p> <h2>기본 iframe</h2> <pre><code></code></pre> <h2>URL 파라미터</h2> <table><thead><tr><th>파라미터</th><th>기본값</th><th>비고</th></tr></thead><tbody><tr><td><code>symbol</code></td><td><code>BTCUSDT</code></td><td>Binance 종목.</td></tr><tr><td><code>timeframe</code></td><td><code>5m</code></td><td><code>1m</code>, <code>5m</code>, <code>15m</code>, <code>1h</code>, <code>4h</code>, <code>1d</code>.</td></tr><tr><td><code>theme</code></td><td><code>dark</code></td><td><code>dark</code>, <code>light</code>, <code>darkTerminal</code>.</td></tr><tr><td><code>chartType</code></td><td><code>candlestick</code></td><td>18가지 유형 중 아무것이나.</td></tr><tr><td><code>indicators</code></td><td><em>없음</em></td><td>쉼표로 구분한 id. 예: <code>indicators=sma,rsi</code>.</td></tr><tr><td><code>trading</code></td><td><code>false</code></td><td>트레이딩 패널을 표시합니다.</td></tr></tbody></table> <h2 id="mobile-app">휴대폰 앱 안에서</h2> <p>차트와 위젯은 어떤 WebView에서도 동작합니다: React Native(<code>react-native-webview</code>), Capacitor, Tauri, 네이티브 앱 자체의 WebView. 너비가 641 px 미만이면 위젯이 휴대폰에 맞게 배치됩니다: 툴바에는 종목, 주기, 차트 종류, 지표가 남고 나머지는 “더보기” 안으로 들어갑니다. 드로잉 도구는 차트 위 버튼 뒤에 있고, 메뉴는 아래에서 올라오는 시트로 열리며, 그리드는 차트를 하나씩 탭으로 보여 줍니다. 더 넓어도 들어가지 않는 툴바는 똑같이 합니다. 손가락으로 마우스가 하는 일을 모두 할 수 있습니다.</p> <p>페이지에 화면 전체를 덮는 viewport를 지정하세요. 위젯은 시트를 노치와 홈 바에서 떨어뜨리고 화면 키보드 위에 둡니다.</p> <pre><code></code></pre> <p>대부분의 WebView는 앱이 백그라운드로 가면 페이지가 숨겨졌다고 알립니다. 그러면 차트는 스스로 그리기를 멈추고(<code>pauseWhenHidden</code>), 너무 오래 조용한 스트림은 앱이 돌아올 때 다시 연결됩니다. 알리지 않는 WebView라면 앱에서 일시 정지하세요.</p> <pre><code></code></pre> <p>스크롤되는 화면 안의 차트는 세로 스와이프를 화면에 맡깁니다.</p> <pre><code></code></pre> <p>Tauri의 콘텐츠 보안 정책이 페이지가 데이터 피드의 호스트에 연결하도록 허용해야 합니다.</p> <pre><code></code></pre> <p>차트는 픽셀 비율 최대 2로 그립니다(<code>maxPixelRatio</code>). 화면을 닫을 때 제거하면(<code>chart.destroy()</code>) 캔버스 메모리가 바로 반환됩니다.</p> <h2>실제 페이지</h2> <p>문서 화면의 틀 없이 미리 보려면 <a>임베드 경로</a>를
+  직접 열어 보세요.</p>`,1);function N(h){var p=U();S("jicqjb",_=>{var C=L();g(()=>{x.title="임베드 위젯 — TradeCanvas 문서"}),s(_,C)});var a=e(T(p),6),v=t(a);v.textContent=`<iframe
+  src="https://your-site/tradecanvas/embed/?symbol=BTCUSDT&timeframe=5m&theme=dark"
+  width="800"
+  height="500"
+  style="border: 0; border-radius: 12px;"
+></iframe>`,d(a);var r=e(a,12),l=t(r);l.textContent='<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',d(r);var c=e(r,4),f=t(c);f.textContent=`// React Native (react-native-webview): the app tells the page
+AppState.addEventListener('change', (state) => {
+  webview.current?.injectJavaScript(state === 'active' ? 'chart.resume(); true;' : 'chart.suspend(); true;');
+});
+
+// Capacitor
+import { App } from '@capacitor/app';
+App.addListener('appStateChange', ({ isActive }) => (isActive ? chart.resume() : chart.suspend()));`,d(c);var o=e(c,4),b=t(o);b.textContent="new Chart(host, { pageScroll: true })   // a chart in a screen that scrolls",d(o);var i=e(o,4),u=t(i);u.textContent=`// tauri.conf.json (Tauri 2): let the page reach the feed
+"app": {
+  "security": {
+    "csp": "default-src 'self'; connect-src 'self' https://api.binance.com wss://stream.binance.com:9443"
+  }
+}`,d(i);var n=e(i,6),w=e(t(n));y(),d(n),R(()=>k(w,"href",`${A??""}/embed`)),s(h,p)}export{N as default};

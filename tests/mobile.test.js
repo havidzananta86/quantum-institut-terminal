@@ -22,7 +22,7 @@ check('Signal Center memakai font sistem profesional', /font-family: "Segoe UI",
 // dashboard bebas kode inline (CSP ketat Report-Only + tests/csp-inline.test.js).
 const gate = fs.readFileSync(path.join(root, 'assets/js/qim-terminal-gate.js'), 'utf8');
 check('dashboard memuat gerbang sesi sebagai berkas terpisah', /qim-terminal-gate\.js\?v=/.test(html));
-check('auth guard mengarahkan sesi invalid ke login', /function goLogin\(\)/.test(gate) && /login\.html/.test(gate));
+check('auth guard mengarahkan sesi invalid ke login', /function goLogin\(/.test(gate) && /login\.html/.test(gate));
 check('vendor chart yang hilang dikatakan terus terang, bukan 404 diam', /quantum-terminal\/embed\//.test(gate) && /belum terpasang/.test(gate));
 check('fullscreen dan alat chart tetap dapat dipakai dari mobile', ['qtChartFullscreen', 'qtChartReset', 'qtChartCrosshair'].every(id => html.includes(`id="${id}"`)));
 check('overlay/loading tidak menghilangkan aksesibilitas status', /role="status" aria-live="polite"/.test(html) && /aria-live="polite"/.test(html));

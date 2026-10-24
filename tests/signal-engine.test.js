@@ -23,7 +23,7 @@ const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const checks = [
   ['JS memakai engine version canonical', /signalEngineVersion = 'qt-signal-v2\.3'/.test(js)],
   ['JS membuang candle berjalan untuk signal confirmed', /state\.candles = sets\.closed/.test(js)],
-  ['dashboard memuat kontrak JS terbaru', /qim-terminal-shell\.js\?v=1\.3\.0/.test(dashboard)],
+  ['dashboard memuat kontrak JS terbaru', /qim-terminal-shell\.js\?v=[0-9a-f.]+/.test(dashboard)],
 ];
 let failed = 0;
 for (const [label, ok] of checks) { console.log(`  ${ok ? '✓' : '✗'} ${label}`); if (!ok) failed++; }

@@ -1,0 +1,83 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as C,_ as I,$ as _,a as p,s as e,a0 as A,c as t,r,a1 as M,t as S,b as B,f as g}from"./vnnAQmBw.js";import{h as D}from"./Di_Vksbt.js";import{s as R}from"./BbGUZXP3.js";import{i as L}from"./w5vomPQw.js";import{u as X}from"./BPYnHL8L.js";var E=g('<meta name="description" content="Extend TradeCanvas with custom indicators, drawing tools, chart types, and overlays via the plugin SDK."/>'),q=g(`<h1>Plugins</h1> <p>Extend the chart with custom <strong>indicators</strong>, <strong>drawing tools</strong>, <strong>chart types</strong>, and <strong>overlays</strong> — registered globally or per chart.</p> <h2>Registration</h2> <p>Three ways to register, in precedence order: global defaults, the constructor, then imperative instance calls.</p> <pre><code></code></pre> <h2>Plugin kinds</h2> <table><thead><tr><th>Kind</th><th>Contract</th><th>Renders</th></tr></thead><tbody><tr><td><code>indicator</code></td><td><code>IndicatorPlugin</code> — <code>calculate()</code> + <code>render()</code></td><td>overlay or panel</td></tr><tr><td><code>drawing</code></td><td><code>DrawingPlugin</code> — <code>render()</code> + <code>hitTest()</code></td><td>overlay layer</td></tr><tr><td><code>chartType</code></td><td><code>ChartTypePlugin</code> — <code>createRenderer()</code> + optional <code>transform()</code></td><td>main series</td></tr><tr><td><code>overlay</code></td><td><code>OverlayPlugin</code> — <code>render(ctx, &#123; viewport, data, theme &#125;)</code></td><td><code>main</code> / <code>overlay</code> / <code>ui</code></td></tr></tbody></table> <h2>Custom indicator</h2> <p>Extend <code>IndicatorBase</code> for the drawing helpers, then register and add it like any built-in:</p> <pre><code></code></pre> <p>For <code>values</code>, use <code>new IndicatorValueMap()</code> instead of <code>new Map()</code>: it's a drop-in <code>Map</code> that is several times cheaper to fill one bar at a time in time order, which is what every
+  symbol or timeframe switch does over the whole history.</p> <h3>Fast live updates (optional)</h3> <p>On every live tick only the forming bar changes. Implement <code>update()</code> to recompute just
+  the bars from <code>from</code> onward instead of the whole history — the chart uses it on ticks and
+  new bars, and falls back to <code>calculate()</code> when it's missing or returns <code>null</code>.
+  It must produce the same values <code>calculate()</code> would.</p> <pre><code></code></pre> <h2>Custom drawing tool</h2> <p>Extend <code>DrawingBase</code> for its helpers (anchors to pixels, line
+  styles, handles), describe the tool, and register it. Settings listed in <code>descriptor.options</code> show up in the widget's settings dialog and
+  are saved with the drawing.</p> <pre><code></code></pre> <p>The descriptor can also say how the tool is drawn (<code>creation</code>: <code>'clicks'</code>, <code>'freehand'</code> or <code>'path'</code>, with <code>maxAnchors</code>) and whether the dialog offers a fill
+  (<code>fill</code>) or text (<code>text</code>). A tool can move handles that
+  are not anchors with <code>moveHandle()</code>, and receives the chart's bars
+  through <code>setDataGetter()</code> when it draws from them.</p> <h2>Custom chart type</h2> <p>A <code>ChartTypePlugin</code> supplies a renderer and an optional data transform; switch to it like a built-in:</p> <pre><code></code></pre> <h2>Custom overlay</h2> <p>An <code>OverlayPlugin</code> draws each frame on the layer you choose, receiving the live viewport, data, and theme:</p> <pre><code></code></pre> <p><code>overlayScale(context)</code> places things where the chart draws them: <code>timeToX</code> / <code>xToTime</code> by bar time (between bars and past the newest, in proportion), <code>indexToX</code> / <code>xToIndex</code>, <code>priceToY</code> / <code>yToPrice</code> (on a log or inverted scale too), <code>barWidth</code>, and <code>visible</code>, the bars on screen. For rows on the price grid, <code>chart.getPriceStep()</code> is the
+  symbol's smallest step (<code>minTick</code>), a fraction's unit, or one unit of the decimals prices show.
+  Indicator and chart-type renderers get the viewport alone: <code>priceToY</code>, <code>barIndexToX</code>, <code>timeToX</code> and their inverses are exported for them. The bars are those on screen: on a Renko or
+  Kagi chart, its bricks (<code>chart.isTimeAligned()</code> says when they are the feed's bars).</p> <p>An overlay with settings of its own (a display mode, a switch) can show a change at once, even when no
+  tick is coming to redraw the chart: set <code>enabled: false</code> on the plugin to hide it while it stays
+  registered, and call <code>chart.requestRender()</code> after changing either. Requests before the next
+  frame make one frame.</p> <p>See the <a>API reference</a> for the full plugin type signatures.</p>`,1);function G(u,m){C(m,!1);const{href:v}=X();L();var l=q();D("18vtmx3",s=>{var P=E();I(()=>{_.title="Plugins — TradeCanvas docs"}),p(s,P)});var o=e(A(l),8),f=t(o);f.textContent=`import { Chart, registerPlugin } from '@tradecanvas/chart'
+
+// 1) Global — every Chart created afterward inherits it
+registerPlugin({ kind: 'indicator', plugin: new MyIndicator() })
+
+// 2) Per-chart at construction
+const chart = new Chart(el, { plugins: [{ kind: 'overlay', plugin: myHeatmap }] })
+
+// 3) Imperative on an instance
+chart.plugins.register({ kind: 'chartType', plugin: myCandles })
+chart.plugins.unregister('chartType:my-candles')
+chart.plugins.list()`,r(o);var a=e(o,10),w=t(a);w.textContent=`import { IndicatorBase, IndicatorValueMap, registerPlugin } from '@tradecanvas/chart'
+
+class DoubleSMA extends IndicatorBase {
+  descriptor = {
+    id: 'double-sma', name: 'Double SMA',
+    placement: 'overlay', defaultConfig: { fast: 10, slow: 30 },
+  }
+  calculate(data, config) { /* values = new IndicatorValueMap(); return { values, series } */ }
+  render(ctx, output, viewport, style) { /* draw lines */ }
+}
+
+registerPlugin({ kind: 'indicator', plugin: new DoubleSMA() })
+chart.addIndicator('double-sma', { fast: 10, slow: 30 })`,r(a);var n=e(a,8),y=t(n);y.textContent=`update(data, config, prev, from) {
+  if (!this.canResume(data, prev, from)) return null   // IndicatorBase helper
+  for (let i = from; i < data.length; i++) {
+    this.writePoint(prev, data, i, { value: /* recompute bar i */ 0 })
+  }
+  return prev
+}`,r(n);var i=e(n,6),b=t(i);b.textContent=`import { DrawingBase, registerPlugin } from '@tradecanvas/chart'
+
+class TargetLine extends DrawingBase {
+  descriptor = {
+    type: 'targetLine', name: 'Target Line', requiredAnchors: 1,
+    options: { label: { kind: 'text', label: 'Label', default: 'Target' } },
+  }
+  render(ctx, state, viewport, selected) { /* at this.anchorToPixel(state.anchors[0], viewport) */ }
+  hitTest(point, state, viewport, tolerance) { /* is the pointer on it? */ return false }
+  // optional: the prices of its lines, so an alert can follow them
+  priceAt(state) { return [state.anchors[0].price] }
+}
+
+registerPlugin({ kind: 'drawing', plugin: new TargetLine() })
+chart.setDrawingTool('targetLine')`,r(i);var d=e(i,8),x=t(d);x.textContent=`registerPlugin({
+  kind: 'chartType',
+  plugin: {
+    descriptor: { type: 'my-bricks', name: 'My Bricks' },
+    createRenderer: () => new MyBrickRenderer(),
+    transform: (raw) => toBricks(raw),   // optional
+  },
+})
+
+chart.setChartType('my-bricks')`,r(d);var c=e(d,6),T=t(c);T.textContent=`import { overlayScale, registerPlugin } from '@tradecanvas/chart'
+
+registerPlugin({
+  kind: 'overlay',
+  plugin: {
+    descriptor: { id: 'high-marks', name: 'High marks', layer: 'main' },
+    render(ctx, context) {
+      const s = overlayScale(context)
+      ctx.fillStyle = '#f2a93b'
+      for (let i = s.visible.from; i <= s.visible.to; i++) {
+        const bar = context.data[i]
+        ctx.fillRect(s.indexToX(i) - s.barWidth / 2, s.priceToY(bar.high) - 1, s.barWidth, 2)
+      }
+    },
+  },
+})`,r(c);var h=e(c,6),k=e(t(h));M(),r(h),S(s=>R(k,"href",s),[()=>v("/docs/api")]),p(u,l),B()}export{G as default};

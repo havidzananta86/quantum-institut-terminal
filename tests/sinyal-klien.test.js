@@ -277,149 +277,14 @@ console.log('\n3. Awan Ichimoku digeser 26 bar');
   cek('teks alasan tidak memuat "<" yang terbaca sebagai tag HTML', !/<[A-Za-z]/.test(baca('assets/js/engine-nine.js').split(/\r?\n/).filter((l) => /alasan:/.test(l)).join('\n')));
 }
 
-console.log('\n4. Ringkasan Signal Matrix — aturan dominasi');
-{
-  const app = baca('assets/js/dashboard-app.js');
-  const ctx = { console, String };
-  vm.createContext(ctx);
-  vm.runInContext(potong(app, 'function qiRingkasanMatriks(', 'async function fetchSignalMatrix(') + '\nglobalThis.Q = qiRingkasanMatriks;', ctx);
-  const Q = (a) => ctx.Q(a).summary;
-  const kasus = [
-    [['BUY', 'BUY', 'SELL', 'SELL'], 'NEUTRAL', '2 BUY / 2 SELL (dulu BUY hijau)'],
-    [['BUY', 'STRONG_BUY', 'BUY', 'SELL'], 'BUY', '3 BUY + 1 SELL (dulu STRONG BUY)'],
-    [['BUY', 'STRONG_BUY', 'BUY', 'NEUTRAL'], 'STRONG BUY', '3 BUY tanpa SELL'],
-    [['SELL', 'SELL', 'BUY', 'NEUTRAL'], 'SELL', '2 SELL + 1 BUY'],
-    [['SELL', 'STRONG_SELL', 'SELL', 'NO_DATA'], 'STRONG SELL', '3 SELL tanpa BUY'],
-    [['SELL', 'SELL', 'SELL', 'BUY'], 'SELL', '3 SELL + 1 BUY (dulu STRONG SELL)'],
-    [['BUY', 'SELL', 'NEUTRAL', 'NO_DATA'], 'NEUTRAL', '1 BUY / 1 SELL'],
-    [['BUY', 'NEUTRAL', 'NEUTRAL', 'NEUTRAL'], 'NEUTRAL', '1 BUY saja'],
-  ];
-  for (const [masuk, harap, ket] of kasus) cek(`${ket} → ${harap}`, Q(masuk) === harap, Q(masuk));
-  cek('Signal Matrix memakai qiRingkasanMatriks', /qiRingkasanMatriks\(tfKeys\.map\(tf => tfs\[tf\]\?\.signal \|\| 'NEUTRAL'\)\)/.test(app));
-  const blok = potong(app, 'async function refreshAutoSignals(', 'const arahTampil');
-  cek('Auto Signal mencocokkan summary persis, tidak lagi includes(\'BUY\')',
-    /summary === 'BUY' \|\| summary === 'STRONG BUY'/.test(blok) && !/summary\.includes\('BUY'\)/.test(blok));
-}
+// (Bagian "Ringkasan Signal Matrix" menguji qiRingkasanMatriks milik dashboard panel lama — dibuang bersamanya.)
 
-console.log('\n5. Penanda `simulated` bertahan melewati sinkron chart, dan semua pemakai menolaknya');
+console.log('\n5. Candle `simulated` ditolak indikator Pine');
 {
-  const app = baca('assets/js/dashboard-app.js');
-  const kodeSync = potong(app, 'const _ohlcSync =', "setInterval(() => { if (_activePanel === 'panel-charts') updateOhlcBar(); }, 2500);");
-  const sekarang = Math.floor(Date.now() / 1000);
-  const nyata = (n, akhirT) => Array.from({ length: n }, (_, i) => { const c = 2650 + Math.sin(i / 5) * 5; return { time: akhirT - (n - 1 - i) * JAM, open: c - 1, high: c + 2, low: c - 2, close: c, volume: 0 }; });
-  function siapkan(lokal, jawab) {
-    const catat = { setData: 0, event: [], fetch: 0 };
-    const ctx = {
-      console, Date, Math, JSON, Promise, Number, Array, Object,
-      updateOhlcSourceBadge() {}, _ohlcHover: false,
-      WL_GROUPS: [{ syms: [{ tv: 'OANDA:XAUUSD', key: 'XAUUSD' }] }], _tvSymbol: 'OANDA:XAUUSD', _tvInterval: '60',
-      _lastPrices: {}, DP: {}, _lwRsi: null, _lwCandlesMeta: null,
-      _lwSeries: { setData() { catat.setData++; }, update() {} },
-      _lwLastCandles: lokal,
-      document: { getElementById: () => null },
-      perbaruiVolume() {}, _calcRSI: () => [], drawAutoIndicators() {},
-      CustomEvent: function (nama, o) { this.type = nama; this.detail = o && o.detail; },
-      fetch: async () => { catat.fetch++; return { json: async () => jawab }; },
-    };
-    ctx.window = { dispatchEvent(e) { catat.event.push(e.type); } };
-    vm.createContext(ctx);
-    vm.runInContext(kodeSync + '\nglobalThis.sinkron = updateOhlcBar; globalThis.jadwal = _ohlcSync;', ctx);
-    return { ctx, catat };
-  }
-  const acak = (n, akhirT) => ({ status: 'success', simulated: true, source: 'simulasi', candles: nyata(n, akhirT).map((c) => ({ ...c, close: c.close * 1.3 })) });
-  const asli = (n, akhirT) => ({ status: 'success', source: 'oanda', candles: nyata(n, akhirT) });
-
+  // Sinkron chart (updateOhlcBar) dan panel Setup Analisa milik dashboard panel lama sudah dibuang; yang tersisa di sini
+  // adalah modul yang masih ada: indikator Pine dan halaman depan.
+  const tunggu5 = tunggu;
   return (async () => {
-    // (a) Chart sudah simulasi, server masih simulasi dan punya bar baru → penanda HARUS bertahan.
-    {
-      const lokal = Object.assign(nyata(200, sekarang - 2 * JAM), { simulated: true });
-      const { ctx, catat } = siapkan(lokal, acak(201, sekarang - JAM));
-      await ctx.sinkron(); await tunggu();
-      cek('chart simulasi + bar baru simulasi → data diganti DAN penanda simulated tetap ada (dulu hilang)',
-        catat.setData === 1 && ctx._lwLastCandles !== lokal && ctx._lwLastCandles.simulated === true, { setData: catat.setData, simulated: ctx._lwLastCandles.simulated });
-      // Rantai ke pemakai: setelah satu siklus sinkron, ketiganya menolak.
-      const hasil = E.evaluasi(ctx._lwLastCandles);
-      cek('…Mesin 9 lalu menolak menilai (cukupData false, simulasi true)', hasil.cukupData === false && hasil.simulasi === true && hasil.konfluensi === null, hasil.alasan);
-      cek('…markerSinyal tidak membuat panah', E.markerSinyal(ctx._lwLastCandles, { minSkor: 0 }).length === 0);
-      const QS = require(path.join(root, 'assets/js/qim-setups.js'));
-      const d = QS.deteksi('SMC', ctx._lwLastCandles);
-      cek('…Setup Analisa (QIMSetups.deteksi) tidak menghasilkan setup', d.setups.length === 0 && /simulasi/i.test(d.catatan), d.catatan);
-    }
-    // (b) Chart NYATA, server tiba-tiba hanya punya candle acak → candle nyata DIPERTAHANKAN.
-    {
-      const lokal = nyata(200, sekarang - 2 * JAM);
-      const { ctx, catat } = siapkan(lokal, acak(201, sekarang - JAM));
-      await ctx.sinkron(); await tunggu();
-      cek('chart nyata tidak pernah ditukar candle acak', catat.setData === 0 && ctx._lwLastCandles === lokal && ctx._lwLastCandles.simulated !== true, catat);
-      cek('…label sumber tidak berubah menjadi "simulasi"', ctx._lwCandlesMeta === null);
-    }
-    // (c) Chart simulasi, data nyata kembali (jumlah bar berbeda) → diganti seluruhnya, tanpa penanda.
-    {
-      const lokal = Object.assign(nyata(201, sekarang - 2 * JAM), { simulated: true });
-      const { ctx, catat } = siapkan(lokal, asli(150, sekarang - 2 * JAM));
-      await ctx.sinkron(); await tunggu();
-      cek('data nyata kembali → chart diganti seluruhnya walau jumlah bar lebih sedikit', catat.setData === 1 && ctx._lwLastCandles.length === 150 && ctx._lwLastCandles.simulated !== true, { setData: catat.setData, n: ctx._lwLastCandles.length });
-      cek('…dan modul lain diberi tahu (qi-chart-data) supaya gambar lama dibuang', catat.event.includes('qi-chart-data'), catat.event);
-    }
-    // (e) Telaah ulang G3b: bar simulasi terakhir masih MUDA (10 menit, H1) dan server sudah
-    //     menyajikan data nyata → diganti SEKARANG. Dulu gerbang "batang baru" menahannya sampai
-    //     periode bar simulasi habis (H1: 1 jam, D1: 24 jam) sehingga semua pemakai tetap menolak.
-    {
-      const lokal = Object.assign(nyata(200, sekarang - 600), { simulated: true });
-      const { ctx, catat } = siapkan(lokal, asli(200, sekarang - 600));
-      await ctx.sinkron(); await tunggu();
-      cek('chart simulasi dengan bar muda + data nyata kembali → langsung diganti (dulu menunggu batang baru)',
-        catat.fetch === 1 && catat.setData === 1 && ctx._lwLastCandles.simulated !== true && catat.event.includes('qi-chart-data'), { fetch: catat.fetch, setData: catat.setData, event: catat.event });
-    }
-    // (f) Bar simulasi muda dan server MASIH simulasi → tetap ditanya (tiap 60 dtk), tetapi deret
-    //     acak tidak ditukar deret acak lain sebelum batang baru memang waktunya.
-    {
-      const lokal = Object.assign(nyata(200, sekarang - 600), { simulated: true });
-      const { ctx, catat } = siapkan(lokal, acak(200, sekarang));
-      await ctx.sinkron(); await tunggu();
-      const jeda = ctx.jadwal.boleh - Date.now() / 1000;
-      cek('masih simulasi: server ditanya, chart tidak diganti, tanya lagi ±60 dtk',
-        catat.fetch === 1 && catat.setData === 0 && ctx._lwLastCandles === lokal && jeda > 55 && jeda <= 61, { fetch: catat.fetch, setData: catat.setData, jeda });
-    }
-    // (g) Kontrol: chart NYATA dengan bar muda → gerbang batang baru tetap berlaku (tidak ada unduhan).
-    {
-      const lokal = nyata(200, sekarang - 600);
-      const { ctx, catat } = siapkan(lokal, asli(200, sekarang - 600));
-      await ctx.sinkron(); await tunggu();
-      cek('kontrol: chart nyata dengan bar muda → tidak mengunduh ulang (hemat kuota)', catat.fetch === 0 && catat.setData === 0);
-    }
-    // (d) Kontrol: nyata → nyata dengan bar baru tetap seperti biasa.
-    {
-      const lokal = nyata(200, sekarang - 2 * JAM);
-      const { ctx, catat } = siapkan(lokal, asli(201, sekarang - JAM));
-      await ctx.sinkron(); await tunggu();
-      cek('kontrol: nyata → nyata dengan bar baru tetap disinkronkan', catat.setData === 1 && ctx._lwLastCandles.length === 201 && ctx._lwLastCandles.simulated !== true);
-    }
-
-    // Panel Setup Analisa: candle simulasi → deteksi tidak pernah dipanggil, statusnya jujur.
-    {
-      const status = { innerHTML: '' }, list = { innerHTML: 'lama', querySelectorAll: () => [], querySelector: () => null };
-      const doc = {
-        readyState: 'complete', getElementById: (id) => ({ qimSetupStatus: status, qimSetupList: list })[id] || null,
-        querySelectorAll: () => [], addEventListener() {},
-      };
-      const win = { addEventListener() {}, qiTingkatSaatIni: () => 2 };
-      const ctx = { window: win, document: doc, console, Math, Number, Object, String, Array, Set, Map, JSON, Date };
-      vm.createContext(ctx);
-      vm.runInContext(baca('assets/js/qim-setups.js'), ctx);
-      vm.runInContext(baca('assets/js/qim-setup-panel.js'), ctx);
-      let dipanggil = 0;
-      const asliDeteksi = win.QIMSetups.deteksi;
-      win.QIMSetups.deteksi = (...a) => { dipanggil++; return asliDeteksi(...a); };
-      const seri = { attachPrimitive() {}, detachPrimitive() {}, createPriceLine: () => ({}), removePriceLine() {} };
-      win.qiChartKonteks = () => ({ series: seri, candles: Object.assign(nyata(120, sekarang), { simulated: true }), symbol: 'XAUUSD', interval: '60' });
-      win.QIMSetupPanel.jalankan('SMC');
-      cek('Setup Analisa: candle simulasi → deteksi tidak dipanggil, status menyebut SIMULASI', dipanggil === 0 && /SIMULASI/.test(status.innerHTML) && list.innerHTML === '', { dipanggil, status: status.innerHTML });
-      win.qiChartKonteks = () => ({ series: seri, candles: nyata(120, sekarang), symbol: 'XAUUSD', interval: '60' });
-      win.QIMSetupPanel.jalankan('SMC');
-      cek('kontrol: candle nyata → deteksi dipanggil', dipanggil === 1, dipanggil);
-    }
-
     // Indikator Pine (port): candle simulasi → tidak dihitung; candle nyata → dihitung.
     {
       const buatEl = () => {
@@ -546,7 +411,7 @@ console.log('\n5. Penanda `simulated` bertahan melewati sinkron chart, dan semua
       cek('…dan angka pair sebelumnya dikosongkan', ['sigEntry', 'sigSL', 'sigTP', 'sigRR', 'sigConditions'].every((id) => el[id].textContent === '—'));
     }
   })().then(() => {
-    console.log(gagal ? `\n${gagal} uji GAGAL` : '\nPASS — sinyal klien: panah Mesin 9, bukti independen, Ichimoku, Signal Matrix, penanda simulasi, halaman depan');
+    console.log(gagal ? `\n${gagal} uji GAGAL` : '\nPASS — sinyal klien: panah Mesin 9, bukti independen, Ichimoku, penanda simulasi di Pine, halaman depan');
     process.exit(gagal ? 1 : 0);
   }).catch((e) => { console.error(e); process.exit(1); });
 }

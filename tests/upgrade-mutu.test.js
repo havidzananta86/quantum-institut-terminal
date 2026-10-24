@@ -40,7 +40,7 @@ const dash = baca('dashboard.html');
 // Dicatat di sini supaya tidak hilang diam-diam — butuh tempat baru di shell chart-first.
 cek('panel per dimensi + Monte Carlo: belum punya tempat di shell chart-first (data tetap ada di API)',
     !/id="trDimPilih"/.test(dash) && /'statistik_dimensi'/.test(sh) && /'monte_carlo'/.test(sh));
-cek('dashboard-app.js merender statistik_dimensi & monte_carlo', /data\.statistik_dimensi/.test(baca('assets/js/dashboard-app.js')) && /data\.monte_carlo/.test(baca('assets/js/dashboard-app.js')));
+// (Perender lama di dashboard-app.js dibuang bersama dashboard panel lama — datanya kini hanya ada di API.)
 
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });
 if (probe.error || probe.status !== 0) {

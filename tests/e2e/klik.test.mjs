@@ -3,9 +3,9 @@
 //     health yang memang boleh "degraded"), JSON harus sah, tanpa PHP Warning/Notice/Fatal.
 //  2. Buka semua halaman publik & halaman login (desktop) — tanpa exception, console.error,
 //     permintaan gagal, atau respons >= 400.
-//  3. Dashboard (desktop 1440×900 DAN iPhone 390×844): buka SEMUA panel, klik SEMUA simbol watchlist,
-//     SEMUA timeframe, layar penuh masuk/keluar — chart harus berisi candle, teks panel tidak boleh
-//     memuat undefined/NaN/[object Object]/galat PHP.
+//  3. Dashboard chart-first (desktop 1440×900 DAN iPhone 390×844): tata letak, gerbang sesi/peran, chart terminal
+//     menggambar kanvas, kartu Quick Trade, dan Signal Center menghitung sinyal — tanpa undefined/NaN/galat PHP.
+//  4. Profil → Broker MT5: pengaturan bridge/eksekusi/Telegram termuat dan tombolnya terhubung ke fungsi.
 //
 // Pemakaian:  npm run test:e2e        (E2E_BASE=http://localhost/webapp, E2E_BROWSER=<msedge/chrome>)
 // Dilewati (exit 0) bila server lokal / browser / PHP tidak tersedia — kecuali E2E_WAJIB=1.
@@ -79,7 +79,7 @@ if (LOG) {
 }
 
 console.log(masalah.length ? `\nFAIL — ${masalah.length} masalah e2e:\n` + masalah.map(m => '  - ' + m).join('\n')
-                           : '\nPASS — e2e: semua API, halaman, panel, simbol, timeframe (desktop & iPhone)');
+                           : '\nPASS — e2e: semua API, halaman, dashboard chart-first dan Profil → Broker MT5 (desktop & iPhone)');
 process.exit(masalah.length ? 1 : 0);
 
 // ── 1. API ──────────────────────────────────────────────────────────────────
@@ -190,146 +190,159 @@ async function cekHalaman() {
         const buruk = (st || []).filter(s => s.startsWith('statusList:') ? !s.startsWith('statusList:ok ') : s.startsWith('intiList:bahaya '));
         if (buruk.length || !fitur.length) catat('status', buruk.join(' | ') || 'baris status tidak ditemukan'); else lulus(`status.html: ${fitur.length} layanan Normal, kesehatan server tanpa baris merah`);
       }
+      // Profil → Broker MT5 (dulu panel Akun dashboard lama): bagian termuat, tiap tombol punya fungsinya, status eksekusi
+      // terbaca dari server (bukan tertahan di "Memuat…"), dan kartu Telegram tampil untuk admin.
+      if (token) {
+        await b.buka(`${BASE}/profile.html`, 9);
+        const p = await b.nilai(`(async () => {
+          const tidur = ms => new Promise(r => setTimeout(r, ms));
+          const masalah = [];
+          const sec = document.getElementById('brokerSection');
+          if (!sec) return ['bagian #brokerSection tidak ada'];
+          const aksi = [...new Set([...sec.querySelectorAll('[data-qi-aksi],[data-qi-aksi-submit],[data-qi-aksi-change]')].flatMap(e => [e.getAttribute('data-qi-aksi'), e.getAttribute('data-qi-aksi-submit'), e.getAttribute('data-qi-aksi-change')]).filter(Boolean))];
+          const hilang = aksi.filter(n => typeof window[n] !== 'function');
+          if (hilang.length) masalah.push('tombol tanpa fungsi: ' + hilang.join(', '));
+          if (aksi.length < 8) masalah.push('hanya ' + aksi.length + ' aksi ditemukan di bagian broker');
+          if (!window.QIAksi) masalah.push('qim-aksi.js tidak termuat di profile.html');
+          for (let i = 0; i < 30 && /^Memuat/.test((document.getElementById('liveExecutionState') || {}).textContent || 'Memuat'); i++) await tidur(300);
+          const st = (document.getElementById('liveExecutionState') || {}).textContent || '';
+          if (!st || /^Memuat/.test(st)) masalah.push('status eksekusi tertahan di "' + st + '"');
+          if (!/^https?:\\/\\//.test((document.getElementById('bridgeEndpointValue') || {}).textContent || '')) masalah.push('endpoint bridge tidak terisi');
+          const tg = document.getElementById('tgKartu');
+          if (!tg || tg.classList.contains('hidden')) masalah.push('kartu Telegram tidak tampil untuk admin');
+          const teks = (sec.innerText || '').replace(/\\s+/g, ' ');
+          const k = teks.match(/\\b(undefined|NaN|\\[object Object\\]|Fatal error|Warning:|Uncaught)\\b/);
+          if (k) masalah.push('bagian broker memuat teks rusak: "…' + teks.slice(Math.max(0, k.index - 40), k.index + 30) + '…"');
+          return masalah;
+        })()`);
+        const g = b.galat();
+        (p || []).forEach(x => catat('profil', x)); g.forEach(x => catat('profil', x));
+        if (!(p || []).length && !g.length) lulus('profile.html: Broker MT5 & Eksekusi termuat, semua tombol punya fungsi');
+      }
     } finally { await b.tutup(); }
   }
 }
 
-// ── 3. Dashboard ─────────────────────────────────────────────────────────────
-// Indeks/komoditas hanya punya sumber OANDA (tv-bridge). Bila bridge lokal tidak berjalan, simbol itu
-// dilewati (bukan dianggap rusak) dan dilaporkan.
-var lewatiIndeks = null;   // var: dipakai alur utama di atas sebelum baris ini dieksekusi
-async function indeksTersedia() {
-  if (lewatiIndeks != null) return !lewatiIndeks;   // != null: sebelum baris var dieksekusi nilainya undefined
-  // interval 30: jarang dipakai halaman, jadi tidak tertipu cache candle lama.
-  try { const r = await fetch(`${BASE}/api/get-chart-data.php?symbol=US30&interval=30`); const j = await r.json(); lewatiIndeks = !(j && Array.isArray(j.candles) && j.candles.length); }
-  catch (e) { lewatiIndeks = true; }
-  if (lewatiIndeks) console.log('  ⚠ tv-bridge lokal tidak berjalan — simbol indeks (US30, NAS100, …) dilewati');
-  return !lewatiIndeks;
-}
-
+// ── 3. Dashboard chart-first ─────────────────────────────────────────────────
+// Terminal chart (iframe quantum-terminal/embed) + rail Quick Trade + Signal Center. Panel-panel dashboard lama sudah dibuang.
 async function cekDashboard(lebar, tinggi, label) {
-  const adaIndeks = await indeksTersedia();
   const b = await bukaBrowser(lebar, tinggi, tokenAdmin);
   try {
-    await b.buka(`${BASE}/dashboard.html`, 12);
+    await b.buka(`${BASE}/dashboard.html`, 14);
     const h = await b.nilai(`(async () => {
       const tidur = ms => new Promise(r => setTimeout(r, ms));
       const curiga = /\\b(undefined|NaN|\\[object Object\\]|Fatal error|Warning:|Uncaught|TypeError|ReferenceError)\\b/;
-      const hasil = { panel: [], simbol: [], tf: [], fs: null };
-      const ids = [...new Set([...document.querySelectorAll('[data-panel]')].map(e => e.dataset.panel))];
-      for (const id of ids) {
-        try { switchPanel(id); } catch (e) { hasil.panel.push(id + ': switchPanel melempar ' + e.message); continue; }
-        await tidur(1500);
-        const el = document.getElementById(id);
-        if (!el) { hasil.panel.push(id + ': elemen tidak ada'); continue; }
-        if (getComputedStyle(el).display === 'none') { hasil.panel.push(id + ': tidak tampil'); continue; }
-        const teks = (el.innerText || '').replace(/\\s+/g, ' ');
-        const m = teks.match(curiga);
-        if (m) hasil.panel.push(id + ': "…' + teks.slice(Math.max(0, m.index - 50), m.index + 30) + '…"');
-        if (teks.length < 30) hasil.panel.push(id + ': hampir kosong');
+      const hasil = { masalah: [], ringkas: {} };
+      const rc = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), kanan: Math.round(r.right), bawah: Math.round(r.bottom) }; };
+      const m = (teks) => hasil.masalah.push(teks);
+
+      // 1. Gerbang sesi: token sah → tetap di dashboard, peran terisi.
+      if (!/dashboard\\.html$/.test(location.pathname)) m('dialihkan dari dashboard ke ' + location.pathname);
+      if (window.QI_PERAN !== 'admin') m('window.QI_PERAN = ' + window.QI_PERAN + ' (harus admin untuk sesi uji) — Quick Trade membacanya untuk membuka paper trading');
+
+      // 2. Tata letak CHART PENUH: iframe mengisi seluruh jendela (tanpa bar atas, tanpa kolom permanen); menu dan panel Order
+      // tertutup bawaan. Dulu <body> memakai grid dashboard lama sehingga iframe setinggi 12px.
+      const fr = rc('#quantumTerminalFrame'), rail = rc('#qimRightPanel'), alat = rc('.qt-chart-tools');
+      if (document.querySelector('.qt-topbar')) m('bar atas muncul lagi — chart seharusnya memenuhi layar');
+      if (!fr || fr.w < innerWidth - 2 || fr.h < innerHeight - 2) m('chart tidak memenuhi layar: ' + JSON.stringify(fr) + ' vs ' + innerWidth + '×' + innerHeight);
+      const gayaRail = document.getElementById('qimRightPanel') ? getComputedStyle(document.getElementById('qimRightPanel')) : null;
+      if (!rail || !gayaRail) m('panel Order tidak ada');
+      else if (gayaRail.visibility !== 'hidden' || document.getElementById('qimRightPanel').classList.contains('is-open')) m('panel Order terbuka bawaan (seharusnya tertutup)');
+      const menuEl = document.getElementById('qtMenu');
+      if (!menuEl || !menuEl.hidden) m('menu halaman tidak ada atau terbuka bawaan');
+      if (alat && alat.bawah > innerHeight - 50) m('bar kontrol chart menutupi bar bawah widget (rentang 1D…All): bawah ' + alat.bawah + ' vs ' + innerHeight);
+      if (document.documentElement.scrollWidth > innerWidth + 1) m('halaman melebar menyamping: scrollWidth ' + document.documentElement.scrollWidth + ' > ' + innerWidth);
+      hasil.ringkas.layout = { fr, rail, alat };
+
+      // 2b. Menu: terbuka lewat tombol, memuat tautan halaman lain, tertutup oleh Esc.
+      document.getElementById('qtMenuBtn').click(); await tidur(200);
+      const tautan = [...document.querySelectorAll('#qtMenu a')].map(a => a.getAttribute('href'));
+      if (menuEl.hidden || tautan.length < 5 || !['kompetisi.html', 'economic-calendar.html', 'transparansi.html', 'profile.html'].every(h => tautan.includes(h))) m('menu halaman tidak lengkap: ' + JSON.stringify(tautan));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tidur(200);
+      if (!menuEl.hidden) m('Esc tidak menutup menu halaman');
+
+      // 2c. Panel Order: terbuka lewat tombol, berada di dalam layar, tertutup lagi oleh tombol silang.
+      document.getElementById('qtOrderLauncher').click(); await tidur(500);
+      const railBuka = rc('#qimRightPanel');
+      if (getComputedStyle(document.getElementById('qimRightPanel')).visibility !== 'visible' || !railBuka || railBuka.x < -1 || railBuka.kanan > innerWidth + 1 || railBuka.h < innerHeight - 2) m('panel Order tidak tampil utuh saat dibuka: ' + JSON.stringify(railBuka));
+
+      // 3. Chart terminal termuat: kanvas ada dan tidak tertahan di layar muat / galat.
+      let kanvas = 0, isiFrame = '';
+      for (let i = 0; i < 60; i++) {
+        await tidur(500);
+        try {
+          const d = document.getElementById('quantumTerminalFrame').contentDocument;
+          kanvas = d.querySelectorAll('canvas').length;
+          isiFrame = (d.body.innerText || '').replace(/\\s+/g, ' ');
+          if (kanvas && !d.querySelector('.tcw-loading-overlay')) break;
+        } catch (e) { m('iframe chart tidak bisa dibaca: ' + e.message); break; }
       }
-      hasil.jumlahPanel = ids.length;
-      switchPanel('panel-charts'); await tidur(2000);
-      const lewati = ${JSON.stringify(adaIndeks ? [] : ['US30', 'NAS100', 'SPX500', 'GER40', 'UK100', 'JP225', 'XAGUSD', 'USOIL'])};
-      const baris = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].filter(r => r.getAttribute('aria-disabled') !== 'true'
-        && !lewati.includes((r.querySelector('.qim-watch-name b') || {}).textContent));
-      for (const r of baris) {
-        const sim = (r.querySelector('.qim-watch-name b') || {}).textContent;
-        r.click();
-        let k = {};
-        for (let i = 0; i < 45; i++) { await tidur(400); k = window.qiChartKonteks ? window.qiChartKonteks() : {}; if ((k.symbol || k.sym) === sim && (k.candles || []).length) break; }
-        if ((k.symbol || k.sym) !== sim) hasil.simbol.push(sim + ': chart tetap ' + (k.symbol || k.sym));
-        else if (!(k.candles || []).length) hasil.simbol.push(sim + ': chart kosong');
-      }
-      hasil.jumlahSimbol = baris.length;
-      const tfs = [...document.querySelectorAll('.qch-tf[data-iv]')];
-      for (const t of tfs) {
-        t.click();
-        let n = 0;
-        for (let i = 0; i < 45 && !n; i++) { await tidur(400); n = ((window.qiChartKonteks ? window.qiChartKonteks() : {}).candles || []).length; }
-        if (!n) hasil.tf.push(t.dataset.iv + ': chart kosong');
-      }
-      hasil.jumlahTf = tfs.length;
-      const panel = document.getElementById('panel-charts');
-      toggleChartFullscreenMode(); await tidur(1200);
-      const masuk = panel.classList.contains('chart-fullscreen-mode');
-      toggleChartFullscreenMode(); await tidur(1200);
-      const keluar = !panel.classList.contains('chart-fullscreen-mode');
-      if (!masuk || !keluar) hasil.fs = 'layar penuh: masuk=' + masuk + ' keluar=' + keluar;
-      hasil.fitur = [];
-      // Header: elemen anak tidak boleh saling menimpa dan tombol kanan tidak boleh keluar layar.
-      { const hd = document.querySelector('.qim-header');
-        if (hd) {
-          const kid = [...hd.children].filter(e => e.offsetParent !== null && e.getBoundingClientRect().width > 0).map(e => ({ n: e.id || String(e.className).split(' ')[0], r: e.getBoundingClientRect() }));
-          for (let i = 0; i < kid.length - 1; i++) if (kid[i].r.right > kid[i + 1].r.left + 1) hasil.fitur.push('header: ' + kid[i].n + ' menimpa ' + kid[i + 1].n + ' (' + Math.round(kid[i].r.right - kid[i + 1].r.left) + 'px)');
-          const aksi = hd.querySelector('.qim-header-actions');
-          if (aksi && aksi.getBoundingClientRect().right > innerWidth + 1) hasil.fitur.push('header: tombol kanan keluar layar');
-        } }
-      // Backtest & indikator Pine dimuat lazy (qim-muat-fitur.js): belum ada saat halaman dibuka, termuat saat diminta.
-      if (window.QIMBacktestUI || window.QIMIndikatorKustom) hasil.fitur.push('modul lazy ikut termuat saat halaman dibuka');
-      if (typeof window.QIMMuatFitur !== 'function') hasil.fitur.push('pemuat fitur lazy (QIMMuatFitur) tidak ada');
-      else {
-        try { await Promise.all(['backtest', 'multichart', 'pine'].map(n => window.QIMMuatFitur(n))); }
-        catch (e) { hasil.fitur.push('fitur lazy gagal dimuat: ' + e.message); }
-      }
-      if (!window.QIMBerita || !window.QIMAIJelaskan || !window.QIMBacktestUI || !window.QIMMultiChart || !window.QIMIndikatorKustom) hasil.fitur.push('modul fitur baru tidak termuat');
-      // Kembali ke BTC (sumber Binance/OANDA dengan cadangan) sebelum menguji fitur yang mengikuti chart utama.
-      const btc = [...document.querySelectorAll('#qimWatchlistRows .qim-watch-row')].find(r => /BTCUSDT/.test(r.innerText));
-      if (btc) { btc.click(); await tidur(3000); }
-      if (innerWidth >= 1024 && window.QIMMultiChart) {
-        QIMMultiChart.atur(2); await tidur(3500);
-        const sel = QIMMultiChart._sel();
-        if (sel.length !== 1 || !sel[0].candles.length) hasil.fitur.push('multi-chart 2: chart tambahan kosong');
-        QIMMultiChart.atur(4); await tidur(3500);
-        const sel4 = QIMMultiChart._sel();
-        if (sel4.length !== 3 || sel4.some(x => !x.candles.length)) hasil.fitur.push('multi-chart 4: ' + sel4.map(x => x.candles.length).join('/'));
-        QIMMultiChart.atur(1); await tidur(500);
-        if (QIMMultiChart._sel().length) hasil.fitur.push('multi-chart: kembali ke 1 chart gagal');
-      }
-      // Indikator Pine (port): harus mulai MATI (chart bersih), bisa menyala dengan tabel & zona, dan bersih saat dimatikan.
-      if (window.QIMIndikatorKustom) {
-        const K = window.QIMIndikatorKustom;
-        if (K.aktif() || document.querySelector('.qim-pk')) hasil.fitur.push('indikator Pine: tidak mulai dalam keadaan mati');
-        K.nyalakan();
-        let h = null;
-        for (let i = 0; i < 60 && !(h && h.ok); i++) { await tidur(500); h = K.hasil(); }
-        if (!h || !h.ok) hasil.fitur.push('indikator Pine: tidak menghasilkan data — ' + (h && h.pesan));
+      if (!kanvas) m('chart terminal tidak menggambar kanvas apa pun');
+      if (/Connection failed|Failed to fetch/i.test(isiFrame)) m('chart terminal menampilkan galat koneksi: ' + (isiFrame.match(/Connection failed|Failed to fetch/i) || [''])[0]);
+      hasil.ringkas.kanvas = kanvas;
+
+      // 3b. Jembatan shell → chart (Zoom/Reset): chart harus diekspos ke shell (event qt-chart-ready) dan tombolnya benar-benar
+      // menggerakkan kanvas. Dulu build embed yang terpasang tidak memancarkan event itu: semua tombol shell diam tanpa pesan.
+      try {
+        const fc = document.getElementById('quantumTerminalFrame').contentWindow;
+        if (!fc.__quantumTerminalChart) m('chart terminal tidak diekspos ke shell (qt-chart-ready tidak terkirim) — tombol Zoom/Reset mati');
         else {
-          if (document.querySelectorAll('.qim-pk-t').length !== 2) hasil.fitur.push('indikator Pine: tabel BUY/SELL tidak muncul');
-          if (!document.querySelector('.qim-pk-t.buy .st td:last-child').textContent.trim()) hasil.fitur.push('indikator Pine: status BUY kosong');
-          // Maksudnya: Pine memakai riwayat DALAM, bukan hanya bar chart. Ambang tetap 500 tidak selalu
-          // mungkin — e2e terakhir mengklik timeframe 1W pada simbol kripto, dan ETHUSDT mingguan memang
-          // hanya punya ±480 bar sepanjang sejarahnya (Binance mulai 2017-08-14). Jadi syaratnya:
-          // tidak pernah kurang dari bar chart yang ada (chart OANDA/Binance memuat hingga 1.000 bar, jadi
-          // minimal 500 tetap berlaku kecuali pasarnya sendiri belum punya sebanyak itu).
-          const barChart = ((window.qiChartKonteks ? window.qiChartKonteks() : {}).candles || []).length;
-          if (h.n < barChart) hasil.fitur.push('indikator Pine: hanya ' + h.n + ' bar dipakai (chart punya ' + barChart + ')');
-          if (!(h.zona.supply.length + h.zona.demand.length)) hasil.fitur.push('indikator Pine: tidak ada zona sama sekali');
+          const sidik = () => [...fc.document.querySelectorAll('canvas')].map(c => { try { const d = c.toDataURL(); let x = 0; for (let i = 0; i < d.length; i += 97) x = (x * 31 + d.charCodeAt(i)) | 0; return x; } catch (e) { return 0; } }).join(',');
+          const awal = sidik();
+          document.getElementById('qtChartZoomIn').click(); await tidur(900);
+          if (sidik() === awal) m('tombol Zoom + tidak mengubah chart');
+          document.getElementById('qtChartReset').click(); await tidur(600);
         }
-        K.matikan(); await tidur(300);
-        if (K.aktif() || document.querySelector('.qim-pk')) hasil.fitur.push('indikator Pine: masih ada sisa setelah dimatikan');
+      } catch (e) { m('uji jembatan chart gagal: ' + e.message); }
+
+      // 4. Quick Trade: simbol terbaca dari chart, tombol BUY/SELL aktif untuk admin, tanpa teks rusak.
+      const qt = document.getElementById('qtKartu');
+      if (!qt) m('kartu Quick Trade tidak ada');
+      else {
+        for (let i = 0; i < 40 && /^[—-]?$/.test((document.getElementById('qtSym') || {}).textContent || ''); i++) await tidur(500);
+        const sim = (document.getElementById('qtSym') || {}).textContent;
+        if (!sim || sim === '—') m('Quick Trade tidak tahu simbol chart (qtSym kosong)');
+        for (const id of ['qtBuy', 'qtSell']) { const t = document.getElementById(id); if (!t) m(id + ' tidak ada'); else if (t.disabled) m(id + ' nonaktif untuk admin'); }
+        const teksQt = (qt.innerText || '').replace(/\\s+/g, ' ');
+        const k = teksQt.match(curiga);
+        if (k) m('Quick Trade memuat teks rusak: "…' + teksQt.slice(Math.max(0, k.index - 40), k.index + 30) + '…"');
+        hasil.ringkas.qt = { sim, beli: (document.getElementById('qtBuyHarga') || {}).textContent, jual: (document.getElementById('qtSellHarga') || {}).textContent };
       }
-      if (window.QIMBacktestUI) {
-        document.getElementById('qimBacktestBuka').click(); await tidur(400);
-        document.getElementById('qbtSimbol').value = 'BTCUSDT'; document.getElementById('qbtTf').value = '240';
-        document.getElementById('qbtJalan').click();
-        let tabel = null;
-        for (let i = 0; i < 90 && !tabel; i++) { await tidur(500); tabel = document.querySelector('.qbt-tabel'); }
-        if (!tabel) hasil.fitur.push('backtest: tabel hasil tidak muncul — ' + document.getElementById('qbtStatus').innerText);
-        else if (tabel.querySelectorAll('tbody tr').length !== 5) hasil.fitur.push('backtest: baris tabel ' + tabel.querySelectorAll('tbody tr').length);
-        QIMBacktestUI.tutup();
+      if (!document.querySelector('a[href="profile.html#brokerSection"]') && getComputedStyle(document.getElementById('qtRealInfo') || document.body).display !== 'none') m('tautan ke Profil → Broker MT5 tidak ada');
+      if (document.getElementById('ptOpenBtn') || document.getElementById('ptSymbol')) m('form order manual dobel muncul lagi di dashboard');
+      if (document.getElementById('bridgeSetup') || document.getElementById('liveAccountId')) m('blok broker/eksekusi seharusnya di Profil, bukan dashboard');
+
+      // 5. Signal Center: buka, tunggu sinyal terhitung, tidak ada teks rusak, sumber data berlabel.
+      const peluncur = document.getElementById('qtAssistLauncher');
+      if (!peluncur) m('tombol Signal Center tidak ada');
+      else {
+        peluncur.click();
+        let lencana = '';
+        for (let i = 0; i < 70; i++) { await tidur(500); lencana = (document.getElementById('qtSignalBadge') || {}).textContent || ''; if (lencana && !/MEMUAT/i.test(lencana)) break; }
+        if (!lencana || /MEMUAT/i.test(lencana)) m('Signal Center tertahan di "MEMUAT"');
+        const drawer = (document.getElementById('qtAssistDrawer').innerText || '').replace(/\\s+/g, ' ');
+        const k = drawer.match(curiga);
+        if (k) m('Signal Center memuat teks rusak: "…' + drawer.slice(Math.max(0, k.index - 50), k.index + 30) + '…"');
+        const sumber = (document.getElementById('qtSignalSource') || {}).textContent || '';
+        if (!sumber || sumber === '—') m('Signal Center tidak menyebut sumber data');
+        hasil.ringkas.sinyal = { lencana, sumber, status: (document.getElementById('qtAssistFooterText') || {}).textContent };
+        document.getElementById('qtAssistClose').click();
       }
+
+      // Panel Order ditutup kembali lewat tombol silang.
+      document.getElementById('qtOrderClose').click(); await tidur(500);
+      if (getComputedStyle(document.getElementById('qimRightPanel')).visibility !== 'hidden') m('tombol silang tidak menutup panel Order');
+
+      // 6. Teks seluruh halaman (di luar iframe) bebas dari NaN/undefined/galat PHP.
+      const semua = (document.body.innerText || '').replace(/\\s+/g, ' ');
+      const k2 = semua.match(curiga);
+      if (k2) m('halaman memuat teks rusak: "…' + semua.slice(Math.max(0, k2.index - 50), k2.index + 30) + '…"');
       return hasil;
     })()`);
     console.log(`Dashboard ${label} (${lebar}×${tinggi})`);
-    (h.panel || []).forEach(x => catat(`dashboard-${label}`, 'panel ' + x));
-    (h.simbol || []).forEach(x => catat(`dashboard-${label}`, 'simbol ' + x));
-    (h.tf || []).forEach(x => catat(`dashboard-${label}`, 'timeframe ' + x));
-    if (h.fs) catat(`dashboard-${label}`, h.fs);
-    (h.fitur || []).forEach(x => catat(`dashboard-${label}`, x));
-    if ((h.jumlahPanel || 0) < 30) catat(`dashboard-${label}`, `hanya ${h.jumlahPanel} panel ditemukan`);
-    if ((h.jumlahSimbol || 0) < 10) catat(`dashboard-${label}`, `hanya ${h.jumlahSimbol} simbol watchlist ditemukan`);
+    (h.masalah || []).forEach(x => catat(`dashboard-${label}`, x));
     b.galat().forEach(x => catat(`dashboard-${label}`, x));
-    lulus(`${label}: ${h.jumlahPanel} panel, ${h.jumlahSimbol} simbol, ${h.jumlahTf} timeframe, layar penuh`);
+    const r = h.ringkas || {};
+    lulus(`${label}: chart penuh ${r.layout && r.layout.fr ? r.layout.fr.w + '×' + r.layout.fr.h : '?'}, ${r.kanvas || 0} kanvas, Quick Trade ${r.qt ? r.qt.sim : '?'}, sinyal ${r.sinyal ? r.sinyal.lencana + ' · ' + r.sinyal.sumber : '?'}`);
   } finally { await b.tutup(); }
 }

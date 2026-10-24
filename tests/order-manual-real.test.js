@@ -68,9 +68,10 @@ const buka = (s) => s.server.post.filter((b) => b.aksi === 'buka');
     s.ctx.ptOpenPosition();
     await s.tunggu();
     cek('harga order = ask pasar, bukan angka di kolom', (buka(s)[0] || {}).harga === 4123.79, buka(s)[0]);
-    const tag = (HTML.match(/<input id="ptEntryPrice"[^>]*>/) || [''])[0];
-    cek('markup: kolom readonly dan tidak lagi menandai "diubah pengguna"', /\sreadonly[\s>]/.test(tag) && !/tandaiDiubahPengguna/.test(tag), tag);
-    cek('markup: pemilih arah ikut menyegarkan harga sisi', /<select id="ptSide" data-qi-aksi-change="ptUpdateLivePrice"/.test(HTML));
+    // Form "Buka Posisi Baru" dihapus dari dashboard (dobel dengan Quick Trade). Fungsi di atas tetap diuji karena
+    // jalur order paper/real yang sama dipakai Quick Trade; markup form tidak boleh kembali tanpa disadari.
+    cek('markup: form order manual dobel sudah tidak ada (Quick Trade satu-satunya jalur)', !/id="ptOpenBtn"/.test(HTML) && !/id="ptEntryPrice"/.test(HTML) && /id="qtKartu"/.test(HTML));
+    cek('markup: Quick Trade memakai tombol BUY & SELL sendiri', /id="qtBuy"/.test(HTML) && /id="qtSell"/.test(HTML));
   }
 
   console.log('\nValidasi formulir sebelum dikirim');
@@ -167,7 +168,7 @@ const buka = (s) => s.server.post.filter((b) => b.aksi === 'buka');
     await s.tunggu(60);
     cek('tanpa akun MT5 → TIDAK ada order ke live-trade.php', s.jejak.liveAction.length === 0, s.jejak.liveAction);
     cek('… TIDAK ada toast sukses', !s.jejak.toast.some((t) => t.jenis === 'success'), s.jejak.toast);
-    cek('… galat yang mengatakan order TIDAK dikirim dan ke mana harus pergi', s.jejak.toast.some((t) => t.jenis === 'error' && /TIDAK dikirim/.test(t.pesan) && /Broker → Eksekusi MT5/.test(t.pesan)), s.jejak.toast);
+    cek('… galat yang mengatakan order TIDAK dikirim dan ke mana harus pergi', s.jejak.toast.some((t) => t.jenis === 'error' && /TIDAK dikirim/.test(t.pesan) && /Profil → Broker MT5/.test(t.pesan)), s.jejak.toast);
     cek('… dan tidak ada dialog konfirmasi uang sungguhan', s.jejak.konfirmasi.length === 0);
     cek('tombol aktif lagi', s.el('ptOpenBtn').disabled === false);
   }
@@ -181,7 +182,7 @@ const buka = (s) => s.server.post.filter((b) => b.aksi === 'buka');
   {
     // Akun berganti selama dialog konfirmasi terbuka → order tidak dikirim ke akun yang tidak disebut.
     let s;
-    s = sb({ ptAkun: 'real', ptSL: '4100', ptTP: '4160' }, { setuju: () => { s.el('liveAccountId').value = ''; return true; } });
+    s = sb({ ptAkun: 'real', ptSL: '4100', ptTP: '4160' }, { setuju: () => { s.ctx._akunLive = []; return true; } });
     s.ctx.ptOpenPosition();
     await s.tunggu(60);
     cek('akun berubah selama konfirmasi → TIDAK dikirim, tanpa toast sukses', s.jejak.liveAction.length === 0 && !s.jejak.toast.some((t) => t.jenis === 'success') && s.jejak.toast.some((t) => /berubah selama konfirmasi/.test(t.pesan)), s.jejak.toast);
@@ -243,10 +244,12 @@ const buka = (s) => s.server.post.filter((b) => b.aksi === 'buka');
 
   // ── Kontrak markup & server ────────────────────────────────────────────────
   console.log('\nMarkup & server');
-  cek('dashboard.html punya pemilih akun ptAkun', /id="ptAkun"/.test(HTML));
-  cek("pilihan bawaan adalah Simulasi (option pertama)", /<option value="sim">Simulasi<\/option>\s*<option value="real">/.test(HTML));
-  cek('tombol order punya id untuk diubah tampilannya', /id="ptOpenBtn"/.test(HTML));
-  cek('pemilih akun memakai delegasi aksi CSP-safe', /data-qi-aksi-change="ptGantiAkun"/.test(HTML));
+  // Pengaturan broker pindah ke Profil; dashboard hanya menaut ke sana dan tidak lagi punya pemilih akun.
+  const PROFIL = fs.readFileSync(path.join(root, 'profile.html'), 'utf8');
+  cek('dashboard.html tidak lagi punya pemilih akun MT5 / form order manual', !/id="ptAkun"/.test(HTML) && !/id="liveAccountId"/.test(HTML));
+  cek('dashboard.html menaut ke Profil → Broker MT5', /href="profile\.html#brokerSection"/.test(HTML));
+  cek('profile.html punya pemilih akun MT5 & guardrail eksekusi', /id="liveAccountId"/.test(PROFIL) && /data-qi-aksi="saveLiveGuardrails"/.test(PROFIL) && /id="brokerSection"/.test(PROFIL));
+  cek('profile.html memuat qim-aksi.js dan qim-broker.js', /assets\/js\/qim-aksi\.js/.test(PROFIL) && /assets\/js\/qim-broker\.js/.test(PROFIL));
 
   cek('live-trade.php menerima queue_manual', /\$action === 'queue_manual'/.test(PHP));
   cek('queue_manual & queue_signal memakai blok guardrail yang sama', /\$action === 'queue_signal' \|\| \$action === 'queue_manual'/.test(PHP));

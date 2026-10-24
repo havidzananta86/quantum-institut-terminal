@@ -1,0 +1,171 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as oe,_ as ne,$ as re,a as z,s as e,a0 as te,c as a,r as o,a1 as L,t as ce,b as de,f as D}from"./vnnAQmBw.js";import{h as ie}from"./Di_Vksbt.js";import{s as se}from"./BbGUZXP3.js";import{i as le}from"./w5vomPQw.js";import{u as pe}from"./BPYnHL8L.js";var ue=D('<meta name="description" content="Muestra posiciones, órdenes, marcadores de señales y zonas de operación directamente en el gráfico con la capa de trading de TradeCanvas."/>'),me=D(`<h1>Capa de trading</h1> <p>Muestra posiciones, órdenes, marcadores de señales y zonas de operación
+  directamente en el gráfico. Diseñada para integrarse tanto en flujos de trading
+  manual como algorítmico.</p> <h2>Desactivar el trading</h2> <p>La capa de trading está activada por defecto; el menú de órdenes del clic derecho no (desde la 1.3).</p> <pre><code></code></pre> <p>Sin el menú, el clic derecho nativo del navegador funciona en el gráfico como cabe esperar.</p> <h2>Posiciones</h2> <pre><code></code></pre> <h2>Órdenes</h2> <pre><code></code></pre> <p>La etiqueta de la línea indica el tipo y la cantidad de la orden (<code>LIMIT 0.25</code>); su etiqueta en el eje de precio
+  lleva el precio, escrito como lo escribe el eje. Arrastra la línea de precio para modificarla; suscríbete con <code>chart.on('orderModify', ...)</code>.</p> <h2>Ejecución en vivo (conecta un adaptador)</h2> <p>Por defecto, el gráfico <em>emite</em> intenciones de orden/posición
+  (<code>orderPlace</code>, <code>orderModify</code>, <code>orderCancel</code>, <code>positionModify</code>, <code>positionClose</code>) para tu backend; nunca
+  opera por sí mismo. Si conectas un <code>ExecutionAdapter</code>, el gráfico
+  envía esas intenciones al adaptador y muestra las órdenes/posiciones
+  definitivas que este le devuelve (el adaptador es la única fuente de verdad).</p> <pre><code></code></pre> <p>Implementa <code>ExecutionAdapter</code> (es el equivalente de <code>DataAdapter</code>) para conectar un bróker / OMS real: <code>placeOrder</code>, <code>modifyOrder</code>, <code>cancelOrder</code>, <code>modifyPosition</code>, <code>closePosition</code>, más los eventos <code>orders</code> / <code>positions</code> / <code>fill</code> / <code>error</code>. <code>PaperExecutionAdapter</code> es un entorno de pruebas
+  con ejecuciones virtuales para demos y tests.</p> <h2>Actuar sobre órdenes y posiciones desde el gráfico</h2> <p>Las líneas de órdenes y de posiciones llevan pequeños botones en su extremo
+  derecho: <strong>×</strong> cancela una orden o cierra una posición, <strong>⇅</strong> invierte una posición, y una × en una línea de stop-loss o
+  take-profit la quita. Generan las mismas intenciones que la API
+  (<code>orderCancel</code>, <code>positionClose</code>, <code>positionReverse</code>, <code>positionModify</code> con <code>null</code>), así que un adaptador conectado
+  actúa sobre ellas y una aplicación sin adaptador recibe los eventos. Un botón actúa
+  cuando se suelta sobre él: una pulsación que se desliza fuera no hace nada. Desactiva
+  cualquiera de ellos con <code>lineButtons</code> en <code>setTradingConfig</code>.</p> <pre><code></code></pre> <p>Un adaptador que pueda invertir en un solo paso implementa <code>reversePosition</code>; si no lo hace, el gráfico cierra la posición y envía
+  una orden de mercado en sentido contrario. Las órdenes aceptan un <code>stopLoss</code>, un <code>takeProfit</code> y un <code>timeInForce</code> (<code>'gtc'</code> o <code>'day'</code>) que se trasladan a la posición que abren.</p> <p><strong>Para autores de adaptadores:</strong> en <code>PositionModifyIntent</code>, <code>stopLoss: null</code> (o <code>takeProfit: null</code>) significa quitarlo,
+  mientras que un campo ausente significa dejarlo como está. Un código escrito como <code>intent.stopLoss ?? position.stopLoss</code> mantendría un stop que el usuario
+  ha quitado.</p> <h2>Ejecuciones en el gráfico</h2> <p>Cada ejecución aparece como una pequeña marca en su barra: rellena donde abrió una
+  posición y hueca donde la cerró. El gráfico registra las ejecuciones que informa el
+  adaptador y emite <code>executionFill</code> con el motivo (<code>'order'</code>, <code>'close'</code>, <code>'reverse'</code>, <code>'stopLoss'</code>, <code>'takeProfit'</code>) y la ganancia o pérdida realizada.</p> <pre><code></code></pre> <h2>Menús del clic derecho y el “+” junto al eje de precio</h2> <p>Un clic derecho en el gráfico emite <code>chartContextMenu</code> con la parte en la
+  que se hizo clic (<code>'plot'</code>, <code>'pane'</code>, <code>'priceAxis'</code> o <code>'timeAxis'</code>) y el precio y la hora en ese punto. Con <code>features.priceAxisAddButton</code>, un “+” sigue a la cruz a lo largo del eje
+  de precio; al pulsarlo se emite <code>priceAxisAdd</code> con su precio.</p> <pre><code></code></pre> <p>ChartWidget construye sus menús sobre estos eventos. Haz clic derecho en el área del
+  gráfico para una alerta, una compra y una venta a ese precio (una orden límite en el
+  lado del mercado donde quedaría a la espera, una stop en el otro), un ticket de
+  orden y una línea horizontal; después, restablecer la vista, pegar los dibujos que
+  copiaste, ocultar o eliminar los dibujos, eliminar los indicadores (una comparación
+  con otro símbolo se queda), exportar los datos y abrir la configuración.</p> <p>Haz clic derecho en el eje de precio para restablecerlo y para la escala automática,
+  la escala invertida y la de la izquierda, uno de sus cuatro modos (normal,
+  logarítmica, porcentaje, indexada a 100), las etiquetas sobre el eje y las líneas que
+  cruzan el gráfico en dos submenús, una alerta a ese precio y la configuración abierta
+  en su pestaña Escalas. El eje de tiempo ofrece restablecerlo, ir a una fecha y la
+  zona horaria.</p> <p>Una entrada muestra el atajo del widget que le corresponde mientras esa tecla está
+  activada: <kbd>Alt</kbd> + <kbd>R</kbd> restablece la vista, <kbd>Alt</kbd> + <kbd>I</kbd> invierte la escala, <kbd>Alt</kbd> + <kbd>G</kbd> va a una fecha. Un
+  submenú se abre con un clic, <kbd>Enter</kbd>, <kbd>→</kbd> o el puntero detenido
+  sobre él, y <kbd>←</kbd> o <kbd>Escape</kbd> vuelve atrás; en un móvil, donde los
+  menús se abren desde abajo, su primera fila lleva de vuelta. Añade tus propias
+  entradas con <code>chartMenuItems</code> (consulta la <a>referencia de la API</a>).</p> <h2>Ticket de orden y panel de cuenta (ChartWidget)</h2> <p>El botón de recibo del widget abre un panel de cuenta bajo el gráfico: las
+  posiciones abiertas con su ganancia o pérdida, las órdenes pendientes y las
+  ejecuciones hasta el momento con el P&amp;L realizado. Cada fila permite cerrar,
+  invertir o cancelar. <strong>Nueva orden</strong> abre un ticket de orden: compra o
+  venta, a mercado, límite o stop, cantidad, precio, un stop-loss y un take-profit
+  opcionales, y la vigencia. Revisa la orden mientras la rellenas (una compra límite
+  va por debajo del mercado, un stop-loss en el lado perdedor de la entrada…) y
+  muestra la relación beneficio:riesgo. Al enviarla se emite una intención <code>orderPlace</code>.
+  Con un mercado definido (<code>chart.setMarket</code>), además mantiene sus precios en la
+  fluctuación mínima del mercado y el precio de la orden dentro del techo y el suelo del día, empieza en un lote y, por
+  encima de uno, acepta solo lotes completos (las acciones sueltas van en una orden de lote
+  incompleto aparte).</p> <pre><code></code></pre> <p>Las marcas de ejecución pertenecen al símbolo del gráfico: al cambiar de símbolo en
+  el widget, el siguiente empieza sin ninguna.</p> <h2>Crear órdenes arrastrando</h2> <p>Crea una línea de orden arrastrable, llévala a un precio y confirma: el tipo de
+  orden (límite o stop) se deduce de dónde la sueltas respecto al precio actual.
+  Combínalo con <code>connectExecution</code> para que un borrador confirmado se
+  ejecute al instante.</p> <pre><code></code></pre> <h2>Órdenes bracket (arrastrar para enviar)</h2> <p>Crea un bracket arrastrable —entrada más zonas de stop-loss y take-profit— y
+  arrastra las tres líneas para ajustar la entrada, el riesgo y el beneficio.
+  Confirma con <kbd>Enter</kbd> (o con el botón Enviar) y cancela con <kbd>Esc</kbd>. En el widget, las flechas verde/roja de la barra de
+  herramientas inician un bracket largo/corto. El gráfico emite un único evento <code>bracketPlace</code> para que tu backend actúe; nunca envía órdenes por sí
+  mismo.</p> <pre><code></code></pre> <h2>Escalera de profundidad (clic para operar)</h2> <p>Una escalera opcional de profundidad de mercado muestra el libro de órdenes
+  como filas de precio con columnas de tamaño de compra/venta: haz clic en una
+  celda de venta para comprar, o en una de compra para vender, a ese precio.
+  Actívala con <code>depthLadder: true</code> y aliméntala con el libro mediante <code>widget.setDepth</code>; los clics emiten intenciones <code>orderPlace</code> para tu OMS (el gráfico nunca opera por sí mismo). Los
+  mismos datos alimentan también la capa de profundidad sobre el gráfico.</p> <pre><code></code></pre> <h2>Mapa de calor de liquidez</h2> <p>Acumula instantáneas del libro de órdenes en un mapa de calor detrás de las
+  velas: cada instantánea es una franja vertical en la que el tamaño en espera se
+  ilumina por nivel de precio (compras en verde, ventas en rojo). Los muros de
+  liquidez que persisten en el tiempo destacan. Actívalo desde la hoja de
+  configuración (o con <code>chart.setDepthHeatmapVisible</code>); <code>widget.setDepth</code> registra una instantánea en cada actualización del
+  libro.</p> <pre><code></code></pre> <h2>Marcadores de señales</h2> <p>Las integraciones con bots o de trading por señales pueden colocar flechas direccionales sobre la capa.</p> <pre><code></code></pre> <p>ChartWidget muestra una nota junto al marcador que queda bajo el puntero: su etiqueta y
+  su origen, el lado, el precio, la confianza y la hora.</p> <h2>Zonas de operación</h2> <p>Visualiza rectángulos de entrada → salida coloreados según el P&amp;L y con distintivos de dirección.</p> <pre><code></code></pre> <h2>Tokens de la etiqueta de posición</h2> <p>Personaliza la etiqueta de cada posición en el gráfico. <code>positionLabel</code> acepta una cadena de plantilla o una función que devuelva una cadena.</p> <pre><code></code></pre> <p>Tokens disponibles: <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>.</p> <h2>Puntos del degradado de P&amp;L</h2> <pre><code></code></pre>`,1);function Ce(I,T){oe(T,!1);const{href:O}=pe();le();var C=me();ie("iftqhd",k=>{var ae=ue();ne(()=>{re.title="Capa de trading — Documentación de TradeCanvas"}),z(k,ae)});var n=e(te(C),8),B=a(n);B.textContent=`// Drop the entire trading subsystem (no orders, no positions, no overlay)
+new Chart(host, { features: { trading: false } })
+
+// Opt in to the right-click "Buy / Sell here" order menu
+new Chart(host, { features: { tradingContextMenu: true } })
+new ChartWidget(host, { chartOptions: { features: { tradingContextMenu: true } } })`,o(n);var r=e(n,6),S=a(r);S.textContent=`chart.addPosition({
+  id: 'pos-1',
+  side: 'long',
+  entry: 65_200,
+  quantity: 0.5,
+  closedQuantity: 0.1,   // partial-close band on the left edge
+  stopLoss: 64_800,
+  takeProfit: 66_000,
+})`,o(r);var t=e(r,4),F=a(t);F.textContent=`chart.addOrder({
+  id: 'ord-1',
+  side: 'sell',
+  type: 'limit',
+  price: 65_500,
+  quantity: 0.25,
+})`,o(t);var c=e(t,8),W=a(c);W.textContent=`import { PaperExecutionAdapter } from '@tradecanvas/chart'
+
+chart.connectExecution(new PaperExecutionAdapter({ markPrice: 64_000 }))
+
+chart.on('executionError', (e) => toast(e.payload.message))
+// chart.disconnectExecution()`,o(c);var d=e(c,8),H=a(d);H.textContent=`chart.setTradingConfig({ lineButtons: { reverse: false } })  // keep cancel, close and remove-stops
+
+chart.cancelOrderIntent('ord-1')
+chart.closePositionIntent('pos-1')
+chart.reversePositionIntent('pos-1')                 // close, then the same size the other way
+chart.modifyPositionIntent('pos-1', { stopLoss: null }) // null removes the stop`,o(d);var i=e(d,10),U=a(i);U.textContent=`chart.on('executionFill', (e) => {
+  const { side, price, quantity, reason, pnl } = e.payload
+})
+
+chart.addFill({ orderId: 'o-7', side: 'buy', price: 64_150, quantity: 1, time: Date.now() })
+chart.getFills()        // the latest 1000
+chart.getRealisedPnl()  // every fill's P&L since the last clearFills
+chart.clearFills()
+chart.setTradingConfig({ fillMarks: false })  // no marks`,o(i);var s=e(i,6),R=a(s);R.textContent=`const chart = new Chart(host, { features: { priceAxisAddButton: true } })
+
+chart.on('chartContextMenu', (e) => {
+  const { area, x, y, price, time } = e.payload
+  openMyMenu(x, y)
+})
+chart.on('priceAxisAdd', (e) => openMyMenu(e.payload.x, e.payload.y, e.payload.price))`,o(s);var l=e(s,6),Q=e(a(l),23);L(),o(l);var p=e(l,6),V=a(p);V.textContent=`const widget = new ChartWidget(host, {
+  trading: true,         // default
+  accountPanel: true,    // default when trading is on
+})
+widget.getChart().connectExecution(new PaperExecutionAdapter({ markPrice: 64_000 }))
+widget.toggleAccountPanel(true)
+// The panel follows ordersChange, positionsChange, executionFill and each tick.`,o(p);var u=e(p,8),G=a(u);G.textContent=`chart.startOrderDraft('buy')   // draggable line at the latest close
+chart.confirmOrderDraft()      // emits orderPlace -> a connected adapter fills it
+chart.cancelOrderDraft()`,o(u);var m=e(u,6),N=a(m);N.textContent=`chart.startBracket('buy')          // entry defaults to the latest close
+chart.startBracket('sell', 64_800) // or pin the entry price
+
+chart.on('bracketPlace', (e) => {
+  const { side, entry, stopLoss, takeProfit, riskReward } = e.payload
+  // submit to your OMS, then reflect fills back via chart.setOrders/setPositions
+})
+
+chart.confirmBracket()  // same as Enter
+chart.cancelBracket()   // same as Esc`,o(m);var h=e(m,6),Z=a(h);Z.textContent=`const widget = new ChartWidget(host, { depthLadder: true })
+
+widget.setDepth({
+  bids: [{ price: 64_190, volume: 3.1 }, { price: 64_185, volume: 5.4 }],
+  asks: [{ price: 64_205, volume: 2.0 }, { price: 64_210, volume: 8.7 }],
+})
+
+widget.getChart().on('orderPlace', (e) => {
+  // { side, type: 'limit', price } — submit to your backend
+})`,o(h);var v=e(h,6),$=a(v);$.textContent=`chart.setDepthHeatmapVisible(true)
+chart.setDepthHeatmapConfig({ opacity: 0.7, capacity: 240 })
+
+// each book update both draws the overlay/ladder and records a heatmap column
+widget.setDepth(orderBook)
+// low-level: chart.pushDepthSnapshot(orderBook) · chart.clearDepthHeatmap()
+// books recorded for older bars, oldest first: chart.pushDepthSnapshot(orderBook, bar.time)`,o(v);var f=e(v,6),J=a(f);J.textContent=`chart.addSignalMarker({
+  id: 'sig-12',
+  time: bar.time,
+  price: bar.close,
+  direction: 'long',
+  confidence: 0.86,
+  source: 'momentum-bot',
+  label: 'EMA cross',
+})
+
+// A marker under the pointer, and a click on one
+chart.on('signalMarkerHover', (e) => showNote(e.payload.marker, e.payload.x, e.payload.y))  // marker null: off it
+chart.on('signalMarkerClick', (e) => openSignal(e.payload.marker))`,o(f);var g=e(f,8),K=a(g);K.textContent=`chart.addTradeZone({
+  id: 'tz-1',
+  side: 'long',
+  entryTime: openedAt,
+  exitTime: closedAt,
+  entryPrice: 65_100,
+  exitPrice: 65_800,
+  status: 'closed',
+})`,o(g);var b=e(g,6),X=a(b);X.textContent=`new ChartWidget(host, {
+  trading: true,
+  positionLabel: '{side} {qty} @ {entry} · {pnlSign}{pnlPct}%',
+})`,o(b);var y=e(b,2),x=e(a(y));x.textContent="{side}";var _=e(x,2);_.textContent="{qty}";var P=e(_,2);P.textContent="{openQty}";var q=e(P,2);q.textContent="{closedQty}";var A=e(q,2);A.textContent="{entry}";var j=e(A,2);j.textContent="{price}";var w=e(j,2);w.textContent="{pnl}";var M=e(w,2);M.textContent="{pnlPct}";var Y=e(M,2);Y.textContent="{pnlSign}",L(),o(y);var E=e(y,4),ee=a(E);ee.textContent=`new ChartWidget(host, {
+  trading: true,
+  pnlThresholds: [
+    { pnlPct: -0.02, color: '#ef4444' },
+    { pnlPct: 0,     color: '#94a3b8' },
+    { pnlPct: 0.02,  color: '#10b981' },
+  ],
+})`,o(E),ce(k=>se(Q,"href",k),[()=>O("/docs/api")]),z(I,C),de()}export{Ce as default};

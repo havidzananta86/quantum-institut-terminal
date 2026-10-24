@@ -24,6 +24,9 @@ require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_rencana.php';
 
 qi_rate_limit(120, 60);
+// Panel Rencana Live & Auto Signal berlabel PRO di dashboard; tanpa gerbang ini rencana lengkap
+// (entry/SL/TP) bisa diambil siapa saja langsung dari URL ini, bahkan tanpa login.
+qi_require_level('pro');
 
 $mode = strtolower(trim((string)($_GET['mode'] ?? 'intraday')));
 if (!in_array($mode, ['intraday', 'swing', 'scalping'], true)) $mode = 'intraday';

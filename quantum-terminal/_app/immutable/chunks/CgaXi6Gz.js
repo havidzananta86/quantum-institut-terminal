@@ -1,0 +1,1 @@
+import{D as r,i}from"./D9rSMrL6.js";function s(n,t){const a=t.startsWith("/")?t:`/${t}`;return n===r?a:a==="/"?`/${n}/`:`/${n}${a}`}function e(n){const t=/^\/([^/]+)(\/.*)?$/.exec(n);return t&&t[1]!==r&&i(t[1])?{lang:t[1],path:t[2]??"/"}:{lang:r,path:n||"/"}}function o(n,t){return s(t,e(n).path)}export{o as a,s as l,e as s};

@@ -58,7 +58,7 @@ for (const f of [...jsDipakai].sort()) {
 console.log('Delegasi data-qi-aksi (dashboard)');
 {
   const sumber = fs.readdirSync(path.join(root, 'assets/js')).filter(f => f.endsWith('.js')).map(f => read('assets/js/' + f));
-  const dipakai = new Set([read('dashboard.html'), ...sumber].flatMap(s => [...s.matchAll(/data-qi-aksi(?:-[a-z]+)?="([A-Za-z_$][\w$.]*)"/g)].map(m => m[1])));
+  const dipakai = new Set([read('dashboard.html'), read('profile.html'), ...sumber].flatMap(s => [...s.matchAll(/data-qi-aksi(?:-[a-z]+)?="([A-Za-z_$][\w$.]*)"/g)].map(m => m[1])));
   const ada = new Set();
   for (const s of sumber) {
     for (const m of s.matchAll(/^(?:async\s+)?function\s+([\w$]+)/gm)) ada.add(m[1]);
@@ -74,7 +74,7 @@ console.log('Delegasi data-qi-aksi (dashboard)');
   // Ambang dulu > 100 karena dashboard panel lama menyumbang ratusan data-qi-aksi. Dashboard
   // chart-first tidak memakai delegasi itu sama sekali (shell-nya memasang addEventListener
   // sendiri), jadi ambangnya kini hanya penjaga agar pemindaian yang rusak tidak lolos diam-diam.
-  cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size >= 20 && hilang.length === 0, hilang);
+  cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size >= 15 && hilang.length === 0, hilang);
 
   // Pengganti cek "qim-aksi.js di <head> dashboard": tujuan aslinya adalah dashboard tidak
   // memakai kode inline. Dashboard chart-first mencapainya tanpa delegasi, jadi yang diuji

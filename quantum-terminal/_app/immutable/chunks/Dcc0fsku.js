@@ -1,0 +1,132 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as H,_ as q,$ as z,a as b,s as t,a0 as U,c as n,a1 as R,r as c,t as W,b as N,f as y}from"./vnnAQmBw.js";import{h as D}from"./Di_Vksbt.js";import{s as A}from"./BbGUZXP3.js";import{i as E}from"./w5vomPQw.js";import{u as F}from"./BPYnHL8L.js";var V=y('<meta name="description" content="Giao diện của widget dưới dạng token: góc bo, kích thước, kiểu chữ, đường viền, bóng đổ và các thanh. Bốn preset — Print, Studio, Terminal, Capsule — giữ theo tỉ lệ vàng, cùng giao diện riêng của bạn dựng trên chúng."/>'),Z=y(`<h1>Tuỳ biến giao diện widget</h1> <p>Giao diện của widget là một bộ token: góc bo của từng loại thành phần, kích thước nút và thanh, kiểu chữ,
+  đường viền, bóng đổ, cách hiện nút đang chọn, và việc thanh công cụ cùng công cụ vẽ nằm sát cạnh hay nổi lên.
+  Bắt đầu từ một preset rồi đổi những gì bạn muốn. Màu sắc vẫn do chủ đề màu quyết định (<code>dark</code> / <code>light</code>, xem <a>Tham chiếu API</a>); giao diện nào cũng dùng được với cả hai.</p> <h2>Các preset</h2> <table><thead><tr><th>Preset</th><th>Giao diện</th></tr></thead><tbody><tr><td><code>print</code> (mặc định)</td><td>Giấy và mực. Nền trắng ngà hoặc đen than, màu xám cho mọi thứ bình thường và chỉ dùng màu ở chỗ nó mang ý
+      nghĩa; đường kẻ mảnh, nút 3 px, menu 5 px và hộp thoại 8 px; nhãn chữ in hoa; mọi con số dùng font đơn cách để
+      giá thẳng hàng theo cột. Nút đang chọn tô đặc màu mực, công cụ đang chọn màu xanh mực.</td></tr><tr><td><code>studio</code></td><td>Nút bo góc 7 px, menu 11 px và hộp thoại 16 px. Các nhóm cách nhau bằng khoảng trống thay vì đường kẻ, menu
+      nổi trên bóng đổ mềm, các nút khung thời gian nằm trong một rãnh phân đoạn, và nút đang chọn được tô màu nhạt.</td></tr><tr><td><code>terminal</code></td><td>Dày đặc và vuông vức: góc 2 px, nút cao 26 px, đường kẻ giữa các nhóm, nhãn chữ in hoa, và gạch chân dưới nút
+      đang chọn. Nhãn giá trên biểu đồ có góc vuông.</td></tr><tr><td><code>capsule</code></td><td>Hình viên thuốc ở khắp nơi, kể cả nhãn giá. Thanh công cụ và công cụ vẽ nổi thành những hòn đảo, menu là kính
+      mờ, và nút đang chọn là một viên thuốc tô đặc.</td></tr></tbody></table> <h2>Chọn giao diện</h2> <pre><code></code></pre> <h2>Tỉ lệ vàng</h2> <p>Print giữ các tỉ lệ của mình theo tỉ lệ vàng, φ ≈ 1.618, nên những kích thước đứng cạnh nhau liên hệ với nhau
+  theo cùng một cách ở mọi nơi:</p> <table><thead><tr><th>Phần</th><th>Quy tắc</th><th>Giá trị (px)</th></tr></thead><tbody><tr><td>Kích thước</td><td>Các nửa bậc φ tính từ biểu tượng: một biểu tượng, nút nhỏ của nó, nút của nó, một dòng menu, thanh công cụ.</td><td>16 · 20 · 26 · 33 · 42</td></tr><tr><td>Khoảng cách</td><td>Các số Fibonacci, mỗi số là tổng của hai số trước, nên hai số kề nhau cách nhau gần φ lần.</td><td>2 · 3 · 5 · 8 · 13 · 21 · 34</td></tr><tr><td>Góc bo</td><td>Cũng là các số Fibonacci. Góc lồng bên trong bằng góc bao quanh nó trừ đi phần đệm ở giữa, nên các đường cong
+      chạy song song: góc 5 của menu là góc 2 của các dòng cộng 3 phần đệm.</td><td>1 · 2 · 3 · 5 · 8</td></tr><tr><td>Cỡ chữ</td><td>Các bậc căn bậc ba của φ, nên cứ ba bậc thì cỡ chữ lớn hơn φ lần: tiêu đề hộp thoại lớn gấp φ lần chữ trong nó.
+      Không bao giờ dưới 10 px, vì nhỏ hơn thế thì các chữ có hai dấu (như ế, ộ) không còn đọc được.</td><td>10 · 11 · 13 · 15 · 18 · 21</td></tr></tbody></table> <p>Các bậc cỡ chữ đi theo cỡ chữ thân bạn đặt (<code>font.size</code>), và <code>density</code> dời các kích thước
+  xuống hoặc lên nửa bậc. <code>PHI</code>, <code>FIBONACCI</code> và <code>phiStep(base, steps, perPhi)</code> có
+  trong <code>@tradecanvas/commons</code> để bạn dựng giao diện của riêng mình.</p> <h2>Giao diện của riêng bạn</h2> <p>Một giao diện tự định nghĩa bắt đầu từ một preset (Print nếu bạn không chỉ định) và chỉ đổi những gì nó nêu ra.
+  Góc bo đặt trên thang sẽ áp dụng cho mọi thành phần đi theo thang đó, trừ khi bạn đặt riêng cho thành phần ấy.</p> <pre><code></code></pre> <table><thead><tr><th>Trường</th><th>Đặt gì</th></tr></thead><tbody><tr><td><code>radius</code></td><td>Thang góc bo <code>xs</code>, <code>sm</code>, <code>md</code>, <code>lg</code>, <code>xl</code>, tính bằng px (0–999).</td></tr><tr><td><code>components</code></td><td>Góc bo riêng của từng thành phần: <code>control</code> (nút), <code>input</code>, <code>menu</code>, <code>dialog</code>, <code>panel</code> (cảnh báo, cửa sổ dữ liệu, phiếu đặt lệnh), <code>tooltip</code>, <code>tag</code>, <code>toast</code>, <code>toolbar</code> và <code>sidebar</code> (khung của chính chúng, thấy được khi chúng nổi). Mặc định, nút và ô
+      nhập theo <code>md</code>, menu và bảng theo <code>lg</code>, hộp thoại theo <code>xl</code>, tooltip và nhãn theo <code>sm</code>.</td></tr><tr><td><code>density</code> / <code>sizes</code></td><td>Chiều cao <code>toolbar</code>, chiều cao <code>control</code> và <code>controlSmall</code>, <code>icon</code>,
+      độ rộng <code>sidebar</code> và chiều cao <code>menuItem</code>, tính bằng px. <code>compact</code> và <code>spacious</code> là các kích thước của Print, dời xuống hoặc lên nửa bậc φ.</td></tr><tr><td><code>font</code></td><td>Họ font (danh sách CSS), <code>size</code> của chữ thân (11–20 px; các cỡ khác đi theo nó, cách nhau một phần ba bậc φ), độ đậm, cùng kiểu chữ hoa/thường
+      và khoảng cách chữ (em) của các nhãn nhỏ như tiêu đề mục.</td></tr><tr><td><code>borders</code></td><td>Độ dày đường viền, và có kẻ đường phân cách giữa các nhóm trên thanh công cụ và giữa các công cụ vẽ hay không.</td></tr><tr><td><code>shadows</code></td><td>Bóng đổ CSS của menu, hộp thoại và tooltip.</td></tr><tr><td><code>blur</code></td><td>Menu kính mờ, tính bằng px: lớn hơn 0 thì menu để lộ một phần biểu đồ phía sau, đã làm mờ.</td></tr><tr><td><code>active</code></td><td>Cách hiện nút đang chọn: tô màu nhạt, viên thuốc tô đặc, hoặc gạch chân.</td></tr><tr><td><code>toolbar</code> / <code>sidebar</code></td><td>Gắn dọc theo cạnh, hoặc nổi như một hòn đảo.</td></tr><tr><td><code>intervals</code></td><td>Các nút khung thời gian để nguyên, hoặc đặt trong một rãnh phân đoạn.</td></tr><tr><td><code>tagRadius</code></td><td>Góc bo của nhãn giá, nhãn trên trục và huy hiệu lệnh do biểu đồ vẽ.</td></tr></tbody></table> <p>Giá trị nào không dùng được (nằm ngoài khoảng cho phép, hoặc CSS có thể thoát khỏi khai báo của nó) sẽ bị bỏ qua và giữ giá trị của preset.</p> <h2>Font chữ</h2> <p>Widget không tải font nào: nó chỉ gọi tên, và trình duyệt lần lượt thử từng font trong danh sách. Print dùng các
+  font mà hệ điều hành nào cũng có (Segoe UI, San Francisco, Roboto) và, cho các con số, Cascadia Mono, SF Mono,
+  Menlo hoặc Consolas, nên không cần tải gì. Studio dùng Manrope, rồi đến Inter; Terminal dùng IBM Plex Sans
+  Condensed và IBM Plex Mono; Capsule dùng Sora. Hãy tự tải những font bạn muốn:</p> <pre><code></code></pre> <h2>Biến CSS</h2> <p>Các token là biến CSS trên phần tử gốc của widget (và trên các hộp thoại của nó). Khi không có tuỳ chọn <code>ui</code>, chúng vẫn thuộc về stylesheet — tức là của Print — nên CSS của bạn có thể đặt chúng: widget đặt
+  stylesheet của nó lên đầu trang, nên một quy tắc của bạn trên <code>.tcw-root</code> sẽ được ưu tiên. Khi có <code>ui</code>, widget ghi chúng thẳng lên phần tử, và chúng sẽ được ưu tiên.</p> <pre><code></code></pre> <table><thead><tr><th>Biến</th><th>Lấy từ</th></tr></thead><tbody><tr><td><code>--tcw-radius-xs</code>, <code>-sm</code>, <code>--tcw-radius</code>, <code>-lg</code>, <code>-xl</code></td><td><code>radius</code></td></tr><tr><td><code>--tcw-control-radius</code>, <code>--tcw-input-radius</code>, <code>--tcw-menu-radius</code>, <code>--tcw-dialog-radius</code>, <code>--tcw-panel-radius</code>, <code>--tcw-tooltip-radius</code>, <code>--tcw-tag-radius</code>, <code>--tcw-toast-radius</code>, <code>--tcw-toolbar-radius</code>, <code>--tcw-sidebar-radius</code></td><td><code>components</code></td></tr><tr><td><code>--tcw-toolbar-h</code>, <code>--tcw-control-h</code>, <code>--tcw-control-h-sm</code>, <code>--tcw-icon</code>, <code>--tcw-sidebar-w</code>, <code>--tcw-menu-item-h</code></td><td><code>sizes</code></td></tr><tr><td><code>--tcw-font</code>, <code>--tcw-font-mono</code>, <code>--tcw-font-size</code> (và <code>-xs</code>, <code>-sm</code>, <code>-lg</code>, <code>-xl</code>, <code>-display</code>), <code>--tcw-weight</code>, <code>--tcw-weight-strong</code>, <code>--tcw-label-case</code>, <code>--tcw-label-tracking</code></td><td><code>font</code></td></tr><tr><td><code>--tcw-border-w</code>, <code>--tcw-sep-w</code></td><td><code>borders</code></td></tr><tr><td><code>--tcw-menu-shadow</code>, <code>--tcw-dialog-shadow</code>, <code>--tcw-tooltip-shadow</code></td><td><code>shadows</code></td></tr><tr><td><code>--tcw-blur</code>, <code>--tcw-surface-opacity</code></td><td><code>blur</code></td></tr><tr><td><code>--tcw-space-1</code> … <code>--tcw-space-7</code></td><td>Stylesheet: khoảng cách Fibonacci, từ 2 đến 34 px</td></tr></tbody></table> <p>Các công tắc bố cục là thuộc tính data trên cùng các phần tử đó, để bạn viết CSS riêng: <code>data-tcw-ui</code> (preset), <code>data-tcw-active</code>, <code>data-tcw-toolbar</code>, <code>data-tcw-sidebar</code>, <code>data-tcw-intervals</code> và <code>data-tcw-separators</code> (<code>on</code> / <code>off</code>).</p> <h2 id="controls">Ô nhập, danh sách và lịch</h2> <p>Mọi ô nhập trong widget (cảnh báo, cài đặt, phiếu lệnh, đi tới ngày, tham số chỉ báo) có chung một kiểu: nền mờ và đường viền mảnh, viền rõ hơn khi rê chuột, và khi focus thì viền chuyển sang màu nhấn, không có vòng sáng bao quanh. Select mở danh sách riêng của widget, có dấu tích ở dòng đang chọn, nhóm hiện thành tiêu đề, dùng được phím mũi tên, Enter, Escape và gõ chữ cái đầu; ô ngày mở lịch riêng của widget, tuần bắt đầu theo ngôn ngữ, hôm nay có gạch chân, ngày ngoài <code>min</code> và <code>max</code> của ô bị mờ đi. Checkbox, radio, thanh trượt và công tắc theo cùng bộ token, thanh cuộn cũng vậy: mảnh, bo tròn, chỉ có thanh kéo, không có rãnh.</p> <p>Các ô vẫn là <code>&lt;select&gt;</code> và <code>&lt;input&gt;</code> gốc của trình duyệt: giá trị, sự kiện và form chạy như cũ, và trên màn hình cảm ứng thì bánh xe chọn và lịch của điện thoại sẽ mở, hợp với ngón tay hơn.</p> <p>Kiểu dáng lấy từ các biến sau, có giá trị riêng cho theme tối và sáng:</p> <p><code>--tcw-field-bg</code>, <code>--tcw-field-bg-hover</code>, <code>--tcw-field-bg-focus</code>, <code>--tcw-field-line</code>, <code>--tcw-field-line-hover</code>, <code>--tcw-field-line-focus</code>, <code>--tcw-field-placeholder</code>, <code>--tcw-check-line</code>, <code>--tcw-scroll-thumb</code>, <code>--tcw-scroll-thumb-hover</code>.</p> <pre><code></code></pre> <h2 id="overrides">Giao diện của biểu đồ: override style</h2> <p>Theme đặt màu cho cả biểu đồ. Bất kỳ phần nào biểu đồ vẽ cũng có thể đặt riêng, theo khoá: các đường lưới
+  theo từng chiều, crosshair, các trục, pane, legend, giá cuối, volume, đường ngắt phiên và chuỗi chính theo cách
+  từng loại biểu đồ vẽ nó. Khoá nào để nguyên thì theo theme, nên đổi theme vẫn đổi màu mọi thứ bạn không đặt.</p> <pre><code></code></pre> <h3>Các khoá</h3> <table><thead><tr><th>Khoá</th><th>Đặt gì</th></tr></thead><tbody><tr><td><code>background.color</code></td><td>Nền biểu đồ (và nền các pane, trừ khi pane có nền riêng).</td></tr><tr><td><code>panes.background</code>, <code>.separatorColor</code>, <code>.titleColor</code></td><td>Pane chỉ báo: nền, thanh ở đỉnh pane, tên pane.</td></tr><tr><td><code>grid.horizontal.*</code>, <code>grid.vertical.*</code></td><td><code>visible</code>, <code>color</code>, <code>style</code> (<code>solid</code> · <code>dashed</code> · <code>dotted</code>), <code>width</code> — riêng từng chiều.</td></tr><tr><td><code>crosshair.horizontal.*</code>, <code>crosshair.vertical.*</code></td><td>Bốn thuộc tính đó cho các đường crosshair (mặc định là nét liền mảnh).</td></tr><tr><td><code>crosshair.labelBackground</code>, <code>.labelTextColor</code></td><td>Pill giá và thời gian trên các trục, và trên thang của pane.</td></tr><tr><td><code>axis.price.lineColor</code>, <code>.textColor</code>, <code>axis.time.*</code></td><td>Đường và nhãn của từng trục (thang của pane lấy theo trục giá).</td></tr><tr><td><code>legend.textColor</code>, <code>.labelColor</code></td><td>Giá trị trong legend, và nhãn của nó (O, H, L, Vol).</td></tr><tr><td><code>lastPrice.visible</code>, <code>.upColor</code>, <code>.downColor</code>, <code>.style</code>, <code>.width</code></td><td>Đường và nhãn giá cuối; màu theo chuỗi chính nếu không đặt. Thời gian còn lại của nến (<code>features.barCountdown</code>) treo ngay dưới nhãn.</td></tr><tr><td><code>volume.upColor</code>, <code>.downColor</code></td><td>Cột volume.</td></tr><tr><td><code>sessionBreaks.color</code>, <code>.style</code>, <code>.width</code></td><td>Đường ngắt ngày, tuần và tháng.</td></tr><tr><td><code>highLow.color</code>, <code>watermark.color</code></td><td>Đường cao nhất và thấp nhất, watermark.</td></tr><tr><td><code>trading.buyColor</code>, <code>.sellColor</code>, <code>.profitColor</code>, <code>.lossColor</code>, <code>.entryColor</code></td><td>Lệnh (mua, bán) và vị thế (lãi, lỗ, giá vào), trên biểu đồ và trên trục giá, đè lên màu trong cấu hình giao dịch.</td></tr><tr><td><code>markers.longColor</code>, <code>.shortColor</code>, <code>.neutralColor</code></td><td>Điểm tín hiệu, đè lên style riêng của chúng.</td></tr><tr><td><code>tradeZones.profitColor</code>, <code>.lossColor</code>, <code>.activeColor</code></td><td>Vùng lệnh: thắng, thua và đang mở.</td></tr><tr><td><code>drawings.handleColor</code></td><td>Tay nắm của hình vẽ đang chọn (không đặt thì màu trắng).</td></tr><tr><td><code>series.&lt;type&gt;.*</code></td><td>Chuỗi chính khi được vẽ theo loại đó: <code>upColor</code>, <code>downColor</code>, <code>wickUpColor</code>, <code>wickDownColor</code> (nến, Heikin-Ashi, nến volume, equivolume), <code>color</code> / <code>lineColor</code> và <code>lineWidth</code> (line, step line, line có điểm, area, HLC area, baseline), <code>topColor</code> và <code>bottomColor</code> (area, HLC area).</td></tr></tbody></table> <p><code>CHART_STYLE_KEYS</code> liệt kê mọi khoá cùng kiểu giá trị của nó, và TypeScript kiểm tra khoá lẫn giá trị
+  ngay khi bạn gõ. Màu tăng/giảm lấy theo <code>series.candlestick.*</code>, màu và độ dày đường lấy theo <code>series.line.*</code>, vùng tô lấy theo <code>series.area.*</code>, rồi đến theme; râu nến lấy màu thân nến khi màu
+  thân đã được đặt. Khoá hay giá trị không hợp lệ bị bỏ qua kèm cảnh báo.</p> <h3>Của ứng dụng và của người dùng</h3> <p>Override có hai lớp. Của bạn (<code>layer: 'host'</code>, mặc định) giữ qua mọi lần đổi theme và không bao giờ được
+  lưu. Của người dùng (<code>layer: 'user'</code>) thắng của bạn, được giữ theo theme mà họ đặt — màu chọn trên theme tối
+  quay lại cùng theme tối — và được lưu bằng <code>saveState()</code>. Phần Settings của widget ghi vào lớp người dùng.
+  Các tab dọc bên trái chỉnh mọi phần của chart theo các khoá này: <strong>Mã</strong> (loại chart đang xem, giá cuối,
+  khối lượng), <strong>Dòng trạng thái</strong>, <strong>Thang đo</strong>, <strong>Giao diện</strong> (nền, lưới,
+  con trỏ chữ thập, ngắt phiên), <strong>Lớp</strong> và <strong>Giao dịch</strong> (lệnh, vị thế, điểm tín hiệu,
+  vùng lệnh). Mọi thay đổi hiện ngay; <strong>Huỷ</strong> trả tất cả về như cũ, <strong>OK</strong> giữ lại thành một
+  bước hoàn tác. Menu <strong>Mẫu</strong> lưu giao diện dưới một cái tên, áp dụng hoặc xoá mẫu đã lưu, và khôi phục
+  màu của theme, theme nào cũng vậy. Màu để phần đó tự quyết hiện là Tự động, và nút Tự động đưa màu về như vậy.</p> <pre><code></code></pre> <p>Các tuỳ chọn lưới và crosshair (<code>grid.hLineColor</code>, <code>crosshair.vLine.style</code>…) là cách viết tắt
+  của các khoá tương ứng. Một lưới nhiều biểu đồ nhận override cho mọi biểu đồ của nó: <code>grid.applyOverrides(patch)</code>.
+  Component React, Vue và Svelte nhận chúng qua prop <code>overrides</code>.</p> <h3>Đường của chỉ báo và pane</h3> <pre><code></code></pre> <p>Đường bị ẩn không có nhãn giá trị và không có giá trị trong legend. Mọi chỉ báo đều bỏ qua đường bị ẩn, và
+  hầu hết nhận kiểu nét của các đường; vài chỉ báo vẽ hình riêng (chấm Parabolic SAR, Supertrend, Zig Zag,
+  volume profile) giữ nét vẽ của mình.</p> <h2>Nhãn trên biểu đồ</h2> <p>Widget chuyển <code>tagRadius</code> cho biểu đồ của nó (hình dạng đặt trong <code>chartOptions.shapes</code> được
+  giữ cho đến khi bạn gọi <code>setUI</code>). Với một <code>Chart</code> dùng riêng, hãy tự đặt hình dạng; thiết lập
+  này được giữ nguyên khi đổi chủ đề màu. Nhãn giá, nhãn trên trục và nhãn của con trỏ chữ thập, nhãn lệnh, vị thế và
+  lệnh bracket, cùng nhãn mức của kỳ trước đều theo hình dạng này.</p> <pre><code></code></pre> <h2 id="legend">Chú giải OHLCV</h2> <p>Chú giải ở đầu biểu đồ mở đầu bằng một dòng tiêu đề: mã, khung thời gian và sàn, rồi trên cùng dòng đó là nến dưới con trỏ (không thì nến cuối): mở, cao, thấp, đóng và thay đổi. Volume nằm trên một dòng riêng. Khi vùng vẽ quá hẹp cho dòng tiêu đề, như trên điện thoại, dòng này xuống hàng. Biểu đồ lấy tên mã và khung thời gian từ luồng dữ liệu, tên sàn từ thông tin của mã; <code>setSymbolName('Bitcoin')</code> để bạn tự đặt tên cho đến khi đổi mã, còn <code>showSymbol: false</code> bỏ dòng tiêu đề. Mỗi giá trị giữ nguyên chỗ khi chữ số thay đổi nên không bị giật khi giá chạy. Có thể tắt hẳn, hoặc chỉ giữ các dòng bạn cần. Trong widget nó dùng font chữ số của giao diện, cùng cỡ với các dòng chỉ báo bên dưới; <code>setUI</code> đặt lại điều đó, sau một <code>setLegend</code> của bạn.</p> <pre><code></code></pre> <h2 id="volume">Thang giá và dải volume</h2> <p>Các thanh volume nằm trong một dải dọc theo đáy vùng vẽ, cao φ^-4.5 (khoảng 11.5%) chiều cao vùng vẽ, và thang
+  giá khi tự khớp giữ các nến ở phía trên dải đó, cách một khoảng φ^-7 (3%). Phía trên đỉnh cao nhất nó chừa φ^-5
+  (9%). Khi không có volume trên màn hình (đã tắt, hoặc các nến không mang volume) thì nến lấy lại dải đó. Thang giá
+  cũng khớp theo các chỉ báo phủ và các đường so sánh đang hiển thị.</p> <h2>Màu volume</h2> <p>Thanh volume lấy màu <code>volumeUp</code> và <code>volumeDown</code> (hoặc các khoá <code>volume.*</code>) của theme. Các theme có sẵn vẽ chúng bằng một màu mực trung tính, nhạt hơn ở các thanh giảm: nến phía trên đã cho thấy giá đi hướng nào, nên các thanh chỉ là nền phía sau. Chúng vẫn giữ màu trung tính khi bạn hoặc phần cài đặt của widget đổi màu nến. Muốn thanh theo màu nến, <code>volumeColor(candleColor)</code> trả về một màu nến với độ trong suốt của volume:</p> <pre><code></code></pre>`,1);function nt(w,k){H(k,!1);const{href:C}=F();E();var m=Z();D("imtff",p=>{var O=V();q(()=>{z.title="Giao diện — Tài liệu TradeCanvas"}),b(p,O)});var e=t(U(m),2),f=t(n(e),5);R(),c(e);var o=t(e,8),x=n(o);x.textContent=`import { ChartWidget, ChartWidgetGrid } from '@tradecanvas/chart/widget'
+
+const widget = new ChartWidget(host, { ui: 'terminal' })
+widget.setUI('capsule')        // in place: nothing is rebuilt
+widget.getUI()                 // every token, resolved
+
+// A grid: every chart and the grid's bar, and the charts it adds later
+const grid = new ChartWidgetGrid(host, { layout: '2x2', widget: { ui: 'terminal' } })
+grid.setUI('studio')
+grid.getUI()`,c(o);var d=t(o,14),S=n(d);S.textContent=`widget.setUI({
+  preset: 'studio',
+  radius: { xs: 3, sm: 5, md: 10, lg: 12, xl: 18 },  // the scale, px (999: pills)
+  components: { dialog: 20, tag: 0 },                // a part's own corners
+  density: 'compact',                                // compact · comfortable · spacious
+  sizes: { toolbar: 40 },                            // px; wins over density
+  font: {
+    family: "'Manrope', system-ui, sans-serif",
+    mono: "'JetBrains Mono', monospace",
+    size: 13, weight: 500, strongWeight: 600,
+    labelCase: 'uppercase', labelTracking: 0.06,      // small labels
+  },
+  borders: { width: 1, separators: true },           // rules between toolbar groups
+  shadows: { menu: '0 12px 30px rgba(0, 0, 0, 0.4)' },
+  blur: 12,                                          // frosted floating surfaces, px
+  active: 'solid',                                   // tint · solid · underline
+  toolbar: 'floating',                               // docked · floating
+  sidebar: 'floating',
+  intervals: 'segmented',                            // plain · segmented
+  tagRadius: 999,                                    // the chart's price tags and pills
+})`,c(d);var h=t(d,10),T=n(h);T.textContent='<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">',c(h);var i=t(h,6),_=n(i);_.textContent=`.tcw-root {
+  --tcw-radius: 4px;            /* the md corner: buttons and fields follow it */
+  --tcw-dialog-radius: 12px;
+  --tcw-control-h: 28px;
+  --tcw-font: 'Inter', system-ui, sans-serif;
+}`,c(i);var r=t(i,16),M=n(r);M.textContent=`.tcw-root {
+  --tcw-field-bg: transparent;            /* fields as lines, no fill */
+  --tcw-field-line: rgba(255, 255, 255, 0.12);
+  --tcw-field-line-focus: #5b8cff;        /* focus in your brand colour */
+}`,c(r);var a=t(r,6),I=n(a);I.textContent=`import { Chart } from '@tradecanvas/chart'
+
+const chart = new Chart(host, {
+  overrides: { 'grid.vertical.visible': false },       // để bắt đầu
+})
+
+chart.applyOverrides({
+  'series.candlestick.upColor': '#26a69a',              // mọi loại tăng/giảm đều lấy theo đây
+  'series.candlestick.downColor': '#ef5350',
+  'grid.horizontal.style': 'dotted',
+  'crosshair.vertical.style': 'solid',
+  'crosshair.labelBackground': '#2962ff',
+  'lastPrice.style': 'solid',
+  'panes.background': '#0d1117',
+  'legend.textColor': '#c9d1d9',
+})
+chart.applyOverrides({ 'legend.textColor': null })      // null bỏ một khoá
+chart.resetOverrides(['grid.horizontal.style'])         // hoặc nêu tên các khoá
+chart.setOverrides({ 'background.color': '#000' })      // cả một lớp một lúc
+
+chart.getStyleValue('series.bar.upColor')               // '#26a69a': giá trị một khoá ra
+chart.getStyle().grid.vertical                          // { visible: false, color, style, width }
+chart.on('styleChange', (e) => e.payload.layer)         // 'host' | 'user'`,c(a);var g=t(a,12),P=n(g);P.textContent=`chart.applyOverrides({ 'background.color': '#0b0b0f' }, { layer: 'user' })
+chart.getOverrides({ layer: 'user' })                 // của người dùng, cho theme hiện tại
+chart.getTheme()                           // theme như đã đặt: override nằm riêng`,c(g);var l=t(g,6),G=n(l);G.textContent=`// Kiểu nét và ẩn/hiện riêng của từng đường, theo khoá (màu và độ dày vẫn ở colors / lineWidths)
+chart.updateIndicatorStyle(macdId, { plots: { signal: { lineStyle: 'dashed' }, histogram: { visible: false } } })
+
+// Style mà mọi chỉ báo cùng loại bắt đầu với, từ nay
+chart.setIndicatorDefaults('ema', { colors: ['#f5a623'], lineWidths: [2] })
+
+// Nền và đường phân cách riêng của một pane, lưu cùng chỉ báo của nó
+chart.setPaneStyle(rsiId, { background: '#101418', separator: '#f5a623' })`,c(l);var s=t(l,8),B=n(s);B.textContent=`const chart = new Chart(host, { shapes: { tagRadius: 4 } })
+chart.setShapes({ tagRadius: 999 })   // pill price tags, axis pills and order badges
+chart.getShapes()`,c(s);var u=t(s,6),K=n(u);K.textContent=`new Chart(host, { features: { legend: false } })   // no legend at all
+chart.setLegend({ visible: false })                  // or at any time
+chart.setLegend({
+  showSymbol: false, showOHLC: true, showChange: true, showVolume: false,
+  position: 'top-right',
+  fontSize: 11,
+  fontFamily: 'Inter, sans-serif',                   // null: the theme's font
+})
+
+// The widget: start with it off (the user can still turn it on in Settings)
+new ChartWidget(host, { chartOptions: { features: { legend: false } } })`,c(u);var v=t(u,10),L=n(v);L.textContent=`import { DARK_THEME, volumeColor } from '@tradecanvas/chart'
+
+chart.setTheme({
+  ...DARK_THEME,
+  candleUp: '#26a17b',
+  candleDown: '#e0525f',
+  volumeUp: volumeColor('#26a17b'),
+  volumeDown: volumeColor('#e0525f'),
+})`,c(v),W(p=>A(f,"href",p),[()=>C("/docs/api")]),b(w,m),N()}export{nt as default};

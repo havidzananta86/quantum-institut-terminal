@@ -371,8 +371,11 @@ try {
         }
 
         if ($aksi === 'profil') {
-            $nama = trim((string)($in['nama_tampilan'] ?? ''));
-            $negara = strtoupper(trim((string)($in['negara'] ?? '')));
+            foreach (['nama_tampilan', 'negara'] as $kolom) {
+                if (isset($in[$kolom]) && !is_string($in[$kolom])) qi_comp_jawab(['status' => 'error', 'message' => 'Isian ' . $kolom . ' harus teks.'], 400);
+            }
+            $nama = trim(qi_str($in['nama_tampilan'] ?? null));
+            $negara = strtoupper(trim(qi_str($in['negara'] ?? null)));
             if ($nama !== '' && !preg_match('/^[A-Za-z0-9_.\-]{3,24}$/', $nama)) {
                 qi_comp_jawab(['status' => 'error', 'message' => 'Nama tampilan 3–24 karakter: huruf, angka, _ . -'], 400);
             }

@@ -1,0 +1,113 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as R,_ as H,$ as W,a as b,s as e,a0 as A,c as o,a1 as B,r as d,t as E,b as D,f}from"./vnnAQmBw.js";import{h as V}from"./Di_Vksbt.js";import{s as F}from"./BbGUZXP3.js";import{i as Z}from"./w5vomPQw.js";import{u as G}from"./BPYnHL8L.js";var N=f('<meta name="description" content="用 token 描述组件的外观：圆角、尺寸、字体、边框、阴影和工具栏。四套遵循黄金比例的预设——Print、Studio、Terminal、Capsule——以及在其基础上定制的你自己的主题。"/>'),Y=f(`<h1>组件样式</h1> <p>组件的外观由一组 token 构成：各类部件的圆角、控件与工具栏的尺寸、字体、边框、阴影、选中按钮的样式，
+  以及工具栏和画线工具是沿边停靠还是悬浮。从一套预设出发，想改哪里就改哪里。颜色仍由主题决定
+  （<code>dark</code> / <code>light</code>，参见 <a>API 参考</a>）；任何外观都能与这两种主题搭配。</p> <h2>预设</h2> <table><thead><tr><th>预设</th><th>外观</th></tr></thead><tbody><tr><td><code>print</code>（默认）</td><td>纸与墨。近白或近黑的底色，常规内容一律用灰色，只在有含义的地方用颜色；细线、3 px 控件、5 px 菜单和 8 px 对话框；
+      标签大写；所有数字使用等宽字体，让价格按列对齐。选中的按钮是实心墨色，选中的工具是墨蓝色。</td></tr><tr><td><code>studio</code></td><td>控件圆角 7 px，菜单 11 px，对话框 16 px。分组之间用间距而非分隔线隔开，菜单浮在柔和的阴影之上，
+      周期按钮位于分段式轨道中，选中的按钮以浅色调填充。</td></tr><tr><td><code>terminal</code></td><td>紧凑方正：2 px 圆角、26 px 高的控件、分组之间有分隔线、标签大写，选中的按钮下方有一条下划线。
+      图表上的价格标签为直角。</td></tr><tr><td><code>capsule</code></td><td>处处都是胶囊形，价格标签也不例外。工具栏和画线工具像小岛一样悬浮，菜单是磨砂玻璃效果，选中的按钮是实心胶囊。</td></tr></tbody></table> <h2>选择外观</h2> <pre><code></code></pre> <h2>黄金比例</h2> <p>Print 的比例遵循黄金比例 φ ≈ 1.618，因此相邻的尺寸在各处都保持同样的关系：</p> <table><thead><tr><th>对象</th><th>规则</th><th>取值（px）</th></tr></thead><tbody><tr><td>尺寸</td><td>从图标起按 φ 的半步递增：图标、它的小按钮、它的按钮、菜单行、工具栏。</td><td>16 · 20 · 26 · 33 · 42</td></tr><tr><td>间距</td><td>斐波那契数，每个数是前两个数之和，因此相邻两个数之比接近 φ。</td><td>2 · 3 · 5 · 8 · 13 · 21 · 34</td></tr><tr><td>圆角</td><td>同样是斐波那契数。内层圆角等于外层圆角减去两者之间的内边距，这样两条曲线彼此平行：菜单的 5 就是其中各行的 2
+      加上 3 的内边距。</td><td>1 · 2 · 3 · 5 · 8</td></tr><tr><td>字号</td><td>按 φ 的立方根逐级递增，因此每升三级，字号就大 φ 倍：对话框的标题是其正文的 φ 倍。最小不低于 10 px，再小的话，
+      带两个附加符号的字母（如越南语的 ế、ộ）就难以辨认了。</td><td>10 · 11 · 13 · 15 · 18 · 21</td></tr></tbody></table> <p>各级字号跟随你设置的正文字号（<code>font.size</code>），<code>density</code> 会把各尺寸下调或上调半步。 <code>PHI</code>、<code>FIBONACCI</code> 和 <code>phiStep(base, steps, perPhi)</code> 由 <code>@tradecanvas/commons</code> 提供，可用来打造你自己的外观。</p> <h2>自定义外观</h2> <p>自定义主题从一套预设开始（未指定时为 Print），只修改其中写明的部分。在圆角刻度上设置的值会作用于所有跟随该刻度的部件，
+  除非你单独设置了该部件自己的圆角。</p> <pre><code></code></pre> <table><thead><tr><th>字段</th><th>设置内容</th></tr></thead><tbody><tr><td><code>radius</code></td><td>圆角刻度 <code>xs</code>、<code>sm</code>、<code>md</code>、<code>lg</code>、<code>xl</code>，单位 px（0–999）。</td></tr><tr><td><code>components</code></td><td>单个部件自己的圆角：<code>control</code>（按钮）、<code>input</code>、<code>menu</code>、<code>dialog</code>、 <code>panel</code>（提醒、数据窗口、下单面板）、<code>tooltip</code>、<code>tag</code>、<code>toast</code>，
+      以及 <code>toolbar</code> 和 <code>sidebar</code>（它们自身的外框，悬浮时可见）。默认情况下，控件和输入框取 <code>md</code>，菜单和面板取 <code>lg</code>，对话框取 <code>xl</code>，提示框和标签取 <code>sm</code>。</td></tr><tr><td><code>density</code> / <code>sizes</code></td><td><code>toolbar</code> 高度、<code>control</code> 与 <code>controlSmall</code> 高度、<code>icon</code>、 <code>sidebar</code> 宽度以及 <code>menuItem</code> 高度，单位 px。<code>compact</code> 和 <code>spacious</code> 是把 Print 的尺寸下调或上调 φ 的半步。</td></tr><tr><td><code>font</code></td><td>字体族（CSS 字体列表）、正文 <code>size</code>（11–20 px；其他字号随之变化，彼此相隔 φ 的三分之一步）、字重，以及小标签（如分区标题）的大小写和字间距（em）。</td></tr><tr><td><code>borders</code></td><td>边框宽度，以及工具栏的分组之间、画线工具之间是否用分隔线隔开。</td></tr><tr><td><code>shadows</code></td><td>菜单、对话框和提示框的 CSS 阴影。</td></tr><tr><td><code>blur</code></td><td>磨砂菜单，单位 px：大于 0 时，菜单会透出部分经过模糊的图表。</td></tr><tr><td><code>active</code></td><td>选中按钮的样式：浅色调填充、实心胶囊或下划线。</td></tr><tr><td><code>toolbar</code> / <code>sidebar</code></td><td>沿边停靠，或像小岛一样悬浮。</td></tr><tr><td><code>intervals</code></td><td>周期按钮保持原样，或放入分段式轨道中。</td></tr><tr><td><code>tagRadius</code></td><td>图表绘制的价格标签、坐标轴胶囊标签和订单徽标的圆角。</td></tr></tbody></table> <p>无法使用的值（超出范围，或可能跳出其声明的 CSS）会被忽略，并沿用预设中的值。</p> <h2>字体</h2> <p>组件不会加载任何字体：它只写出字体名称，由浏览器按列表依次回退。Print 指定每个系统都有的字体（Segoe UI、
+  San Francisco、Roboto），数字则用 Cascadia Mono、SF Mono、Menlo 或 Consolas，因此无需加载任何字体。
+  Studio 指定 Manrope，其次是 Inter；
+  Terminal 指定 IBM Plex Sans Condensed 和 IBM Plex Mono；Capsule 指定 Sora。请自行加载需要的字体：</p> <pre><code></code></pre> <h2>CSS 变量</h2> <p>这些 token 是组件根元素（以及其对话框）上的 CSS 变量。不设置 <code>ui</code> 选项时，它们沿用样式表中的值（即 Print 的值），
+  因此你自己的 CSS 可以设置它们：组件会把自己的样式表放在页面最前面，所以你写在 <code>.tcw-root</code> 上的规则会生效。
+  设置 <code>ui</code> 后，组件会把它们直接写到元素上，并以这些值为准。</p> <pre><code></code></pre> <table><thead><tr><th>变量</th><th>来源</th></tr></thead><tbody><tr><td><code>--tcw-radius-xs</code>、<code>-sm</code>、<code>--tcw-radius</code>、<code>-lg</code>、<code>-xl</code></td><td><code>radius</code></td></tr><tr><td><code>--tcw-control-radius</code>、<code>--tcw-input-radius</code>、<code>--tcw-menu-radius</code>、<code>--tcw-dialog-radius</code>、<code>--tcw-panel-radius</code>、<code>--tcw-tooltip-radius</code>、<code>--tcw-tag-radius</code>、<code>--tcw-toast-radius</code>、<code>--tcw-toolbar-radius</code>、<code>--tcw-sidebar-radius</code></td><td><code>components</code></td></tr><tr><td><code>--tcw-toolbar-h</code>、<code>--tcw-control-h</code>、<code>--tcw-control-h-sm</code>、<code>--tcw-icon</code>、<code>--tcw-sidebar-w</code>、<code>--tcw-menu-item-h</code></td><td><code>sizes</code></td></tr><tr><td><code>--tcw-font</code>、<code>--tcw-font-mono</code>、<code>--tcw-font-size</code>（以及 <code>-xs</code>、<code>-sm</code>、<code>-lg</code>、<code>-xl</code>、<code>-display</code>）、<code>--tcw-weight</code>、<code>--tcw-weight-strong</code>、<code>--tcw-label-case</code>、<code>--tcw-label-tracking</code></td><td><code>font</code></td></tr><tr><td><code>--tcw-border-w</code>、<code>--tcw-sep-w</code></td><td><code>borders</code></td></tr><tr><td><code>--tcw-menu-shadow</code>、<code>--tcw-dialog-shadow</code>、<code>--tcw-tooltip-shadow</code></td><td><code>shadows</code></td></tr><tr><td><code>--tcw-blur</code>、<code>--tcw-surface-opacity</code></td><td><code>blur</code></td></tr><tr><td><code>--tcw-space-1</code> … <code>--tcw-space-7</code></td><td>样式表：斐波那契间距，2 到 34 px</td></tr></tbody></table> <p>布局开关是同一批元素上的 data 属性，可供你编写自己的 CSS： <code>data-tcw-ui</code>（预设）、<code>data-tcw-active</code>、<code>data-tcw-toolbar</code>、 <code>data-tcw-sidebar</code>、<code>data-tcw-intervals</code> 和 <code>data-tcw-separators</code>（<code>on</code> / <code>off</code>）。</p> <h2 id="controls">输入框、列表与日历</h2> <p>组件中的每个输入框（提醒、设置、下单面板、跳转到日期、指标参数）都是同一种外观：淡淡的底色和细线边框，悬停时线条更清晰，聚焦时线条变为强调色，周围没有光圈。下拉框打开组件自带的列表：选中的行带勾号，分组显示为标题，支持方向键、Enter、Escape 和首字母输入；日期框打开组件自带的日历：每周从该语言习惯的那一天开始，今天带下划线，超出 <code>min</code> 和 <code>max</code> 的日期变灰。复选框、单选框、滑块和开关使用同一套变量，滚动条也一样：细而圆润，只有滑块，没有轨道。</p> <p>这些输入框仍然是浏览器原生的 <code>&lt;select&gt;</code> 和 <code>&lt;input&gt;</code>：取值、事件和表单照常工作；在触屏上会打开手机自带的滚轮和日历，更适合手指操作。</p> <p>外观来自以下变量，深色和浅色主题各有一套取值：</p> <p><code>--tcw-field-bg</code>, <code>--tcw-field-bg-hover</code>, <code>--tcw-field-bg-focus</code>, <code>--tcw-field-line</code>, <code>--tcw-field-line-hover</code>, <code>--tcw-field-line-focus</code>, <code>--tcw-field-placeholder</code>, <code>--tcw-check-line</code>, <code>--tcw-scroll-thumb</code>, <code>--tcw-scroll-thumb-hover</code>.</p> <pre><code></code></pre> <h2 id="overrides">图表的外观：样式覆盖</h2> <p>主题决定整个图表的颜色。图表所画的任何一部分都可以按键单独设置：每个方向的网格线、十字光标、坐标轴、
+  面板、图例、最新价、成交量、时段分隔线，以及每种图表类型下的主序列。没有设置的键沿用主题，所以切换主题时，
+  您没设置的部分仍会跟着变色。</p> <pre><code></code></pre> <h3>键</h3> <table><thead><tr><th>键</th><th>设置内容</th></tr></thead><tbody><tr><td><code>background.color</code></td><td>图表背景（面板没有自己的背景时也用它）。</td></tr><tr><td><code>panes.background</code>, <code>.separatorColor</code>, <code>.titleColor</code></td><td>指标面板：背景、顶部的分隔条、名称。</td></tr><tr><td><code>grid.horizontal.*</code>, <code>grid.vertical.*</code></td><td><code>visible</code>、<code>color</code>、<code>style</code>（<code>solid</code> · <code>dashed</code> · <code>dotted</code>）、<code>width</code>，每个方向分别设置。</td></tr><tr><td><code>crosshair.horizontal.*</code>, <code>crosshair.vertical.*</code></td><td>十字光标线的同样四项（默认为细实线）。</td></tr><tr><td><code>crosshair.labelBackground</code>, <code>.labelTextColor</code></td><td>坐标轴以及面板刻度上的价格、时间标签。</td></tr><tr><td><code>axis.price.lineColor</code>, <code>.textColor</code>, <code>axis.time.*</code></td><td>每个坐标轴的轴线和标签（面板刻度沿用价格轴的）。</td></tr><tr><td><code>legend.textColor</code>, <code>.labelColor</code></td><td>图例中的数值，以及它的标签（O、H、L、Vol）。</td></tr><tr><td><code>lastPrice.visible</code>, <code>.upColor</code>, <code>.downColor</code>, <code>.style</code>, <code>.width</code></td><td>最新价线和标签；未设置时颜色跟随主序列。当前 K 线的剩余时间（<code>features.barCountdown</code>）挂在标签下方。</td></tr><tr><td><code>volume.upColor</code>, <code>.downColor</code></td><td>成交量柱。</td></tr><tr><td><code>sessionBreaks.color</code>, <code>.style</code>, <code>.width</code></td><td>日、周、月分隔线。</td></tr><tr><td><code>highLow.color</code>, <code>watermark.color</code></td><td>最高价与最低价线、水印。</td></tr><tr><td><code>trading.buyColor</code>, <code>.sellColor</code>, <code>.profitColor</code>, <code>.lossColor</code>, <code>.entryColor</code></td><td>订单（买、卖）和持仓（盈、亏、入场），包括图表上和价格轴上，覆盖交易配置里的颜色。</td></tr><tr><td><code>markers.longColor</code>, <code>.shortColor</code>, <code>.neutralColor</code></td><td>信号标记，覆盖它们自己的样式。</td></tr><tr><td><code>tradeZones.profitColor</code>, <code>.lossColor</code>, <code>.activeColor</code></td><td>交易区域：盈利、亏损和未平仓。</td></tr><tr><td><code>drawings.handleColor</code></td><td>选中绘图的控制点（不设置时为白色）。</td></tr><tr><td><code>series.&lt;type&gt;.*</code></td><td>主序列以该类型绘制时的样式：<code>upColor</code>、<code>downColor</code>、<code>wickUpColor</code>、 <code>wickDownColor</code>（K线、Heikin-Ashi、成交量K线、等量图），<code>color</code> / <code>lineColor</code> 和 <code>lineWidth</code>（折线、阶梯线、带点折线、面积图、HLC 面积图、基线图），<code>topColor</code> 和 <code>bottomColor</code>（面积图、HLC 面积图）。</td></tr></tbody></table> <p><code>CHART_STYLE_KEYS</code> 列出了每个键及其取值类型，TypeScript 会在您编写时检查键和值。涨跌颜色回退到 <code>series.candlestick.*</code>，线条颜色和宽度回退到 <code>series.line.*</code>，面积填充回退到 <code>series.area.*</code>，然后是主题；设置了实体颜色后，影线也随之使用该颜色。未知的键和值会被忽略并给出警告。</p> <h3>应用的与用户的</h3> <p>覆盖分为两层。您的（<code>layer: 'host'</code>，默认）在切换主题时保留，且从不保存。用户的
+  （<code>layer: 'user'</code>）优先于您的，按设置时的主题保存——在深色主题上选的颜色会随深色主题回来——并随 <code>saveState()</code> 一起保存。组件的设置面板写入用户层。左侧竖排的标签页按这些键设置图表的各个部分： <strong>品种</strong>（当前图表类型、最新价、成交量）、<strong>状态栏</strong>、<strong>坐标</strong>、 <strong>外观</strong>（背景、网格、十字光标、交易时段分隔）、<strong>图层</strong>和<strong>交易</strong> （订单、持仓、信号标记、交易区域）。每项改动立即生效；<strong>取消</strong>会全部撤回，<strong>确定</strong> 则保留并作为一步撤销。<strong>模板</strong>菜单可按名称保存外观、应用或删除已保存的模板，并恢复为当前主题的颜色。
+  交由该部分自己决定的颜色显示为“自动”，点“自动”即可恢复。</p> <pre><code></code></pre> <p>网格和十字光标选项（<code>grid.hLineColor</code>、<code>crosshair.vLine.style</code>…）是对应键的简写。多图表网格
+  会把覆盖应用到其所有图表：<code>grid.applyOverrides(patch)</code>。React、Vue 和 Svelte 组件通过 <code>overrides</code> 属性接收它们。</p> <h3>指标线条与面板</h3> <pre><code></code></pre> <p>隐藏的线条没有数值标签，也不在图例中显示数值。所有指标都不绘制隐藏的线条，几乎所有指标也支持线条的线型；
+  少数绘制自有图形的指标（Parabolic SAR 点、Supertrend、Zig Zag、成交量分布）保持自己的笔触。</p> <h2>图表上的标签</h2> <p>组件会把 <code>tagRadius</code> 传给它的图表（写在 <code>chartOptions.shapes</code> 中的形状会一直保留，直到你调用 <code>setUI</code>）。直接使用 <code>Chart</code> 时，请自行设置形状；切换主题后该设置依然保留。价格标签、坐标轴和十字光标的胶囊标签、
+  委托、持仓和括号单的标签，以及前一周期高低点的标签都会采用这一形状。</p> <pre><code></code></pre> <h2 id="legend">OHLCV 图例</h2> <p>图表顶部的图例以一行标题开头：品种、周期和交易所，同一行接着是指针下的 K 线（否则为最后一根）：开、高、低、收和涨跌。成交量单独占一行。绘图区太窄、放不下标题行时（例如在手机上），它会换行。图表从数据流得到品种和周期，从品种详情得到交易所；<code>setSymbolName('Bitcoin')</code> 可自行命名，直到品种改变为止，<code>showSymbol: false</code> 则不显示标题。每个数值在数字变化时保持位置，实时跳动时不会抖动。可以整个关闭，也可以只保留需要的行。在组件中它使用外观的数字字体，与其下方列出的指标行同样大小；<code>setUI</code> 会在你自己的 <code>setLegend</code> 之后再次设置它。</p> <pre><code></code></pre> <h2 id="volume">价格坐标与成交量带</h2> <p>成交量柱保持在绘图区底部的一条带内，高度为绘图区的 φ^-4.5（约 11.5%）；自动适配的价格坐标让 K 线留在这条带上方，
+  间隔 φ^-7（3%）。最高价上方留出 φ^-5（9%）。视图中没有成交量时（已关闭，或 K 线不带成交量），K 线会收回这条带。
+  价格坐标也会适配视图中的叠加指标和对比线。</p> <h2>成交量颜色</h2> <p>成交量柱使用主题的 <code>volumeUp</code> 和 <code>volumeDown</code> （或 <code>volume.*</code> 键）。内置主题用同一种中性的墨色绘制它们，下跌的柱子颜色更浅：上方的K线已经显示了价格的涨跌方向，所以成交量柱只作衬底。你或 widget 的设置修改K线颜色时，它们仍保持中性。想让成交量柱使用K线的颜色，<code>volumeColor(candleColor)</code> 会返回带成交量透明度的K线颜色：</p> <pre><code></code></pre>`,1);function oe(C,v){R(v,!1);const{href:y}=G();Z();var w=Y();V("iiz5i2",u=>{var U=N();H(()=>{W.title="样式 — TradeCanvas 文档"}),b(u,U)});var t=e(A(w),2),x=e(o(t),5);B(),d(t);var c=e(t,8),S=o(c);S.textContent=`import { ChartWidget, ChartWidgetGrid } from '@tradecanvas/chart/widget'
+
+const widget = new ChartWidget(host, { ui: 'terminal' })
+widget.setUI('capsule')        // in place: nothing is rebuilt
+widget.getUI()                 // every token, resolved
+
+// A grid: every chart and the grid's bar, and the charts it adds later
+const grid = new ChartWidgetGrid(host, { layout: '2x2', widget: { ui: 'terminal' } })
+grid.setUI('studio')
+grid.getUI()`,d(c);var r=e(c,14),_=o(r);_.textContent=`widget.setUI({
+  preset: 'studio',
+  radius: { xs: 3, sm: 5, md: 10, lg: 12, xl: 18 },  // the scale, px (999: pills)
+  components: { dialog: 20, tag: 0 },                // a part's own corners
+  density: 'compact',                                // compact · comfortable · spacious
+  sizes: { toolbar: 40 },                            // px; wins over density
+  font: {
+    family: "'Manrope', system-ui, sans-serif",
+    mono: "'JetBrains Mono', monospace",
+    size: 13, weight: 500, strongWeight: 600,
+    labelCase: 'uppercase', labelTracking: 0.06,      // small labels
+  },
+  borders: { width: 1, separators: true },           // rules between toolbar groups
+  shadows: { menu: '0 12px 30px rgba(0, 0, 0, 0.4)' },
+  blur: 12,                                          // frosted floating surfaces, px
+  active: 'solid',                                   // tint · solid · underline
+  toolbar: 'floating',                               // docked · floating
+  sidebar: 'floating',
+  intervals: 'segmented',                            // plain · segmented
+  tagRadius: 999,                                    // the chart's price tags and pills
+})`,d(r);var a=e(r,10),k=o(a);k.textContent='<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">',d(a);var s=e(a,6),I=o(s);I.textContent=`.tcw-root {
+  --tcw-radius: 4px;            /* the md corner: buttons and fields follow it */
+  --tcw-dialog-radius: 12px;
+  --tcw-control-h: 28px;
+  --tcw-font: 'Inter', system-ui, sans-serif;
+}`,d(s);var n=e(s,16),P=o(n);P.textContent=`.tcw-root {
+  --tcw-field-bg: transparent;            /* fields as lines, no fill */
+  --tcw-field-line: rgba(255, 255, 255, 0.12);
+  --tcw-field-line-focus: #5b8cff;        /* focus in your brand colour */
+}`,d(n);var l=e(n,6),K=o(l);K.textContent=`import { Chart } from '@tradecanvas/chart'
+
+const chart = new Chart(host, {
+  overrides: { 'grid.vertical.visible': false },       // 初始设置
+})
+
+chart.applyOverrides({
+  'series.candlestick.upColor': '#26a69a',              // 所有涨跌类图表都回退到它
+  'series.candlestick.downColor': '#ef5350',
+  'grid.horizontal.style': 'dotted',
+  'crosshair.vertical.style': 'solid',
+  'crosshair.labelBackground': '#2962ff',
+  'lastPrice.style': 'solid',
+  'panes.background': '#0d1117',
+  'legend.textColor': '#c9d1d9',
+})
+chart.applyOverrides({ 'legend.textColor': null })      // null 移除一个键
+chart.resetOverrides(['grid.horizontal.style'])         // 或列出要移除的键
+chart.setOverrides({ 'background.color': '#000' })      // 一次替换整个层
+
+chart.getStyleValue('series.bar.upColor')               // '#26a69a': 某个键最终的值
+chart.getStyle().grid.vertical                          // { visible: false, color, style, width }
+chart.on('styleChange', (e) => e.payload.layer)         // 'host' | 'user'`,d(l);var i=e(l,12),z=o(i);z.textContent=`chart.applyOverrides({ 'background.color': '#0b0b0f' }, { layer: 'user' })
+chart.getOverrides({ layer: 'user' })                 // 当前主题下用户的覆盖
+chart.getTheme()                           // 设置时的主题：覆盖单独存放`,d(i);var p=e(i,6),O=o(p);O.textContent=`// 每条线各自的线型和显示与否，按键设置（颜色和宽度仍在 colors / lineWidths 中）
+chart.updateIndicatorStyle(macdId, { plots: { signal: { lineStyle: 'dashed' }, histogram: { visible: false } } })
+
+// 从现在起同类指标的初始样式
+chart.setIndicatorDefaults('ema', { colors: ['#f5a623'], lineWidths: [2] })
+
+// 面板自己的背景和分隔线，随其指标一起保存
+chart.setPaneStyle(rsiId, { background: '#101418', separator: '#f5a623' })`,d(p);var h=e(p,8),T=o(h);T.textContent=`const chart = new Chart(host, { shapes: { tagRadius: 4 } })
+chart.setShapes({ tagRadius: 999 })   // pill price tags, axis pills and order badges
+chart.getShapes()`,d(h);var g=e(h,6),L=o(g);L.textContent=`new Chart(host, { features: { legend: false } })   // no legend at all
+chart.setLegend({ visible: false })                  // or at any time
+chart.setLegend({
+  showSymbol: false, showOHLC: true, showChange: true, showVolume: false,
+  position: 'top-right',
+  fontSize: 11,
+  fontFamily: 'Inter, sans-serif',                   // null: the theme's font
+})
+
+// The widget: start with it off (the user can still turn it on in Settings)
+new ChartWidget(host, { chartOptions: { features: { legend: false } } })`,d(g);var m=e(g,10),M=o(m);M.textContent=`import { DARK_THEME, volumeColor } from '@tradecanvas/chart'
+
+chart.setTheme({
+  ...DARK_THEME,
+  candleUp: '#26a17b',
+  candleDown: '#e0525f',
+  volumeUp: volumeColor('#26a17b'),
+  volumeDown: volumeColor('#e0525f'),
+})`,d(m),E(u=>F(x,"href",u),[()=>y("/docs/api")]),b(C,w),D()}export{oe as default};

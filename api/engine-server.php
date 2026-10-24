@@ -20,7 +20,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_engine_server.php';
 qi_rate_limit(60, 60);
-qi_require_auth();
+qi_require_level('pro');   // Mesin 9 = panel PRO (panel-mesin9); akun gratis tidak boleh lewat API langsung
 
 function es_jawab(int $kode, array $data): void
 {

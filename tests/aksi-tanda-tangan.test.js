@@ -122,10 +122,10 @@ cek('setiap aksi bisa ditemukan (terdaftar, fungsi bernama, atau metode objek)',
 cek('tidak ada fungsi window bertanda tangan (el, e, …) yang lupa didaftarkan', bergeser.length === 0, bergeser.join('\n      '));
 cek('aksi Quick Trade terdaftar', ['qtSetAkun', 'qtOrder', 'qtStep'].every((n) => terdaftar.has(n)));
 // Ambang ini hanya penjaga agar pemindaian yang rusak tidak lolos sebagai "semua aman".
-// Turun dari 50 ke 25 sejak dashboard chart-first: halaman itu kini memakai 9 aksi (jalur
+// Turun dari 50 ke 25 lalu 15: dashboard chart-first hanya memakai jalur order, dan pengaturan broker (Profil) menambah ±11 aksi.
 // order) alih-alih ratusan milik panel lama. Yang dijaga tetap sama — setiap aksi yang
 // dipakai harus bisa ditemukan (cek di atas), bukan jumlahnya.
-cek('pemindai benar-benar menemukan aksi (bukan lolos karena kosong)', dipakai.size > 25 && deklarasi.size > 200, dipakai.size + ' / ' + deklarasi.size);
+cek('pemindai benar-benar menemukan aksi (bukan lolos karena kosong)', dipakai.size >= 15 && deklarasi.size > 200, dipakai.size + ' / ' + deklarasi.size);
 
 if (gagal) { console.error(`\nFAIL — ${gagal} pemeriksaan gagal`); process.exit(1); }
 console.log('\nPASS — semua data-qi-aksi menerima argumen yang benar');

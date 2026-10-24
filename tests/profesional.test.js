@@ -72,12 +72,8 @@ cek('server menolak posisi manual baru saat batas tercapai', /qi_batas_rugi_stat
 cek('Ikuti Auto Analisa tidak membuka posisi saat batas tercapai', /qi_batas_rugi_status\(\$pdo, \$uid, \$kini\)\['tercapai'\]/.test(ap) && ap.indexOf("['tercapai']") < ap.indexOf('$rencana = qi_ap_pilih_buka('));
 cek('hari dihitung WIB dan memakai UNIX_TIMESTAMP (bukan strtotime)', /Asia\/Jakarta/.test(br) && /UNIX_TIMESTAMP\(closed_at\)/.test(br) && !/strtotime/.test(br));
 cek('endpoint status butuh login', /qi_require_auth/.test(read('api/batas-rugi.php')));
-const B = require('../assets/js/qim-batas-rugi.js');
-const r1 = B.ringkas({ terpakai_pct: 100, tercapai: true, peringatan: false, rugi_hari: 300, batas_usd: 300, batas_pct: 3, sisa_usd: 0 });
-cek('meteran: tercapai → tingkat "tercapai", batang penuh, pesan reset 00:00 WIB', r1.tingkat === 'tercapai' && r1.lebar === 100 && /00:00 WIB/.test(r1.judul), r1);
-const r2 = B.ringkas({ terpakai_pct: 83.3, tercapai: false, peringatan: true, rugi_hari: 250, batas_usd: 300, batas_pct: 3, sisa_usd: 50 });
-cek('meteran: 83% → "waspada" dengan rincian rugi/batas/sisa', r2.tingkat === 'waspada' && /83%/.test(r2.judul) && /\$250\.00/.test(r2.rincian) && /\$50\.00/.test(r2.rincian), r2);
-cek('meteran: tanpa data → null (tersembunyi)', B.ringkas(null) === null);
+// Meteran batas rugi di browser (qim-batas-rugi.js) ikut dibuang bersama dashboard panel lama. Yang menegakkan batas
+// tetap SERVER (api/_batas_rugi.php, dicek di atas): order yang melewatinya ditolak dan Quick Trade menampilkan penolakannya.
 cek('chart-first dashboard memisahkan modul batas rugi opsional', !/qim-batas-rugi\.js\?v=/.test(read('dashboard.html')) && /qim-terminal-shell\.js\?v=/.test(read('dashboard.html')));
 
 // ── 5. Sinyal indikator Pine di server ───────────────────────────────────────

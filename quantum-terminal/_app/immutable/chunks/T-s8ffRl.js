@@ -1,0 +1,1 @@
+async function r(a,t){try{return await navigator.clipboard.writeText(a),!0}catch{if(t){const n=document.createRange();n.selectNodeContents(t);const e=window.getSelection();e==null||e.removeAllRanges(),e==null||e.addRange(n)}return!1}}export{r as c};

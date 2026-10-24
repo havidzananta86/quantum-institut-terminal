@@ -1,0 +1,10 @@
+# Vendor chart terminal (hasil build SvelteKit pihak ketiga) — bukan kode kita.
+#
+# CSP Report-Only milik situs memakai report-uri RELATIF (api/csp-report.php) karena semua halaman HTML kita ada di
+# akar situs. Halaman di bawah folder ini berada tiga tingkat lebih dalam, jadi tiap pelanggaran (skrip inline
+# bootstrap SvelteKit-nya sendiri) dikirim ke quantum-terminal/embed/api/csp-report.php yang tidak ada → 404 di
+# setiap pemuatan, dan PHP Warning "script .../404.php not found" di log server saat situs dipasang di subfolder.
+# Vendor ini tidak untuk diatur ulang CSP-nya, jadi laporan Report-Only dimatikan di sini saja.
+<IfModule mod_headers.c>
+    Header unset Content-Security-Policy-Report-Only
+</IfModule>

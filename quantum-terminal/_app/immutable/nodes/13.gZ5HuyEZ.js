@@ -1,0 +1,10 @@
+import"../chunks/Bzak7iHL.js";import{p as M,a0 as N,t as x,a as q,b as U,d as z,g as r,f as k,u as F,s,c as e,$ as G,r as t}from"../chunks/vnnAQmBw.js";import{d as J,a as K,s as o}from"../chunks/BPRzW5Y5.js";import{h as L}from"../chunks/CM0BfPfn.js";import{h as O}from"../chunks/Di_Vksbt.js";import{s as j}from"../chunks/BbGUZXP3.js";import{u as P}from"../chunks/BPYnHL8L.js";import{a as Q}from"../chunks/C7WHxyDR.js";import{C as R}from"../chunks/DfLCKsAs.js";var V=k('<meta name="description"/>'),X=k('<section class="hero svelte-1j15wyq"><span class="eyebrow"> </span> <h1 class="hero-title"> </h1> <p class="hero-subtitle"> </p> <div class="cta-row svelte-1j15wyq"><button class="cta-btn cta-btn--primary" type="button"> </button> <a class="cta-btn cta-btn--ghost"> </a></div></section> <section class="quickstart-section"><header class="section-head"><h2 class="section-title"> </h2> <p class="section-subtitle svelte-1j15wyq"></p></header> <div class="code svelte-1j15wyq"><!></div></section>',1);function ct(B,C){M(C,!0);const u=P(),a=F(()=>u.m.playground);function T(){Q()}const A=`import { ChartWidget } from '@tradecanvas/chart/widget'
+import { BinanceAdapter } from '@tradecanvas/chart'
+
+new ChartWidget(document.getElementById('chart')!, {
+  symbol: 'BTCUSDT',
+  timeframe: '5m',
+  theme: 'dark',
+  adapter: new BinanceAdapter(),
+  trading: true,
+})`;var f=X();O("1j15wyq",h=>{var w=V();x(()=>j(w,"content",r(a).description)),z(()=>{G.title=r(a).metaTitle??""}),q(h,w)});var c=N(f),n=e(c),I=e(n,!0);t(n);var d=s(n,2),S=e(d,!0);t(d);var m=s(d,2),W=e(m,!0);t(m);var b=s(m,2),i=e(b),$=e(i,!0);t(i);var l=s(i,2),D=e(l,!0);t(l),t(b),t(c);var _=s(c,2),p=e(_),v=e(p),E=e(v,!0);t(v);var g=s(v,2);L(g,()=>r(a).insideHtml,!0),t(g),t(p);var y=s(p,2),H=e(y);R(H,{code:A,label:"src/main.ts"}),t(y),t(_),x(h=>{o(I,r(a).eyebrow),o(S,r(a).title),o(W,r(a).subtitle),o($,r(a).launch),j(l,"href",h),o(D,r(a).more),o(E,r(a).insideTitle)},[()=>u.href("/examples")]),K("click",i,T),q(B,f),U()}J(["click"]);export{ct as component};

@@ -1,0 +1,158 @@
+import"./Bzak7iHL.js";import"./DQttDCvw.js";import{p as oe,_ as re,$ as ae,a as L,s as e,a0 as ne,c as t,r as o,a1 as O,t as ie,b as de,f as I}from"./vnnAQmBw.js";import{h as se}from"./Di_Vksbt.js";import{s as ce}from"./BbGUZXP3.js";import{i as he}from"./w5vomPQw.js";import{u as le}from"./BPYnHL8L.js";var pe=I(`<meta name="description" content="Render positions, orders, signal markers, and trade zones directly on the chart with TradeCanvas's trading overlay."/>`),me=I(`<h1>Trading overlay</h1> <p>Render positions, orders, signal markers, and trade zones directly on the chart.
+  Designed to integrate with both manual and algorithmic trading flows.</p> <h2>Disabling trading</h2> <p>The trading overlay is on by default; the right-click order menu is not (since 1.3).</p> <pre><code></code></pre> <p>Without the menu, native browser right-click works on the chart as expected.</p> <h2>Positions</h2> <pre><code></code></pre> <h2>Orders</h2> <pre><code></code></pre> <p>The line's label names the order's kind and quantity (<code>LIMIT 0.25</code>); its tag on the price axis
+  carries the price, written as the axis writes it. Drag the price line to modify; subscribe via <code>chart.on('orderModify', ...)</code>.</p> <h2>Live execution (connect an adapter)</h2> <p>By default the chart <em>emits</em> order/position intents (<code>orderPlace</code>, <code>orderModify</code>, <code>orderCancel</code>, <code>positionModify</code>, <code>positionClose</code>) for your backend — it never trades itself. Connect an <code>ExecutionAdapter</code> and the chart instead routes those intents into the
+  adapter and renders the authoritative orders/positions it emits back (the adapter is
+  the single source of truth).</p> <pre><code></code></pre> <p>Implement <code>ExecutionAdapter</code> (it mirrors <code>DataAdapter</code>) to wire a
+  real broker / OMS: <code>placeOrder</code>, <code>modifyOrder</code>, <code>cancelOrder</code>, <code>modifyPosition</code>, <code>closePosition</code>, plus <code>orders</code> / <code>positions</code> / <code>fill</code> / <code>error</code> events. <code>PaperExecutionAdapter</code> is a virtual-fill sandbox for demos and tests.</p> <h2>Act on orders and positions from the chart</h2> <p>Order and position lines carry small buttons at their right end: <strong>×</strong> cancels an order or closes a position, <strong>⇅</strong> reverses a position, and an
+  × on a stop-loss or take-profit line removes it. They raise the same intents as the
+  API (<code>orderCancel</code>, <code>positionClose</code>, <code>positionReverse</code>, <code>positionModify</code> with <code>null</code>), so a connected adapter acts on them
+  and a host without one gets the events. A button acts when it is released over it:
+  a press that slides off does nothing. Turn any of them off with <code>lineButtons</code> in <code>setTradingConfig</code>.</p> <pre><code></code></pre> <p>An adapter that can reverse in one step implements <code>reversePosition</code>;
+  without it the chart closes the position and sends a market order the other way.
+  Orders take a <code>stopLoss</code>, a <code>takeProfit</code> and a <code>timeInForce</code> (<code>'gtc'</code> or <code>'day'</code>) that carry over to
+  the position they open.</p> <p><strong>For adapter authors:</strong> in <code>PositionModifyIntent</code>, <code>stopLoss: null</code> (or <code>takeProfit: null</code>) means remove it, while a
+  missing field means leave it as it is. Code written as <code>intent.stopLoss ?? position.stopLoss</code> would keep a stop the user removed.</p> <h2>Fills on the chart</h2> <p>Each fill shows as a small mark on its bar: solid where it opened a position,
+  hollow where it closed one. The chart records the fills an adapter reports and
+  emits <code>executionFill</code> with why it happened (<code>'order'</code>, <code>'close'</code>, <code>'reverse'</code>, <code>'stopLoss'</code>, <code>'takeProfit'</code>) and the profit or loss it realised.</p> <pre><code></code></pre> <h2>Right-click menus and the “+” by the price axis</h2> <p>A right-click on the chart emits <code>chartContextMenu</code> with the part that was
+  clicked (<code>'plot'</code>, <code>'pane'</code>, <code>'priceAxis'</code> or <code>'timeAxis'</code>) and the price and time there. With <code>features.priceAxisAddButton</code> a “+” follows the crosshair along the price
+  axis; pressing it emits <code>priceAxisAdd</code> with its price.</p> <pre><code></code></pre> <p>ChartWidget builds its menus on these. Right-click the plot for an alert, a buy and a
+  sell at that price (a limit on the side of the market where it would wait, a stop on
+  the other), an order ticket and a horizontal line; then reset view, paste the drawings
+  you copied, hide or remove the drawings, remove the indicators (a comparison with
+  another symbol stays), export the data, and the settings.</p> <p>Right-click the price axis for its reset, auto scale, the inverted and the left-hand
+  scale, one of its four modes (regular, logarithmic, percentage, indexed to 100), the
+  labels on it and the lines across the chart in two submenus, an alert at the price, and
+  the settings open on their Scales tab. The time axis has its reset, go to date and the
+  time zone.</p> <p>An entry shows the widget's shortcut for it while that key is on: <kbd>Alt</kbd> + <kbd>R</kbd> reset view, <kbd>Alt</kbd> + <kbd>I</kbd> invert the scale, <kbd>Alt</kbd> + <kbd>G</kbd> go to date. A submenu opens on a click, <kbd>Enter</kbd>, <kbd>→</kbd> or a
+  pointer resting on it, and <kbd>←</kbd> or <kbd>Escape</kbd> goes back; on a phone, where
+  menus open from the bottom, its first row leads back. Add your own entries with <code>chartMenuItems</code> (see the <a>API reference</a>).</p> <h2>Order ticket and account panel (ChartWidget)</h2> <p>The widget's receipt button opens an account panel under the chart: open positions
+  with their profit and loss, working orders, and the fills so far with the P&amp;L
+  realised. Each row closes, reverses or cancels. <strong>New order</strong> opens an
+  order ticket: buy or sell, market, limit or stop, quantity, price, an optional
+  stop-loss and take-profit, and time in force. It checks the order as you fill it in
+  (a buy limit goes below the market, a stop-loss on the losing side of the entry…)
+  and shows the reward:risk. Placing it sends an <code>orderPlace</code> intent. With a
+  market set (<code>chart.setMarket</code>), it also keeps its prices on the market's step and
+  the order's price inside the day's ceiling and floor, starts at one lot, and takes whole lots above one
+  (fewer shares are an odd-lot order of their own).</p> <pre><code></code></pre> <p>Fill marks belong to the symbol on the chart: switching symbol in the widget starts
+  the next one with none.</p> <h2>Drag-to-create orders</h2> <p>Start a single draggable order line, drag it to a price, and confirm — the order type
+  (limit vs stop) is inferred from where you drop it relative to the current price. Pairs
+  with <code>connectExecution</code> so a confirmed draft fills immediately.</p> <pre><code></code></pre> <h2>Bracket orders (drag to place)</h2> <p>Start a draggable bracket — entry plus stop-loss and take-profit zones — then
+  drag the three lines to tune entry, risk, and reward. Confirm with <kbd>Enter</kbd> (or the Place button), cancel with <kbd>Esc</kbd>. In the
+  widget, the green/red toolbar arrows start a long/short bracket. The chart
+  emits a single <code>bracketPlace</code> event for your backend to act on —
+  it never places orders itself.</p> <pre><code></code></pre> <h2>Depth ladder (click to trade)</h2> <p>An opt-in depth-of-market ladder renders the order book as price rows with
+  bid/ask size columns — click an ask cell to buy, a bid cell to sell at that
+  price. Enable with <code>depthLadder: true</code> and feed the book via <code>widget.setDepth</code>; clicks emit <code>orderPlace</code> intents for
+  your OMS (the chart never trades itself). The same data also drives the
+  on-chart depth overlay.</p> <pre><code></code></pre> <h2>Liquidity heatmap</h2> <p>Accumulate order-book snapshots into a heatmap behind the candles — each
+  snapshot is a vertical strip where resting size lights up per price level
+  (bids green, asks red). Liquidity walls that persist over time stand out.
+  Toggle from the settings sheet (or <code>chart.setDepthHeatmapVisible</code>); <code>widget.setDepth</code> records a snapshot on every book update.</p> <pre><code></code></pre> <h2>Signal markers</h2> <p>Bot or signal-trading integrations can place directional arrows on the overlay.</p> <pre><code></code></pre> <p>ChartWidget shows a note by a marker under the pointer: its label and source, side,
+  price, confidence and time.</p> <h2>Trade zones</h2> <p>Visualize entry → exit rectangles with P&amp;L coloring and direction badges.</p> <pre><code></code></pre> <h2>Position label tokens</h2> <p>Customize the on-chart label per position. <code>positionLabel</code> accepts a
+  template string or a function returning a string.</p> <pre><code></code></pre> <p>Available tokens: <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>, <code></code>.</p> <h2>P&amp;L gradient stops</h2> <pre><code></code></pre>`,1);function we(B,S){oe(S,!1);const{href:z}=le();he();var w=me();se("196go9k",y=>{var te=pe();re(()=>{ae.title="Trading overlay — TradeCanvas docs"}),L(y,te)});var r=e(ne(w),8),F=t(r);F.textContent=`// Drop the entire trading subsystem (no orders, no positions, no overlay)
+new Chart(host, { features: { trading: false } })
+
+// Opt in to the right-click "Buy / Sell here" order menu
+new Chart(host, { features: { tradingContextMenu: true } })
+new ChartWidget(host, { chartOptions: { features: { tradingContextMenu: true } } })`,o(r);var a=e(r,6),W=t(a);W.textContent=`chart.addPosition({
+  id: 'pos-1',
+  side: 'long',
+  entry: 65_200,
+  quantity: 0.5,
+  closedQuantity: 0.1,   // partial-close band on the left edge
+  stopLoss: 64_800,
+  takeProfit: 66_000,
+})`,o(a);var n=e(a,4),q=t(n);q.textContent=`chart.addOrder({
+  id: 'ord-1',
+  side: 'sell',
+  type: 'limit',
+  price: 65_500,
+  quantity: 0.25,
+})`,o(n);var i=e(n,8),R=t(i);R.textContent=`import { PaperExecutionAdapter } from '@tradecanvas/chart'
+
+chart.connectExecution(new PaperExecutionAdapter({ markPrice: 64_000 }))
+
+chart.on('executionError', (e) => toast(e.payload.message))
+// chart.disconnectExecution()`,o(i);var d=e(i,8),H=t(d);H.textContent=`chart.setTradingConfig({ lineButtons: { reverse: false } })  // keep cancel, close and remove-stops
+
+chart.cancelOrderIntent('ord-1')
+chart.closePositionIntent('pos-1')
+chart.reversePositionIntent('pos-1')                 // close, then the same size the other way
+chart.modifyPositionIntent('pos-1', { stopLoss: null }) // null removes the stop`,o(d);var s=e(d,10),Q=t(s);Q.textContent=`chart.on('executionFill', (e) => {
+  const { side, price, quantity, reason, pnl } = e.payload
+})
+
+chart.addFill({ orderId: 'o-7', side: 'buy', price: 64_150, quantity: 1, time: Date.now() })
+chart.getFills()        // the latest 1000
+chart.getRealisedPnl()  // every fill's P&L since the last clearFills
+chart.clearFills()
+chart.setTradingConfig({ fillMarks: false })  // no marks`,o(s);var c=e(s,6),V=t(c);V.textContent=`const chart = new Chart(host, { features: { priceAxisAddButton: true } })
+
+chart.on('chartContextMenu', (e) => {
+  const { area, x, y, price, time } = e.payload
+  openMyMenu(x, y)
+})
+chart.on('priceAxisAdd', (e) => openMyMenu(e.payload.x, e.payload.y, e.payload.price))`,o(c);var h=e(c,6),N=e(t(h),23);O(),o(h);var l=e(h,6),$=t(l);$.textContent=`const widget = new ChartWidget(host, {
+  trading: true,         // default
+  accountPanel: true,    // default when trading is on
+})
+widget.getChart().connectExecution(new PaperExecutionAdapter({ markPrice: 64_000 }))
+widget.toggleAccountPanel(true)
+// The panel follows ordersChange, positionsChange, executionFill and each tick.`,o(l);var p=e(l,8),G=t(p);G.textContent=`chart.startOrderDraft('buy')   // draggable line at the latest close
+chart.confirmOrderDraft()      // emits orderPlace -> a connected adapter fills it
+chart.cancelOrderDraft()`,o(p);var m=e(p,6),Z=t(m);Z.textContent=`chart.startBracket('buy')          // entry defaults to the latest close
+chart.startBracket('sell', 64_800) // or pin the entry price
+
+chart.on('bracketPlace', (e) => {
+  const { side, entry, stopLoss, takeProfit, riskReward } = e.payload
+  // submit to your OMS, then reflect fills back via chart.setOrders/setPositions
+})
+
+chart.confirmBracket()  // same as Enter
+chart.cancelBracket()   // same as Esc`,o(m);var u=e(m,6),j=t(u);j.textContent=`const widget = new ChartWidget(host, { depthLadder: true })
+
+widget.setDepth({
+  bids: [{ price: 64_190, volume: 3.1 }, { price: 64_185, volume: 5.4 }],
+  asks: [{ price: 64_205, volume: 2.0 }, { price: 64_210, volume: 8.7 }],
+})
+
+widget.getChart().on('orderPlace', (e) => {
+  // { side, type: 'limit', price } — submit to your backend
+})`,o(u);var g=e(u,6),J=t(g);J.textContent=`chart.setDepthHeatmapVisible(true)
+chart.setDepthHeatmapConfig({ opacity: 0.7, capacity: 240 })
+
+// each book update both draws the overlay/ladder and records a heatmap column
+widget.setDepth(orderBook)
+// low-level: chart.pushDepthSnapshot(orderBook) · chart.clearDepthHeatmap()
+// books recorded for older bars, oldest first: chart.pushDepthSnapshot(orderBook, bar.time)`,o(g);var f=e(g,6),K=t(f);K.textContent=`chart.addSignalMarker({
+  id: 'sig-12',
+  time: bar.time,
+  price: bar.close,
+  direction: 'long',
+  confidence: 0.86,
+  source: 'momentum-bot',
+  label: 'EMA cross',
+})
+
+// A marker under the pointer, and a click on one
+chart.on('signalMarkerHover', (e) => showNote(e.payload.marker, e.payload.x, e.payload.y))  // marker null: off it
+chart.on('signalMarkerClick', (e) => openSignal(e.payload.marker))`,o(f);var k=e(f,8),U=t(k);U.textContent=`chart.addTradeZone({
+  id: 'tz-1',
+  side: 'long',
+  entryTime: openedAt,
+  exitTime: closedAt,
+  entryPrice: 65_100,
+  exitPrice: 65_800,
+  status: 'closed',
+})`,o(k);var b=e(k,6),X=t(b);X.textContent=`new ChartWidget(host, {
+  trading: true,
+  positionLabel: '{side} {qty} @ {entry} · {pnlSign}{pnlPct}%',
+})`,o(b);var v=e(b,2),x=e(t(v));x.textContent="{side}";var _=e(x,2);_.textContent="{qty}";var C=e(_,2);C.textContent="{openQty}";var P=e(C,2);P.textContent="{closedQty}";var A=e(P,2);A.textContent="{entry}";var T=e(A,2);T.textContent="{price}";var M=e(T,2);M.textContent="{pnl}";var D=e(M,2);D.textContent="{pnlPct}";var Y=e(D,2);Y.textContent="{pnlSign}",O(),o(v);var E=e(v,4),ee=t(E);ee.textContent=`new ChartWidget(host, {
+  trading: true,
+  pnlThresholds: [
+    { pnlPct: -0.02, color: '#ef4444' },
+    { pnlPct: 0,     color: '#94a3b8' },
+    { pnlPct: 0.02,  color: '#10b981' },
+  ],
+})`,o(E),ie(y=>ce(N,"href",y),[()=>z("/docs/api")]),L(B,w),de()}export{we as default};
