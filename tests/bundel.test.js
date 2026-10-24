@@ -14,6 +14,10 @@ function cek(nama, kondisi, info) { console.log((kondisi ? '  ✓ ' : '  ✗ ') 
 
 const konf = JSON.parse(read('assets/js/bundel.json'));
 const html = read('dashboard.html');
+// dashboard.html chart-first memuat skripnya langsung dan tidak punya penanda <!-- bundel:… -->.
+// Pemeriksaan pemasangan bundel di halaman hanya berlaku bila halamannya memang memakai bundel;
+// manifest, kesegaran sumber, dan stempel ?v= CSS tetap diperiksa tanpa syarat.
+const dashPakaiBundel = html.includes('<!-- bundel:');
 const man = ada('assets/dist/manifest.json') ? JSON.parse(read('assets/dist/manifest.json')) : null;
 
 console.log('Konfigurasi');
@@ -44,19 +48,23 @@ if (man) {
     }));
 
     console.log('Halaman');
-    // Kecuali modul ES (type="module", halaman-dashboard-lw.js) yang sengaja tidak dibundel.
-    cek('tidak ada lagi <script src="assets/js/…"> klasik di dashboard.html (semua lewat bundel)',
-        ![...html.matchAll(/<script[^>]*src="assets\/js\/[^>]*>/g)].some(m => !/type="module"/.test(m[0])));
-    for (const b of konf.bundel) {
-        const m = html.match(new RegExp(`<!-- bundel:${b.nama} ·[^>]*-->\\s*<script src="([^"]+)"( defer)?></script>\\s*<!-- /bundel:${b.nama} -->`));
-        cek(`bundel "${b.nama}" dimuat dari ${man.bundel[b.nama].file}${b.muat === 'defer' ? ' dengan defer' : ' (sinkron)'}`,
-            !!m && m[1] === man.bundel[b.nama].file && !!m[2] === (b.muat === 'defer'));
+    if (!dashPakaiBundel) {
+        console.log('  — dashboard chart-first tidak memakai bundel; pemasangan di halaman dilewati');
+    } else {
+        // Kecuali modul ES (type="module", halaman-dashboard-lw.js) yang sengaja tidak dibundel.
+        cek('tidak ada lagi <script src="assets/js/…"> klasik di dashboard.html (semua lewat bundel)',
+            ![...html.matchAll(/<script[^>]*src="assets\/js\/[^>]*>/g)].some(m => !/type="module"/.test(m[0])));
+        for (const b of konf.bundel) {
+            const m = html.match(new RegExp(`<!-- bundel:${b.nama} ·[^>]*-->\\s*<script src="([^"]+)"( defer)?></script>\\s*<!-- /bundel:${b.nama} -->`));
+            cek(`bundel "${b.nama}" dimuat dari ${man.bundel[b.nama].file}${b.muat === 'defer' ? ' dengan defer' : ' (sinkron)'}`,
+                !!m && m[1] === man.bundel[b.nama].file && !!m[2] === (b.muat === 'defer'));
+        }
+        const pos = n => html.indexOf(`<!-- bundel:${n} ·`);
+        cek('urutan bundel di halaman = urutan bundel.json', konf.bundel.every((b, i) => i === 0 || pos(konf.bundel[i - 1].nama) < pos(b.nama)));
+        const fitur = konf.bundel.find(b => b.file.includes('qim-muat-fitur.js'));
+        const peta = (read(man.bundel[fitur.nama].file).match(/window\.QIM_FITUR_LAZY=(\{.*?\});/) || [])[1];
+        cek('peta bundel lazy tertanam & menunjuk file yang ada', !!peta && Object.entries(JSON.parse(peta)).every(([n, v]) => v.url === man.lazy[n].file));
     }
-    const pos = n => html.indexOf(`<!-- bundel:${n} ·`);
-    cek('urutan bundel di halaman = urutan bundel.json', konf.bundel.every((b, i) => i === 0 || pos(konf.bundel[i - 1].nama) < pos(b.nama)));
-    const fitur = konf.bundel.find(b => b.file.includes('qim-muat-fitur.js'));
-    const peta = (read(man.bundel[fitur.nama].file).match(/window\.QIM_FITUR_LAZY=(\{.*?\});/) || [])[1];
-    cek('peta bundel lazy tertanam & menunjuk file yang ada', !!peta && Object.entries(JSON.parse(peta)).every(([n, v]) => v.url === man.lazy[n].file));
 
     console.log('Service Worker');
     const sw = read('sw.js');
@@ -66,7 +74,9 @@ if (man) {
         && read(man.bundel[konf.bundel.find(b => b.file.includes('halaman-dashboard.js')).nama].file).includes(`sw.js?v=${man.versi}`));
     const hi = sha(read('assets/js/halaman-index.js').replace(/\r\n/g, '\n')).slice(0, 10);
     cek('index.html memuat halaman-index.js?v=<hash isi> (file .js di-cache 30 hari)', read('index.html').includes('src="assets/js/halaman-index.js?v=' + hi + '"'));
-    cek('bundel awal ikut di-precache Service Worker', Object.values(man.bundel).every(b => sw.includes(`'${b.file}',`)));
+    cek(dashPakaiBundel ? 'bundel awal ikut di-precache Service Worker' : 'tanpa bundel di halaman, assets/dist tidak ikut di-precache',
+        dashPakaiBundel ? Object.values(man.bundel).every(b => sw.includes(`'${b.file}',`))
+                        : Object.values(man.bundel).every(b => !sw.includes(`'${b.file}',`)));
 
     // CSS di-cache "immutable" 30 hari oleh .htaccess. Bila ?v= tidak ikut berubah saat
     // berkasnya diedit, perubahan gaya TIDAK PERNAH sampai ke pengunjung lama — pernah

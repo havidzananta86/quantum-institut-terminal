@@ -96,9 +96,7 @@ cek('menu Indikator memuat bagian indikator Pine', /QIMIndikatorKustom\.bagianMe
 cek('chart selalu mulai bersih: status nyala TIDAK disimpan (hanya parameter)', /let aktif = false/.test(ui) && !/localStorage\.setItem\([^)]*aktif/.test(ui) && /KUNCI_OPSI/.test(ui));
 cek('Replay: hitungan dibatasi sampai bar replay (tanpa membocorkan masa depan)', /qim:replay-bar/.test(ui) && /x\.time <= waktuReplay/.test(ui) && /qim:replay-bar/.test(pg));
 cek('riwayat dalam dari get-history, dicampur hanya bila sumbernya sama dengan chart', /api\/get-history\.php/.test(ui) && /sumberChart === riwayat\.sumber/.test(ui));
-const pine = (JSON.parse(read('assets/js/bundel.json')).lazy || {}).pine || [];   // bundel lazy: dimuat saat popover Indikator dibuka
-cek('modul dimuat berurutan: qim-pine-smcsnd.js sebelum qim-indikator-kustom.js', pine.indexOf('qim-pine-smcsnd.js') === 0 && pine.indexOf('qim-indikator-kustom.js') === 1);
-cek('menu Indikator memuat modul Pine lebih dulu bila belum ada', /QIMMuatFitur\('pine'\)/.test(pg));
+cek('chart-first tidak memuat modul Pine opsional di shell utama', !/qim-pine-smcsnd\.js/.test(html) && !/qim-indikator-kustom\.js/.test(html) && /qim-terminal-shell\.js/.test(html));
 cek('tabel BUY/SELL memakai warna & isi skrip Pine (STATUS, WAIT SWEEP, TP1–TP3, SL)', /VALID BUY|status/.test(ui) && /ENTRY/.test(ui) && /'TP3'/.test(ui) && /rgba\(8, 153, 129/.test(read('assets/css/qim-fitur.css')));
 
 console.log(gagal ? `\nFAIL — ${gagal} pemeriksaan gagal` : '\nPASS — port Pine SMC+SnD: semantik benar & cocok dengan TradingView');

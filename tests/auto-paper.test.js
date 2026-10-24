@@ -49,9 +49,8 @@ cek('Leaderboard = papan mingguan yang hanya menghitung posisi manual (bukan aut
   && (papanKomp.match(/source = 'manual'/g) || []).length >= 3 && !/source <> 'auto'/.test(papanKomp), (papanKomp.match(/source = 'manual'/g) || []).length);
 cek('penilai sinyal & pembangkit menutup/membuka posisi simulasi (hook terpasang)', /qi_ap_sinkron\(/.test(read('api/signal-evaluator.php')) && /qi_ap_sinkron\(/.test(read('api/signal-generator.php')));
 const html = read('dashboard.html');
-cek('kartu Ikuti Auto Analisa, tombol, risiko, dan banner ada di dashboard', ['autoPaperCard', 'apToggle', 'apRisiko', 'apBanner', 'apSaldo', 'apTambah', 'apKurang', 'apRiwayat'].every(id => html.includes('id="' + id + '"')));
-// Skrip dashboard dibundel (npm run build:js): daftar & urutannya ada di assets/js/bundel.json.
-cek('skrip qim-auto-paper.js dimuat', JSON.parse(read('assets/js/bundel.json')).bundel.some(b => b.file.includes('qim-auto-paper.js')));
+cek('dashboard chart-first tidak menampilkan panel auto-paper lama', !['autoPaperCard', 'apToggle', 'apRisiko', 'apBanner', 'apSaldo', 'apTambah', 'apKurang', 'apRiwayat'].some(id => html.includes('id="' + id + '"')));
+cek('dashboard chart-first tidak memuat skrip auto-paper lama', !/qim-auto-paper\.js\?v=/.test(html));
 cek('posisi AUTO tidak punya tombol Tutup di tabel posisi', /src === 'auto' \? 'AUTO'/.test(read('assets/js/dashboard-app.js')));
 const ep = read('api/auto-paper.php');
 cek('endpoint memerlukan PRO dan memvalidasi risiko 0,25–5%', /qi_require_level\('pro'\)/.test(ep) && /risiko_min/.test(ep) && /risiko_maks/.test(ep));

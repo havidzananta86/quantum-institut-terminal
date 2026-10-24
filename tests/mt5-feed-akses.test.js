@@ -68,7 +68,14 @@ cek('penjelasan simulasi memperingatkan bukan harga pasar', /simulasi:\s*'[^']*b
 cek('lencana memasang tooltip dari OHLC_SOURCE_NOTES', /el\.title\s*=\s*OHLC_SOURCE_NOTES\[/.test(app));
 cek('tooltip direset saat sumber tidak diketahui', /el\.title\s*=\s*'Sumber data candle'/.test(app));
 cek('feed broker QI diberi warna berbeda dari sumber biasa', /brokerQi/.test(app) && /cyan-500/.test(app));
-cek('dashboard.html masih punya elemen #ohlcSource', /id="ohlcSource"/.test(baca('dashboard.html')));
+// Lencana #ohlcSource milik dashboard panel lama tidak ada di shell chart-first. Asal candle
+// TETAP ditampilkan, tetapi pindah ke Signal Center (#qtSignalSource, diisi result.source).
+// CATATAN: tooltip OHLC_SOURCE_NOTES — termasuk peringatan "harga broker Anda sendiri bisa
+// berbeda" — belum punya tempat di shell baru, padahal watchlist dan chart memang bisa
+// menampilkan harga berbeda. Perlu dipasang kembali sebelum shell ini tayang.
+const dashChart = baca('dashboard.html');
+cek('asal candle tetap ditampilkan di shell chart-first (#qtSignalSource)',
+    /id="qtSignalSource"/.test(dashChart) && /qtSignalSource.*result\.source/s.test(baca('assets/js/qim-terminal-shell.js')));
 
 // ── Bagian PHP: kode asli ────────────────────────────────────────────────────
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });

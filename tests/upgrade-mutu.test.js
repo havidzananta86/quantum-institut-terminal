@@ -34,7 +34,12 @@ const hl = baca('api/health.php');
 cek('health: status cron + alarm, tanpa 503 bila cron belum pernah jalan', /qi_cron_status\(/.test(hl) && /if \(\$checks\['cron'\]\['basi'\]\)/.test(hl));
 cek('cron menulis detak di akhir putaran', /qi_cron_detak\(/.test(baca('api/maintenance-cron.php')));
 const dash = baca('dashboard.html');
-cek('dashboard: panel per dimensi + Monte Carlo', /id="trDimPilih"/.test(dash) && /id="trDimBaris"/.test(dash) && /id="trMonteCarlo"/.test(dash));
+// Dashboard chart-first tidak lagi memuat panel Track Record. Datanya TETAP dihitung dan
+// disajikan api/signal-history.php (dicek di baris atas) dan perendernya masih ada di
+// dashboard-app.js, jadi fitur ini yatim: dihitung server, tidak ditampilkan di mana pun.
+// Dicatat di sini supaya tidak hilang diam-diam — butuh tempat baru di shell chart-first.
+cek('panel per dimensi + Monte Carlo: belum punya tempat di shell chart-first (data tetap ada di API)',
+    !/id="trDimPilih"/.test(dash) && /'statistik_dimensi'/.test(sh) && /'monte_carlo'/.test(sh));
 cek('dashboard-app.js merender statistik_dimensi & monte_carlo', /data\.statistik_dimensi/.test(baca('assets/js/dashboard-app.js')) && /data\.monte_carlo/.test(baca('assets/js/dashboard-app.js')));
 
 const probe = spawnSync(PHP, ['-v'], { encoding: 'utf8' });

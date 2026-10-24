@@ -23,19 +23,8 @@ const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const checks = [
   ['JS memakai engine version canonical', /signalEngineVersion = 'qt-signal-v2\.3'/.test(js)],
   ['JS membuang candle berjalan untuk signal confirmed', /state\.candles = sets\.closed/.test(js)],
+  ['dashboard memuat kontrak JS terbaru', /qim-terminal-shell\.js\?v=1\.3\.0/.test(dashboard)],
 ];
-
-// DITANGGUHKAN, bukan dihapus: dashboard.html masih versi master (panel), karena
-// shell iframe menghapus modul yang dijamin tes lain — Quick Trade, garis entry/SL/TP,
-// batas rugi harian (qim-batas-rugi.js), paper trading (autoPaperCard), berita di chart.
-// Nyalakan lagi bersama migrasi dashboard, setelah diputuskan fitur mana yang ikut dan
-// dari mana TradeCanvas dipasok (npm @tradecanvas/chart, bukan salinan situs vendor).
-const dashboardSudahPakaiShell = /qim-terminal-shell\.js\?v=/.test(dashboard);
-if (dashboardSudahPakaiShell) {
-  checks.push(['dashboard memuat kontrak JS terbaru', /qim-terminal-shell\.js\?v=1\.3\.0/.test(dashboard)]);
-} else {
-  console.log('  — dashboard masih memakai panel master; cek kontrak dashboard ditangguhkan');
-}
 let failed = 0;
 for (const [label, ok] of checks) { console.log(`  ${ok ? '✓' : '✗'} ${label}`); if (!ok) failed++; }
 if (failed) process.exit(1);

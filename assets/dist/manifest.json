@@ -52,7 +52,7 @@
       }
     },
     "fitur": {
-      "file": "assets/dist/fitur.d17d997cd9.js",
+      "file": "assets/dist/fitur.1bdd407e86.js",
       "muat": "sinkron",
       "sumber": {
         "pro-features.js": "668f6b3e81cc8de7",
@@ -76,7 +76,7 @@
         "ui-improvements.js": "1263b37ebfe2d850",
         "a11y.js": "fc79d7a42ff00b04",
         "dashboard-tema.js": "1755101f1c5e1e42",
-        "halaman-dashboard.js": "ba08d90256a592be"
+        "halaman-dashboard.js": "faed4da045e57507"
       }
     },
     "tunda": {
@@ -110,5 +110,5 @@
       }
     }
   },
-  "versi": "434546e880"
+  "versi": "e0d2f3d971"
 }

@@ -71,13 +71,18 @@ console.log('Delegasi data-qi-aksi (dashboard)');
   // begitu sejak sebelum delegasi; QIAksi hanya memberi console.warn alih-alih ReferenceError.
   const DIKENAL_HILANG = new Set(['loadRealtimeSymbol']);
   const hilang = [...dipakai].filter(n => !ada.has(n.split('.')[0]) && !DIKENAL_HILANG.has(n));
-  cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size > 100 && hilang.length === 0, hilang);
-  // Skrip dashboard dibundel (assets/js/bundel.json, npm run build:js): qim-aksi.js harus ada di bundel
-  // yang dimuat di <head>, sebelum bundel lain.
-  const bundel = JSON.parse(read('assets/js/bundel.json')).bundel, dash = read('dashboard.html');
-  const bAksi = bundel.find(b => b.file.includes('qim-aksi.js'));
-  cek('qim-aksi.js dimuat di <head> dashboard (sebelum skrip yang mendaftarkan aksi)',
-    !!bAksi && bundel.indexOf(bAksi) === 0 && new RegExp(`<!-- bundel:${bAksi.nama} ·[^>]*-->\\s*<script src="assets/dist/[^"]+"></script>[\\s\\S]*</head>`).test(dash));
+  // Ambang dulu > 100 karena dashboard panel lama menyumbang ratusan data-qi-aksi. Dashboard
+  // chart-first tidak memakai delegasi itu sama sekali (shell-nya memasang addEventListener
+  // sendiri), jadi ambangnya kini hanya penjaga agar pemindaian yang rusak tidak lolos diam-diam.
+  cek(`${dipakai.size} nama data-qi-aksi semuanya bisa dijalankan`, dipakai.size >= 20 && hilang.length === 0, hilang);
+
+  // Pengganti cek "qim-aksi.js di <head> dashboard": tujuan aslinya adalah dashboard tidak
+  // memakai kode inline. Dashboard chart-first mencapainya tanpa delegasi, jadi yang diuji
+  // sekarang adalah sifat itu langsung — tidak ada <script> inline dan tidak ada on*="…".
+  const dash = read('dashboard.html');
+  cek('dashboard tidak memuat <script> inline', !/<script(?![^>]*\ssrc=)[^>]*>/.test(dash));
+  cek('dashboard tidak memakai handler on*="…"',
+    !/\son(?:click|change|input|submit|load|error|keyup|keydown|focus|blur)\s*=\s*"/i.test(dash));
 }
 
 console.log('Header CSP (.htaccess)');

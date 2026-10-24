@@ -87,11 +87,8 @@ cek('AI: teks di-escape sebelum Markdown dirender (aman dari HTML sisipan)', /co
 const pg = read('assets/js/qim-pages.js');
 cek('latihan replay: BUY/SELL, SL lebih dulu, mundur dikunci, nilai A–D', /data-rp="beli"/.test(pg) && /gapSL \|\| \(buy \? b\.low <= P\.sl/.test(pg) && /bar\.querySelector\('\[data-rp="mundur"\]'\)\.disabled/.test(pg) && /'A — sangat baik'/.test(pg));
 const html = read('dashboard.html');
-// Skrip dibundel (assets/js/bundel.json); backtest & multi-chart dimuat lazy saat menunya dibuka.
-const bundel = JSON.parse(read('assets/js/bundel.json'));
-const eager = bundel.bundel.flatMap(b => b.file), lazy = Object.values(bundel.lazy).flat();
-cek('dashboard memuat semua modul fitur baru', ['qim-berita-chart.js', 'qim-ai-jelaskan.js'].every(f => eager.includes(f))
-    && ['qim-backtest-ui.js', 'qim-multichart.js'].every(f => lazy.includes(f)) && html.includes('qim-fitur.css'));
+cek('dashboard chart-first memuat terminal, Signal Center, dan backtest',
+    /quantum-terminal\/embed\//.test(html) && /qtAssistDrawer/.test(html) && /qtPanel-backtest/.test(html));
 
 console.log(gagal ? `\nFAIL — ${gagal} pemeriksaan gagal` : '\nPASS — fitur baru: backtest, indeks, berita, multi-chart, AI, latihan');
 process.exit(gagal ? 1 : 0);

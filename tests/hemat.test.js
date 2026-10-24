@@ -24,8 +24,9 @@ cek('MTF bias (5 timeframe) hanya saat Overview/MTF tampil, maks sekali per meni
 cek('chart: 1000 candle diunduh ulang hanya saat batang baru seharusnya muncul', /if \(akhirLokal && kini < akhirLokal\.time \+ durBatang\) return;/.test(app) && /_ohlcSync\.boleh = kini \+ Math\.min\(300/.test(app));
 cek('Mesin 9 memakai kunci data watchlist (BTC = BTCUSDT, bukan "BTCUSD" yang berbuah data simulasi)',
     /WL_GROUPS\.flatMap\(g => g\.syms\)\.find\(x => x\.tv === s\)/.test(read('assets/js/dashboard-pro.js')));
-cek('alat gambar dimuat SETELAH chart (chart tidak menunggu unduhan opsional)',
-    lw.indexOf("window.dispatchEvent(new CustomEvent('lc-modules-ready'))") < lw.indexOf('lightweight-charts-drawing@') && /lc-drawing-ready/.test(app) && /function pasangAlatGambar\(\)/.test(app));
+const dash = read('dashboard.html');
+cek('shell chart-first tidak menunggu modul gambar opsional',
+    /id="quantumTerminalFrame"/.test(dash) && !/lightweight-charts-drawing@/.test(dash) && !/lc-modules-ready/.test(dash));
 
 console.log('CPU & baterai');
 const a11y = read('assets/js/a11y.js');

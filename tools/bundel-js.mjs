@@ -214,15 +214,27 @@ function ubahTeks(rel, fn) {
     const eol = asli.includes('\r\n') ? '\r\n' : '\n';
     keluaran[rel] = fn(asli.replace(/\r\n/g, '\n')).replace(/\n/g, eol);
 }
-ubahTeks(HALAMAN, html => {
-    for (const [nama, t] of Object.entries(tag)) {
-        const re = new RegExp(`<!-- bundel:${nama}(?= ·| -->)[^>]*-->[\\s\\S]*?<!-- /bundel:${nama} -->`);   // "kepala" ≠ "kepala-awal"
-        if (!re.test(html)) gagal(`${HALAMAN}: penanda <!-- bundel:${nama} --> … <!-- /bundel:${nama} --> tidak ditemukan`);
-        html = html.replace(re, `<!-- bundel:${nama} · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): ${t.isi.join(', ')} -->\n`
-            + `<script src="${t.src}"${t.defer ? ' defer' : ''}></script>\n<!-- /bundel:${nama} -->`);
-    }
-    return html;
-});
+// dashboard.html chart-first memuat skripnya langsung (auth.js, qim-terminal-gate.js,
+// qim-terminal-shell.js) dan tidak punya penanda <!-- bundel:… --> lagi. Dulu itu membuat
+// build GAGAL, dan karena CI menjalankan build ini sebagai gerbang, seluruh CI ikut merah.
+// Bila penandanya memang tidak ada: lewati penulisan tag dan daftar precache, tetapi stempel
+// ?v= CSS (di bawah) tetap berjalan untuk index.html. Pipeline bundel sendiri sengaja BELUM
+// dihapus — tidak ada halaman yang memuat assets/dist lagi, jadi penghapusannya (assets/dist,
+// assets/js/bundel.json, berkas ini, skrip build:js/cek:js) adalah bersih-bersih tersendiri.
+const dashboardPakaiBundel = fs.readFileSync(p(HALAMAN), 'utf8').includes('<!-- bundel:');
+if (dashboardPakaiBundel) {
+    ubahTeks(HALAMAN, html => {
+        for (const [nama, t] of Object.entries(tag)) {
+            const re = new RegExp(`<!-- bundel:${nama}(?= ·| -->)[^>]*-->[\\s\\S]*?<!-- /bundel:${nama} -->`);   // "kepala" ≠ "kepala-awal"
+            if (!re.test(html)) gagal(`${HALAMAN}: penanda <!-- bundel:${nama} --> … <!-- /bundel:${nama} --> tidak ditemukan`);
+            html = html.replace(re, `<!-- bundel:${nama} · dibuat "npm run build:js" dari assets/js/bundel.json (jangan diedit tangan): ${t.isi.join(', ')} -->\n`
+                + `<script src="${t.src}"${t.defer ? ' defer' : ''}></script>\n<!-- /bundel:${nama} -->`);
+        }
+        return html;
+    });
+} else {
+    console.log(`  ${HALAMAN} tidak memakai bundel (chart-first) — tag & precache dilewati.`);
+}
 ubahTeks('sw.js', sw => {
     if (!/const CACHE_NAME = '[^']*';/.test(sw) || !/const STATIC_CACHE = '[^']*';/.test(sw)) gagal('sw.js: CACHE_NAME / STATIC_CACHE tidak ditemukan');
     if (!/\/\/ bundel:mulai[\s\S]*?\/\/ bundel:akhir/.test(sw)) gagal('sw.js: penanda // bundel:mulai … // bundel:akhir di CORE_ASSETS tidak ditemukan');
@@ -230,7 +242,9 @@ ubahTeks('sw.js', sw => {
         .replace(/const CACHE_NAME = '[^']*';/, `const CACHE_NAME = 'quantum-terminal-${versi}';`)
         .replace(/const STATIC_CACHE = '[^']*';/, `const STATIC_CACHE = 'quantum-static-${versi}';`)
         .replace(/([ \t]*)\/\/ bundel:mulai[^\n]*\n[\s\S]*?\/\/ bundel:akhir/, (_, ind) =>
-            `${ind}// bundel:mulai (ditulis npm run build:js)\n` + Object.values(tag).map(t => `${ind}'${t.src}',\n`).join('') + `${ind}// bundel:akhir`);
+            // Tanpa bundel di halaman, assets/dist tidak pernah diminta browser: mem-precache-nya
+            // hanya menghabiskan kuota cache pengguna untuk berkas yang tidak dipakai.
+            `${ind}// bundel:mulai (ditulis npm run build:js)\n` + (dashboardPakaiBundel ? Object.values(tag) : []).map(t => `${ind}'${t.src}',\n`).join('') + `${ind}// bundel:akhir`);
 });
 
 // ── Tulis / cek ─────────────────────────────────────────────────────────────
