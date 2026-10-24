@@ -170,38 +170,8 @@ async function dimuat(posisi = [], opsi = {}) {
   }
 
   // ── 4. Kartu Simulation Balance: state bersama ────────────────────────────
-  console.log('\nKartu Simulation Balance memakai state yang sama');
-  {
-    const QD = baca('assets/js/qim-dashboard.js');
-    cek('qim-dashboard.js tidak lagi GET api/paper-trading.php sendiri', !/fetch\(\s*['"`]api\/paper-trading\.php/.test(QD));
-    cek('qim-dashboard.js tidak lagi memanggil ptPnlMult tanpa harga', !/ptPnlMult\(String\(item\.symbol\)\.toUpperCase\(\)\)/.test(QD));
-    cek("kartu mendengarkan 'qi-paper-state'", /window\.addEventListener\('qi-paper-state'/.test(QD));
-
-    const s = await dimuat([POS('POS-1', { symbol: 'USDCHF', entryPrice: 0.9, lots: 1 })], { riwayat: [{ id: 'POS-0', symbol: 'XAUUSD', side: 'BUY', lots: 0.1, entryPrice: 4000, closePrice: 4010, realizedPnL: 100, closedAt: '2026-10-21T10:00:00Z', closeReason: 'manual' }] });
-    s.server.saldo = 10100;
-    s.harga('USDCHF', { price: '0.9101', bid: '0.9100', ask: '0.9102' });
-    await s.ctx.ptLoadFromServer();
-    for (const nama of ['signedUsd', 'setSimulation', 'refreshSimulation']) s.jalankan(ambilFungsi(nama, QD));
-    const getAwal = s.server.get;
-    s.jalankan('refreshSimulation()');
-    // USDCHF BUY 1 lot 0.9000 → bid 0.9100: 0.01 × 1 × 100000/0.91 = 1098.90 (dulu pengali 1000 → $10).
-    cek('Open P&L USDCHF memakai pengali dengan harga (100000/harga) di bid', s.el('qimSimOpen').textContent === '+$1,098.90', s.el('qimSimOpen').textContent);
-    cek('ekuitas = saldo server + mengambang', s.el('qimSimEquity').textContent === '$11,198.90', s.el('qimSimEquity').textContent);
-    cek('saldo awal = saldo − realisasi', s.el('qimSimInitial').textContent === '$10,000.00', s.el('qimSimInitial').textContent);
-    cek('kartu tidak melakukan GET kedua', s.server.get === getAwal);
-    s.harga('USDCHF', { price: '0.9101', bid: '0.9100', ask: '0.9102' }, 120);
-    s.jalankan('refreshSimulation()');
-    cek('harga basi → "Harga belum tersedia", catatan menyebut posisi yang tidak dihitung', s.el('qimSimOpen').textContent === 'Harga belum tersedia' && /1 posisi tanpa harga live tidak dihitung/.test(s.el('qimSimNote').textContent), [s.el('qimSimOpen').textContent, s.el('qimSimNote').textContent]);
-
-    const f = sandbox({ tingkat: 0 });
-    for (const nama of ['signedUsd', 'setSimulation', 'refreshSimulation']) f.jalankan(ambilFungsi(nama, QD));
-    f.jalankan('refreshSimulation()');
-    cek('paket FREE → kartu menyebut paket PRO, tanpa angka', /PRO/.test(f.el('qimSimNote').textContent) && f.el('qimSimEquity').textContent === '—');
-    const b = sandbox();
-    for (const nama of ['signedUsd', 'setSimulation', 'refreshSimulation']) b.jalankan(ambilFungsi(nama, QD));
-    b.jalankan('refreshSimulation()');
-    cek('belum dimuat → "Memuat…", bukan saldo karangan', /Memuat/.test(b.el('qimSimNote').textContent) && b.el('qimSimEquity').textContent === '—');
-  }
+  // Blok "Kartu Simulation Balance" dihapus: kartunya ada di dashboard panel lama
+  // (assets/js/qim-dashboard.js).
 
   // ── 5. Klik ganda ─────────────────────────────────────────────────────────
   console.log('\nKlik ganda tidak membuka dua posisi');
@@ -374,31 +344,9 @@ async function dimuat(posisi = [], opsi = {}) {
   }
 
   // ── 11. Trade Paper & Eksekusi Setup AI ───────────────────────────────────
-  console.log('\n"⚡ Trade Paper" & "Eksekusi Setup AI": order pasar, asal sinyal');
-  {
-    const PRO = baca('assets/js/dashboard-pro.js');
-    const PTT = baca('assets/js/pro-trading-tools.js');
-    cek("tombol Trade Paper: entry null (harga sisi saat ini) dan asal 'sinyal'", /data-qi-aksi="ptOpenDirectPosition" data-qi-arg="' \+ QIAksi\.arg\(String\(x\.simbol\), String\(x\.arah\), null, Number\(x\.sl\), Number\(x\.tp\), 0\.05, 'sinyal'\)/.test(PRO));
-    cek("Eksekusi Setup AI: entry null dan asal 'sinyal'", /window\.ptOpenDirectPosition\(sym, side, null, sl, tp, lots, 'sinyal'\)/.test(PTT));
-
-    const s = await dimuat();
-    s.klik(s.tombol('ptOpenDirectPosition', JSON.stringify(['XAUUSD', 'SELL', null, 4160, 4080, 0.05, 'sinyal'])));
-    await s.tunggu(80);
-    const b = buka(s)[0] || {};
-    cek('klik Trade Paper → harga = bid saat ini (bukan entry setup)', b.side === 'SELL' && b.harga === 4123.69 && b.asal === 'sinyal' && b.lots === 0.05, b);
-    cek('SL/TP setup diteruskan', b.sl === 4160 && b.tp === 4080, b);
-
-    const t = await dimuat();
-    t.klik(t.tombol('ptOpenDirectPosition', JSON.stringify(['XAUUSD', 'BUY', null, 4130, 4200, 0.05, 'sinyal'])));
-    await t.tunggu(80);
-    cek('SL setup sudah terlewati harga → tidak dikirim, alasannya disebut', buka(t).length === 0 && t.jejak.toast.some((x) => /stop loss harus di BAWAH/.test(x.pesan)), t.jejak.toast);
-
-    const u = await dimuat();
-    await u.ctx.ptOpenDirectPosition('GBPJPY', 'BUY', null, null, null, 0.1, 'sinyal');
-    cek('simbol yang tidak didukung server → ditolak dengan daftar simbol', buka(u).length === 0 && u.jejak.toast.some((x) => /GBPJPY belum didukung/.test(x.pesan)));
-    await u.ctx.ptOpenDirectPosition('XAUUSD', 'BUY', null, null, null, 0, 'sinyal');
-    cek('lot 0 → ditolak dengan pesan', buka(u).length === 0 && u.jejak.toast.some((x) => /Lot harus 0,01/.test(x.pesan)));
-  }
+  // Blok "⚡ Trade Paper" & "Eksekusi Setup AI" dihapus: kedua tombol itu milik
+  // dashboard-pro.js dan pro-trading-tools.js, yang ikut terhapus bersama dashboard
+  // panel lama. Jalur ptOpenDirectPosition sendiri tetap diuji di blok-blok lain.
 
   // ── 12. Tombol "↺ Update P&L" ─────────────────────────────────────────────
   console.log('\nTombol "↺ Update P&L" benar-benar memuat ulang');
@@ -510,10 +458,7 @@ async function dimuat(posisi = [], opsi = {}) {
     cek('posisi yang ditutup TIDAK lagi terdaftar', !r.posisi.some((p) => p.id === 'POS-9'), r.posisi);
     cek('… dan masuk riwayat (dari jawaban server)', r.riwayat[0] && r.riwayat[0].id === 'POS-9' && r.riwayat[0].pnl === 2369, r.riwayat[0]);
     cek('Quick Trade: tidak ada tombol Tutup untuk POS-9', !/POS-9/.test(s.el('qtPosisi').innerHTML), s.el('qtPosisi').innerHTML);
-    const QD = baca('assets/js/qim-dashboard.js');
-    for (const nama of ['signedUsd', 'setSimulation', 'refreshSimulation']) s.jalankan(ambilFungsi(nama, QD));
-    s.jalankan('refreshSimulation()');
-    cek('kartu Simulation: ekuitas $12,369.00 (P/L tidak dihitung dua kali)', s.el('qimSimEquity').textContent === '$12,369.00', s.el('qimSimEquity').textContent);
+    // Kartu "Simulation Balance" ikut terhapus bersama assets/js/qim-dashboard.js.
   }
   {
     const s = await dimuat();

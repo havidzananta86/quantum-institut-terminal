@@ -18,7 +18,8 @@ const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 const JS = fs.readFileSync(path.join(root, 'assets/js/halaman-dashboard-pemuat.js'), 'utf8');
-const AWAL = fs.readFileSync(path.join(root, 'assets/js/halaman-dashboard-awal.js'), 'utf8');
+// Gerbang sesi pindah ke assets/js/qim-terminal-gate.js saat dashboard panel lama dihapus.
+const AWAL = fs.readFileSync(path.join(root, 'assets/js/qim-terminal-gate.js'), 'utf8');
 const HTML = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const CSS = fs.readFileSync(path.join(root, 'assets/css/qim-masuk.css'), 'utf8');
 let gagal = 0;
@@ -308,7 +309,8 @@ cek('blok layar pembuka tanpa <style> inline dan tanpa style="…"', !/<style/.t
 cek('qim-masuk.css dimuat di <head> tepat setelah tokens.css', /tokens\.css\?v=[^"]*">\s*(<!--[^>]*-->\s*)?<link rel="stylesheet" href="assets\/css\/qim-masuk\.css\?v=/.test(HTML));
 cek('teks layar pembuka ≥ 12 px (tanpa text-[8px]/[9px]/[10px])', !/text-\[(8|9|10)px\]/.test(blok));
 cek('gerbang akses lama (#gateUpgrade, "SECURE CONNECTION") sudah dihapus', !/id="gateUpgrade"/.test(HTML) && !/SECURE CONNECTION/i.test(HTML) && !/Restricted Access/.test(HTML));
-cek('awal.js: sambutan menunggu qi-layar-pembuka-selesai', /qi-layar-pembuka-selesai/.test(AWAL) && /__qiLayarPembukaSelesai/.test(JS));
+// Dialog sambutan ikut terhapus bersama assets/js/pro-features.js (dashboard panel lama),
+// jadi pemeriksaan 'sambutan menunggu qi-layar-pembuka-selesai' tidak punya subjek lagi.
 cek('awal.js: mengirim qi-sesi dari verifikasi server', /new CustomEvent\('qi-sesi'/.test(AWAL));
 
 console.log(gagal ? `\n${gagal} uji GAGAL` : '\nPASS — layar pembuka: tahapan nyata, tidak mengurung, Bahasa Indonesia');

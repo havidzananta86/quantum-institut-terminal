@@ -94,7 +94,9 @@ if (seri) {
   // Satu perbedaan yang DISENGAJA: data < 15 close → JS null ("belum cukup"), PHP 50 (netral,
   // dipakai pembanding > 55 / < 45 sehingga tidak pernah menjadi suara arah). Keduanya berarti
   // "tidak ada informasi"; penerbit PHP memang menolak < 55 candle sebelum RSI dihitung.
-  const src = baca('assets/js/dashboard-app.js');
+  // Pembanding JS pindah dari dashboard-app.js (terhapus bersama dashboard panel lama) ke
+  // assets/js/halaman-index.js, yang masih tayang dan memakai rumus Wilder yang sama.
+  const src = baca('assets/js/halaman-index.js');
   const potong = (nama) => {
     const awal = src.indexOf('function ' + nama + '(');
     if (awal < 0) return null;
@@ -102,20 +104,20 @@ if (seri) {
     for (; i < src.length; i++) { if (src[i] === '{') dalam++; else if (src[i] === '}' && --dalam === 0) break; }
     return src.slice(awal, i + 1);
   };
-  const bagian = ['qiBarDatar', 'qiRsiWilderSeri', 'calcRSI'].map(potong);
-  if (!bagian[2]) {
-    console.log('  ! calcRSI tidak ditemukan di assets/js/dashboard-app.js — paritas JS hanya terhadap rumus rujukan');
+  const bagian = ['_calcRSI14'].map(potong);
+  if (!bagian[0]) {
+    console.log('  ! _calcRSI14 tidak ditemukan di assets/js/halaman-index.js — paritas JS hanya terhadap rumus rujukan');
   } else {
     const kotak = {};
-    vm.runInNewContext(bagian.filter(Boolean).join('\n') + '\nthis.calcRSI = calcRSI;', kotak);
+    vm.runInNewContext(bagian.filter(Boolean).join('\n') + '\nthis.calcRSI = _calcRSI14;', kotak);
     const datar = kotak.calcRSI(new Array(40).fill(5));
     if (datar !== 50) {
-      console.log('  ! calcRSI di dashboard-app.js belum memakai rumus bersama (datar → ' + datar + '); paritas menunggu perbaikan sisi JS');
+      console.log('  ! _calcRSI14 di halaman-index.js belum memakai rumus bersama (datar → ' + datar + '); paritas menunggu perbaikan sisi JS');
     } else {
       for (const [nama, s] of Object.entries(seri)) {
         const js = kotak.calcRSI(s.closes || s.candles, 14);
         const setara = js === null ? s.rsi === 50 : Math.abs(js - s.rsi) < 1e-9;
-        cek(`${nama}: calcRSI dashboard-app.js ${js === null ? 'null (belum cukup)' : Number(js).toFixed(6)} ⇄ PHP ${Number(s.rsi).toFixed(6)}`, setara);
+        cek(`${nama}: _calcRSI14 halaman-index.js ${js === null ? 'null (belum cukup)' : Number(js).toFixed(6)} ⇄ PHP ${Number(s.rsi).toFixed(6)}`, setara);
       }
     }
   }

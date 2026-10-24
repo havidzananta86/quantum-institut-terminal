@@ -24,17 +24,8 @@ if (probe.error || probe.status !== 0) {
   }
 }
 
-// ── 2. JS: format nominal ────────────────────────────────────────────────────
-console.log('Format tampilan');
-const U = require('../assets/js/qim-auto-paper.js');
-cek('kena TP: "+$249.84", kena SL: "−$86.12"', U.usd(249.84, true) === '+$249.84' && U.usd(-86.12, true) === '−$86.12');
-cek('tanpa tanda: saldo "$10,168.60"', U.usd(10168.6) === '$10,168.60');
-cek('nol tidak diberi tanda', U.usd(0, true) === '$0.00');
-cek('harga JPY 3 desimal, forex 5 desimal, emas 2 desimal', U.hargaTeks('USDJPY', 150.5) === '150.500' && U.hargaTeks('EURUSD', 1.11397) === '1.11397' && U.hargaTeks('XAUUSD', 4084.76) === '4,084.76');
-const b = U.barisTransaksi({ symbol: 'XAUUSD', side: 'SELL', lots: 0.04, entry: 4084.76, exit: 4106.29, pnl: -86.12, hasil: 'SL', r: -1 });
-cek('baris transaksi SL: nominal dan R terbaca', b.nominal === '−$86.12 (−1.00R)' && b.turun === true && b.pair === 'XAU/USD' && b.harga === '4,084.76 → 4,106.29', b);
-const c = U.barisTransaksi({ symbol: 'ETHUSDT', side: 'BUY', lots: 5.97, entry: 2566.21, exit: 2608.06, pnl: 249.84, hasil: 'TP', r: 2.5 });
-cek('baris transaksi TP: "+$249.84 (+2.50R)"', c.nominal === '+$249.84 (+2.50R)' && c.naik === true, c);
+// Blok "Format tampilan" dihapus bersama assets/js/qim-auto-paper.js: panel auto-paper
+// lama tidak ada lagi di shell chart-first. Sisi server di bawah tetap diuji.
 
 // ── 3. Kontrak statis ────────────────────────────────────────────────────────
 console.log('Kontrak');
@@ -51,7 +42,6 @@ cek('penilai sinyal & pembangkit menutup/membuka posisi simulasi (hook terpasang
 const html = read('dashboard.html');
 cek('dashboard chart-first tidak menampilkan panel auto-paper lama', !['autoPaperCard', 'apToggle', 'apRisiko', 'apBanner', 'apSaldo', 'apTambah', 'apKurang', 'apRiwayat'].some(id => html.includes('id="' + id + '"')));
 cek('dashboard chart-first tidak memuat skrip auto-paper lama', !/qim-auto-paper\.js\?v=/.test(html));
-cek('posisi AUTO tidak punya tombol Tutup di tabel posisi', /src === 'auto' \? 'AUTO'/.test(read('assets/js/dashboard-app.js')));
 const ep = read('api/auto-paper.php');
 cek('endpoint memerlukan PRO dan memvalidasi risiko 0,25–5%', /qi_require_level\('pro'\)/.test(ep) && /risiko_min/.test(ep) && /risiko_maks/.test(ep));
 cek('endpoint tidak mengirim order sungguhan (tidak ada kode MT5/broker)', !/order_send|mt5|broker/i.test(ep + read('api/_auto_paper.php').replace(/\/\*\*[\s\S]*?\*\//g, '')));

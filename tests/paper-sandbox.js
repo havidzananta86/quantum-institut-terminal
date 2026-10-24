@@ -22,7 +22,8 @@ const vm = require('vm');
 
 const root = path.join(__dirname, '..');
 const baca = (p) => fs.readFileSync(path.join(root, p), 'utf8');
-const SRC = baca('assets/js/dashboard-app.js');
+// Jalur order dipisah dari dashboard-app.js saat dashboard panel lama dihapus.
+const SRC = baca('assets/js/qim-quick-trade.js');
 const AKSI = baca('assets/js/qim-aksi.js');
 const MATH = baca('assets/js/qim-paper-math.js');
 const { qimPaperPnl } = require(path.join(root, 'assets/js/qim-paper-math.js'));
@@ -30,7 +31,7 @@ const { qimPaperPnl } = require(path.join(root, 'assets/js/qim-paper-math.js'));
 function potong(awal, akhir) {
   const a = SRC.indexOf(awal);
   const b = SRC.indexOf(akhir, a);
-  if (a < 0 || b < 0) throw new Error('penanda tidak ditemukan di dashboard-app.js: ' + awal + ' … ' + akhir);
+  if (a < 0 || b < 0) throw new Error('penanda tidak ditemukan di qim-quick-trade.js: ' + awal + ' … ' + akhir);
   return SRC.slice(a, b);
 }
 
@@ -47,7 +48,7 @@ function ambilFungsi(nama, sumber = SRC) {
   return sumber.slice(a, i + 1);
 }
 
-const BLOK_PAPER = potong('// ─── Paper Trading', '// ─── Track Record');
+const BLOK_PAPER = potong('// ─── Paper Trading', '// ─── Akhir jalur order');
 
 // ── DOM tiruan ───────────────────────────────────────────────────────────────
 const dekode = (s) => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');

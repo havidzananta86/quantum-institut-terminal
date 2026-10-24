@@ -27,7 +27,8 @@ const DUA = baca('assets/js/qim-2fa-login.js');
 const ANIM = baca('assets/js/qim-masuk-animasi.js');
 const LOGIN = baca('assets/js/halaman-login.js');
 const KEPALA = baca('assets/js/halaman-login-kepala.js');
-const AWAL = baca('assets/js/halaman-dashboard-awal.js');
+// Gerbang sesi pindah ke assets/js/qim-terminal-gate.js saat dashboard panel lama dihapus.
+const AWAL = baca('assets/js/qim-terminal-gate.js');
 const PEMUAT = baca('assets/js/halaman-dashboard-pemuat.js');
 const HTML = baca('login.html');
 const DASH = baca('dashboard.html');

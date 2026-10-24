@@ -19,8 +19,22 @@
             } catch (e) { return null; }
         }
 
-        function goLogin() {
-            try { sessionStorage.setItem('qi_redirect_after_login', 'dashboard.html'); } catch (e) {}
+        /** Tautan dalam diingat utuh (?panel=…#…) supaya setelah login kembali ke tempat semula. */
+        function tujuanSekarang() {
+            return (location.pathname.split('/').pop() || 'dashboard.html') + location.search + location.hash;
+        }
+
+        /** Sesi ditolak server: token HARUS hilang dari KEDUA penyimpanan, bukan salah satu. */
+        function hapusSesi() {
+            try { localStorage.removeItem('qi_token'); localStorage.removeItem('qi_user'); } catch (e) {}
+            try { sessionStorage.removeItem('qi_token'); sessionStorage.removeItem('qi_user'); } catch (e) {}
+        }
+
+        function goLogin(alasan) {
+            try {
+                sessionStorage.setItem('qi_redirect_after_login', tujuanSekarang());
+                sessionStorage.setItem('qi_alasan_masuk', alasan || 'perlu_masuk');
+            } catch (e) {}
             if (error) error.style.display = 'grid';
             if (frame) frame.style.visibility = 'hidden';
             window.setTimeout(function () { window.location.replace('login.html'); }, 250);
@@ -28,7 +42,7 @@
 
         var currentToken = token();
         if (!currentToken) {
-            goLogin();
+            goLogin('perlu_masuk');
             return;
         }
 
@@ -42,12 +56,25 @@
             body: JSON.stringify({ type: 'verify_token', token: currentToken }),
             cache: 'no-store'
         }).then(function (response) {
-            if (!response.ok) throw new Error('session verification failed');
-            return response.json();
-        }).then(function (data) {
-            if (!data || data.status !== 'success') goLogin();
+            var http = response.status;
+            return response.json().catch(function () { return null; }).then(function (data) {
+                // 401 = server MENOLAK sesi. 503 = server tidak BISA memeriksanya (basis data
+                // sedang tumbang) — itu bukan alasan mengeluarkan orang yang sedang bekerja.
+                var sah = http === 200 && !!(data && data.status === 'success');
+                var ditolak = http === 401;
+                // Layar pembuka menandai tahap "Memverifikasi sesi" selesai dari kejadian ini
+                // (assets/js/halaman-dashboard-pemuat.js). Dulu dikirim halaman-dashboard-awal.js,
+                // yang terhapus bersama dashboard panel lama — tanpa ini tahap pertama tidak
+                // pernah beranjak dari "menunggu".
+                try {
+                    window.dispatchEvent(new CustomEvent('qi-sesi', { detail: { sah: sah, ditolak: ditolak, http: http } }));
+                } catch (e) {}
+                if (ditolak) { hapusSesi(); goLogin('sesi_berakhir'); }
+            });
         }).catch(function () {
-            // Temporary network issues do not interrupt an existing local session.
+            // Gangguan jaringan sesaat tidak memutus sesi lokal yang sudah ada, tetapi layar
+            // pembuka tetap harus beranjak — kalau tidak, pengguna terkurung di tahap pertama.
+            try { window.dispatchEvent(new CustomEvent('qi-sesi', { detail: { sah: true, http: 0 } })); } catch (e) {}
         });
     })();
 

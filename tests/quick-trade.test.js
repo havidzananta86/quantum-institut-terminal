@@ -2,7 +2,7 @@
  * Kartu Quick Trade di rail kanan: harga sisi beli/jual, stepper lot & SL/TP,
  * perkiraan untung/rugi, tujuan order, mode Real MT5, dan paket FREE.
  *
- * Blok Paper Trading ASLI dari assets/js/dashboard-app.js dijalankan di sandbox vm
+ * Blok Paper Trading ASLI dari assets/js/qim-quick-trade.js dijalankan di sandbox vm
  * (tests/paper-sandbox.js) bersama dispatcher qim-aksi.js yang sebenarnya — yang diuji
  * perilakunya, bukan ada/tidaknya teks.
  *
@@ -14,7 +14,7 @@ const path = require('path');
 const { sandbox } = require('./paper-sandbox.js');
 
 const root = path.join(__dirname, '..');
-const JS = fs.readFileSync(path.join(root, 'assets/js/dashboard-app.js'), 'utf8');
+const JS = fs.readFileSync(path.join(root, 'assets/js/qim-quick-trade.js'), 'utf8');
 const HTML = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const CSS = fs.readFileSync(path.join(root, 'assets/css/qim-dashboard.css'), 'utf8');
 

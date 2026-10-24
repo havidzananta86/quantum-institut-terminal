@@ -35,7 +35,9 @@ const potong = (src, dari, sampai) => {
 };
 
 // ── Muat keempat implementasi dari berkas aslinya ───────────────────────────
-const app = baca('assets/js/dashboard-app.js');
+// dashboard-app.js terhapus bersama dashboard panel lama; rumus RSI yang masih tayang
+// ada di assets/js/halaman-index.js (_calcRSI14).
+const app = baca('assets/js/halaman-index.js');
 const idx = baca('assets/js/halaman-index.js');
 
 const ctxE = { window: {}, console, Date, Math, Number, Array, JSON, isNaN, isFinite, parseFloat };
