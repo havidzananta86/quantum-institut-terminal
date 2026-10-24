@@ -94,11 +94,6 @@
             <span>Signal Center</span>
         </button>
 
-        <button class="qt-assist-launcher qt-order-launcher" id="qtOrderLauncher" type="button" aria-controls="qimRightPanel" aria-expanded="false" aria-label="Buka panel Order (Quick Trade)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7"></path><path d="M14 8h6v6"></path></svg>
-            <span>Order</span>
-        </button>
-
         <aside class="qt-assist-drawer" id="qtAssistDrawer" aria-label="Quantum Signal Center" aria-hidden="true">
             <header class="qt-assist-header">
                 <div>
@@ -143,6 +138,7 @@
                 <button class="qt-assist-tab" type="button" data-qt-tab="indicators">Indikator</button>
                 <button class="qt-assist-tab" type="button" data-qt-tab="history">Riwayat</button>
                 <button class="qt-assist-tab" type="button" data-qt-tab="backtest">Backtest</button>
+                <button class="qt-assist-tab" type="button" data-qt-tab="tools">Tools</button>
             </nav>
 
             <div class="qt-assist-content">
@@ -197,7 +193,7 @@
                     <div class="qt-history-list" id="qtHistoryList"></div>
                 </section>
 
-                <section class="qt-assist-panel" id="qtPanel-backtest" aria-label="Backtest signal">
+                <section class="qt-assist-panel" id="qtPanel-backtest" aria-label="Backtest signal" data-pro-feature="backtest">
                     <div class="qt-backtest-intro">
                         <div><span class="qt-backtest-eyebrow">Historical lab</span><h2 class="qt-panel-heading">Uji aturan signal</h2></div>
                         <span class="qt-backtest-engine">Candle close</span>
@@ -219,6 +215,51 @@
                     <div class="qt-backtest-summary" id="qtBacktestSummary">Hasil akan muncul setelah backtest selesai.</div>
                     <div class="qt-backtest-trades-wrap"><div class="qt-backtest-trades-title"><span>Trade terakhir</span><small id="qtBacktestTradeCount">0 trade</small></div><div class="qt-backtest-trades" id="qtBacktestTrades"></div></div>
                     <p class="qt-data-note">Hasil berbasis R-multiple dan belum memasukkan spread, komisi, atau slippage broker. Gunakan sebagai evaluasi aturan, bukan jaminan hasil.</p>
+                </section>
+
+                <section class="qt-assist-panel qt-tools-panel" id="qtPanel-tools" aria-label="Tools dashboard">
+                    <div class="qt-tools-grid">
+                        <section class="qt-tool-card" id="qtAlertCard" data-pro-feature="alerts">
+                            <div class="qt-tool-heading"><div><span class="qt-backtest-eyebrow">Server alert</span><h2 class="qt-panel-heading">Price alert</h2></div><span class="qt-pro-pill">PRO</span></div>
+                            <p class="qt-panel-help">Alert disimpan di server dan tetap diperiksa saat dashboard tertutup.</p>
+                            <div class="qt-tool-form">
+                                <label><span>Pair</span><input id="qtAlertSymbol" class="qt-assist-input" value="XAUUSD" maxlength="12"></label>
+                                <label><span>Harga target</span><input id="qtAlertPrice" class="qt-assist-input" type="number" step="any" placeholder="4120.00"></label>
+                                <label><span>Kondisi</span><select id="qtAlertDirection" class="qt-assist-select"><option value="above">Naik ke / di atas</option><option value="below">Turun ke / di bawah</option></select></label>
+                                <button class="qt-assist-action" id="qtAlertAdd" type="button">+ Simpan alert</button>
+                            </div>
+                            <div class="qt-tool-list" id="qtAlertList"><span class="qt-empty">Memuat alert…</span></div>
+                        </section>
+
+                        <section class="qt-tool-card" id="qtJournalCard" aria-label="Jurnal trading">
+                            <div class="qt-tool-heading"><div><span class="qt-backtest-eyebrow">Review pribadi</span><h2 class="qt-panel-heading">Jurnal trading</h2></div><span class="qt-tool-badge">LOCAL</span></div>
+                            <p class="qt-panel-help">Catatan jurnal tersimpan di perangkat ini; tidak diklaim sebagai performa server.</p>
+                            <div class="qt-tool-form qt-journal-form">
+                                <label><span>Pair</span><input id="qtJournalSymbol" class="qt-assist-input" value="XAUUSD" maxlength="12"></label>
+                                <label><span>Arah</span><select id="qtJournalSide" class="qt-assist-select"><option>BUY</option><option>SELL</option></select></label>
+                                <label><span>Hasil</span><select id="qtJournalResult" class="qt-assist-select"><option value="open">Terbuka</option><option value="win">Menang</option><option value="loss">Kalah</option><option value="breakeven">Impas</option></select></label>
+                                <label><span>R hasil</span><input id="qtJournalR" class="qt-assist-input" type="number" step="0.01" placeholder="0.00"></label>
+                                <label class="qt-tool-wide"><span>Catatan</span><textarea id="qtJournalNotes" class="qt-assist-input" rows="2" maxlength="500" placeholder="Alasan entry, setup, pelajaran…"></textarea></label>
+                                <button class="qt-assist-action" id="qtJournalAdd" type="button">+ Simpan jurnal</button>
+                            </div>
+                            <div class="qt-tool-list" id="qtJournalList"><span class="qt-empty">Belum ada catatan.</span></div>
+                        </section>
+
+                        <section class="qt-tool-card qt-tool-wide-card" id="qtTrackCard" aria-label="Track record per dimensi">
+                            <div class="qt-tool-heading"><div><span class="qt-backtest-eyebrow">Data sinyal selesai</span><h2 class="qt-panel-heading">Track record per dimensi</h2></div><div class="qt-tool-actions"><select id="qtTrackDays" class="qt-assist-select"><option value="7">7 hari</option><option value="30">30 hari</option><option value="90">90 hari</option><option value="0" selected>Semua</option></select><select id="qtTrackDimension" class="qt-assist-select"><option value="mesin">Per mesin</option><option value="pair">Per pair</option><option value="tf">Per timeframe</option></select></div></div>
+                            <p class="qt-panel-help">Hanya sinyal yang sudah selesai dihitung. Ukuran hasil memakai R, bukan dolar, supaya pair berbeda dapat dibandingkan.</p>
+                            <div class="qt-track-summary" id="qtTrackSummary"><span class="qt-empty">Memuat track record…</span></div>
+                            <div class="qt-tool-table-wrap"><table class="qt-tool-table"><thead><tr><th id="qtTrackNameHead">Mesin</th><th>Selesai</th><th>Win rate</th><th>Expectancy</th><th>PF</th><th>Max DD</th></tr></thead><tbody id="qtTrackBody"></tbody></table></div>
+                        </section>
+
+                        <section class="qt-tool-card qt-tool-wide-card" id="qtPineCard" aria-label="Indikator Pine overlay">
+                            <div class="qt-tool-heading"><div><span class="qt-backtest-eyebrow">XAUUSD · H4</span><h2 class="qt-panel-heading">Pine SMC+SnD overlay</h2></div><label class="qt-overlay-toggle"><span><strong>Overlay</strong><small>Marker + level</small></span><input id="qtPineOverlay" type="checkbox"><i aria-hidden="true"></i></label></div>
+                            <p class="qt-panel-help">Port indikator Pine yang sama dengan pemindai server. Data candle dan status ditampilkan apa adanya; setup WAIT tidak dibuat menjadi sinyal.</p>
+                            <div class="qt-pine-status" id="qtPineStatus">Belum dihitung.</div>
+                            <div class="qt-pine-levels" id="qtPineLevels"><span class="qt-empty">Tekan Perbarui untuk membaca candle XAUUSD H4.</span></div>
+                            <button class="qt-assist-action secondary" id="qtPineRefresh" type="button">↻ Perbarui Pine</button>
+                        </section>
+                    </div>
                 </section>
             </div>
 
@@ -319,7 +360,6 @@
 
     <div class="qt-chart-tools" aria-label="Kontrol chart">
         <button class="qt-chart-tool qt-chart-tool--teks" id="qtMenuBtn" type="button" aria-controls="qtMenu" aria-expanded="false" title="Halaman lain: Arena, Kalender, Transparansi, Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg><span>Menu</span></button>
-        <button class="qt-chart-tool is-active" id="qtChartCrosshair" type="button" aria-pressed="true" title="Ganti mode crosshair · Ctrl+Shift+C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M3 12h18"></path><circle cx="12" cy="12" r="4"></circle></svg><span>Magnet</span></button>
         <button class="qt-chart-tool" id="qtChartZoomOut" type="button" title="Zoom out chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M16 16l5 5"></path></svg><span>−</span></button>
         <button class="qt-chart-tool" id="qtChartZoomIn" type="button" title="Zoom in chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6"></circle><path d="M8 11h6M11 8v6M16 16l5 5"></path></svg><span>+</span></button>
         <button class="qt-chart-tool" id="qtChartReset" type="button" title="Reset tampilan chart · Ctrl+Shift+R"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12a8 8 0 1 0 2.34-5.66"></path><path d="M4 5v5h5"></path></svg><span>Reset</span></button>
@@ -333,6 +373,8 @@
     <script src="assets/js/qim-terminal-konteks.js?v=237727c01e"></script>
     <script src="assets/js/qim-quick-trade.js?v=2fa11a7e83"></script>
     <script src="assets/js/qim-terminal-gate.js?v=06b44f9921"></script>
+    <script src="assets/js/qim-pine-smcsnd.js?v=8a4c0f26f1"></script>
+    <script src="assets/js/qim-terminal-features.js?v=1c5dd7e9ab"></script>
     <script src="assets/js/qim-terminal-shell.js?v=3b947cff81"></script>
     <script src="assets/js/qim-terminal-panel.js?v=eef4b4a5c8"></script>
 </body>

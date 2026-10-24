@@ -433,6 +433,15 @@ function halamanLogin(o = {}) {
       ![LOGIN, AUTH, REG, DUA].some((s2) => /AbortSignal\.timeout\(\d/.test(s2)));
   }
 
+  console.log('\nPesan koneksi login saat halaman dibuka sebagai file');
+  {
+    const h = halamanLogin();
+    h.ctx.location.protocol = 'file:';
+    h.el('licenseKey').value = 'QI-PRO-ABCDEF';
+    await h.kirim('license');
+    cek('file:// menjelaskan bahwa login harus dibuka lewat localhost', /localhost\/webapp\/login\.html/.test(h.el('galatLicense').textContent), h.el('galatLicense').textContent);
+  }
+
   console.log('\nLayar pembuka dashboard: qi_serah_masuk basi diabaikan');
   {
     const jalan = (umur) => {

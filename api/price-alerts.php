@@ -12,7 +12,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_middleware.php';
 require_once __DIR__ . '/_alerts.php';
 qi_rate_limit(60, 60);
-$pengguna = qi_require_auth();
+$pengguna = qi_require_level('pro');
 $uid = (int)$pengguna['user_id'];
 $pdo = qi_db();
 $metode = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));

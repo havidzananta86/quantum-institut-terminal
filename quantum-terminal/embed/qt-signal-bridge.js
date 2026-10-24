@@ -7,6 +7,9 @@
 
     var chart = null;
     var pending = null;
+    var pendingPine = null;
+    var signalState = null;
+    var pineState = null;
     var positionId = 'qt-signal-position';
     var markerId = 'qt-signal-marker';
     var provisionalMarkerId = 'qt-signal-provisional';
@@ -43,68 +46,50 @@
         return String(reason || 'Konfirmasi indikator').replace(/\s+/g, ' ').slice(0, 78);
     }
 
+    function renderOverlays() {
+        if (!chart) return;
+        var markers = [], positions = [];
+        var signal = signalState && signalState.enabled ? signalState.signal : null;
+        var pine = pineState && pineState.enabled ? pineState.signal : null;
+        if (signal) {
+            var side = signal.side === 'SELL' ? 'sell' : 'buy';
+            markers.push({ id: markerId, time: Number(signal.time), price: Number(signal.price), direction: side === 'sell' ? 'short' : 'long', confidence: Math.max(0, Math.min(1, Number(signal.confidence) || 0)), source: signal.source || 'Quantum Terminal', label: signal.side + ' · ' + compactReason(signal.reason) });
+            if (signal.provisional && Number.isFinite(Number(signal.provisional.time))) markers.push({ id: provisionalMarkerId, time: Number(signal.provisional.time), price: Number(signal.provisional.price), direction: signal.provisional.side === 'SELL' ? 'short' : 'long', confidence: 0.45, source: 'Provisional', label: 'PROVISIONAL · ' + signal.provisional.side + ' · candle aktif' });
+            if (Number.isFinite(Number(signal.entry)) && Number.isFinite(Number(signal.stopLoss)) && Number.isFinite(Number(signal.takeProfit))) positions.push({ id: positionId, side: side, entryPrice: Number(signal.entry), quantity: 1, stopLoss: Number(signal.stopLoss), takeProfit: Number(signal.takeProfit) });
+        }
+        if (pine) {
+            var pineSide = pine.side === 'SELL' ? 'sell' : 'buy';
+            markers.push({ id: 'qt-pine-marker', time: Number(pine.time), price: Number(pine.price), direction: pineSide === 'sell' ? 'short' : 'long', confidence: Math.max(0, Math.min(1, Number(pine.confidence) || 0)), source: 'Pine SMC+SnD', label: pine.side + ' · ' + compactReason(pine.reason) });
+            if (Number.isFinite(Number(pine.entry)) && Number.isFinite(Number(pine.stopLoss)) && Number.isFinite(Number(pine.takeProfit))) positions.push({ id: 'qt-pine-position', side: pineSide, entryPrice: Number(pine.entry), quantity: 1, stopLoss: Number(pine.stopLoss), takeProfit: Number(pine.takeProfit) });
+        }
+        try { chart.setSignalMarkers(markers); chart.setPositions(positions); } catch (e) {}
+    }
+
     function apply(payload) {
+        signalState = payload && payload.enabled && payload.signal ? payload : null;
         if (!chart) { pending = payload; return; }
-        if (!payload || !payload.enabled || !payload.signal) {
-            pending = null;
-            clearOverlay();
-            return;
-        }
+        pending = null;
+        renderOverlays();
+    }
 
-        var signal = payload.signal;
-        var side = signal.side === 'SELL' ? 'sell' : 'buy';
-        var direction = side === 'sell' ? 'short' : 'long';
-        var markers = [{
-            id: markerId,
-            time: Number(signal.time),
-            price: Number(signal.price),
-            direction: direction,
-            confidence: Math.max(0, Math.min(1, Number(signal.confidence) || 0)),
-            source: signal.source || 'Quantum Terminal',
-            label: signal.side + ' · ' + compactReason(signal.reason)
-        }];
-
-        if (signal.provisional && Number.isFinite(Number(signal.provisional.time))) {
-            markers.push({
-                id: provisionalMarkerId,
-                time: Number(signal.provisional.time),
-                price: Number(signal.provisional.price),
-                direction: signal.provisional.side === 'SELL' ? 'short' : 'long',
-                confidence: 0.45,
-                source: 'Provisional',
-                label: 'PROVISIONAL · ' + signal.provisional.side + ' · candle aktif'
-            });
-        }
-
-        try {
-            chart.setSignalMarkers(markers);
-            if (Number.isFinite(Number(signal.entry)) && Number.isFinite(Number(signal.stopLoss)) && Number.isFinite(Number(signal.takeProfit))) {
-                chart.setPositions([{
-                    id: positionId,
-                    side: side,
-                    entryPrice: Number(signal.entry),
-                    quantity: 1,
-                    stopLoss: Number(signal.stopLoss),
-                    takeProfit: Number(signal.takeProfit)
-                }]);
-            } else {
-                chart.setPositions([]);
-            }
-        } catch (e) {
-            // A chart that is still mounting will receive the next dashboard update.
-            pending = payload;
-        }
+    function applyPine(payload) {
+        pineState = payload && payload.enabled && payload.signal ? payload : null;
+        if (!chart) { pendingPine = payload; return; }
+        pendingPine = null;
+        renderOverlays();
     }
 
     window.addEventListener('qt-chart-ready', function (event) {
         chart = event.detail || window.__quantumTerminalChart || null;
         try { chart.setTradingConfig({ lineButtons: { close: false, reverse: false, removeStops: false }, positionLabel: '{side} · {entry}' }); } catch (e) {}
         if (pending) apply(pending);
+        if (pendingPine) applyPine(pendingPine);
     });
 
     window.addEventListener('message', function (event) {
         if (event.origin !== window.location.origin || !event.data) return;
         if (event.data.type === 'qt-signal-overlay') apply(event.data.payload);
+        if (event.data.type === 'qt-pine-overlay') applyPine(event.data.payload);
         if (event.data.type === 'qt-chart-command') applyCommand(event.data.command, event.data.payload || {});
     });
 

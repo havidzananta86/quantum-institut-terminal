@@ -11,7 +11,7 @@ function check(label, ok) { console.log(`  ${ok ? '✓' : '✗'} ${label}`); if 
 
 check('tombol fullscreen tersedia', /id="qtChartFullscreen"/.test(html));
 check('shortcut fullscreen tersedia', /Ctrl\+Shift\+F/.test(html) && /fullscreen/.test(shell));
-check('zoom, reset, dan crosshair tersedia', ['qtChartZoomIn', 'qtChartZoomOut', 'qtChartReset', 'qtChartCrosshair'].every(id => html.includes(`id="${id}"`)));
+check('zoom dan reset chart tersedia', ['qtChartZoomIn', 'qtChartZoomOut', 'qtChartReset'].every(id => html.includes(`id="${id}"`)));
 check('pair loading memiliki layer di atas chart', /id="qtPairLoading"/.test(html) && /qt-pair-loading/.test(css));
 check('Signal Center dapat ditutup saat chart tetap aktif', /qtAssistClose/.test(html) && /qtAssistScrim/.test(html));
 check('overlay signal dikirim ke iframe chart', /contentWindow\.postMessage\(\{ type: 'qt-signal-overlay'/.test(shell));

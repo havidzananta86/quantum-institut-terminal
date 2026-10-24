@@ -14,6 +14,6 @@ import { App } from '@capacitor/app';
 App.addListener('appStateChange', ({ isActive }) => (isActive ? chart.resume() : chart.suspend()));`,n(d);var r=t(d,4),l=e(r);l.textContent="new Chart(host, { pageScroll: true })   // a chart in a screen that scrolls",n(r);var i=t(r,4),v=e(i);v.textContent=`// tauri.conf.json (Tauri 2): let the page reach the feed
 "app": {
   "security": {
-    "csp": "default-src 'self'; connect-src 'self' https://api.binance.com wss://stream.binance.com:9443"
+    "csp": "default-src 'self'; connect-src 'self'  "
   }
 }`,n(i);var h=t(i,6),f=t(e(h));_(),n(h),x(()=>B(f,"href",`${R??""}/embed`)),m(g,o)}export{$ as default};

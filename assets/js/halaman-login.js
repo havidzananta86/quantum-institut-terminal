@@ -161,6 +161,16 @@ function pemberitahuan(teks) {
     el.hidden = !teks;
 }
 
+function pesanGagalHubungAuth(error) {
+    if (typeof location !== 'undefined' && location.protocol === 'file:') {
+        return 'Halaman login dibuka sebagai file. Buka http://localhost/webapp/login.html agar server PHP dapat diakses.';
+    }
+    if (error && error.name === 'AbortError') {
+        return 'Server autentikasi terlalu lama merespons. Periksa koneksi atau status layanan lalu coba lagi.';
+    }
+    return 'Server autentikasi tidak dapat dihubungi. Periksa koneksi lalu coba lagi.';
+}
+
 // Fokus kembali ke formulir setelah layar / kartu sesi disembunyikan (tanpa ini fokus jatuh ke
 // <body> dan Tab berikutnya mendarat di kaki halaman): tombol yang tadi ditekan bila masih bisa
 // difokus, selain itu isian pertama formulir yang tampil. Elemen tersembunyi menolak focus(),
@@ -207,6 +217,10 @@ async function handleLoginSubmit(event, type) {
 
     sedangMasuk = true;
     setTombol(btn, 'sibuk', 'Memeriksa…');
+    if (typeof location !== 'undefined' && location.protocol === 'file:') {
+        gagalMasuk(type, btn, pesanGagalHubungAuth(), null);
+        return;
+    }
 
     let res, data;
     try {
@@ -218,7 +232,7 @@ async function handleLoginSubmit(event, type) {
         });
         data = await res.json().catch(() => null);
     } catch (e) {
-        gagalMasuk(type, btn, 'Server autentikasi tidak dapat dihubungi. Periksa koneksi lalu coba lagi.', null);
+        gagalMasuk(type, btn, pesanGagalHubungAuth(e), null);
         return;
     }
 
@@ -356,6 +370,11 @@ async function handleGoogleCredential(response) {
     sedangMasuk = true;
     // Iframe Google tidak bisa menampilkan pemutar; tanpa baris ini tidak ada tanda apa pun selama ≤ 12 detik.
     statusGoogle('Memeriksa akun Google…', 'sibuk');
+    if (typeof location !== 'undefined' && location.protocol === 'file:') {
+        sedangMasuk = false;
+        statusGoogle(pesanGagalHubungAuth(), 'galat');
+        return;
+    }
     let res, data;
     try {
         res = await fetch('api/auth.php', {
@@ -367,7 +386,7 @@ async function handleGoogleCredential(response) {
         data = await res.json().catch(() => null);
     } catch (e) {
         sedangMasuk = false;
-        statusGoogle('Server autentikasi tidak dapat dihubungi. Periksa koneksi lalu coba lagi.', 'galat');
+        statusGoogle(pesanGagalHubungAuth(e), 'galat');
         return;
     }
     if (res.ok && data && data.status === 'success' && data.data && data.data.token) {

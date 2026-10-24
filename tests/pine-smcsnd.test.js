@@ -92,13 +92,13 @@ cek('5.000 bar dihitung < 200 ms (aman dijalankan tiap tick)', ms < 200, ms + ' 
 
 console.log('Integrasi chart');
 const ui = read('assets/js/qim-indikator-kustom.js'), html = read('dashboard.html');
-// Menu Indikator & Replay milik dashboard panel lama (qim-pages.js) sudah dibuang; modul Pine tetap utuh dan
-// terpisah dari shell chart-first, jadi hanya kontrak modulnya sendiri yang dijaga di sini.
+// Menu Indikator & Replay milik dashboard panel lama (qim-pages.js) sudah dibuang; modul Pine kini dipakai
+// oleh Tools pada shell chart-first dan dikirim ke vendor melalui bridge overlay.
 cek('modul Pine menyediakan bagianMenu() untuk menu indikator mana pun yang memuatnya', /bagianMenu/.test(ui));
 cek('chart selalu mulai bersih: status nyala TIDAK disimpan (hanya parameter)', /let aktif = false/.test(ui) && !/localStorage\.setItem\([^)]*aktif/.test(ui) && /KUNCI_OPSI/.test(ui));
 cek('Replay: hitungan dibatasi sampai bar replay (tanpa membocorkan masa depan)', /qim:replay-bar/.test(ui) && /x\.time <= waktuReplay/.test(ui));
 cek('riwayat dalam dari get-history, dicampur hanya bila sumbernya sama dengan chart', /api\/get-history\.php/.test(ui) && /sumberChart === riwayat\.sumber/.test(ui));
-cek('chart-first tidak memuat modul Pine opsional di shell utama', !/qim-pine-smcsnd\.js/.test(html) && !/qim-indikator-kustom\.js/.test(html) && /qim-terminal-shell\.js/.test(html));
+cek('chart-first memuat modul Pine untuk overlay Tools', /qim-pine-smcsnd\.js/.test(html) && /qim-terminal-features\.js/.test(html) && /qtPineOverlay/.test(html) && /qt-pine-overlay/.test(read('quantum-terminal/embed/qt-signal-bridge.js')));
 cek('tabel BUY/SELL memakai warna & isi skrip Pine (STATUS, WAIT SWEEP, TP1–TP3, SL)', /VALID BUY|status/.test(ui) && /ENTRY/.test(ui) && /'TP3'/.test(ui) && /rgba\(8, 153, 129/.test(read('assets/css/qim-fitur.css')));
 
 console.log(gagal ? `\nFAIL — ${gagal} pemeriksaan gagal` : '\nPASS — port Pine SMC+SnD: semantik benar & cocok dengan TradingView');

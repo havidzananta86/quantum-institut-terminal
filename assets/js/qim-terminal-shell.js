@@ -50,7 +50,7 @@
         BTCUSDT: 'BTC/USDT', ETHUSDT: 'ETH/USDT', SOLUSDT: 'SOL/USDT', BNBUSDT: 'BNB/USDT',
         XRPUSDT: 'XRP/USDT', DOGEUSDT: 'DOGE/USDT'
     };
-    const allowedTabs = ['signal', 'indicators', 'history', 'backtest'];
+    const allowedTabs = ['signal', 'indicators', 'history', 'backtest', 'tools'];
     const savedWorkspace = readWorkspace();
     const state = {
         symbol: normalizeSymbol(savedWorkspace && savedWorkspace.symbol) || 'XAUUSD',
@@ -1114,7 +1114,7 @@
     $('qtWorkspaceReset').addEventListener('click', resetWorkspace);
     $('qtRefreshSignal').addEventListener('click', () => refreshSignal(true));
     $('qtRunBacktest').addEventListener('click', runBacktest);
-    $('qtChartCrosshair').addEventListener('click', toggleCrosshair);
+    $('qtChartCrosshair')?.addEventListener('click', toggleCrosshair);
     $('qtChartZoomOut').addEventListener('click', () => zoomChart('out'));
     $('qtChartZoomIn').addEventListener('click', () => zoomChart('in'));
     $('qtChartReset').addEventListener('click', resetChartView);

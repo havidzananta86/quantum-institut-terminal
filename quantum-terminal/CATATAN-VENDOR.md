@@ -21,6 +21,8 @@ Dashboard memuat `embed/` di dalam iframe (`dashboard.html` → `quantum-termina
 
 ## Masalah yang diketahui di widget (belum diperbaiki — kodenya tidak ada di repo ini)
 
-- Adapter kripto bawaan widget memanggil `api.binance.com` / `stream.binance.com` langsung dari peramban, tidak lewat
-  `api/get-chart-data.php`. Di jaringan yang memblokir Binance (umum di Indonesia) chart kripto gagal memuat.
+- Adapter kripto bawaan widget semula memanggil `api.binance.com` / `stream.binance.com` langsung dari peramban, tidak lewat
+  server. Patch vendor yang sekarang dipasang mengganti REST dengan `api/binance-proxy.php` same-origin dan mengganti
+  WebSocket Binance dengan polling REST 5 detik. Ini menghindari blokir Binance di jaringan Indonesia; ulangi patch ini
+  bila widget di-build ulang.
 - Locale `id` diminta tetapi tidak ada bundel bahasanya (peringatan konsol, UI tetap Inggris).
