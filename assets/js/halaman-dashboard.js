@@ -51,7 +51,7 @@ if ('serviceWorker' in navigator) {
             // menembusnya). Dengan menaikkan query ini setiap kali CACHE_NAME di sw.js naik,
             // peramban mengambil URL BARU sehingga SW langsung diperbarui.
             // Riwayat: v=3.0.0 (lama, nyangkut) → v=3.8.8 (sinkron dengan CACHE_NAME).
-            navigator.serviceWorker.register('sw.js?v=434546e880').catch(function () {});
+            navigator.serviceWorker.register('sw.js?v=f7da813537').catch(function () {});
         } catch (e) { /* diabaikan dengan sengaja */ }
     });
 }

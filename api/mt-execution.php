@@ -52,8 +52,9 @@ try {
     $pdo->prepare("UPDATE trading_execution_orders SET status='expired', broker_message='Order expired before delivery' WHERE trading_account_id=:id AND status='queued' AND expires_at<NOW()")->execute([':id'=>$accountId]);
     $next=$pdo->prepare("SELECT * FROM trading_execution_orders WHERE trading_account_id=:id AND status='queued' AND expires_at>=NOW() ORDER BY created_at ASC LIMIT 1 FOR UPDATE"); $next->execute([':id'=>$accountId]); $order=$next->fetch(PDO::FETCH_ASSOC);
     if (!$order) { $pdo->commit(); qi_exec_reply(200,['status'=>'success','instruction'=>null]); }
-    $allowed=json_decode($profile['allowed_symbols'] ?: '[]', true) ?: [];
-    if ((float)$order['volume'] > (float)$profile['max_lot'] || !in_array($order['symbol'],$allowed,true)) { $pdo->prepare("UPDATE trading_execution_orders SET status='rejected', broker_message='Server guardrail rejected queued order' WHERE id=:id")->execute([':id'=>$order['id']]); $pdo->commit(); qi_exec_reply(200,['status'=>'success','instruction'=>null,'reason'=>'ORDER_GUARDRAIL']); }
+    // Pencocokan simbol yang SAMA dengan saat order diantrekan (tanpa beda huruf besar/kecil).
+    require_once __DIR__ . '/_execution.php';
+    if ((float)$order['volume'] > (float)$profile['max_lot'] || !qi_exec_simbol_diizinkan($profile, (string)$order['symbol'])) { $pdo->prepare("UPDATE trading_execution_orders SET status='rejected', broker_message='Server guardrail rejected queued order' WHERE id=:id")->execute([':id'=>$order['id']]); $pdo->commit(); qi_exec_reply(200,['status'=>'success','instruction'=>null,'reason'=>'ORDER_GUARDRAIL']); }
     $pdo->prepare("UPDATE trading_execution_orders SET status='dispatched', dispatched_at=NOW() WHERE id=:id")->execute([':id'=>$order['id']]); $pdo->commit();
     qi_exec_reply(200,['status'=>'success','instruction'=>['order_token'=>$order['order_token'],'symbol'=>$order['symbol'],'side'=>$order['side'],'volume'=>(float)$order['volume'],'stop_loss'=>(float)$order['stop_loss'],'take_profit'=>(float)$order['take_profit'],'magic_number'=>(int)$profile['magic_number']]]);
 } catch (Exception $e) { if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack(); qi_log('error','MT5 execution request failed',['exception'=>get_class($e)]); qi_exec_reply(500,['status'=>'error','code'=>'EXECUTION_PROCESSING_FAILED']); }

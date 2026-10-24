@@ -89,9 +89,15 @@ try {
         $months = qi_plan_months($order['plan_name']);
         if ($months === 0) { $pdo->rollBack(); qi_payment_error(422, 'Paket pesanan tidak valid.', 'PAYMENT_PLAN_INVALID'); }
         // Dihitung MySQL: expires_at dibandingkan dengan NOW() MySQL, bukan jam PHP.
-        $pdo->prepare('INSERT INTO license_keys (user_id, license_key, plan_name, expires_at, is_active) VALUES (:uid, :key, :plan, DATE_ADD(NOW(), INTERVAL :months MONTH), 1)')
-            ->execute([':uid' => $order['user_id'], ':key' => 'QI-PRO-' . strtoupper(bin2hex(random_bytes(8))), ':plan' => $order['plan_name'], ':months' => (int)$months]);
-        $pdo->prepare("UPDATE users SET role = 'pro' WHERE id = :uid")->execute([':uid' => $order['user_id']]);
+        // Perpanjangan dihitung dari lisensi aktif terakhir (bila masih berjalan), bukan dari hari ini —
+        // kalau tidak, sisa masa langganan pelanggan yang memperpanjang lebih awal hangus.
+        $sisa = $pdo->prepare('SELECT GREATEST(NOW(), COALESCE(MAX(expires_at), NOW())) FROM license_keys WHERE user_id = :uid AND is_active = 1');
+        $sisa->execute([':uid' => $order['user_id']]);
+        $mulai = (string)$sisa->fetchColumn();
+        $pdo->prepare('INSERT INTO license_keys (user_id, license_key, plan_name, expires_at, is_active) VALUES (:uid, :key, :plan, DATE_ADD(:mulai, INTERVAL :months MONTH), 1)')
+            ->execute([':uid' => $order['user_id'], ':key' => 'QI-PRO-' . strtoupper(bin2hex(random_bytes(8))), ':plan' => $order['plan_name'], ':mulai' => $mulai, ':months' => (int)$months]);
+        // Hanya NAIK ke pro: VIP/admin yang membeli paket PRO tidak boleh turun peran.
+        $pdo->prepare("UPDATE users SET role = 'pro' WHERE id = :uid AND role NOT IN ('pro', 'premium', 'vip', 'vip_plus', 'elite', 'admin')")->execute([':uid' => $order['user_id']]);
     }
     $pdo->prepare("UPDATE subscription_orders SET payment_status = 'paid', paid_at = NOW(), license_issued = 1 WHERE id = :id")
         ->execute([':id' => $order['id']]);

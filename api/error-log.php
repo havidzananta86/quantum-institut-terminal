@@ -17,12 +17,12 @@ if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
 
 $entry = [
     'ts'    => gmdate('c'),
-    'msg'   => mb_substr($data['message'] ?? '', 0, 500),
-    'src'   => mb_substr($data['source'] ?? '', 0, 200),
+    'msg'   => mb_substr(qi_str($data['message'] ?? null), 0, 500),
+    'src'   => mb_substr(qi_str($data['source'] ?? null), 0, 200),
     'line'  => (int)($data['line'] ?? 0),
     'col'   => (int)($data['col'] ?? 0),
-    'stack' => mb_substr($data['stack'] ?? '', 0, 1000),
-    'url'   => mb_substr($data['url'] ?? '', 0, 200),
+    'stack' => mb_substr(qi_str($data['stack'] ?? null), 0, 1000),
+    'url'   => mb_substr(qi_str($data['url'] ?? null), 0, 200),
     'ua'    => mb_substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200),
     'ip'    => $_SERVER['REMOTE_ADDR'] ?? '',
 ];

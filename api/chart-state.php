@@ -37,7 +37,9 @@ try {
     }
 
     if ($metode === 'POST') {
-        $in = qi_get_json_body();
+        // nilai (≤ 512 KB) dikirim sebagai string JSON di dalam JSON, jadi tanda kutipnya di-escape
+        // dan body bisa jauh lebih besar dari nilai itu sendiri — beri ruang 2× + amplop.
+        $in = qi_get_json_body(2 * 524288 + 4096);
         if (!is_array($in)) qi_cs_jawab(['status' => 'error', 'message' => 'Body JSON tidak valid.'], 400);
         $kunci = (string)($in['kunci'] ?? '');
         $nilai = $in['nilai'] ?? null;

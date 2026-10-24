@@ -8179,8 +8179,9 @@ async function _asMuatServer() {
         }
     } catch (e) { /* panel akan menampilkan "—", bukan angka karangan */ }
 
-    // 2) Rencana TradingView (dipakai bila simbol belum punya rekor aktif)
-    try {
+    // 2) Rencana TradingView (dipakai bila simbol belum punya rekor aktif). Endpoint-nya khusus
+    // PRO; akun gratis tidak memintanya sama sekali supaya tidak ada 403 di konsol tiap halaman dibuka.
+    if (qiTingkatSaatIni() >= 1) try {
         const res2 = await fetch('api/rencana-live.php?mode=intraday', { cache: 'no-store' });
         const d2 = await res2.json();
         if (d2 && d2.status === 'success') {

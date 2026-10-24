@@ -12,8 +12,8 @@ qi_rate_limit(30, 60);
 // datanya (sebelumnya '2h' dan '4h' diterima lalu diam-diam memakai angka 1 jam).
 $window   = in_array(($_GET['window'] ?? '1h'), ['30m', '1h'], true) ? ($_GET['window'] ?? '1h') : '1h';
 $groupBy  = $_GET['group_by'] ?? 'event_pair';
-$impact   = strtoupper($_GET['impact'] ?? 'HIGH');
-$currency = strtoupper($_GET['currency'] ?? 'ALL');
+$impact   = strtoupper(qi_str($_GET['impact'] ?? null, 'HIGH'));
+$currency = strtoupper(qi_str($_GET['currency'] ?? null, 'ALL'));
 
 // Static dataset: [event, currency, pair, impact, avg1h, median1h, p901h, avg30m, maxMove, consistency, hitRate, upBias, releases, perYear]
 $dataset = [

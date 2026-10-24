@@ -56,11 +56,13 @@ if (!$allowed && $audience === 'pro') {
     $allowed = $level >= 1;
 }
 if (!$allowed && $audience === 'owner' && $account !== '') {
+    // Hanya baris MT5: nomor akun unik per (provider, nomor), jadi dulu siapa pun bisa mendaftarkan
+    // nomor pemilik sebagai "MT4" lalu lolos pemeriksaan "provider berawalan mt" yang lama (aturan sama di _middleware.php).
     try {
         $stmt = qi_db()->prepare(
             "SELECT 1 FROM trading_accounts
              WHERE user_id = :u AND account_reference = :a
-               AND LOWER(provider) LIKE 'mt%' AND connection_status IN ('pending','active')
+               AND provider = 'MT5' AND connection_status IN ('pending','active')
              LIMIT 1"
         );
         $stmt->execute([':u' => $uid, ':a' => $account]);

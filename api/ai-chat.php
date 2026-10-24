@@ -35,7 +35,7 @@ $visionModel = defined('GROQ_VISION_MODEL') ? GROQ_VISION_MODEL : '';
 
 $body = qi_get_json_body();
 if (!$body) { http_response_code(400); echo json_encode(['error'=>'Invalid JSON']); exit; }
-$message  = trim($body['message'] ?? '');
+$message  = trim(qi_str($body['message'] ?? null));
 $history  = array_slice((array)($body['history'] ?? []), -12);
 $context  = $body['context'] ?? [];  // real-time market data from dashboard
 
@@ -140,8 +140,8 @@ curl_setopt_array($ch, [
         'temperature' => 0.65,
     ]),
 ]);
-$curlErr = curl_error($ch);
 $result  = curl_exec($ch);
+$curlErr = curl_error($ch);   // SETELAH curl_exec — sebelumnya selalu kosong, jadi gangguan jaringan dilaporkan sebagai "HTTP 0"
 $http    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 

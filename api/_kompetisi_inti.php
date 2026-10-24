@@ -90,6 +90,7 @@ if (!function_exists('qi_komp_batas_periode')) {
     {
         if (!preg_match('/^(\d{4})-W(\d{2})$/', $kunci, $m)) return null;
         $a = (new DateTimeImmutable('now', qi_komp_zona()))->setISODate((int)$m[1], (int)$m[2])->setTime(0, 0);
+        if ($a->format('o-\WW') !== $kunci) return null;   // W00/W99: setISODate menggulir diam-diam ke minggu lain
         return [$a->getTimestamp(), $a->modify('+7 days')->getTimestamp()];
     }
 }

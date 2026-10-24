@@ -252,7 +252,9 @@ function qi_exec_status_akun(PDO $pdo, int $accountId): array
             ];
         }
 
-        $st2 = $pdo->prepare("SELECT * FROM trading_execution_state WHERE trading_account_id = :id ORDER BY state_day DESC LIMIT 1");
+        // updated_at diisi NOW() MySQL (zona sesi MySQL), jadi umurnya dihitung sebagai epoch
+        // oleh MySQL sendiri — strtotime(... ' UTC') salah bila MySQL tidak berjalan di UTC.
+        $st2 = $pdo->prepare("SELECT *, UNIX_TIMESTAMP(updated_at) AS updated_unix FROM trading_execution_state WHERE trading_account_id = :id ORDER BY state_day DESC LIMIT 1");
         $st2->execute([':id' => $accountId]);
         $s = $st2->fetch(PDO::FETCH_ASSOC);
         if ($s) {
@@ -263,6 +265,7 @@ function qi_exec_status_akun(PDO $pdo, int $accountId): array
                 'posisi_terbuka' => (int)$s['latest_open_positions'],
                 'diperbarui' => $s['updated_at'],
             ];
+            $diperbaruiUnix = (int)($s['updated_unix'] ?? 0);
         }
 
         $st3 = $pdo->prepare(
@@ -275,8 +278,8 @@ function qi_exec_status_akun(PDO $pdo, int $accountId): array
         $keluar['perintah'] = $st3->fetchAll(PDO::FETCH_ASSOC);
 
         // Kesegaran EA: umur pembaruan state terakhir (poll EA meng-update ini).
-        if (!empty($keluar['status_harian']['diperbarui'])) {
-            $umur = time() - strtotime((string)$keluar['status_harian']['diperbarui'] . ' UTC');
+        if (!empty($diperbaruiUnix)) {
+            $umur = time() - $diperbaruiUnix;
             $keluar['ea'] = ['umur_detik' => $umur, 'hidup' => $umur >= 0 && $umur < 120];
         }
     } catch (Throwable $e) {

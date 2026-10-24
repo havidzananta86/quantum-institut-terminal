@@ -50,7 +50,7 @@ try {
     // nyata wajib berperan PRO/VIP/admin. Tanpa ini, fitur berbayar bisa dipakai
     // akun biasa.
     require_once __DIR__ . '/_execution.php';
-    if (in_array($action, ['configure', 'set_enabled', 'emergency_stop', 'queue_signal'], true)
+    if (in_array($action, ['configure', 'set_enabled', 'emergency_stop', 'queue_signal', 'queue_manual'], true)
         && !qi_exec_role_boleh($user['role'] ?? null)) {
         qi_live_fail(403, 'Eksekusi otomatis hanya tersedia untuk paket PRO atau VIP.', 'PLAN_REQUIRED');
     }
@@ -140,12 +140,14 @@ try {
         $symbolBroker = qi_exec_peta_simbol(is_string($account['symbol_map'] ?? null) ? $account['symbol_map'] : null, $symbol);
         if ($symbolBroker === '') qi_live_fail(422, 'Simbol ini sengaja tidak dipetakan ke broker akun ini.', 'SYMBOL_NOT_MAPPED');
         $symbol = $symbolBroker;
-        $allowed = json_decode($account['allowed_symbols'] ?: '[]', true) ?: [];
         $validLevels = $side === 'BUY' ? ($sl !== false && $tp !== false && $entry !== false && $sl > 0 && $tp > $entry && $sl < $entry) : ($side === 'SELL' ? ($sl !== false && $tp !== false && $entry !== false && $tp > 0 && $tp < $entry && $sl > $entry) : false);
         // SL dan TP WAJIB, juga untuk order manual. MT5 sendiri membolehkan order tanpa
         // keduanya, tetapi di sini uang sungguhan dieksekusi oleh EA tanpa ada manusia yang
         // mengawasi detik per detik — posisi tanpa SL bisa berjalan sampai margin habis.
-        if (!in_array($symbol, $allowed, true) || !in_array($side, ['BUY','SELL'], true) || $volume === false || $volume <= 0 || $volume > (float)$account['max_lot'] || !$validLevels) qi_live_fail(422, 'Order tidak memenuhi guardrail (simbol, lot, SL, atau TP).', 'INVALID_SIGNAL_ORDER');
+        // Dicocokkan lewat qi_exec_simbol_diizinkan (tanpa beda huruf besar/kecil): daftar simbol
+        // disimpan HURUF BESAR, sedangkan nama broker hasil pemetaan boleh huruf kecil ("XAUUSD.pro").
+        // Daftar kosong tidak mungkin di sini — 'configure' mewajibkan minimal satu simbol.
+        if (!qi_exec_simbol_diizinkan($account, $symbol) || !in_array($side, ['BUY','SELL'], true) || $volume === false || $volume <= 0 || $volume > (float)$account['max_lot'] || !$validLevels) qi_live_fail(422, 'Order tidak memenuhi guardrail (simbol, lot, SL, atau TP).', 'INVALID_SIGNAL_ORDER');
         $token = bin2hex(random_bytes(4)) . '-' . bin2hex(random_bytes(2)) . '-4' . substr(bin2hex(random_bytes(2)), 1) . '-a' . substr(bin2hex(random_bytes(2)), 1) . '-' . bin2hex(random_bytes(6));
         $stmt = $pdo->prepare("INSERT INTO trading_execution_orders (order_token, trading_account_id, source, symbol, side, volume, stop_loss, take_profit, requested_price, status, expires_at) VALUES (:token,:account,:source,:symbol,:side,:volume,:sl,:tp,:entry,'queued',DATE_ADD(NOW(), INTERVAL 5 MINUTE))");
         $stmt->execute([':token'=>$token, ':account'=>$accountId, ':source'=>$sumber, ':symbol'=>$symbol, ':side'=>$side, ':volume'=>$volume, ':sl'=>$sl, ':tp'=>$tp, ':entry'=>$entry]);

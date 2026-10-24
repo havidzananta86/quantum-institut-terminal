@@ -172,17 +172,27 @@ function qi_sanitize_string($input, $maxLength = 255) {
 }
 
 /**
+ * Nilai parameter sebagai string, atau $bawaan bila bukan skalar. Klien bisa mengirim larik
+ * (?x[]=1 atau JSON ["x"]); tanpa ini strtoupper()/trim() melempar TypeError (HTTP 500)
+ * dan (string) menghasilkan teks "Array".
+ */
+function qi_str($nilai, string $bawaan = ''): string {
+    return (is_string($nilai) || is_int($nilai) || is_float($nilai)) ? (string)$nilai : $bawaan;
+}
+
+/**
  * Validasi dan sanitasi JSON body dari POST request
  * Mengembalikan array atau null jika invalid
  */
-function qi_get_json_body() {
+function qi_get_json_body(int $maksByte = 65536) {
     $raw = file_get_contents('php://input');
     if (empty($raw)) return null;
     
-    // Batas ukuran body: 64KB (cegah DoS via payload besar)
-    if (strlen($raw) > 65536) {
+    // Batas ukuran body: bawaan 64KB (cegah DoS via payload besar). Endpoint yang memang
+    // menerima isi besar (mis. chart-state, hingga 512 KB gambar) memberi batasnya sendiri.
+    if (strlen($raw) > $maksByte) {
         http_response_code(413);
-        echo json_encode(['status' => 'error', 'message' => 'Payload terlalu besar (maks 64KB)']);
+        echo json_encode(['status' => 'error', 'message' => 'Payload terlalu besar (maks ' . (int)round($maksByte / 1024) . 'KB)']);
         exit();
     }
 
@@ -863,7 +873,7 @@ if (!function_exists('qi_mt5_allowed')) {
         $akun = defined('QI_MT5_BRIDGE_ACCOUNT') ? trim((string)QI_MT5_BRIDGE_ACCOUNT) : '';
         if ($akun === '') return false;
         try {
-            $stmt = qi_db()->prepare("SELECT 1 FROM trading_accounts WHERE user_id = :u AND account_reference = :a AND LOWER(provider) LIKE 'mt%' AND connection_status IN ('pending','active') LIMIT 1");
+            $stmt = qi_db()->prepare("SELECT 1 FROM trading_accounts WHERE user_id = :u AND account_reference = :a AND provider = 'MT5' AND connection_status IN ('pending','active') LIMIT 1");
             $stmt->execute([':u' => (int)$u['user_id'], ':a' => $akun]);
             return $memo = (bool)$stmt->fetchColumn();
         } catch (Throwable $e) {

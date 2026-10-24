@@ -129,6 +129,7 @@ function qi_komp_periode_dari_kunci(string $jenis, string $kunci, DateTimeZone $
 {
     if ($jenis === 'weekly' && preg_match('/^(\d{4})-W(\d{2})$/', $kunci, $m)) {
         $a = (new DateTimeImmutable('now', $zona))->setISODate((int)$m[1], (int)$m[2])->setTime(0, 0);
+        if ($a->format('o-\WW') !== $kunci) return null;   // W00/W99: setISODate menggulir diam-diam ke minggu lain
         return [$a, $a->modify('+7 days')];
     }
     if ($jenis === 'monthly' && preg_match('/^\d{4}-\d{2}$/', $kunci)) {
